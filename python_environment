@@ -1,0 +1,9 @@
+I am running a default python3 conda environment
+
+manual installations:
+
+conda install -c conda-forge flask-sqlalchemy
+conda install -c conda-forge geoalchemy2
+
+have to install this for python3
+https://github.com/PyMySQL/mysqlclient-python 
