@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -12,7 +14,7 @@ cwd = os.getcwd()
 config = function.readconfig(cwd, '/config')
 
 app.config["DEBUG"] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://'+config['mysqluser']+':'+config['mysqlpwd']+'@localhost/'+config['mysqldb']+''
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@localhost/'+config['db']+''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -29,25 +31,25 @@ class instrument_type(Enum):
     spectroscopic = 2
 
 class Users(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(25), index=True, unique=True)
     firstname = db.Column(db.String(25))
     lastname = db.Column(db.String(25))
     datecreated = db.Column(db.Date)
 
 class UserGroups(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     userID = db.Column(db.Integer)
     groupID = db.Column(db.Integer)
     role = db.Column(db.String(25))
 
 class Groups(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(25))
     datecreated = db.Column(db.Date)
 
 class UserActyions(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     modified_table = db.Column(db.String(25))
     modified_id = db.Column(db.Integer)
     modified_column = db.Column(db.String(25))
@@ -57,19 +59,19 @@ class UserActyions(db.Model):
     time = db.Column(db.Date)
 
 class Instrument(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     instrument_name = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(instrument_type))
     footprint = db.Column(Geometry('GEOMETRY'))
     datecreated = db.Column(db.Date)
-    submitterID = db.Column(db.Integer)
+    submitterid = db.Column(db.Integer)
 
 class Pointing(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Enum(pointing_status))
     position = db.Column(Geometry('POINT'))
     galaxy_catalog = db.Column(db.Integer)
-    galaxy_catalogID = db.Column(db.Integer)
+    galaxy_catalogid = db.Column(db.Integer)
     instrumentID = db.Column(db.Integer)
     depth = db.Column(db.Float)
     time = db.Column(db.Date)
@@ -77,12 +79,12 @@ class Pointing(db.Model):
     submitterID = db.Column(db.Integer)
 
 class Pointing_Event(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     pointingID = db.Column(db.Integer)
-    GraceID = db.Column(db.String)
+    graceid = db.Column(db.String)
 
 class Glade_2p3(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     position = db.Column(Geometry('POINT'))
     gwgc_name = db.Column(db.String)
     hyperleda_name = db.Column(db.String)
@@ -104,8 +106,8 @@ class Glade_2p3(db.Model):
     flag3 = db.Column(db.Integer)
 
 class GW_Alert(db.Model):
-    ID = db.Column(db.Integer, primary_key=True)
-    GraceID = db.Column(db.String)
+    id = db.Column(db.Integer, primary_key=True)
+    graceid = db.Column(db.String)
     role = db.Column(db.String)
     timesent = db.Column(db.Date)
     time_of_signal = db.Column(db.Date)
@@ -179,7 +181,7 @@ def post_instruments():
             instrument_type = rd['instrument_type'],
             footprint = rd['footprint'],
             datecreated = rd['datecreated'],
-            submitterID = rd['submitterID']
+            submitterid = rd['submitterid']
             )
 
     db.session.add(inst)
