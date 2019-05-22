@@ -30,7 +30,10 @@ def to_json(inst, cls):
         elif v is None:
             d[c.name] = str()
         elif "geography" in str(c.type):
+            #try:
             d[c.name] = str(geoalchemy2.shape.to_shape(v))
+            #except:
+            #   d[c.name] = v
         elif isinstance(v, (datetime.date, datetime.datetime)):
             d[c.name] = v.isoformat()
         else:
@@ -55,7 +58,7 @@ class users(db.Model):
     lastname = db.Column(db.String(25))
     datecreated = db.Column(db.Date)
 
-class userGroups(db.Model):
+class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userID = db.Column(db.Integer)
     groupID = db.Column(db.Integer)
@@ -94,15 +97,33 @@ class pointing(db.Model):
     position = db.Column(Geography('POINT', srid=4326))
     galaxy_catalog = db.Column(db.Integer)
     galaxy_catalogid = db.Column(db.Integer)
-    instrumentID = db.Column(db.Integer)
+    instrumentid = db.Column(db.Integer)
     depth = db.Column(db.Float)
     time = db.Column(db.Date)
     datecreated = db.Column(db.Date)
-    submitterID = db.Column(db.Integer)
+    submitterid = db.Column(db.Integer)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+    def validate(self):
+        return True
+
+    def from_json(self, p):
+        self.status = pointing_status.planned.name
+        self.position = p['position']
+        self.galaxy_catalog = p['galaxy_catalog']
+        self.galaxy_catalogid = p['galaxy_catalogid']
+        self.instrumentid = p['instrumentid']
+        self.depth = p['depth']
+        self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%d %H:%M:%S")
+        self.submitterid = p['submitterid']
+        self.datecreated = datetime.datetime.now()
 
 class pointing_event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    pointingID = db.Column(db.Integer)
+    pointingid = db.Column(db.Integer)
     graceid = db.Column(db.String)
 
 class glade_2p3(db.Model):
