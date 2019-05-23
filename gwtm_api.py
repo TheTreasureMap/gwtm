@@ -3,9 +3,12 @@
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
 from enum import Enum
+
 import os,function, json, datetime
+import random
 
 import models
 from __init__ import app
@@ -20,8 +23,190 @@ db = models.db
 #Comments: Check if instrument configuration already exists to avoid duplication. 
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
 
+
+
+
+@app.route("/deletetest", methods=["POST"])
+def delete_test_database():
+
+	users = db.session.query(models.users)
+	users.delete(synchronize_session=False)
+
+	groups = db.session.query(models.groups)
+	groups.delete(synchronize_session=False)
+
+	ug = db.session.query(models.usergroups)
+	ug.delete(synchronize_session=False)
+
+	insts = db.session.query(models.instrument)
+	insts.delete(synchronize_session=False)
+
+	pointings = db.session.query(models.pointing)
+	pointings.delete(synchronize_session=False)
+
+	pe = db.session.query(models.pointing_event)
+	pe.delete(synchronize_session=False)
+
+	gwa = db.session.query(models.gw_alert)
+	gwa.delete(synchronize_session=False)
+
+	db.session.commit()
+
+	return jsonify('Success')
+
+@app.route("/populatetest", methods=["POST"])
+def populate_test_database():
+	#create 3 groups
+
+	u1 = models.users(
+		username = "username1",
+		firstname = "firstname1",
+		lastname = "lastname1",
+		datecreated = datetime.datetime.now()
+		)
+
+	u2 = models.users(
+		username = "username2",
+		firstname = "firstname2",
+		lastname = "lastname2",
+		datecreated = datetime.datetime.now()
+		)
+
+	u3 = models.users(
+		username = "username3",
+		firstname = "firstname3",
+		lastname = "lastname3",
+		datecreated = datetime.datetime.now()
+		)
+
+	db.session.add(u1); db.session.add(u2); db.session.add(u3)
+
+	#create 2 groups:
+
+	g1 = models.groups(
+		name = "group1",
+		datecreated = datetime.datetime.now()
+		)
+
+	g2 = models.groups(
+		name = "group2",
+		datecreated = datetime.datetime.now()
+		)
+
+	db.session.add(g1); db.session.add(g2)
+
+	db.session.flush()
+	#create 4 usergroups
+
+	ug1 = models.usergroups(
+		userid = u1.id,
+		groupid = g1.id,
+		role = "test1"
+		)
+
+	ug2 = models.usergroups(
+		userid = u1.id,
+		groupid = g2.id,
+		role = "test2"
+		)
+
+	ug3 = models.usergroups(
+		userid = u2.id,
+		groupid = g1.id,
+		role = "test3"
+		)
+
+	ug4 = models.usergroups(
+		userid = u3.id,
+		groupid = g2.id,
+		role = "test4"
+		)
+
+	db.session.add(ug1); db.session.add(ug2); db.session.add(ug3); db.session.add(ug4)
+
+	#create 2 instruments (1 for each group)
+
+	i1 = models.instrument(
+		instrument_name = "inst1",
+		instrument_type = models.instrument_type.photometric,
+		footprint = "POLYGON((0 0,1 0,1 1,0 1,0 0))",
+		datecreated = datetime.datetime.now(),
+		submitterid = 1)
+
+
+	i2 = models.instrument(
+		instrument_name = "inst2",
+		instrument_type = models.instrument_type.spectroscopic,
+		footprint = "POLYGON((0 0,2 0,2 2,0 2,0 0))",
+		datecreated = datetime.datetime.now(),
+		submitterid = 2)
+
+	db.session.add(i1); db.session.add(i2)
+	db.session.flush()
+	#create 2 test alerts
+
+	gwa1 = models.gw_alert(
+		graceid = "graceid1",
+		datecreated = datetime.datetime.now(),
+		prob_bns = 0.99,
+		distance = 30,
+		description = "woahbuddy")
+
+
+	gwa2 = models.gw_alert(
+		graceid = "graceid2",
+		datecreated = datetime.datetime.now(),
+		prob_bns = 0.88,
+		prob_terrestrial = 0.12,
+		distance = 33,
+		description = "woahbuddy")
+
+	db.session.add(gwa1); db.session.add(gwa2)
+
+	points = []
+	for f in range(0,15):
+		instid = i1.id if random.random() > 0.5 else i2.id
+
+		randu = random.random()
+		if randu < 0.33:
+			userid = u1.id
+		elif randu >= 0.33 and randu < 0.666:
+			userid = u2.id
+		else:
+			userid = u3.id
+
+		timedelta = random.random() * 30 
+		timedelta = timedelta if random.random() > 0.5 else -1*timedelta
+		ra, dec = random.random()*180, random.random()*90
+		p = models.pointing(
+			status = models.pointing_status.planned,
+			position = "POINT("+str(ra)+" "+str(dec)+")",
+			instrumentid = instid,
+			time = datetime.datetime.now()+datetime.timedelta(days = random.randint(-15,15)),
+			datecreated = datetime.datetime.now(),
+			submitterid = userid)
+
+		points.append(p)
+		db.session.add(p)
+
+	db.session.flush()
+
+	for p in points:
+		gid = "graceid1" if random.random() > 0.5 else "graceid2"
+		pe = models.pointing_event(
+			graceid = gid,
+			pointingid = p.id)
+		db.session.add(pe)
+
+	db.session.flush()
+	db.session.commit()
+	return jsonify("Success")
+
 @app.route("/pointings", methods=["POST"])
 def add_pointings():
+
+	#this should also input a graceid to link to the gw_alert event
+
 	rd = request.get_json()
 	points = []
 	if "pointing" in rd:
@@ -159,9 +344,11 @@ def get_pointings():
 			filter.append(models.usergroups.groupid.in_(groups))
 		except:
 			groups = args.get('groups')
-			groups = groups.split('[')[1].split(']')[0].split(',') 
+			groups = groups.split('[')[1].split(']')[0].split(',')
+			ors = []
 			for g in groups:
-				filter.append(models.group.name.contains(g))
+				ors.append(models.group.name.contains(g.strip()))
+			filter.append(fsq.sqlalchemy.or_(ors))
 		filter.append(models.usergroups.userid == models.users.id)
 		filter.append(models.users.id == models.pointing.submitterid)
 
@@ -170,23 +357,25 @@ def get_pointings():
 		if user.isdigit():
 			filter.append(models.pointing.submitterid == int(user))
 		else:
-			filter.append(or_(models.users.username.contains(user),
+			filter.append(fsq.sqlalchemy.or_(models.users.username.contains(user),
 							  models.users.firstname.contains(user),
 							  models.users.lastname.contains(user)))
 			filter.append(models.users.id == models.pointing.submitterid)
 
-	elif "users" in args:
+	if "users" in args:
 		try:
 			users = json.loads(args.get('users'))
-			filter.append(models.pointing.submitterid.in_(user))
+			filter.append(models.pointing.submitterid.in_(users))
 		except:
 			users = args.get('users')
 			users = users.split('[')[1].split(']')[0].split(',') 
+			ors = []
 			for u in users:
-				filter.append(or_(models.users.username.contains(u.strip()),
-							  models.users.firstname.contains(u.strip()),
-							  models.users.lastname.contains(u.strip())))
-				filter.append(models.users.id == models.pointing.submitterid)
+				ors.append(models.users.username.contains(u.strip()))
+				ors.append(models.users.firstname.contains(u.strip()))
+				ors.append(models.users.lastname.contains(u.strip()))
+			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(models.users.id == models.pointing.submitterid)
 		
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.json for x in pointings]
@@ -266,6 +455,7 @@ def get_instruments():
 	insts = [x.json for x in insts]
 
 	return jsonify(insts)
+
 
 app.run()
 

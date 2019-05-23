@@ -7,7 +7,7 @@ from geoalchemy2 import Geometry, Geography
 import geoalchemy2
 from enum import Enum,IntEnum
 from __init__ import app
-import os,function, json, geojson
+import os,function, json
 import datetime
 
 db = SQLAlchemy(app)
@@ -60,8 +60,8 @@ class users(db.Model):
 
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    userID = db.Column(db.Integer)
-    groupID = db.Column(db.Integer)
+    userid = db.Column(db.Integer)
+    groupid = db.Column(db.Integer)
     role = db.Column(db.String(25))
 
 class groups(db.Model):
@@ -161,7 +161,7 @@ class gw_alert(db.Model):
     far = db.Column(db.Float)
     skymap_fits_url = db.Column(db.String)
     distance = db.Column(db.Float)
-    distance_err = db.Column(db.Float)
+    distance_error = db.Column(db.Float)
     prob_bns = db.Column(db.Float)
     prob_nsbh = db.Column(db.Float)
     prob_gap = db.Column(db.Float)

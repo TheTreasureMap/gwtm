@@ -7,11 +7,11 @@ sudo apt install postgresql-10-pgrouting
 
 sudo -u postgres psql
 > CREATE EXTENSION adminpack;
-> CREATE DATABASE gisdb;
-> \connect gisdb;
+> CREATE DATABASE gwtreasuremap;
+> \connect gwtreasuremap;
 > CREATE SCHEMA postgis;
-> ALTER DATABASE gisdb SET search_path=public, postgis, contrib;
-> \connect gisdb;
+> ALTER DATABASE gwtreasuremap SET search_path=public, postgis, contrib;
+> \connect gwtreasuremap;
 > CREATE EXTENSION postgis SCHEMA postgis;
 > CREATE EXTENSION postgis_sfcgal SCHEMA postgis;
 > CREATE  EXTENSION pgrouting SCHEMA postgis;
@@ -21,14 +21,11 @@ sudo service postgresql restart
 sudo -u postgres psql
 
 > CREATE ROLE gwtm_user LOGIN PASSWORD 'changeme123' SUPERUSER;
-
-
-> CREATE DATABASE gwtreasuremap;
-> \connect gwtreasuremap
+\connect gwtreasuremap
 
 > create table users ( ID serial PRIMARY KEY, username varchar(25), firstname varchar(25), lastname varchar(25), datecreated timestamp);
 
-> create table usergroups ( ID serial PRIMARY KEY, userID INT, groupID INT, role varchar(25));
+> create table usergroups ( ID serial PRIMARY KEY, userid INT, groupid INT, role varchar(25));
 
 > create table groups ( ID serial PRIMARY KEY, name varchar(25), datecreated timestamp);
 
@@ -42,19 +39,21 @@ sudo -u postgres psql
 
 >create table pointing (ID serial PRIMARY KEY, status pointing_status,  position GEOGRAPHY(POINT,4326), galaxy_catalog INT, galaxy_catalogID INT, instrumentID INT, depth float, time timestamp,  datecreated timestamp, submitterID INT);
 
-> create table pointing_Event (ID serial PRIMARY KEY, pointingID INT, GraceID text);
+> create table pointing_Event (ID serial PRIMARY KEY, pointingid INT, graceid text);
 
 > create table glade_2p3 (ID serial PRIMARY KEY, position GEOGRAPHY(POINT,4326), gwgc_name varchar(50), hyperleda_name varchar(50), _2mass_name varchar(50), sdssdr12_name varchar(50), distance float, distance_error float, redshift float, bmag float, bmag_err float, bmag_abs float, jmag float, jmag_err float, hmag float, hmag_err float, kmag float, kmag_err float, flag1 CHAR, flag2 INT, flag3 INT);
 
-> create table gw_alert (ID serial PRIMARY KEY, GraceID text, role text, timesent timestamp, time_of_signal timestamp, packet_type INT, alert_type text, detectors varchar(50), description text, far float, skymap_fits_url text, distance float, distance_error float, prob_bns float, prob_nsbh float, prob_gap float, prob_bbh float, prob_terrestrial float, prob_hasns float, prob_hasremenant float, datecreated timestamp);
+> create table gw_alert (ID serial PRIMARY KEY, graceid text, role text, timesent timestamp, time_of_signal timestamp, packet_type INT, alert_type text, detectors varchar(50), description text, far float, skymap_fits_url text, distance float, distance_error float, prob_bns float, prob_nsbh float, prob_gap float, prob_bbh float, prob_terrestrial float, prob_hasns float, prob_hasremenant float, datecreated timestamp);
+
+
 
 
 
 ##Phase 2
 
-create table Spectroscopy (ID serial PRIMARY KEY, candidateID INT, instrumentID INT, time timestamp, classification INT, URL varchar(300), is_limit bool, datecreated timestamp, submitterID INT)
+create table Spectroscopy (ID serial PRIMARY KEY, candidateid INT, instrumentid INT, time timestamp, classification INT, URL varchar(300), is_limit bool, datecreated timestamp, submitterID INT)
 
-create table Photometry (ID serial PRIMARY KEY, candidateID INT, instrumentID INT, time datetime, magnitude float, magnitude_error float, flux float, flux_error float, band INT, is_limit bool, datecreated timestamp, submitterID INT);
+create table Photometry (ID serial PRIMARY KEY, candidateid INT, instrumentid INT, time datetime, magnitude float, magnitude_error float, flux float, flux_error float, band INT, is_limit bool, datecreated timestamp, submitterid INT);
 
-create table Candidate (ID serial PRIMARY KEY, status INT,  position point, classificationID INT, redshift float, datecreated datetime, submitterID INT);
+create table Candidate (ID serial PRIMARY KEY, status INT,  position point, classificationid INT, redshift float, datecreated datetime, submitterid INT);
 
