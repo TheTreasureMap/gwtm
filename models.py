@@ -7,7 +7,7 @@ from geoalchemy2 import Geometry, Geography
 import geoalchemy2
 from enum import Enum,IntEnum
 from __init__ import app
-import os,function, json
+import os,function, json, geojson
 import datetime
 
 db = SQLAlchemy(app)
@@ -29,6 +29,10 @@ def to_json(inst, cls):
                 d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
         elif v is None:
             d[c.name] = str()
+        elif "instrument_type" in str(v):
+            d[c.name] = v.name
+        elif "pointing_status" in str(v):
+            d[c.name] = v.name
         elif "geography" in str(c.type):
             #try:
             d[c.name] = str(geoalchemy2.shape.to_shape(v))
@@ -49,6 +53,11 @@ class instrument_type(IntEnum):
     photometric = 1
     spectroscopic = 2
 
+class valid_mapping():
+    def __init__(self):
+        self.valid = False
+        self.errors = []
+
 #API Models
 
 class users(db.Model):
@@ -61,7 +70,7 @@ class users(db.Model):
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
-    groupid = db.Column(db.Integer)
+    groupid  = db.Column(db.Integer)
     role = db.Column(db.String(25))
 
 class groups(db.Model):
@@ -102,6 +111,7 @@ class pointing(db.Model):
     time = db.Column(db.Date)
     datecreated = db.Column(db.Date)
     submitterid = db.Column(db.Integer)
+    pos_angle = db.Column(db.Float)
 
     @property
     def json(self):
@@ -111,15 +121,95 @@ class pointing(db.Model):
         return True
 
     def from_json(self, p):
+        v = valid_mapping()
+
         self.status = pointing_status.planned.name
-        self.position = p['position']
-        self.galaxy_catalog = p['galaxy_catalog']
-        self.galaxy_catalogid = p['galaxy_catalogid']
-        self.instrumentid = p['instrumentid']
-        self.depth = p['depth']
-        self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%d %H:%M:%S")
-        self.submitterid = p['submitterid']
+
+        if 'position' in p:
+            pos = p['position']
+            if "POINT" in pos:
+                self.position = p['position']
+            else:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+        else:
+            if 'ra' in p or 'RA' in p:
+                ra = p['ra'] if 'ra' in p else p['RA']
+                if not isinstance(ra, (float,)):
+                    ra = None
+            else:
+                ra = None
+
+            if 'dec' in p or 'DEC' in p:
+                dec = p['dec'] if 'dec' in p else p['DEC']
+                if not isinstance(dec, (float,)):
+                    dec = None
+            else:
+                dec = None
+
+            if ra == None or dec == None:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+            else:
+                self.position = "POINT("+ra+" "+dec+")"
+
+        if 'galaxy_catalog' in p:
+            if isinstance(p['galaxy_catalog'], list(int,)):
+                self.galaxy_catalog = p['galaxy_catalog']
+
+        if 'galaxy_catalogid' in p:
+            if isinstance(p['galaxy_catalogid'], list(int,)):    
+                self.galaxy_catalogid = p['galaxy_catalogid']
+
+        if 'instrumentid' in p:
+            inst = p['instrumentid']
+            validinst = False
+            if isinstance(inst, list(int,)):
+                self.instrumentid = inst
+                validinst = True
+            else:
+                insts = db.session.query(instrument.instrument_name,
+                                         instrument.id).filter(instrument.instrument_name == inst).all()
+                print(insts)
+                inames = [x.instrument_name for x in insts]
+                if inst in inames:
+                    instmatch = [x for x in insts if x.instrument_name == inst[0].id]
+                    validinst = True
+                    self.instrumentid = instmatch
+            if validinst is False:
+                v.errors.append("Invalid instrument id or name")
+
+        if 'depth' in p:
+            if isinstance(p['depth'], list(float,)):
+                self.depth = p['depth']
+            else:        
+                v.errors.append('Invalid depth. Must be decimal')
+
+        if 'pos_angle' in p:
+            if isinstance(p['pos_angle'], list(float,)):
+                self.depth = p['pos_angle']
+            else:        
+                v.errors.append('Invalid pos_angle. Must be decimal')
+
+        if 'time' in p:
+            try:
+                self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S")
+            except:
+                v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+
+        if "submitterid" in p:
+            validsubmitter = False
+            if isinstance(p['submitterid'], list(int,)):
+                self.submitterid = p['submitterid']
+            else:
+                #look up all submitters names and usernames 
+                pass
+            if validsubmitter is False:
+                v.errors.append('Invalid submitterid')
+        else:
+            v.errors.append("Field submitterid is required")
+
         self.datecreated = datetime.datetime.now()
+        #TODO: test this and output errors if encountered
+        return v
 
 class pointing_event(db.Model):
     id = db.Column(db.Integer, primary_key=True)

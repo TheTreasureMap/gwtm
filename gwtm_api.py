@@ -15,17 +15,6 @@ from __init__ import app
 
 db = models.db
 
-#API Endpoints
-
-#Post Pointing/s
-#Parameters: List of Pointing JSON objects
-#Returns: List of assigned IDs
-#Comments: Check if instrument configuration already exists to avoid duplication. 
-#Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
-
-
-
-
 @app.route("/deletetest", methods=["POST"])
 def delete_test_database():
 
@@ -143,6 +132,7 @@ def populate_test_database():
 
 	db.session.add(i1); db.session.add(i2)
 	db.session.flush()
+
 	#create 2 test alerts
 
 	gwa1 = models.gw_alert(
@@ -184,7 +174,8 @@ def populate_test_database():
 			instrumentid = instid,
 			time = datetime.datetime.now()+datetime.timedelta(days = random.randint(-15,15)),
 			datecreated = datetime.datetime.now(),
-			submitterid = userid)
+			submitterid = userid,
+			pos_angle = random.random()*90)
 
 		points.append(p)
 		db.session.add(p)
@@ -201,6 +192,15 @@ def populate_test_database():
 	db.session.flush()
 	db.session.commit()
 	return jsonify("Success")
+
+
+#API Endpoints
+
+#Post Pointing/s
+#Parameters: List of Pointing JSON objects
+#Returns: List of assigned IDs
+#Comments: Check if instrument configuration already exists to avoid duplication. 
+#Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
 
 @app.route("/pointings", methods=["POST"])
 def add_pointings():
@@ -222,6 +222,7 @@ def add_pointings():
 		for p in pointings:
 			mp = models.pointing()
 			mp.from_json(p)
+			print(aa)
 			if mp.validate():
 				points.append(mp)
 				db.session.add(mp)
@@ -245,9 +246,24 @@ def add_pointings():
 			return jsonify("Whoa slow down, something went wrong")
 
 	db.session.flush()
-	db.session.commit()
 
+	if "graceid" in rd:
+		gid = rd['graceid']
+		current_gids = db.session.query(models.gw_alert.graceid).all()
+		current_gids = [list(g)[0] for g in current_gids]
+		if gid in current_gids:
+			for p in points:
+				pe = models.pointing_event(
+					pointingid = p.id,
+					graceid = gid)
+				db.session.add(pe)
+		else:
+			return jsonify("Invalid graceid")
+
+	db.session.flush()
+	db.session.commit()
 	return jsonify([x.id for x in points])
+
 
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
@@ -346,9 +362,11 @@ def get_pointings():
 			groups = args.get('groups')
 			groups = groups.split('[')[1].split(']')[0].split(',')
 			ors = []
+			print(groups)
 			for g in groups:
-				ors.append(models.group.name.contains(g.strip()))
-			filter.append(fsq.sqlalchemy.or_(ors))
+				ors.append(models.groups.name.contains(g.strip()))
+			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(models.usergroups.groupid == models.groups.id)
 		filter.append(models.usergroups.userid == models.users.id)
 		filter.append(models.users.id == models.pointing.submitterid)
 
