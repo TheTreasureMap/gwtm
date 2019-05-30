@@ -175,7 +175,8 @@ def populate_test_database():
 			time = datetime.datetime.now()+datetime.timedelta(days = random.randint(-15,15)),
 			datecreated = datetime.datetime.now(),
 			submitterid = userid,
-			pos_angle = random.random()*90)
+			pos_angle = random.random()*90,
+			band=models.bandpass(random.randint(1,3)))
 
 		points.append(p)
 		db.session.add(p)
@@ -202,74 +203,83 @@ def populate_test_database():
 #Comments: Check if instrument configuration already exists to avoid duplication. 
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
 
-@app.route("/pointings", methods=["POST"])
+@app.route("/api/v0/pointings", methods=["POST"])
 def add_pointings():
 
-	#this should also input a graceid to link to the gw_alert event
+	try:
+		rd = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
 
-	rd = request.get_json()
+	valid_gid = False
+
+	if "graceid" in rd:
+		gid = rd['graceid']
+		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
+		if len(current_gids) > 0:
+			valid_gid = True
+		else:
+			return jsonify("Invalid graceid")
+	else:
+		return jsonify("graceid is required")
+
+	dbinsts = db.session.query(models.instrument.instrument_name,
+                               models.instrument.id).all()
+
+	dbusers = db.session.query(models.users.id,
+							   models.users.username,
+							   models.users.firstname,
+							   models.users.lastname).all()
+
 	points = []
+	errors = []
+
 	if "pointing" in rd:
 		p = rd['pointing']
 		mp = models.pointing()
-		mp.from_json(p)
-		if mp.validate():
+		v = mp.from_json(p, dbinsts, dbusers)
+		if v.valid:
 			points.append(mp)
 			db.session.add(mp)
+		else:
+			errors.append(["Object: "+json.dumps(p), v.errors])
 
 	elif "pointings" in rd:
 		pointings = rd['pointings']
 		for p in pointings:
 			mp = models.pointing()
-			mp.from_json(p)
-			print(aa)
-			if mp.validate():
+			v = mp.from_json(p, dbinsts, dbusers)
+			if v.valid:
 				points.append(mp)
 				db.session.add(mp)
-
-	elif isinstance(rd, (list,)):
-		for p in rd:
-			mp = models.pointing()
-			mp.from_json(p)
-			if mp.validate():
-				points.append(mp)
-				db.session.add(mp)
-
+			else:
+				errors.append(["Object: "+json.dumps(p), v.errors])
 	else: 
-		try:
-			mp = models.pointing()
-			mp.from_json(rd)
-			if mp.validate():
-				points.append(mp)
-				db.session.add(mp)
-		except:
-			return jsonify("Whoa slow down, something went wrong")
+		return jsonify("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: www.treasuremap_api_documentation.com")
 
 	db.session.flush()
 
-	if "graceid" in rd:
-		gid = rd['graceid']
-		current_gids = db.session.query(models.gw_alert.graceid).all()
-		current_gids = [list(g)[0] for g in current_gids]
-		if gid in current_gids:
-			for p in points:
-				pe = models.pointing_event(
-					pointingid = p.id,
-					graceid = gid)
-				db.session.add(pe)
-		else:
-			return jsonify("Invalid graceid")
+	if valid_gid:
+		for p in points:
+			pe = models.pointing_event(
+				pointingid = p.id,
+				graceid = gid)
+			db.session.add(pe)
 
 	db.session.flush()
 	db.session.commit()
-	return jsonify([x.id for x in points])
-
+	if len(points) == 0:
+		errors.append("You can find API documentation here: www.treasuremap_api_documentation.com")
+		return jsonify(errors)
+	if len(errors) == 0:
+		return jsonify([x.id for x in points])
+	return jsonify([x.id for x in points], errors)
 
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
 #Returns: List of PlannedPointing JSON objects
 
-@app.route("/pointings", methods=["GET"])
+@app.route("/api/v0/pointings", methods=["GET"])
 def get_pointings():
 
 	args = request.args
@@ -277,26 +287,32 @@ def get_pointings():
 	filter=[]
 
 	if "graceid" in args:
-		#validate
 		graceid = args.get('graceid')
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
 	if "id" in args:
-		#validate
 		_id = args.get('id')
 		filter.append(models.pointing.id == int(_id))
 	elif "ids" in args:
-		#validate
 		ids = json.loads(args.get('ids'))
 		filter.append(models.pointing.id.in_(ids))
 
+	if "band" in args:
+		band = args.get('band')
+		filter.append(models.pointing.band == band)
+	elif "bands" in args:
+		bands_sent = args.get('bands')
+		bands = []
+		for b in models.bandpass:
+			if b.name in bands_sent:
+				bands.append(b)
+		filter.append(models.pointing.band.in_(bands))
+
 	if "status" in args:
-		#validate
 		status = args.get('status')
 		filter.append(models.pointing.status == status)
 	elif "statuses" in args:
-		#validate
 		statuses = []
 		statuses_sent = args.get('statuses')
 		if "planned" in statuses_sent:
@@ -400,28 +416,34 @@ def get_pointings():
 
 	return jsonify(pointings)
 
-
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen
 
-@app.route("/pointings", methods=["DELETE"])
+@app.route("/api/v0/pointings", methods=["DELETE"])
 def del_pointings():
 	args = request.args
 
-	filter = []
+	filter1 = []
+	filter2 = []
 	if "id" in args:
-		filter.append(models.pointing.id == int(args.get('id')))
+		filter1.append(models.pointing.id == int(args.get('id')))
+		filter2.append(models.pointing_event.pointingid == int(args.get('id')))
 	if "ids" in args:
-		filter.append(models.pointing.id.in_(json.loads(args.get('ids'))))
+		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
+		filter2.append(models.pointing_event.pointingid.in_(json.loads(args.get('ids'))))
 
-	if len(filter) > 0:
-		pointings = db.session.query(models.pointing).filter(*filter)
+	if len(filter1) > 0:
+		pointings = db.session.query(models.pointing).filter(*filter1)
 		pointings.delete(synchronize_session=False)
+
+		pointing_es = db.session.query(models.pointing_event).filter(*filter2)
+		pointing_es.delete(synchronize_session=False)
+
 		db.session.commit()
 
 		return jsonify("Deleted Pointings successfully")
 	else:
-		return jsonify("Please Don't delete the ENTIRE table")
+		return jsonify("Please Don't delete the ENTIRE POINTING table")
 
 
 @app.route("/instruments", methods=["POST"])
@@ -449,7 +471,7 @@ def post_instruments():
 #Parameters: List of ID/s, type/s (to be AND’ed).
 #Returns: List of Instrument JSON objects
 
-@app.route("/instruments", methods=["GET"])
+@app.route("/api/v0/instruments", methods=["GET"])
 def get_instruments():
 
 	args = request.args

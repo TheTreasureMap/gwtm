@@ -9,3 +9,18 @@ def readconfig(directory,_file):
         except:
             gg[i[0]]=i[1]
     return gg
+
+
+def isInt(i):
+	try:
+		ret = int(i)
+		return True
+	except:
+		return False
+
+def isFloat(i):
+	try:
+		ret = float(i)
+		return True
+	except:
+		return False

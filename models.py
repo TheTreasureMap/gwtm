@@ -3,11 +3,13 @@
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry, Geography
 import geoalchemy2
+from function import isInt, isFloat
 from enum import Enum,IntEnum
 from __init__ import app
-import os,function, json, geojson
+import os, json
 import datetime
 
 db = SQLAlchemy(app)
@@ -49,9 +51,34 @@ class pointing_status(IntEnum):
     completed = 2
     cancelled = 3
 
+
 class instrument_type(IntEnum):
     photometric = 1
     spectroscopic = 2
+
+
+class bandpass(IntEnum):
+    U = 1
+    B = 2
+    V = 3
+    R = 4
+    I = 5
+    J = 6
+    H = 7
+    K = 8
+    u = 9
+    g = 10
+    r = 11
+    i = 12
+    z = 13
+    UVW1 = 14
+    UVW2 = 15
+    UVM2 = 16
+    XRT = 17
+    clear = 18
+    open = 19
+    other = 20
+
 
 class valid_mapping():
     def __init__(self):
@@ -112,15 +139,13 @@ class pointing(db.Model):
     datecreated = db.Column(db.Date)
     submitterid = db.Column(db.Integer)
     pos_angle = db.Column(db.Float)
+    band = db.Column(db.Enum(bandpass))
 
     @property
     def json(self):
         return to_json(self, self.__class__)
 
-    def validate(self):
-        return True
-
-    def from_json(self, p):
+    def from_json(self, p, dbinsts, dbusers):
         v = valid_mapping()
 
         self.status = pointing_status.planned.name
@@ -134,14 +159,14 @@ class pointing(db.Model):
         else:
             if 'ra' in p or 'RA' in p:
                 ra = p['ra'] if 'ra' in p else p['RA']
-                if not isinstance(ra, (float,)):
+                if not isFloat(ra):
                     ra = None
             else:
                 ra = None
 
             if 'dec' in p or 'DEC' in p:
                 dec = p['dec'] if 'dec' in p else p['DEC']
-                if not isinstance(dec, (float,)):
+                if not isFloat(dec):
                     dec = None
             else:
                 dec = None
@@ -149,42 +174,45 @@ class pointing(db.Model):
             if ra == None or dec == None:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
             else:
-                self.position = "POINT("+ra+" "+dec+")"
+                self.position = "POINT("+str(ra)+" "+str(dec)+")"
 
         if 'galaxy_catalog' in p:
-            if isinstance(p['galaxy_catalog'], list(int,)):
+            if isInt(p['galaxy_catalog']):
                 self.galaxy_catalog = p['galaxy_catalog']
 
         if 'galaxy_catalogid' in p:
-            if isinstance(p['galaxy_catalogid'], list(int,)):    
+            if isInt(p['galaxy_catalogid']):    
                 self.galaxy_catalogid = p['galaxy_catalogid']
 
         if 'instrumentid' in p:
             inst = p['instrumentid']
             validinst = False
-            if isinstance(inst, list(int,)):
-                self.instrumentid = inst
-                validinst = True
+            if isInt(inst):
+                insts = [x for x in dbinsts if x.id == int(inst)]
+                if len(insts) > 0:
+                    self.instrumentid = inst
+                    validinst = True
             else:
-                insts = db.session.query(instrument.instrument_name,
-                                         instrument.id).filter(instrument.instrument_name == inst).all()
-                print(insts)
+                insts = [x for x in dbinsts if x.instrument_name == inst]
                 inames = [x.instrument_name for x in insts]
                 if inst in inames:
-                    instmatch = [x for x in insts if x.instrument_name == inst[0].id]
+                    instmatch = insts[0].id
                     validinst = True
                     self.instrumentid = instmatch
+
             if validinst is False:
-                v.errors.append("Invalid instrument id or name")
+                v.errors.append("Invalid instrumentid. Can be id or name of instrument")
+        else:
+            v.errors.append("Field instrumentid is required")
 
         if 'depth' in p:
-            if isinstance(p['depth'], list(float,)):
+            if isFloat(p['depth']):
                 self.depth = p['depth']
             else:        
                 v.errors.append('Invalid depth. Must be decimal')
 
         if 'pos_angle' in p:
-            if isinstance(p['pos_angle'], list(float,)):
+            if isFloat(p['pos_angle']):
                 self.depth = p['pos_angle']
             else:        
                 v.errors.append('Invalid pos_angle. Must be decimal')
@@ -194,21 +222,43 @@ class pointing(db.Model):
                 self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S")
             except:
                 v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+        else:
+            v.errors.append("Field \"time\" is required")
+
 
         if "submitterid" in p:
             validsubmitter = False
-            if isinstance(p['submitterid'], list(int,)):
-                self.submitterid = p['submitterid']
+            submitter = p['submitterid']
+            if isInt(submitter):
+                subs = [x for x in dbusers if x.id == submitter]
+                if len(subs) > 0:
+                    self.submitterid = submitter
+                    validsubmitter = True
             else:
-                #look up all submitters names and usernames 
-                pass
+                subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
+                if len(subs) > 0:
+                    self.submitterid = [x.id for x in subs][0] 
+                    validsubmitter = True
+
             if validsubmitter is False:
-                v.errors.append('Invalid submitterid')
+                v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
         else:
-            v.errors.append("Field submitterid is required")
+            v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
 
         self.datecreated = datetime.datetime.now()
-        #TODO: test this and output errors if encountered
+
+        if "band" in p:
+            validbandints = [int(b) for b in bandpass]
+            validbandstr = [str(b.name) for b in bandpass]
+            userband = p['band']
+            if userband in validbandints or userband in validbandstr:
+                self.band = userband
+            else:
+                v.errors.append("Field \"band\" is invalid")
+        else:
+            v.errors.append("Field \"band\" is required")
+
+        v.valid = len(v.errors) == 0
         return v
 
 class pointing_event(db.Model):

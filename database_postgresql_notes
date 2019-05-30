@@ -36,8 +36,11 @@ sudo -u postgres psql
 > create table instrument (ID serial PRIMARY KEY, instrument_name varchar(100), instrument_type instrument_type, footprint GEOGRAPHY(POLYGON,4326), datecreated timestamp, submitterID INT);
 
 > CREATE TYPE pointing_status AS ENUM ('planned', 'completed', 'cancelled');
+> CREATE TYPE bandpass AS ENUM ('U', 'B', 'V', 'R', 'I', 'J', 'H', 'K', 'u', 'g', 'r', 'i', 'z', 'UVW1', 'UVW2', 'XRT', 'clear', 'open', 'other');
 
->create table pointing (ID serial PRIMARY KEY, status pointing_status,  position GEOGRAPHY(POINT,4326), galaxy_catalog INT, galaxy_catalogID INT, instrumentID INT, depth float, time timestamp,  datecreated timestamp, submitterID INT);
+$$to add enum type -> alter type bandpass add value 'other';
+
+> create table pointing (ID serial PRIMARY KEY, status pointing_status, band bandpass position GEOGRAPHY(POINT,4326), pos_angle float, galaxy_catalog INT, galaxy_catalogID INT, instrumentID INT, depth float, time timestamp,  datecreated timestamp, submitterID INT);
 
 > create table pointing_Event (ID serial PRIMARY KEY, pointingid INT, graceid text);
 
