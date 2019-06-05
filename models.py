@@ -35,6 +35,8 @@ def to_json(inst, cls):
             d[c.name] = v.name
         elif "pointing_status" in str(v):
             d[c.name] = v.name
+        elif "bandpass" in str(v):
+            d[c.name] = v.name
         elif "geography" in str(c.type):
             #try:
             d[c.name] = str(geoalchemy2.shape.to_shape(v))
@@ -268,12 +270,14 @@ class pointing_event(db.Model):
 
 class glade_2p3(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    pgc_number = db.Column(db.Integer)
     position = db.Column(Geography('POINT', srid=4326))
     gwgc_name = db.Column(db.String)
     hyperleda_name = db.Column(db.String)
     _2mass_name = db.Column(db.String)
+    sdssdr12_name = db.Column(db.String)
     distance = db.Column(db.Float)
-    distance_err = db.Column(db.Float)
+    distance_error = db.Column(db.Float)
     redshift = db.Column(db.Float)
     bmag = db.Column(db.Float)
     bmag_err = db.Column(db.Float)
@@ -287,6 +291,7 @@ class glade_2p3(db.Model):
     flag1 = db.Column(db.String(1))
     flag2 = db.Column(db.Integer)
     flag3 = db.Column(db.Integer)
+
 
 class gw_alert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
