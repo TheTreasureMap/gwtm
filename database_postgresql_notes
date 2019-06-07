@@ -44,7 +44,7 @@ $$to add enum type -> alter type bandpass add value 'other';
 
 > create table pointing_Event (ID serial PRIMARY KEY, pointingid INT, graceid text);
 
-> create table glade_2p3 (ID serial PRIMARY KEY, position GEOGRAPHY(POINT,4326), gwgc_name varchar(50), hyperleda_name varchar(50), _2mass_name varchar(50), sdssdr12_name varchar(50), distance float, distance_error float, redshift float, bmag float, bmag_err float, bmag_abs float, jmag float, jmag_err float, hmag float, hmag_err float, kmag float, kmag_err float, flag1 CHAR, flag2 INT, flag3 INT);
+> create table glade_2p3 (ID serial PRIMARY KEY, pgc_number INT, position GEOGRAPHY(POINT,4326), gwgc_name varchar(50), hyperleda_name varchar(50), _2mass_name varchar(50), sdssdr12_name varchar(50), distance float, distance_error float, redshift float, bmag float, bmag_err float, bmag_abs float, jmag float, jmag_err float, hmag float, hmag_err float, kmag float, kmag_err float, flag1 CHAR, flag2 INT, flag3 INT);
 
 > create table gw_alert (ID serial PRIMARY KEY, graceid text, role text, timesent timestamp, time_of_signal timestamp, packet_type INT, alert_type text, detectors varchar(50), description text, far float, skymap_fits_url text, distance float, distance_error float, prob_bns float, prob_nsbh float, prob_gap float, prob_bbh float, prob_terrestrial float, prob_hasns float, prob_hasremenant float, datecreated timestamp);
 

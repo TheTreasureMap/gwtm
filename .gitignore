@@ -1,0 +1,26 @@
+
+# +
+# Compiled
+# -
+*.pyc
+__pycache__
+
+# +
+# Packages
+# -
+*.dmg
+*.gz
+*.tar
+*.tgz
+*.zip
+
+# +
+# Logs
+# -
+*.log
+
+# +
+#config
+#-
+
+config
