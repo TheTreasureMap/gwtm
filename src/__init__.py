@@ -9,7 +9,7 @@ from . import function
 
 config = function.readconfig('/var/www/gwtm', '/config')
 app.config["DEBUG"] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@localhost/'+config['db']+''
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@'+config['host']+':'+str(config['port'])+'/'+config['db']+''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
