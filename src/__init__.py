@@ -7,8 +7,7 @@ app = Flask(__name__)
 from . import routes
 from . import function
 
-cwd = os.getcwd()
-config = function.readconfig(cwd, '/config')
+config = function.readconfig('/var/www/gwtm', '/config')
 app.config["DEBUG"] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@localhost/'+config['db']+''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
