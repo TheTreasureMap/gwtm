@@ -5,7 +5,7 @@ import hashlib
 import os
 
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0,"/var/www/gwtreasuremap")
+sys.path.insert(0,"/var/www/gwtm")
 
 from src import app as application
 BASE = os.getcwd()
