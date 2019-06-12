@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, request, jsonify
-from flask import request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
@@ -15,9 +14,23 @@ from . import models
 from src import app
 db = models.db
 
+@app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
-def test():
-    return jsonify("SMOL TEST")
+def home():
+    return render_template("index.html")
+
+@app.route("/alerts", methods=['GET'])
+def alerts():
+    return render_template("alerts.html")
+
+@app.route("/contact", methods=['GET'])
+def contact():
+    return render_template("contact.html")
+
+@app.route("/about", methods=['GET'])
+def about():
+    return render_template('about.html')
+
 
 @app.route("/deletetest", methods=["POST"])
 def delete_test_database():
