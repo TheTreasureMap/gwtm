@@ -6,6 +6,9 @@ import datetime
 import time
 import os
 import sys
+import requests
+from astropy.io import fits
+
 
 sys.path.insert(0, '/var/www/gwtm/')
 from src.models import db, gw_alert
@@ -21,7 +24,7 @@ def handler(payload, root):
 
     role = ''
 
-    role = root.attrib['role'] 
+    role = root.attrib['role']
 
     print("ROLE is ", role)
     params = {elem.attrib['name']:
@@ -36,7 +39,7 @@ def handler(payload, root):
     notices = [150, 151, 152, 153, 164]
 
     #should I test for the alerttype Preliminary, Initial, Update, Retraction? IDK
-    if params['Packet_Type'] in notices:
+    if int(params['Packet_Type']) in notices:
         gwa = gw_alert(
                 graceid = params['GraceID'] if 'GraceID' in keys else 'ERROR',
                 packet_type = params['Packet_Type'] if 'Packet_Type' in keys else 0,
@@ -58,18 +61,36 @@ def handler(payload, root):
 
         if 'skymap_fits' in params:
             # Read the HEALPix sky map and the FITS header.
-            skymap, header = hp.read_map(params['skymap_fits'],
-                                         h=True, verbose=False)
-            header = dict(header)
+            #skymap, header = hp.read_map(params['skymap_fits'],
+            #                             h=True, verbose=False)
+
+
+            #header = dict(header)
+            #hkeys = header.keys()
+
+            print("downloading skymap_fits")
+            #if error here `chmod a+rw /var/www/gwtm/src/static/`
+
+            downloadpath = '/var/www/gwtm/src/static/'+gwa.graceid+'.fits.gz'
+            r = requests.get(params['skymap_fits'])
+            with open(downloadpath, 'wb') as f:
+                f.write(r.content)
+
+            print("download finished")
+
+            hdu = fits.open(downloadpath)
+
+            header = hdu[0].header
             hkeys = header.keys()
 
             gwa.time_of_signal = header['DATE-OBS'] if 'DATE-OBS' in hkeys else '1991-12-23T19:15:00'
             gwa.distance = header['DISTMEAN'] if 'DISTMEAN' in hkeys else "-999.9"
             gwa.distance_error = header['DISTSTD'] if 'DISTSTD' in hkeys else "-999.9"
-            gwa.timesent = header['DATE'] if 'DATE' in hkeys else '1991-12-23T19:15:00'
+            gwa.timesent = header['DATE'] if 'DATE' in hkeys else '1991-12-23T19:15:00'            
+
 
         db.session.add(gwa)
-        #print("commiting\n")
+        print("commiting\n")
         db.session.commit()
     else:
         print("\nNot Ligo, Don't Care\n")
@@ -77,7 +98,7 @@ def handler(payload, root):
 def main():
     print('LISTENING')
     gcn.listen(handler=handler)
-main()
+#main()
 
 #TEST LOCAL
-#gcn.listen(host='127.0.0.1', port=8099, handler=handler)
+gcn.listen(host='127.0.0.1', port=8099, handler=handler)
