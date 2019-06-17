@@ -98,7 +98,7 @@ def handler(payload, root):
 def main():
     print('LISTENING')
     gcn.listen(handler=handler)
-#main()
+main()
 
 #TEST LOCAL
-gcn.listen(host='127.0.0.1', port=8099, handler=handler)
+#gcn.listen(host='127.0.0.1', port=8099, handler=handler)
