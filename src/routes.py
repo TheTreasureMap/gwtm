@@ -278,7 +278,7 @@ def add_pointings():
 		rd = request.get_json()
 	except:
 		return("Whoaaaa that JSON is a little wonky")
-
+		     
 	valid_gid = False
 
 	if "graceid" in rd:
