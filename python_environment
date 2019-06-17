@@ -1,9 +1,124 @@
+INSTALLATION NOTES
+
 I am running a default python3 conda environment
 
 manual installations:
 
-conda install -c conda-forge flask-sqlalchemy
-conda install -c conda-forge geoalchemy2
+sudo rm -rf /home/ubuntu/.local/lib/python3.6/site-packages/
+sudo pip3 install:
 
-have to install this for python3
-https://github.com/PyMySQL/mysqlclient-python 
+	flask-sqlalchemy
+	geoalchemy2
+	shapely
+	flask_login
+	flask_wtf
+	pygcn
+	healpy
+		-> this should install astropy, scipy, matplotlib... etc
+		-> if not astropy is required
+
+git clone: https://github.com/swyatt7/gwtreasuremap
+
+apache server:
+
+install apache2 server
+
+sudo mkdir 
+	/var/www/gwtm/
+	/var/www/gwtm/src/
+	/var/www/gwtm/src/templates/
+	/var/www/gwtm/src/static/
+		-> sudo chmod a+rw /var/wwww/gwtm/src/static/
+	/var/www/gwtm/cron/
+
+sudo cp 
+	gwtm.wsgi /var/www/gwtm/.
+		-> edit the topline of the file so that it has #!/usr/bin/python3
+	-r src/* /var/www/gwtm/src/.
+	-r cron/* /var/www/gwtm/cron/.
+
+-> make sure all the files get copied over, if not you might need to manually copy 
+	gwtm/src/* 
+	gwtm/src/templates/*
+	gwtm/src/static/*
+	
+you will need the configuration file for the sql database as well. in the /var/www/gwtm/config (I can email you a copy)
+
+gwtm configuration file: -> /etc/apache2/sites-available/gwtm.conf
+#################################
+<VirtualHost *:80>
+     ServerName 127.0.1.1
+     ServerAlias 127.0.1.1
+     ServerAdmin swyatt@email.arizona.edu
+     # Give an alias to to start your website url with
+     WSGIScriptAlias / /var/www/gwtm/gwtm.wsgi
+     <Directory /var/www/gwtm/src/>
+                # set permissions as per apache2.conf file
+            #Options FollowSymLinks
+            #AllowOverride None
+            #Require all granted
+            Order allow,deny
+            Allow from all
+     </Directory>
+     ErrorLog ${APACHE_LOG_DIR}/error.log
+     LogLevel warn
+     CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+WSGIPythonPath /usr/bin/python3
+###################################
+
+sudo a2ensite /etc/apache2/sites-available/gwtm.conf
+sudo service apache2 restart
+
+If you want to create your own postgres database:
+
+this sucked to set up
+
+sudo apt install postgresql-10
+sudo apt install postgresql-10-postgis-2.4
+sudo apt install postgresql-10-postgis-scripts
+sudo apt install postgresql-10-pgrouting
+
+sudo -u postgres psql
+> CREATE EXTENSION adminpack;
+> CREATE DATABASE gwtreasuremap;
+> \connect gwtreasuremap;
+> CREATE SCHEMA postgis;
+> ALTER DATABASE gwtreasuremap SET search_path=public, postgis, contrib;
+> \connect gwtreasuremap;
+> CREATE EXTENSION postgis SCHEMA postgis;
+> CREATE EXTENSION postgis_sfcgal SCHEMA postgis;
+> CREATE  EXTENSION pgrouting SCHEMA postgis;
+> \q
+
+sudo service postgresql restart
+sudo -u postgres psql
+
+> CREATE ROLE gwtm_user LOGIN PASSWORD 'changeme123' SUPERUSER;
+\connect gwtreasuremap
+
+> create table users ( ID serial PRIMARY KEY, username varchar(25), email varchar(100), firstname varchar(25), lastname varchar(25), password_hash varchar(128), api_token varchar(128), datecreated timestamp);
+
+> create table usergroups ( ID serial PRIMARY KEY, userid INT, groupid INT, role varchar(25));
+
+> create table groups ( ID serial PRIMARY KEY, name varchar(25), datecreated timestamp);
+
+> create table useractions ( ID serial PRIMARY KEY, modified_table varchar(25), modified_id INT, modified_column varchar(25), prev_value text, new_value text, type varchar(25), time timestamp);
+
+> CREATE TYPE instrument_type AS ENUM ('photometric', 'spectroscopic');
+
+> create table instrument (ID serial PRIMARY KEY, instrument_name varchar(100), instrument_type instrument_type, footprint GEOGRAPHY(POLYGON,4326), datecreated timestamp, submitterID INT);
+
+> CREATE TYPE pointing_status AS ENUM ('planned', 'completed', 'cancelled');
+> CREATE TYPE bandpass AS ENUM ('U', 'B', 'V', 'R', 'I', 'J', 'H', 'K', 'u', 'g', 'r', 'i', 'z', 'UVW1', 'UVW2', 'XRT', 'clear', 'open', 'other');
+
+$$to add enum type -> alter type bandpass add value 'other';
+
+> create table pointing (ID serial PRIMARY KEY, status pointing_status, band bandpass position GEOGRAPHY(POINT,4326), pos_angle float, galaxy_catalog INT, galaxy_catalogID INT, instrumentID INT, depth float, time timestamp,  datecreated timestamp, submitterID INT);
+
+> create table pointing_Event (ID serial PRIMARY KEY, pointingid INT, graceid text);
+
+> create table glade_2p3 (ID serial PRIMARY KEY, pgc_number INT, position GEOGRAPHY(POINT,4326), gwgc_name varchar(50), hyperleda_name varchar(50), _2mass_name varchar(50), sdssdr12_name varchar(50), distance float, distance_error float, redshift float, bmag float, bmag_err float, bmag_abs float, jmag float, jmag_err float, hmag float, hmag_err float, kmag float, kmag_err float, flag1 CHAR, flag2 INT, flag3 INT);
+
+> create table gw_alert (ID serial PRIMARY KEY, graceid text, role text, timesent timestamp, time_of_signal timestamp, packet_type INT, alert_type text, detectors varchar(50), description text, far float, skymap_fits_url text, distance float, distance_error float, prob_bns float, prob_nsbh float, prob_gap float, prob_bbh float, prob_terrestrial float, prob_hasns float, prob_hasremenant float, datecreated timestamp);
+
