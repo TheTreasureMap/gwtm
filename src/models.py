@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -9,9 +9,10 @@ import geoalchemy2
 from enum import Enum,IntEnum
 import os, json
 import datetime
-
+from flask_login import UserMixin
 from src.function import isInt, isFloat
 from src import app
+from src import login
 
 db = SQLAlchemy(app)
 
@@ -88,14 +89,26 @@ class valid_mapping():
         self.valid = False
         self.errors = []
 
+@login.user_loader
+def load_user(id):
+    return users.query.get(int(id))
+
 #API Models
 
-class users(db.Model):
+class users(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(25), index=True, unique=True)
     firstname = db.Column(db.String(25))
     lastname = db.Column(db.String(25))
+    password_hash = db.Column(db.String(128))
     datecreated = db.Column(db.Date)
+    email = db.Column(db.String(100))
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)

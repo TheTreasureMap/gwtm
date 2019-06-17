@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
@@ -11,7 +11,11 @@ import random
 
 from . import function
 from . import models
+from . import forms
 from src import app
+from flask_login import current_user, login_user, logout_user, login_required
+from werkzeug.urls import url_parse
+
 db = models.db
 
 @app.route("/index", methods=["GET"])
@@ -19,17 +23,62 @@ db = models.db
 def home():
     return render_template("index.html")
 
+
 @app.route("/alerts", methods=['GET'])
+@login_required
 def alerts():
     return render_template("alerts.html")
+
 
 @app.route("/contact", methods=['GET'])
 def contact():
     return render_template("contact.html")
 
+
 @app.route("/about", methods=['GET'])
 def about():
     return render_template('about.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect('/index')
+    form = forms.RegistrationForm()
+    if form.validate_on_submit():
+        user = models.users(username=form.username.data, email=form.email.data)
+        user.datecreated = datetime.datetime.now()
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        #flash('Congratulations, you are now a registered user!')
+        return redirect('/login')
+    return render_template('register.html', title='Register', form=form)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = forms.LoginForm()
+    if form.validate_on_submit():
+        user = models.users.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password')
+            print("Invalid username or password")
+            return redirect('login')
+        login_user(user, remember=form.remember_me.data)
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = '/index'
+        return redirect(next_page)
+    return render_template('login.html', form=form)
+
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect('/index')
 
 
 @app.route("/deletetest", methods=["POST"])
@@ -59,6 +108,7 @@ def delete_test_database():
 	db.session.commit()
 
 	return jsonify('Success')
+
 
 @app.route("/populatetest", methods=["POST"])
 def populate_test_database():

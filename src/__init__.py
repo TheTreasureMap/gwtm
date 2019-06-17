@@ -2,8 +2,11 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 app = Flask(__name__)
 
+login = LoginManager(app)
+login.login_view = 'login'
 from . import routes
 from . import function
 
