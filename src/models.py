@@ -13,6 +13,7 @@ from flask_login import UserMixin
 from src.function import isInt, isFloat
 from src import app
 from src import login
+import secrets
 
 db = SQLAlchemy(app)
 
@@ -88,6 +89,7 @@ class valid_mapping():
     def __init__(self):
         self.valid = False
         self.errors = []
+        self.warnings = []
 
 @login.user_loader
 def load_user(id):
@@ -103,12 +105,19 @@ class users(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     datecreated = db.Column(db.Date)
     email = db.Column(db.String(100))
+    api_token = db.Column(db.String(128))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def set_apitoken(self):
+        self.api_token = secrets.token_urlsafe(28)
+
+    def check_apitoken(self, token):
+        return token == self.api_token
 
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -161,10 +170,19 @@ class pointing(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
-    def from_json(self, p, dbinsts, dbusers):
+    def from_json(self, p, dbinsts, userid): #dbusers):
         v = valid_mapping()
 
-        self.status = pointing_status.planned.name
+
+        if 'status' in p:
+            userstatus = p['status']
+            validstatusints = [int(b) for b in pointing_status]
+            validstatusstr = [str(b.name) for b in pointing_status]
+            if userstatus in validstatusints or userstatus in validstatusstr:
+                self.status = userstatus
+        else:
+            v.warnings.append("No status given, or unrecognized status. Setting the status to planned")
+            self.status = pointing_status.planned.name
 
         if 'position' in p:
             pos = p['position']
@@ -202,7 +220,8 @@ class pointing(db.Model):
 
         if 'instrumentid' in p:
             inst = p['instrumentid']
-            validinst = False
+            validinst = Falsevalidbandints = [int(b) for b in bandpass]
+            validbandstr = [str(b.name) for b in bandpass]
             if isInt(inst):
                 insts = [x for x in dbinsts if x.id == int(inst)]
                 if len(insts) > 0:
@@ -242,25 +261,26 @@ class pointing(db.Model):
             v.errors.append("Field \"time\" is required")
 
 
-        if "submitterid" in p:
-            validsubmitter = False
-            submitter = p['submitterid']
-            if isInt(submitter):
-                subs = [x for x in dbusers if x.id == submitter]
-                if len(subs) > 0:
-                    self.submitterid = submitter
-                    validsubmitter = True
-            else:
-                subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
-                if len(subs) > 0:
-                    self.submitterid = [x.id for x in subs][0] 
-                    validsubmitter = True
+#        if "submitterid" in p:
+#            validsubmitter = False
+#            submitter = p['submitterid']
+#            if isInt(submitter):
+#                subs = [x for x in dbusers if x.id == submitter]
+#                if len(subs) > 0:
+#                    self.submitterid = submitter
+#                    validsubmitter = True
+#            else:
+#                subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
+#                if len(subs) > 0:
+#                    self.submitterid = [x.id for x in subs][0] 
+#                    validsubmitter = True
+#
+#            if validsubmitter is False:
+#                v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
+#        else:
+#            v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
 
-            if validsubmitter is False:
-                v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
-        else:
-            v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
-
+        self.submitterid = userid
         self.datecreated = datetime.datetime.now()
 
         if "band" in p:

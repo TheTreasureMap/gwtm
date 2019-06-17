@@ -23,7 +23,7 @@ sudo -u postgres psql
 > CREATE ROLE gwtm_user LOGIN PASSWORD 'changeme123' SUPERUSER;
 \connect gwtreasuremap
 
-> create table users ( ID serial PRIMARY KEY, username varchar(25), email varchar(100), firstname varchar(25), lastname varchar(25), password_hash varchar(128), datecreated timestamp);
+> create table users ( ID serial PRIMARY KEY, username varchar(25), email varchar(100), firstname varchar(25), lastname varchar(25), password_hash varchar(128), api_token varchar(128), datecreated timestamp);
 
 > create table usergroups ( ID serial PRIMARY KEY, userid INT, groupid INT, role varchar(25));
 

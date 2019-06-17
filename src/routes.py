@@ -49,6 +49,7 @@ def register():
         user = models.users(username=form.username.data, email=form.email.data)
         user.datecreated = datetime.datetime.now()
         user.set_password(form.password.data)
+        user.set_apitoken()
         db.session.add(user)
         db.session.commit()
         #flash('Congratulations, you are now a registered user!')
@@ -290,35 +291,50 @@ def add_pointings():
 	else:
 		return jsonify("graceid is required")
 
+	if "api_token" in rd:
+		apitoken = rd['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+		else:
+			userid = user.id
+	else:
+		return jsonify("api_token is required")
+
 	dbinsts = db.session.query(models.instrument.instrument_name,
                                models.instrument.id).all()
 
-	dbusers = db.session.query(models.users.id,
-							   models.users.username,
-							   models.users.firstname,
-							   models.users.lastname).all()
+	#dbusers = db.session.query(models.users.id,
+	#						   models.users.username,
+	#						   models.users.firstname,
+	#						   models.users.lastname).all()
 
 	points = []
 	errors = []
+	warnings = []
 
 	if "pointing" in rd:
 		p = rd['pointing']
 		mp = models.pointing()
-		v = mp.from_json(p, dbinsts, dbusers)
+		v = mp.from_json(p, dbinsts, userid)
 		if v.valid:
 			points.append(mp)
+			if len(v.warnings) > 0:
+				warnings.append(["Object: " + json.dumps(p), v.warnings])
 			db.session.add(mp)
 		else:
 			errors.append(["Object: "+json.dumps(p), v.errors])
-
+            
 	elif "pointings" in rd:
 		pointings = rd['pointings']
 		for p in pointings:
 			mp = models.pointing()
-			v = mp.from_json(p, dbinsts, dbusers)
+			v = mp.from_json(p, dbinsts, userid)
 			if v.valid:
 				points.append(mp)
 				db.session.add(mp)
+				if len(v.warnings) > 0:
+					warnings.append(["Object: " + json.dumps(p), v.warnings])
 			else:
 				errors.append(["Object: "+json.dumps(p), v.errors])
 	else: 
@@ -335,12 +351,19 @@ def add_pointings():
 
 	db.session.flush()
 	db.session.commit()
-	if len(points) == 0:
-		errors.append("You can find API documentation here: www.treasuremap_api_documentation.com")
-		return jsonify(errors)
-	if len(errors) == 0:
-		return jsonify([x.id for x in points])
-	return jsonify([x.id for x in points], errors)
+	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
+	#if len(points) == 0:
+	#	errors.append("You can find API documentation here: www.treasuremap_api_documentation.com")
+	#	return jsonify(errors)
+	#if len(errors) == 0:
+	#	if len(warnings) > 0:
+	#		return jsonify([x.id for x in points], ["WARNINGS", warnings])
+	#	else:
+	#		return jsonify([x.id for x in points])
+	#if len(warnings) > 0:
+	#	return jsonify([x.id for x in points], ["ERRORS", errors], ["WARNINGS", warnings])
+	#else:
+	#	return jsonify([x.id for x in points], ["ERRORS", errors])
 
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
