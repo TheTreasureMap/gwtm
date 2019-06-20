@@ -87,7 +87,7 @@ body {
       <a href="/register">Register</a>
       {% else %}
       <a href="/logout">Logout</a>
-      <a href="/manage_user">Manage</a>
+      <a href="{{ url_for('manage_user') }}">Manage</a>
       {% endif %}
     </div>
   </div> 
