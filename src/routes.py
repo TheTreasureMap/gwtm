@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, request, jsonify, render_template, redirect, flash
+from flask import Flask, request, jsonify, render_template, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
 import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
@@ -66,7 +66,7 @@ def login():
         user = models.users.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
-            print("Invalid username or password")
+            #print("Invalid username or password")
             return redirect('login')
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
@@ -74,6 +74,21 @@ def login():
             next_page = '/index'
         return redirect(next_page)
     return render_template('login.html', form=form)
+
+@app.route('/manage_user', methods=['GET', 'POST'])
+@login_required
+def manage_user():
+
+	userid = current_user.id
+	user = models.users.query.filter_by(id=userid).first()
+	groupfilter = []
+	groupfilter.append(models.usergroups.groupid == models.groups.id)
+	groupfilter.append(models.usergroups.userid == userid)
+	groups = db.session.query(models.groups.name, models.usergroups.role).filter(*groupfilter).all()
+	#form = froms.ManageUserForm():
+	#if form.validate_on_submit():
+
+	return render_template('manage_user.html', user=user, groups=groups)
 
 
 @app.route('/logout')
@@ -170,18 +185,6 @@ def add_pointings():
 	db.session.flush()
 	db.session.commit()
 	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
-	#if len(points) == 0:
-	#	errors.append("You can find API documentation here: www.treasuremap_api_documentation.com")
-	#	return jsonify(errors)
-	#if len(errors) == 0:
-	#	if len(warnings) > 0:
-	#		return jsonify([x.id for x in points], ["WARNINGS", warnings])
-	#	else:
-	#		return jsonify([x.id for x in points])
-	#if len(warnings) > 0:
-	#	return jsonify([x.id for x in points], ["ERRORS", errors], ["WARNINGS", warnings])
-	#else:
-	#	return jsonify([x.id for x in points], ["ERRORS", errors])
 
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
@@ -340,9 +343,9 @@ def del_pointings():
 		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
 		filter2.append(models.pointing_event.pointingid.in_(json.loads(args.get('ids'))))
 
-	valid_api_token = validate_api_token(args)
+	#valid_api_token = validate_api_token(args)
 
-	if len(filter1) > 0 and valid_api_token:
+	if len(filter1) > 0: #and valid_api_token:
 		pointings = db.session.query(models.pointing).filter(*filter1)
 		pointings.delete(synchronize_session=False)
 
