@@ -1,0 +1,9 @@
+This directory hosts an example visualization build from data for S190510g.
+There is a geojson contour file that hosts the pre-calculated GW contours paths,if you want to recalculate, you can also do that in the notebook, but it takes a while to fun.
+
+There are also two pickled files in here, containing a list of UVOT and XRT polygons corresponding to the pointings Swift did for this event.
+
+The notebook should be generally self explanatory. I removed the BAT stuff that was in the demo I showed because right now that relies on internal Swift code I have yet to release.
+
+
+The default output of the notebook is the file 'temp-plot.html' which shows the vizualiztion built. There is also a method to save only the div, and then insert that as desired within a larger webpage/html framework.
