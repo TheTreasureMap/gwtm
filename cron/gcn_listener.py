@@ -33,7 +33,6 @@ def handler(payload, root):
 
     for key, value in params.items():
         print(key, '=', value)
-
     keys = params.keys()
 
     notices = [150, 151, 152, 153, 164]
@@ -92,6 +91,8 @@ def handler(payload, root):
         db.session.add(gwa)
         print("commiting\n")
         db.session.commit()
+        #print("sleeping quit now")
+        #time.sleep(20)
     else:
         print("\nNot Ligo, Don't Care\n")
 
