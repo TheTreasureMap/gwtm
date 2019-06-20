@@ -81,188 +81,6 @@ def logout():
     logout_user()
     return redirect('/index')
 
-
-@app.route("/deletetest", methods=["POST"])
-def delete_test_database():
-
-	users = db.session.query(models.users)
-	users.delete(synchronize_session=False)
-
-	groups = db.session.query(models.groups)
-	groups.delete(synchronize_session=False)
-
-	ug = db.session.query(models.usergroups)
-	ug.delete(synchronize_session=False)
-
-	insts = db.session.query(models.instrument)
-	insts.delete(synchronize_session=False)
-
-	pointings = db.session.query(models.pointing)
-	pointings.delete(synchronize_session=False)
-
-	pe = db.session.query(models.pointing_event)
-	pe.delete(synchronize_session=False)
-
-	gwa = db.session.query(models.gw_alert)
-	gwa.delete(synchronize_session=False)
-
-	db.session.commit()
-
-	return jsonify('Success')
-
-
-@app.route("/populatetest", methods=["POST"])
-def populate_test_database():
-	#create 3 groups
-
-	u1 = models.users(
-		username = "username1",
-		firstname = "firstname1",
-		lastname = "lastname1",
-		datecreated = datetime.datetime.now()
-		)
-
-	u2 = models.users(
-		username = "username2",
-		firstname = "firstname2",
-		lastname = "lastname2",
-		datecreated = datetime.datetime.now()
-		)
-
-	u3 = models.users(
-		username = "username3",
-		firstname = "firstname3",
-		lastname = "lastname3",
-		datecreated = datetime.datetime.now()
-		)
-
-	db.session.add(u1); db.session.add(u2); db.session.add(u3)
-
-	#create 2 groups:
-
-	g1 = models.groups(
-		name = "group1",
-		datecreated = datetime.datetime.now()
-		)
-
-	g2 = models.groups(
-		name = "group2",
-		datecreated = datetime.datetime.now()
-		)
-
-	db.session.add(g1); db.session.add(g2)
-
-	db.session.flush()
-	#create 4 usergroups
-
-	ug1 = models.usergroups(
-		userid = u1.id,
-		groupid = g1.id,
-		role = "test1"
-		)
-
-	ug2 = models.usergroups(
-		userid = u1.id,
-		groupid = g2.id,
-		role = "test2"
-		)
-
-	ug3 = models.usergroups(
-		userid = u2.id,
-		groupid = g1.id,
-		role = "test3"
-		)
-
-	ug4 = models.usergroups(
-		userid = u3.id,
-		groupid = g2.id,
-		role = "test4"
-		)
-
-	db.session.add(ug1); db.session.add(ug2); db.session.add(ug3); db.session.add(ug4)
-
-	#create 2 instruments (1 for each group)
-
-	i1 = models.instrument(
-		instrument_name = "inst1",
-		instrument_type = models.instrument_type.photometric,
-		footprint = "POLYGON((0 0,1 0,1 1,0 1,0 0))",
-		datecreated = datetime.datetime.now(),
-		submitterid = 1)
-
-
-	i2 = models.instrument(
-		instrument_name = "inst2",
-		instrument_type = models.instrument_type.spectroscopic,
-		footprint = "POLYGON((0 0,2 0,2 2,0 2,0 0))",
-		datecreated = datetime.datetime.now(),
-		submitterid = 2)
-
-	db.session.add(i1); db.session.add(i2)
-	db.session.flush()
-
-	#create 2 test alerts
-
-	gwa1 = models.gw_alert(
-		graceid = "graceid1",
-		datecreated = datetime.datetime.now(),
-		prob_bns = 0.99,
-		distance = 30,
-		description = "woahbuddy")
-
-
-	gwa2 = models.gw_alert(
-		graceid = "graceid2",
-		datecreated = datetime.datetime.now(),
-		prob_bns = 0.88,
-		prob_terrestrial = 0.12,
-		distance = 33,
-		description = "woahbuddy")
-
-	db.session.add(gwa1); db.session.add(gwa2)
-
-	points = []
-	for f in range(0,15):
-		instid = i1.id if random.random() > 0.5 else i2.id
-
-		randu = random.random()
-		if randu < 0.33:
-			userid = u1.id
-		elif randu >= 0.33 and randu < 0.666:
-			userid = u2.id
-		else:
-			userid = u3.id
-
-		timedelta = random.random() * 30 
-		timedelta = timedelta if random.random() > 0.5 else -1*timedelta
-		ra, dec = random.random()*180, random.random()*90
-		p = models.pointing(
-			status = models.pointing_status.planned,
-			position = "POINT("+str(ra)+" "+str(dec)+")",
-			instrumentid = instid,
-			time = datetime.datetime.now()+datetime.timedelta(days = random.randint(-15,15)),
-			datecreated = datetime.datetime.now(),
-			submitterid = userid,
-			pos_angle = random.random()*90,
-			band=models.bandpass(random.randint(1,3)))
-
-		points.append(p)
-		db.session.add(p)
-
-	db.session.flush()
-
-	for p in points:
-		gid = "graceid1" if random.random() > 0.5 else "graceid2"
-		pe = models.pointing_event(
-			graceid = gid,
-			pointingid = p.id)
-		db.session.add(pe)
-
-	db.session.flush()
-	db.session.commit()
-	return jsonify("Success")
-
-
 #API Endpoints
 
 #Post Pointing/s
@@ -522,16 +340,20 @@ def del_pointings():
 		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
 		filter2.append(models.pointing_event.pointingid.in_(json.loads(args.get('ids'))))
 
-	if len(filter1) > 0:
+	valid_api_token = validate_api_token(args)
+
+	if len(filter1) > 0 and valid_api_token:
 		pointings = db.session.query(models.pointing).filter(*filter1)
 		pointings.delete(synchronize_session=False)
 
 		pointing_es = db.session.query(models.pointing_event).filter(*filter2)
 		pointing_es.delete(synchronize_session=False)
 
-		db.session.commit()
 
+
+		db.session.commit()
 		return jsonify("Deleted Pointings successfully")
+
 	else:
 		return jsonify("Please Don't delete the ENTIRE POINTING table")
 
@@ -543,18 +365,54 @@ def post_instruments():
 	#validate inputs
 
 	inst = models.instrument(
-			instrument_name = rd['instrument_name'],
-			instrument_type = rd['instrument_type'],
-			footprint = rd['footprint'],
-			datecreated = rd['datecreated'],
-			submitterid = rd['submitterid']
+			instrument_name = "Sinistro",
+			instrument_type = "photometric",
+			footprint = "POLYGON((-0.22083 -0.22083, -0.22083 0.22083, 0.22083 0.22083, 0.22083 -0.22083, -0.22083 -0.22083))",
+			datecreated = datetime.datetime.now(),
+			submitterid = 2
 			)
 
-	db.session.add(inst)
+
+	dlt40 = models.instrument(
+    	instrument_name = "DLT40",
+    	instrument_type = "photometric",
+		footprint = "POLYGON((-0.08333 -0.08333, -0.08333 0.08333, 0.08333 0.08333, 0.08333 -0.08333, -0.08333 -0.08333))",
+		datecreated = datetime.datetime.now(),
+        submitterid = 2
+        )
+
+	ml2 = models.instrument(
+        instrument_name = "MLS10KCCD-CSS",
+        instrument_type = "photometric",
+        footprint = "POLYGON((-1.118 -1.118, -1.118 1.118, 1.118 1.118, 1.118 -1.118, -1.118 -1.118))",
+        datecreated = datetime.datetime.now(),
+        submitterid = 2
+        )
+
+	swiftuvot = models.instrument(
+        instrument_name = "Swift_UVOT",
+        instrument_type = "photometric",
+        footprint = "POLYGON((-0.141667 -0.141667, -0.141667 0.141667, 0.141667 0.141667, 0.141667 -0.141667, -0.141667 -0.141667))",
+        datecreated = datetime.datetime.now(),
+        submitterid = 2
+        )
+
+	swiftxrt = models.instrument(
+        instrument_name = "Swift_XRT",
+        instrument_type = "photometric",
+        footprint = "POLYGON((0.2 0.0,0.1827090915285202 -0.08134732861516003,0.13382612127177168 -0.14862896509547882,0.06180339887498949 -0.1902113032590307,-0.020905692653530667 -0.19890437907365469,-0.09999999999999996 -0.17320508075688779,-0.16180339887498948 -0.11755705045849466,-0.19562952014676113 -0.041582338163551946,-0.19562952014676116 0.041582338163551814,-0.1618033988749895 0.11755705045849461,-0.10000000000000009 0.17320508075688767,-0.020905692653530848 0.19890437907365466,0.06180339887498945 0.19021130325903074,0.13382612127177157 0.14862896509547893,0.1827090915285201 0.0813473286151602,0.2 0.0))",
+        datecreated = datetime.datetime.now(),
+        submitterid = 2
+        )
+
+	db.session.add(dlt40)
+	db.session.add(ml2)
+	db.session.add(swiftuvot)
+	db.session.add(swiftxrt)
 	db.session.flush()
 	db.session.commit()
 
-	return inst.id
+	return jsonify("success")
 
 
 #Get Instrument/s
