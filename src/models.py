@@ -220,8 +220,7 @@ class pointing(db.Model):
 
         if 'instrumentid' in p:
             inst = p['instrumentid']
-            validinst = Falsevalidbandints = [int(b) for b in bandpass]
-            validbandstr = [str(b.name) for b in bandpass]
+            validinst = False
             if isInt(inst):
                 insts = [x for x in dbinsts if x.id == int(inst)]
                 if len(insts) > 0:
@@ -248,7 +247,7 @@ class pointing(db.Model):
 
         if 'pos_angle' in p:
             if isFloat(p['pos_angle']):
-                self.depth = p['pos_angle']
+                self.pos_angle = p['pos_angle']
             else:        
                 v.errors.append('Invalid pos_angle. Must be decimal')
 
