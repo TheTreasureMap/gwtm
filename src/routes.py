@@ -27,7 +27,15 @@ def home():
 @app.route("/alerts", methods=['GET'])
 @login_required
 def alerts():
-    return render_template("alerts.html")
+	alerts = models.gw_alert.query.filter_by(role="observation").all()
+	return render_template("alerts.html", alerts=alerts)
+
+
+@app.route("/gw_event", methods=['GET'])
+@login_required
+def ligo_alert():
+	#get graceID and display visulization.
+	return render_template('gw_event.html', graceid=graceid)
 
 
 @app.route("/contact", methods=['GET'])
@@ -363,7 +371,7 @@ def del_pointings():
 
 @app.route("/instruments", methods=["POST"])
 def post_instruments():
-	rd = request.get_json()
+	#rd = request.get_json()
 
 	#validate inputs
 
@@ -408,12 +416,13 @@ def post_instruments():
         submitterid = 2
         )
 
+	db.session.add(inst)
 	db.session.add(dlt40)
 	db.session.add(ml2)
 	db.session.add(swiftuvot)
 	db.session.add(swiftxrt)
-	db.session.flush()
-	db.session.commit()
+	#db.session.flush()
+	#db.session.commit()
 
 	return jsonify("success")
 

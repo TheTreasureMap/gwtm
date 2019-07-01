@@ -2,10 +2,8 @@ import os, sys, requests, json
 
 
 def main():
-    BASE = 'http://127.0.0.1:5000/api/v0/'
-    #BASE = 'http://treasuremap.space/api/v0/'
+    BASE = 'http://treasuremap.space/api/v0/'
     TARGET = 'pointings'
-    METHOD = 'POST'
 
     #To post pointings you need to first declare the LIGO Gravitational graceid
     graceid = "graceid1"
@@ -30,7 +28,7 @@ def main():
 
     #Not required (but suggested if applicable)
     #   status:
-    #       can be either planned or observed. default to planned observation status
+    #       can be either planned or completed. default to planned observation status
     #   galaxy_catalog:
     #       ID of galaxy catalog: -> glade = 1
     #   galaxy_catalogid:
@@ -43,7 +41,7 @@ def main():
     #EXAMPLE:
 
     pointings = [{
-            "status":"observed",
+            "status":"completed",
             "position":"POINT(42.0 42.0)",
             "instrumentid":"1",
             "pos_angle":0.0,
