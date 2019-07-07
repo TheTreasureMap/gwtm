@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block content %}
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    .collapsible {
+      background-color: #777;
+      color: white;
+      cursor: pointer;
+      padding: 18px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+      font-size: 15px;
+    }
+    
+    .active, .collapsible:hover {
+      background-color: #555;
+    }
+    
+    .content {
+      padding: 0 18px;
+      display: none;
+      overflow: hidden;
+      background-color: #f1f1f1;
+    }
+    * {
+    box-sizing: border-box;
+    }
+
+    /* Create two equal columns that floats next to each other */
+    .column {
+    float: left;
+    width: 50%;
+    padding: 10px;
+    }
+
+    /* Clear floats after the columns */
+    .row:after {
+    content: "";
+    display: table;
+    clear: both;
+    }
+    </style>
+    </head>
+    <body>
+    
+    <h2>Documentation</h2>
+    
+    <p><i>Notes</i></p>
+    <ul>
+        <li>Before being able to POST or DELETE through the api, you must register an account through this website. Then you will be issued an API token that will be used in those REST Api methods</li>
+    </ul>
+
+    <p>API Endpoints:</p>
+    <button class="collapsible">Pointings</button>
+    <div class="content">
+        <p>GET, POST, and DELETE your telescope pointings</p>
+        <button class="collapsible">POST</button>
+        <div class="content">
+            <div class="column">
+                <h2>REST API METHOD: POST Instructions</h2>
+                <p><b>USAGE:</b></p>
+                <p><i>/api/v0/pointings</i></p>
+
+                <p><i>Notes</i></p>
+                <ul>
+                    <li>Upon successful entry, you will be returned a list of pointing ids</li>
+                    <li>Warnings will be successfully entered, and will notify you of the warning and json object</li>
+                    <li>Errors will not be successfully entered, and will notify you of the error and json object</li>
+                </ul>
+
+                <p><b>JSON Parameters</b></p>
+                <ul>
+                    <li><i>graceid</i> - string value of the gw_alert graceid</li>
+                    <li><i>api_token</i> -  authentication api token</li>
+                    <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
+                </ul>
+
+                <p>Valid <b>pointing</b> class parameters</p>
+                <p><b>REQUIRED</b></p>
+                <ul>
+                    <li><i>position</i>: two acceptable formats</li>
+                    <ul>
+                        <li>geometry type: <b>POINT(RA, DEC)</b></li>
+                        <li>simply pass two json fields that are <b>RA</b> and <b>DEC</b> which must be <b>decimal</b></li>
+                    </ul>
+                    <li><i>instrumentid</i></li>
+                    <ul>
+                        <li>Can be <b>ID</b> or <b>name</b> of valid instrument</li>
+                    </ul>
+                    <li><i>time</i></li>
+                    <ul>
+                        <li>Time of <b>planned</b>/<b>completed</b> pointing</li>
+                        <li>Must be <b>%Y-%m-%dT%H:%M:%S</b> format; e.g. 1991-12-23T19:15:11</li>
+                    </ul>
+                    <li><i>status</i></li>
+                    <ul>
+                        <li>Must be either <b>planned</b> or <b>completed</b></li>
+                    </ul>
+                    <li><i>depth</i></li>
+                    <ul>
+                        <li>limiting magnitude of exposure <b>decimal</b></li>
+                    </ul>
+                    <li><i>band</i></li>
+                    <ul>
+                        <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, other</li>
+                    </ul>
+                </ul>
+
+                <p><b>NOT REQUIRED</b></p>
+                <ul>
+                    <li><i>galaxy_catalog</i></li>
+                    <ul>
+                        <li>id of galaxy catalog (glade_2p3 = 1)</li>
+                    </ul>
+                    <li><i>galaxy_catalogid</i></li>
+                    <ul>
+                        <li>id of galaxy in the galaxy_catalog</li>
+                    </ul>
+                    <li><i>pos_angle</i></li>
+                    <ul>
+                        <li>Position angle of telescope exposure</li>
+                    </ul>
+                </ul>
+            </div>
+            <div class="column" style="background-color:#bbb;">
+                <h2>JSON example</h2>
+                <pre>
+                <code class="json">
+                    Body = {
+                        "graceid":"graceid1",
+                        "token":"abcdefghijkl",
+                        "pointings":[
+                        {
+                            "ra":42,
+                            "dec":42.0,
+                            "band":"V",
+                            "galaxy_catalog":"1",
+                            "galaxy_catalogid":"2",
+                            "instrumentid":"20",
+                            "depth":"19.5",
+                            "time":"2019-05-22T12:30:59",
+                            "pos_angle":"45.0",
+                            "status":"completed"
+                        },
+                        {
+                            "position":"POINT(42, 42)",
+                            "band":"U",
+                            "galaxy_catalog":"1",
+                            "galaxy_catalogid":"2",
+                            "instrumentid":"instrumentname1",
+                            "depth":"19.5",
+                            "time":"2019-05-22T12:30:59",
+                            "status":"planned"	
+                        }]
+                    }
+                </code>
+                </pre>
+            </div>
+        </div>
+
+        <button class="collapsible">GET</button>
+        <div class="content">
+            <div class="column">
+                <h2>REST API METHOD: GET Instructions</h2>
+                <p><b>Usage</b></p>
+                <p><i>/api/v0/pointings?param1=value1&amp;param2=value2…</i></p>
+        
+                <p><b>Parameters</b></p>
+                <ul>
+                    <li><i>graceid=gid1</i></li>
+                    <li><i>id=id1</i></li>
+                    <li><i>ids=[id1, id2, id3...]</i></li>
+                    <li><i>status=status1</i></li>
+                    <li><i>statuses=[status1, status2...]</i></li>
+                    <ul>
+                        <li>status are <b>planned, completed,</b> and <b>cancelled</b></li>
+                    </ul>
+                    <li><i>completed_after=datetime1</i></li>
+                    <li><i>completed_before=datetime1</i></li>
+                    <li><i>planned_after=datetime1</i></li>
+                    <li><i>planned_before=datetime1</i></li>
+                    <ul>
+                        <li>All datetimes should be in <b> %Y-%m-%dT%H:%M:%S</b>. e.g. 1991-12-23T19:15:11</li>
+                    </ul>
+                    <li><i>group=group1</i></li>
+                    <ul>
+                        <li>Can be group <b>id</b> or group <b>name</b></li>
+                    </ul>
+                    <li><i>groups=[group1, group2...]</i></li>
+                    <ul>
+                        <li>Can be a list of group ids or a list of group names</li>
+                    </ul>
+                    <li><i>user=user1</i></li>
+                    <ul>
+                        <li>Can be user <b>id</b>, or <b>username</b>, or user's <b>'firstname lastname'</b></li>
+                    </ul>
+                    <li><i>users=[user1, user2...]</i></li>
+                    <ul>Notes
+
+                        <li>Can be a list user <b>ids</b>, list of <b>usernames</b>, or a list of user's <b>'firstname lastname'</b></li>
+                    </ul>
+                    <li><i>band=band1</i></li>
+                    <li><i>bands=[band1, band2, band3...]</i></li>
+                    <ul>
+                        <li>Valid bands are in [U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, other]</li>
+                    </ul>
+                    <li><i>instrument=inst1</i></li>
+                    <li><i>instruments=[inst1, inst2, inst3...]</i></li>
+                    <ul>
+                        <li>Can be a list of instrument <b>ids</b> or a list of instrument <b>names</b></li>
+                    </ul>
+                </ul>
+            </div>Notes
+
+            <div class="column" style="background-color:#bbb;">
+                <h2>GET Examples</h2>
+                <p>GET all planned pointings taken in XRT for graceid gw170817:</p>
+                <ul>
+                    <li><i>/api/v0/pointings?band=XRT&amp;status=planned&amp;graceid=gw170817</i></li>
+                </ul>
+            </div>
+        </div>
+
+        <button class="collapsible">DELETE</button>
+        <div class="content">
+            <div class="column">
+                <h2>REST API METHOD: DELETE Instructions</h2>
+                <p><i>NOTES</i></p>
+                <ul>
+                    <li>Will simply update all pointings' statuses to <b>cancelled</b></li>
+                </ul>
+                <p><b>USAGE</b></p>
+                <p><i>/api/v0/pointings?param=value1</i></p>
+                <p><b>Parameters</b></p>
+                <ul>
+                    <li>api_token=abcdefghijkl</li>
+                    <li>id=id1</li>
+                    <li>ids=[id1, id2, id3...]</li>
+                </ul>
+            </div>
+            <div class="column" style="background-color:#bbb;">
+                <h2>DELETE Examples</h2>
+                <p><i>/api/v0/pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]</i></p>
+            </div>
+        </div>
+    </div>
+
+    <button class="collapsible">Instruments</button>
+    <div class="content">
+        <div class="column">
+            <h2>REST API METHOD: GET Instructions</h2>
+            <p><b>Usage</b></p>
+            <p><i>/api/v0/instruments?param1=value1&amp;param2=value2…</i></p>
+    
+            <p><b>Parameters</b></p>
+            <ul>
+                <li><i>id=id1</i></li>
+                <li><i>ids=[id1, id2, id3...]</i></li>
+                <li><i>name=name1</i></li>
+                <li><i>names=[name1, name2, name3...]</i></li>
+                <li><i>type=type1</i></li>
+                <ul>
+                    <li>Instrument types are <b>spectroscopic, photometric</b></li>
+                </ul>
+            </ul>
+        </div>
+        <div class="column" style="background-color:#bbb;">
+            <h2>GET Examples</h2>
+            <p>GET all photometric instruments:</p>
+            <ul>
+                <li><i>/api/v0/instruments?type=photometric</i></li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+    
+    for (i = 0; i < coll.length; i++) {
+      coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        if (content.style.display === "block") {
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
+      });
+    }
+    </script>
+    
+    </body>
+
+{% endblock %}

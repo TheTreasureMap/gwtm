@@ -28,6 +28,7 @@ def home():
 @login_required
 def alerts():
 	alerts = models.gw_alert.query.filter_by(role="observation").all()
+	alerts = list(set([a.graceid for a in alerts]))
 	return render_template("alerts.html", alerts=alerts)
 
 
@@ -48,6 +49,11 @@ def about():
     return render_template('about.html')
 
 
+@app.route("/documentation", methods=['GET'])
+def documentation():
+	return render_template('documentation.html')
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -60,9 +66,8 @@ def register():
         user.set_apitoken()
         db.session.add(user)
         db.session.commit()
-        #flash('Congratulations, you are now a registered user!')
         return redirect('/login')
-    return render_template('register.html', title='Register', form=form)
+    return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -329,7 +334,28 @@ def get_pointings():
 				ors.append(models.users.lastname.contains(u.strip()))
 			filter.append(fsq.sqlalchemy.or_(*ors))
 			filter.append(models.users.id == models.pointing.submitterid)
-		
+	
+	if "instrument" in args:
+		inst = args.get('instrument')
+		if inst.isdigit():
+			filter.append(models.pointing.instrumentid == int(inst))
+		else:
+			filter.append(models.pointing.instrumentid == models.instrument.id)
+			filter.append(models.instrument.instrument_name.contains(inst))
+
+	if "instruments" in args:
+		try:
+			insts = json.loads(args.get('instruments'))
+			filter.append(models.pointing.instrumentid.in_(insts))
+		except:
+			insts = args.get('instruments')
+			insts = insts.split('[')[1].split(']')[0].split(',') 
+			ors = []
+			for i in insts:
+				ors.append(models.instrument.instrument_name.contains(i.strip()))
+			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(models.instrument.id == models.pointing.instrumentid)
+
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.json for x in pointings]
 
@@ -341,6 +367,13 @@ def get_pointings():
 @app.route("/api/v0/pointings", methods=["DELETE"])
 def del_pointings():
 	args = request.args
+
+
+	if "api_token" in args:
+		apitoken = arg['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
 
 	filter1 = []
 	filter2 = []
@@ -369,62 +402,9 @@ def del_pointings():
 		return jsonify("Please Don't delete the ENTIRE POINTING table")
 
 
-@app.route("/instruments", methods=["POST"])
-def post_instruments():
-	#rd = request.get_json()
-
-	#validate inputs
-
-	inst = models.instrument(
-			instrument_name = "Sinistro",
-			instrument_type = "photometric",
-			footprint = "POLYGON((-0.22083 -0.22083, -0.22083 0.22083, 0.22083 0.22083, 0.22083 -0.22083, -0.22083 -0.22083))",
-			datecreated = datetime.datetime.now(),
-			submitterid = 2
-			)
-
-
-	dlt40 = models.instrument(
-    	instrument_name = "DLT40",
-    	instrument_type = "photometric",
-		footprint = "POLYGON((-0.08333 -0.08333, -0.08333 0.08333, 0.08333 0.08333, 0.08333 -0.08333, -0.08333 -0.08333))",
-		datecreated = datetime.datetime.now(),
-        submitterid = 2
-        )
-
-	ml2 = models.instrument(
-        instrument_name = "MLS10KCCD-CSS",
-        instrument_type = "photometric",
-        footprint = "POLYGON((-1.118 -1.118, -1.118 1.118, 1.118 1.118, 1.118 -1.118, -1.118 -1.118))",
-        datecreated = datetime.datetime.now(),
-        submitterid = 2
-        )
-
-	swiftuvot = models.instrument(
-        instrument_name = "Swift_UVOT",
-        instrument_type = "photometric",
-        footprint = "POLYGON((-0.141667 -0.141667, -0.141667 0.141667, 0.141667 0.141667, 0.141667 -0.141667, -0.141667 -0.141667))",
-        datecreated = datetime.datetime.now(),
-        submitterid = 2
-        )
-
-	swiftxrt = models.instrument(
-        instrument_name = "Swift_XRT",
-        instrument_type = "photometric",
-        footprint = "POLYGON((0.2 0.0,0.1827090915285202 -0.08134732861516003,0.13382612127177168 -0.14862896509547882,0.06180339887498949 -0.1902113032590307,-0.020905692653530667 -0.19890437907365469,-0.09999999999999996 -0.17320508075688779,-0.16180339887498948 -0.11755705045849466,-0.19562952014676113 -0.041582338163551946,-0.19562952014676116 0.041582338163551814,-0.1618033988749895 0.11755705045849461,-0.10000000000000009 0.17320508075688767,-0.020905692653530848 0.19890437907365466,0.06180339887498945 0.19021130325903074,0.13382612127177157 0.14862896509547893,0.1827090915285201 0.0813473286151602,0.2 0.0))",
-        datecreated = datetime.datetime.now(),
-        submitterid = 2
-        )
-
-	db.session.add(inst)
-	db.session.add(dlt40)
-	db.session.add(ml2)
-	db.session.add(swiftuvot)
-	db.session.add(swiftxrt)
-	#db.session.flush()
-	#db.session.commit()
-
-	return jsonify("success")
+#@app.route("/instruments", methods=["POST"])
+#def post_instruments():
+#	return jsonify("success")
 
 
 #Get Instrument/s
@@ -446,6 +426,18 @@ def get_instruments():
 		ids = json.loads(args.get('ids'))
 		print(ids)
 		filter.append(models.instrument.id.in_(ids))
+	if "name" in args:
+		name = args.get('name')
+		filter.append(models.instrument.instrument_name.contains(name))
+	if "names" in args:
+		insts = args.get('instruments')
+		insts = insts.split('[')[1].split(']')[0].split(',') 
+		ors = []
+		for i in insts:
+			ors.append(models.instrument.instrument_name.contains(i.strip()))
+		filter.append(fsq.sqlalchemy.or_(*ors))
+		filter.append(models.instrument.id == models.pointing.instrumentid)
+
 	if "type" in args:
 		#validate
 		_type = args.get('type')
