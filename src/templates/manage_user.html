@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>User: {{ user.username }}</h1>
+	<div style="padding-left:16px">
+    <h2>User: {{ user.username }}</h2>
     <hr>
     <p>
     Your API Token: <b>{{ user.api_token }}</b>
     </p>
     {% if groups %}
-    	<ul>
-    	<h1> Your Groups </h1>
+		<h3> Your Groups </h3>
+		<ul>
     	{% for g in groups %}
-    		<p> Group: <b> {{ g.name }}</b></p>
-    		<p>     Role: {{ g.role }}</p>
-    	{% endfor %}
-    	</ul>
+			<li> Group: <b> {{ g.name }}</b></li>
+			<ul>
+				<p>Role: {{ g.role }}</p>
+			</ul>
+		{% endfor %}
+		</ul>
 	{% endif %}
+	</div>
 {% endblock %}
