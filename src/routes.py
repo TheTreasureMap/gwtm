@@ -2,8 +2,10 @@
 
 from flask import Flask, request, jsonify, render_template, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
+import geoalchemy2
 from enum import Enum
 
 import os, json, datetime
@@ -102,6 +104,63 @@ def manage_user():
 	#if form.validate_on_submit():
 
 	return render_template('manage_user.html', user=user, groups=groups)
+
+@app.route('/search_pointings', methods=['GET', 'POST'])
+@login_required
+def search_pointings():
+
+	form = forms.SearchPointingsForm()
+	form.populate_graceids()
+
+	if form.validate_on_submit():
+		filter = []
+		filter.append(models.pointing_event.graceid.contains(form.graceids.data))
+		filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+
+		if form.status_choices.data != '' and form.status_choices.data != 'all':
+			filter.append(models.pointing.status == form.status_choices.data)
+
+		if len(form.band_choices.data):
+			if "all" not in form.band_choices.data:
+				print(form.band_choices.data)
+				filter.append(models.pointing.band.in_(form.band_choices.data))
+
+		filter.append(models.pointing.submitterid == models.users.id)
+		filter.append(models.pointing.instrumentid == models.instrument.id)
+
+		results = db.session.query(models.pointing.id,
+								   func.ST_AsText(models.pointing.position).label('position'),
+								   models.pointing.instrumentid,
+								   models.pointing.band,
+								   models.pointing.pos_angle,
+								   models.pointing.depth,
+								   models.pointing.time,
+								   models.pointing.status,
+								   models.instrument.instrument_name,
+								   models.users.username
+								   ).filter(*filter).all()
+
+		#for r in results:
+		#	r.position = str(geoalchemy2.shape.to_shape(r.position))
+
+		return render_template('search_pointings.html', form=form, search_result=results)
+	return render_template('search_pointings.html', form=form)
+
+
+@app.route('/search_instruments', methods=['GET', 'POST'])
+@login_required
+def search_instruments():
+	form = forms.SearchInstrumentsForm()
+	if request.method == 'POST':
+		filter = []
+		if form.name.data != '':
+			filter.append(models.instrument.instrument_name.contains(form.name.data))
+		if form.types.data != '' and form.types.data != 'all':
+			filter.append(models.instrument.instrument_type == form.types.data)
+		results = db.session.query(models.instrument).filter(*filter).all()
+		return render_template('search_instruments.html', form=form, search_result=results)
+	return render_template('search_instruments.html', form=form)
 
 
 @app.route('/logout')

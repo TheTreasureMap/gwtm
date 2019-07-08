@@ -1,7 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField, widgets
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from . import models
+
+db = models.db
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -28,5 +30,35 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+
 class ManageUserForm(FlaskForm):
-    pass
+    submit = SubmitField('Search')
+
+
+class SearchPointingsForm(FlaskForm):
+    graceids = SelectField('Grace ID', validators=[DataRequired()])
+
+    bands = [(m.name, m.name) for m in models.bandpass]
+    bands.append(('all', 'All'))
+    #band_choices = SelectMultipleField('Bandpasses', choices=bands, option_widget=widgets.CheckboxInput(), widget=widgets.ListWidget(prefix_label=False))
+    band_choices = SelectMultipleField('Bandpasses', choices=bands)
+
+    statuses = [(m.name, m.name) for m in models.pointing_status]
+    statuses.append(('all', 'All'))
+    status_choices = SelectField('Status', choices=statuses)
+
+
+    submit = SubmitField('Search')
+
+    def populate_graceids(self):
+        alerts = models.gw_alert.query.filter_by(role='observation').all()
+        alerts = list(set([a.graceid for a in alerts]))
+        self.graceids.choices = [(a, a) for a in alerts]
+
+
+class SearchInstrumentsForm(FlaskForm):
+    type_choices = [(m.name, m.name) for m in models.instrument_type]
+    type_choices.append(('all', 'All'))
+    types = SelectField('Instrument Types', choices=type_choices, default='all')
+    name = StringField('Instrument Name')
+    submit = SubmitField('Search')

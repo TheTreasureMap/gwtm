@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+</style>
+
+<div style="padding-left:16px">
+  <h2>Search Instruments</h2>
+  <form action="" method="post">
+    <p>
+      {{ form.name.label }} {{ form.name }}
+    </p>
+    <p>
+      {{ form.types.label }} {{ form.types }}
+    </p>
+    <p>{{ form.submit() }}</p>
+  </form>
+  {% if search_result %}
+  <table>
+    <tr>
+      <th>ID</th><th>Name</th><th>Type</th>
+    </tr>
+      {% for r in search_result %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td>{{ r.instrument_name }}</td>
+          <td>{{ r.instrument_type.name }}</td>
+        </tr>
+      {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+{% endblock %}
