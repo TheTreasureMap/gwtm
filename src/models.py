@@ -173,7 +173,6 @@ class pointing(db.Model):
     def from_json(self, p, dbinsts, userid): #dbusers):
         v = valid_mapping()
 
-
         if 'status' in p:
             userstatus = p['status']
             validstatusints = [int(b) for b in pointing_status]

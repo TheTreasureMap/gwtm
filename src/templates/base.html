@@ -75,6 +75,17 @@ body {
 <div class="navbar">
   <a href="/index">Home</a>
   <a href="/alerts">Ligo Alerts</a>
+  {% if not current_user.is_anonymous %}
+  <div class="dropdown">
+      <button class="dropbtn">Query Pages 
+        <i class="fa fa-caret-down"></i>
+      </button>
+      <div class="dropdown-content">
+        <a href="/search_pointings">Pointings</a>
+        <a href="/search_instruments">Instruments</a>
+      </div>
+  </div> 
+  {% endif %}
   <a href="/contact">Contact</a>
   <a href="/about">About</a>
   <a href="/documentation">API Documentation</a>

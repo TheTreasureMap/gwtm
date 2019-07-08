@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+</style>
+
+<div style="padding-left:16px">
+  <h2>Search Pointings</h2>
+  <form action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.graceids.label}} {{ form.graceids }}
+    </p>
+    <p>
+        {{ form.band_choices.label}} {{ form.band_choices }}
+    </p>
+    <p>
+      {{ form.status_choices.label }} {{ form.status_choices }}
+    </p>
+
+    <p>{{ form.submit() }}</p>
+    </form>
+    {% if search_result %}
+    <table>
+      <tr>
+        <th>ID</th><th>Position (RA, DEC)</th><th>Status</th><th>Instrument</th><th>Band</th><th>Depth</th><th>Position Angle</th><th>Time</th><th>Submitter</th>
+      </tr>
+        {% for r in search_result %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.position }}</td>
+            <td>{{ r.status.name }}</td>
+            <td>{{ r.instrument_name }}</td>
+            <td>{{ r.band.name }}</td>
+            <td>{{ r.depth }}</td>
+            <td>{{ r.pos_angle }}</td>
+            <td>{{ r.time }}</td>
+            <td>{{ r.username }}</td>
+          </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+{% endblock %}
