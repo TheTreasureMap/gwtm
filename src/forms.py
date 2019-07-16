@@ -76,7 +76,7 @@ class SubmitInstrumentForm(FlaskForm):
     instrument_type = SelectField('Instrument Types', choices=type_choices, default='choose')
     instrument_name = StringField('Name', validators=[DataRequired()])
     unit = SelectField('Unit', choices=[('choose', 'Choose'), ('deg', 'Degrees'), ('arcmin', 'Arc Minutes'), ('arcsec', 'Arc Seconds')], validators=[DataRequired()])
-    footprint_type = SelectField('Footprint Shape', choices=[('choose', 'Choose'), ('Rectangular', 'Rectangular') ,('Circular', 'Circular'), ('Polygon', 'Polygon')], default='choose')
+    footprint_type = SelectField('Footprint Shape', choices=[('choose', 'Choose'), ('Rectangular', 'Rectangular') ,('Circular', 'Circular'), ('Polygon', 'Polygon')], default='choose', validators=[DataRequired()])
     height = DecimalField('Height')
     width = DecimalField('Width')
     radius = DecimalField('Radius')

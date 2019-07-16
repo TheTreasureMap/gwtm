@@ -188,7 +188,8 @@ def submit_instrument():
 		submitterid = current_user.get_id()
 		instrument_type = form.instrument_type.data
 		instrument_name = form.instrument_name.data
-		
+		footprint = None
+
 		u = form.unit.data
 		if u is None or u == "choose":
 			flash('Unit is required')
@@ -275,10 +276,11 @@ def submit_instrument():
 
 			try:
 				for itera,line in enumerate(p.split('\r\n')):
-					splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
-					x = float(splitlineconfusion[0])*scale
-					y = float(splitlineconfusion[1])*scale
-					vertices.append([x, y])
+					if line.strip() != "":
+						splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
+						x = round(float(splitlineconfusion[0])*scale, 5)
+						y = round(float(splitlineconfusion[1])*scale, 5)
+						vertices.append([x, y])
 
 			except Exception as e:
 				flash("Error: " + str(e))
@@ -286,6 +288,13 @@ def submit_instrument():
 				flash("Please check the example for correct format")
 				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
 			
+			if len(vertices) < 3:
+				flash('Invalid Polygon. Must have more than 2 vertices')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+
+			if vertices[0] != vertices[len(vertices)-1]:
+				vertices.append(vertices[0])
+
 			geom = "POLYGON(("
 			for v in vertices:
 				geom += str(v[0])+" "+str(v[1])+", "
@@ -293,8 +302,10 @@ def submit_instrument():
 			geom += "))"
 			footprint = geom
 
-		#print(footprint)
-			
+		if footprint is None:
+			flash('Footprint required')	
+			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
+
 		instrument = models.instrument(
 			instrument_name = instrument_name,
 			instrument_type = instrument_type,
