@@ -50,16 +50,33 @@
     <div style="padding-left:16px">
         <h2>Documentation</h2>
         
-        <p><i>Notes</i></p>
-        <ul>
-            <li>Before being able to POST or DELETE through the API, you must register an account through this website. Then you will be issued an API token that will be used in those REST methods</li>
-            <li>The GET methods do not require an API token</li>
-        </ul>
+        <p>Communicating with the Treasure Map to either report or get information is best done programmatically through the API using POST and GET methods (see below). However, one can also use the pages on this website to report and get the information. Below are examples of two use cases for the API methods.</p>
+        <ol>
+            <li><b>I am an observer and I would like to report my observations</b><br>
+                <p>
+                    Great! Before you can start you must register an account through this website. Then you will be issued a token that you will use to post your reports. <br>
+                    Once you have an account, also please check whether your imaging instrument is listed (either on the website or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
+                    Once you and your instrument are registerd, here's a typical scenario to follow:<br>
+                </p>
+                <ul>
+                    <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
+                    <li>You send this list of pointings using the pointings POST method (see below), with a status of planned.</li>
+                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of observed.</li>
+                    <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
+                </ul>
+                <p></p>
+            <li>
+                <b>I would like to see what others are observing in order to plan my observations accordingly</b>
+                <p>
+                        For this you do not need to register. Simply use the pointings GET method (see below) to retrieve reported planned or observed pointings for a specific GW alert, time window, instrument, and/or band.
+                </p>
+            </li>
+        </ol>
 
         <p>API Endpoints:</p>
         <button class="collapsible">Pointings</button>
         <div class="content">
-            <p>GET, POST, and DELETE your telescope pointings</p>
+            <p>GET, POST, and UPDATE your telescope pointings</p>
             <button class="collapsible">POST</button>
             <div class="content">
                 <div class="column">
@@ -132,7 +149,12 @@
                     <h2>JSON example</h2>
                     <pre>
                     <code class="language-json" data-lang="json">
-        Body = {
+        import requests
+
+        BASE = 'http://treasuremap.space/api/v0/'
+        TARGET = 'pointings'
+
+        json_data = {
             "graceid":"graceid1",
             "token":"abcdefghijkl",
             "pointings":[
@@ -159,6 +181,10 @@
                 "status":"planned"	
             }]
         }
+
+        r = requests.post(url = BASE+TARGET, json = json_data)
+
+        print(r.text)
                     </code>
                     </pre>
                 </div>
@@ -227,26 +253,30 @@
                 </div>
             </div>
 
-            <button class="collapsible">DELETE</button>
+            <button class="collapsible">Update Status</button>
             <div class="content">
                 <div class="column">
-                    <h2>REST API METHOD: DELETE Instructions</h2>
+                    <h2>REST API METHOD: POST Instructions</h2>
                     <p><i>NOTES</i></p>
                     <ul>
-                        <li>Will simply update all pointings' statuses to <b>cancelled</b></li>
+                        <li>Will simply update all pointings' statuses</li>
                     </ul>
                     <p><b>USAGE</b></p>
                     <p><i>/api/v0/pointings?param=value1</i></p>
                     <p><b>Parameters</b></p>
                     <ul>
                         <li>api_token=abcdefghijkl</li>
+                        <li>status=status1</li>
+                        <ul>
+                            <li>must be updated from planned to completed or cancelled</li>
+                        </ul>
                         <li>id=id1</li>
                         <li>ids=[id1, id2, id3...]</li>
                     </ul>
                 </div>
                 <div class="column" style="background-color:#bbb;">
-                    <h2>DELETE Examples</h2>
-                    <p><i>/api/v0/pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]</i></p>
+                    <h2>UPDATE Examples</h2>
+                    <p><i>/api/v0/pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]&amp;status=cancelled</i></p>
                 </div>
             </div>
         </div>

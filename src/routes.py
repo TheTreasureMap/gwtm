@@ -9,7 +9,7 @@ import geoalchemy2
 from enum import Enum
 
 import os, json, datetime
-import random
+import random, math
 
 from . import function
 from . import models
@@ -62,8 +62,13 @@ def register():
         return redirect('/index')
     form = forms.RegistrationForm()
     if form.validate_on_submit():
-        user = models.users(username=form.username.data, email=form.email.data)
-        user.datecreated = datetime.datetime.now()
+        user = models.users(
+			username=form.username.data, 
+			email=form.email.data,
+			firstname=form.firstname.data,
+			lastname=form.lastname.data,
+			datecreated=datetime.datetime.now()
+			)
         user.set_password(form.password.data)
         user.set_apitoken()
         db.session.add(user)
@@ -162,6 +167,149 @@ def search_instruments():
 		return render_template('search_instruments.html', form=form, search_result=results)
 	return render_template('search_instruments.html', form=form)
 
+
+@app.route('/submit_pointings', methods=['GET', 'POST'])
+@login_required
+def submit_pointing():
+	form = forms.SubmitPointingForm()
+	form.populate_graceids()
+	form.populate_instruments()
+	if form.validate_on_submit():
+		#logic
+		return render_template('success.html', ids=ids, again="/submit_pointings")
+	return render_template('submit_pointings.html', form=form)
+
+
+@app.route('/submit_instrument', methods=['GET', 'POST'])
+@login_required
+def submit_instrument():
+	form = forms.SubmitInstrumentForm()
+	if request.method == 'POST':
+		submitterid = current_user.get_id()
+		instrument_type = form.instrument_type.data
+		instrument_name = form.instrument_name.data
+		
+		u = form.unit.data
+		if u is None or u == "choose":
+			flash('Unit is required')
+			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
+
+		if instrument_type == "choose":
+			flash('Instrument Type is required')
+			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
+
+		scale = 1
+		if u == "deg":
+			scale = 1
+		if u == "arcmin":
+			scale = 1/60.0
+		if u == "arcsec":
+			scale = 1/(60.0*60.0)
+
+		if form.footprint_type.data == 'Rectangular':
+			h,w = form.height.data, form.width.data
+			if h is None or w is None:
+				flash('Height and Width are required for Rectangular shape')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+			if not function.isFloat(h) or not function.isFloat(w):
+				flash('Height and Width must be decimal')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+			vertices = []
+			half_h = round(0.5*float(h)*scale, 4)
+			half_w = round(0.5*float(w)*scale, 4)
+			vertices.append([-half_w, half_h])
+			vertices.append([half_w, half_h])
+			vertices.append([half_w, -half_h])
+			vertices.append([-half_w, -half_h])
+			vertices.append([-half_w, half_h])
+
+			geom = "POLYGON(("
+			for v in vertices:
+				geom += str(v[0])+" "+str(v[1])+", "
+			geom = geom[0:len(geom)-2]
+			geom += "))"
+			footprint = geom
+
+		if form.footprint_type.data == 'Circular':
+			r = form.radius.data
+
+			if r is None:
+				flash('Radius is required for Circular shape')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+			if not function.isFloat(r):
+				flash('Radius must be decimal')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+
+			r = float(r)*float(scale)
+			vertices = []
+			steps = len(range(0,360, int(360/20)))
+			ang = float(360/(steps))
+
+			for a in range(0,steps):
+				a = float(a)
+				x = r*math.cos(math.radians(90-a*ang))
+				y = r*math.sin(math.radians(90-a*ang))
+				if abs(x) < 1e-10:
+					x = 0.0
+				if abs(y) < 1e-10:
+					y = 0.0
+				x = round(x, 4)
+				y = round(y, 4)
+				vertices.append([x, y])
+			vertices.append(vertices[0])
+
+			geom = "POLYGON(("
+			for v in vertices:
+				geom += str(v[0])+" "+str(v[1])+", "
+			geom = geom[0:len(geom)-2]
+			geom += "))"
+			footprint = geom
+
+		if form.footprint_type.data == 'Polygon':
+			p = form.polygon.data
+			if p is None:
+				flash('Polygon is required for Polygon shape')
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+
+			vertices = []
+
+			try:
+				for itera,line in enumerate(p.split('\r\n')):
+					splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
+					x = float(splitlineconfusion[0])*scale
+					y = float(splitlineconfusion[1])*scale
+					vertices.append([x, y])
+
+			except Exception as e:
+				flash("Error: " + str(e))
+				flash("For line "+str(itera+1)+": "+line)
+				flash("Please check the example for correct format")
+				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+			
+			geom = "POLYGON(("
+			for v in vertices:
+				geom += str(v[0])+" "+str(v[1])+", "
+			geom = geom[0:len(geom)-2]
+			geom += "))"
+			footprint = geom
+
+		#print(footprint)
+			
+		instrument = models.instrument(
+			instrument_name = instrument_name,
+			instrument_type = instrument_type,
+			submitterid = submitterid,
+			footprint = footprint,
+			datecreated = datetime.datetime.now()
+		)
+		db.session.add(instrument)
+		db.session.flush()
+		db.session.commit()
+
+		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
+		return redirect("/index")
+
+	return render_template('submit_instrument.html', form=form, again="/submit_instrument")
 
 @app.route('/logout')
 def logout():
@@ -423,42 +571,51 @@ def get_pointings():
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen
 
-@app.route("/api/v0/pointings", methods=["DELETE"])
+@app.route("/api/v0/update_pointings", methods=["POST"])
 def del_pointings():
 	args = request.args
 
-
 	if "api_token" in args:
-		apitoken = arg['api_token']
+		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
 			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
+	if 'status' in args:
+		status = args['status']
+		if status not in ['cancelled', 'completed']:
+			return jsonify('status can only be updated to \'cancelled\' or \'completed\'')
+	else: 
+		return jsonify('status is required')
 
 	filter1 = []
 	filter2 = []
 	if "id" in args:
 		filter1.append(models.pointing.id == int(args.get('id')))
 		filter2.append(models.pointing_event.pointingid == int(args.get('id')))
-	if "ids" in args:
+	elif "ids" in args:
 		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
 		filter2.append(models.pointing_event.pointingid.in_(json.loads(args.get('ids'))))
+	else:
+		return jsonify('id or ids of pointing event is required')
 
 	#valid_api_token = validate_api_token(args)
 
 	if len(filter1) > 0: #and valid_api_token:
 		pointings = db.session.query(models.pointing).filter(*filter1)
-		pointings.delete(synchronize_session=False)
-
-		pointing_es = db.session.query(models.pointing_event).filter(*filter2)
-		pointing_es.delete(synchronize_session=False)
-
-
-
+		for p in pointings:
+			if status == 'cancelled':
+				setattr(p, 'status', models.pointing_status.cancelled)
+			if status == 'completed':
+				setattr(p, 'status', models.pointing_status.completed)
+			#db.session.add(p)
 		db.session.commit()
-		return jsonify("Deleted Pointings successfully")
+		return jsonify("Updated Pointings successfully")
 
 	else:
-		return jsonify("Please Don't delete the ENTIRE POINTING table")
+		return jsonify("Please Don't update the ENTIRE POINTING table")
 
 
 #@app.route("/instruments", methods=["POST"])

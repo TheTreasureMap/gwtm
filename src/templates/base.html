@@ -74,7 +74,7 @@ body {
 
 <div class="navbar">
   <a href="/index">Home</a>
-  <a href="/alerts">Ligo Alerts</a>
+  <a href="/alerts">GW Alerts</a>
   {% if not current_user.is_anonymous %}
   <div class="dropdown">
       <button class="dropbtn">Query Pages 
@@ -85,10 +85,17 @@ body {
         <a href="/search_instruments">Instruments</a>
       </div>
   </div> 
+  <div class="dropdown">
+      <button class="dropbtn">Submit Pages 
+        <i class="fa fa-caret-down"></i>
+      </button>
+      <div class="dropdown-content">
+        <!--<a href="/submit_pointings">Pointing</a>-->
+        <a href="/submit_instrument">Instrument</a>
+      </div>
+  </div> 
   {% endif %}
-  <a href="/contact">Contact</a>
-  <a href="/about">About</a>
-  <a href="/documentation">API Documentation</a>
+  <a href="/documentation">User Guide</a>
   <div style="float:right" class="dropdown">
     <button class="dropbtn">Account 
       <i class="fa fa-caret-down"></i>
@@ -110,7 +117,7 @@ body {
         {% if messages %}
         <ul>
             {% for message in messages %}
-            <li>{{ message }}</li>
+            <li style="color: red">{{ message }}</li>
             {% endfor %}
         </ul>
         {% endif %}

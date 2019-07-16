@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+</style>
+
+<div style="padding-left:16px">
+  <h2>Submit Pointing</h2>
+  <form action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.graceids.label}} {{ form.graceids }}
+    </p>
+    <p>
+      {{ form.ra.label }} {{ form.ra }}{{ form.dec.label }} {{ form.dec }}
+    </p>
+    <p>
+        {{ form.instruments.label}} {{ form.instruments }}
+    </p>
+    <p>
+      {{ form.obs_status.label }} {{ form.obs_status }}
+    </p>
+    <div id="testtest">
+    <p>
+      {{ form.obs_time.label }} {{ form.obs_time }}
+    </p>
+  </div>
+    <p>
+      {{ form.obs_bandpass.label }} {{ form.obs_bandpass }}
+    </p>
+
+    <p>{{ form.submit() }}</p>
+
+    
+    <script>  
+        $(document).ready(function(){
+            $('#obs_status').on('change', function() {
+              if ( this.value == 'planned')
+              {
+                $("#testest").show();
+              }
+              else
+              {
+                $("#testtest").hide();
+              }
+            });
+        });
+    </script>
+    </form>
+  </div>
+{% endblock %}

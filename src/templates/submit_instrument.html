@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+</style>
+
+<div style="padding-left:16px">
+  <h2>Submit Instrument</h2>
+  <form action="" method="post">
+    {{ form.hidden_tag() }}
+    <div>
+      <p> {{ form.instrument_name.label }} {{ form.instrument_name }} </p>
+      <p>{{ form.instrument_type.label }} {{ form.instrument_type }} </p>
+      <p> {{ form.footprint_type.label }} {{ form.footprint_type }} </p>
+    </div>
+    <div class="Rectangular box">
+      <p> {{ form.height.label }} {{ form.height }} </p>
+      <p> {{ form.width.label }} {{ form.width }} </p>
+    </div>
+    <div class="Circular box">
+      <p>
+        {{form.radius.label}} {{form.radius}}
+      </p>
+    </div>
+    <div class="Polygon box">
+      <p>
+        <i>NOTES:</i><br>
+        <b>First and last vertices must be the same to complete polygon</b><br>
+        <b>Vertices must be in order going clockwise</b><br>
+        Example:<br>
+        <textarea disabled rows=5 cols="10">
+(-1, 1)
+(1, 1)
+(1, -1)
+(-1, -1)
+(-1, 1)
+        </textarea>
+      </p>
+      <p>
+        {{ form.polygon.label }}<br> {{ form.polygon }}
+      </p>
+    </div>
+    <div>
+      <p> {{ form.unit.label }} {{ form.unit }}</p>
+    </div>
+    <p>{{ form.submit() }}</p>
+</div>
+
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $("#footprint_type").change(function(){
+        $(this).find("option:selected").each(function(){
+            var optionValue = $(this).attr("value");
+            if(optionValue){
+                $(".box").not("." + optionValue).hide();
+                $("." + optionValue).show();
+            } else{
+                $(".box").hide();
+            }
+        });
+    }).change();
+});
+</script>
+
+{% endblock %}
