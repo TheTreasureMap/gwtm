@@ -87,25 +87,40 @@ class SubmitInstrumentForm(FlaskForm):
 class SubmitPointingForm(FlaskForm):
     graceids = SelectField('Grace ID', validators=[DataRequired()])
     instruments = SelectField('Instrument', validators=[DataRequired()])
-    statuses = [(m.name, m.name) for m in models.pointing_status if 'cancelled' not in m.name]
-    obs_status = SelectField('Observation Status', choices=statuses, validators=[DataRequired])
-    obs_time = TimeField('Time of Observation', format='%Y-%m-%dT%H:%M:%S')
-    bands = [(m.name, m.name) for m in models.bandpass]
+
+    loadid = IntegerField("Planned ID")
+
+    statuses = [(None, 'Select')]
+    for a in models.pointing_status:
+        if 'cancelled' not in a.name:
+            statuses.append((a.name, a.name))
+    obs_status = SelectField('Observation Status', choices=statuses, validators=[DataRequired()])
+    completed_obs_time = DateTimeField('Completed Time', format='%Y-%m-%dT%H:%M:%S')
+    planned_obs_time = DateTimeField('Planned Time', format='%Y-%m-%dT%H:%M:%S')
+    bands = [(None, 'Select')]
+    for a in models.bandpass:
+        bands.append((a.name, a.name))
     obs_bandpass = SelectField('Bandpass', choices=bands, validators=[DataRequired()])
-    depth = DecimalField("Depth", validators=[DataRequired])
-    ra = DecimalField("RA", validators=[DataRequired])
-    dec = DecimalField("DEC", validators=[DataRequired])
+    ra = DecimalField("RA", validators=[DataRequired()])
+    dec = DecimalField("DEC", validators=[DataRequired()])
+
+    depth = DecimalField("Depth")
+    depth_err = DecimalField("Depth Error")
     galaxy_catalogid = IntegerField("Galaxy Catalog")
     galaxy_id = IntegerField("Galaxy ID")
     pos_angle = DecimalField("Position Angle")
+
     submit = SubmitField('Submit')
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
         alerts = list(set([a.graceid for a in alerts]))
-        self.graceids.choices = [(a, a) for a in alerts]
+        self.graceids.choices = [(None, 'Select')]
+        for a in alerts:
+            self.graceids.choices.append((a, a))
 
     def populate_instruments(self):
         query = models.instrument.query.all()
-        query = list(set([a.instrument_name for a in query]))
-        self.instruments.choices = [(a, a) for a in query]
+        self.instruments.choices = [(None, 'Select')]
+        for a in query:
+            self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))

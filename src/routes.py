@@ -174,9 +174,106 @@ def submit_pointing():
 	form = forms.SubmitPointingForm()
 	form.populate_graceids()
 	form.populate_instruments()
-	if form.validate_on_submit():
-		#logic
-		return render_template('success.html', ids=ids, again="/submit_pointings")
+	
+	if request.method == 'POST':
+
+		#pointing object
+		pointing = models.pointing()
+
+		#default required fields
+		graceid = form.graceids.data
+		status = form.obs_status.data
+		ra = form.ra.data
+		dec = form.dec.data
+		instrument = form.instruments.data
+		band = form.obs_bandpass.data
+
+		#validation
+		if graceid == 'None':
+			flash('GraceID is required')
+			return render_template('submit_pointings.html', form=form)
+
+		if status == 'None':
+			flash('Status is required')
+			return render_template('submit_pointings.html', form=form)
+
+		if not function.isFloat(ra) or not function.isFloat(dec):
+			flash("RA and DEC must be decimal")
+			return render_template('submit_pointings.html', form=form)
+			
+		if instrument == 'None':
+			flash('Instrument is required')
+			return render_template('submit_pointings.html', form=form)
+
+		instrumentid, instrument_type = int(instrument.split('_')[0]), instrument.split('_')[1]
+
+		if band == 'None' and instrument_type == "photometric":
+			flash('Bandpass is required for photometric instrument')
+			return render_template('submit_pointings.html', form=form)
+
+		#inserting
+		pointing.datecreated = datetime.datetime.now()
+		pointing.position="POINT("+str(ra)+" "+str(dec)+")"
+		pointing.submitterid = current_user.get_id()
+		pointing.status = status
+		pointing.instrumentid = instrumentid
+		pointing.band = band
+
+		#conditional status
+		if status == models.pointing_status.completed.name:
+
+			#required fields
+			completed_time = form.completed_obs_time.data
+			depth_err = form.depth_err.data
+			depth = form.depth.data
+			pos_angle = form.pos_angle.data
+
+			#validation
+			if completed_time is None:
+				flash('Completed time is required')
+				return render_template('submit_pointings.html', form=form)
+			if depth is None:
+				flash('Depth is required')
+				return render_template('submit_pointings.html', form=form)
+			if pos_angle is None:
+				flash('Position Angle is required')
+				return render_template('submit_pointings.html', form=form)
+
+			#inserting
+			pointing.time = completed_time
+			pointing.depth = depth
+			pointing.depth_err = depth_err
+			pointing.pos_angle = pos_angle
+
+		#conditional status
+		if status == models.pointing_status.planned.name:
+
+			#required fields
+			planned_time = form.planned_obs_time.data
+
+			#validation
+			if planned_time is None:
+				flash('Planned time is required')
+				return render_template('submit_pointings.html', form=form)
+		
+			#inserting
+			pointing.time = planned_time
+
+		#commiting data
+		db.session.add(pointing)
+		db.session.flush()
+
+		pointing_e = models.pointing_event(
+				graceid=graceid,
+				pointingid=pointing.id
+		)
+		db.session.add(pointing_e)
+		db.session.commit()
+
+		flash("Successful submission of Pointing. Your Pointing ID is "+str(pointing.id))
+		flash("Please keep track of your pointing ids")
+		return redirect("/index")
+
 	return render_template('submit_pointings.html', form=form)
 
 
@@ -322,12 +419,78 @@ def submit_instrument():
 
 	return render_template('submit_instrument.html', form=form, again="/submit_instrument")
 
+
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect('/index')
 
+@app.route('/pointingfromid')
+def get_pointing_fromID():
+	args = request.args
+	if 'id' in args:
+		try:
+			id = args.get('id')
+			pfilter = []
+			pfilter.append(models.pointing.submitterid == current_user.get_id())
+			pfilter.append(models.pointing.status == models.pointing_status.planned)
+			pfilter.append(models.pointing.id == int(id))
+
+			pointing = db.session.query(models.pointing).filter(*pfilter).first()
+			pointing_e = db.session.query(models.pointing_event).filter(models.pointing_event.pointingid == int(id)).first()
+			instrumentinfo = db.session.query(models.instrument).filter(models.instrument.id == pointing.instrumentid).first()
+			pointing_json = json.loads(pointing.json)
+			position = pointing_json['position']
+
+			ra = position.split('POINT (')[1].split(' ')[0]
+			dec = position.split('POINT (')[1].split(' ')[1].split(')')[0]
+			
+			pointing_json['ra'] = ra
+			pointing_json['dec'] = dec
+			pointing_json['graceid'] = pointing_e.graceid
+			pointing_json['instrument'] = str(instrumentinfo.id)+'_'+models.instrument_type(instrumentinfo.instrument_type).name
+			
+			print(pointing_json)
+			return jsonify(pointing_json)
+		except Exception as e:
+			print(e)
+			pass
+	return jsonify('')
+
 #API Endpoints
+#Get Galaxies From glade_2p3
+@app.route("/api/v0/glade", methods=['GET'])
+def get_galaxies():
+	args = request.args
+
+	filter = []
+	filter1 = []
+	filter1.append(models.glade_2p3.pgc_number != -1)
+	filter1.append(models.glade_2p3.distance > 0)
+	filter1.append(models.glade_2p3.distance < 100)
+	trim = db.session.query(models.glade_2p3).filter(*filter1)
+
+	orderby = []
+	if 'ra' in args and 'dec' in args:
+		ra = args.get('ra')
+		dec = args.get('dec')
+		if function.isFloat(ra) and function.isFloat(dec):
+			geom = "SRID=4326;POINT("+str(ra)+" "+str(dec)+")"
+			orderby.append(func.ST_Distance(models.glade_2p3.position, geom))
+	if 'name' in args:
+		name = args.get('name')
+		ors = []
+		ors.append(models.glade_2p3._2mass_name.contains(name.strip()))
+		ors.append(models.glade_2p3.gwgc_name.contains(name.strip()))
+		ors.append(models.glade_2p3.hyperleda_name.contains(name.strip()))
+		ors.append(models.glade_2p3.sdssdr12_name.contains(name.strip()))
+		filter.append(fsq.sqlalchemy.or_(*ors))
+	
+	galaxies = trim.filter(*filter).order_by(*orderby).limit(15).all()
+
+	galaxies = [x.json for x in galaxies]
+
+	return jsonify(galaxies)
 
 #Post Pointing/s
 #Parameters: List of Pointing JSON objects
@@ -368,11 +531,6 @@ def add_pointings():
 	dbinsts = db.session.query(models.instrument.instrument_name,
                                models.instrument.id).all()
 
-	#dbusers = db.session.query(models.users.id,
-	#						   models.users.username,
-	#						   models.users.firstname,
-	#						   models.users.lastname).all()
-
 	points = []
 	errors = []
 	warnings = []
@@ -402,7 +560,7 @@ def add_pointings():
 			else:
 				errors.append(["Object: "+json.dumps(p), v.errors])
 	else: 
-		return jsonify("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: www.treasuremap_api_documentation.com")
+		return jsonify("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: treasuremap.space/documentation.com")
 
 	db.session.flush()
 
@@ -591,48 +749,39 @@ def del_pointings():
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
 			return jsonify("invalid api_token")
+		else:
+			userid = user.id
 	else:
 		return jsonify("api_token is required")
 
 	if 'status' in args:
 		status = args['status']
-		if status not in ['cancelled', 'completed']:
-			return jsonify('status can only be updated to \'cancelled\' or \'completed\'')
+		if status not in ['cancelled']:
+			return jsonify('planned status can only be updated to \'cancelled\'')
 	else: 
-		return jsonify('status is required')
+		status = 'cancelled'
 
 	filter1 = []
-	filter2 = []
+	filter1.append(models.pointing.status == models.pointing_status.planned)
+	filter1.append(models.pointing.submitterid == userid)
 	if "id" in args:
 		filter1.append(models.pointing.id == int(args.get('id')))
-		filter2.append(models.pointing_event.pointingid == int(args.get('id')))
 	elif "ids" in args:
 		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
-		filter2.append(models.pointing_event.pointingid.in_(json.loads(args.get('ids'))))
 	else:
 		return jsonify('id or ids of pointing event is required')
 
-	#valid_api_token = validate_api_token(args)
-
-	if len(filter1) > 0: #and valid_api_token:
+	if len(filter1) > 0:
 		pointings = db.session.query(models.pointing).filter(*filter1)
 		for p in pointings:
 			if status == 'cancelled':
 				setattr(p, 'status', models.pointing_status.cancelled)
-			if status == 'completed':
-				setattr(p, 'status', models.pointing_status.completed)
-			#db.session.add(p)
+				setattr(p, 'dateupdated', datetime.datetime.now())
 		db.session.commit()
 		return jsonify("Updated Pointings successfully")
 
 	else:
 		return jsonify("Please Don't update the ENTIRE POINTING table")
-
-
-#@app.route("/instruments", methods=["POST"])
-#def post_instruments():
-#	return jsonify("success")
-
 
 #Get Instrument/s
 #Parameters: List of ID/s, type/s (to be AND’ed).

@@ -160,8 +160,10 @@ class pointing(db.Model):
     galaxy_catalogid = db.Column(db.Integer)
     instrumentid = db.Column(db.Integer)
     depth = db.Column(db.Float)
+    depth_err = db.Column(db.Float)
     time = db.Column(db.Date)
     datecreated = db.Column(db.Date)
+    dateupdated = db.Column(db.Date)
     submitterid = db.Column(db.Integer)
     pos_angle = db.Column(db.Float)
     band = db.Column(db.Enum(bandpass))
@@ -175,8 +177,8 @@ class pointing(db.Model):
 
         if 'status' in p:
             userstatus = p['status']
-            validstatusints = [int(b) for b in pointing_status]
-            validstatusstr = [str(b.name) for b in pointing_status]
+            validstatusints = [int(b) for b in pointing_status if b.name != 'cancelled']
+            validstatusstr = [str(b.name) for b in pointing_status if b.name != 'cancelled']
             if userstatus in validstatusints or userstatus in validstatusstr:
                 self.status = userstatus
         else:
@@ -243,20 +245,26 @@ class pointing(db.Model):
                 self.depth = p['depth']
             else:        
                 v.errors.append('Invalid depth. Must be decimal')
+        elif self.status == pointing_status.completed:
+            v.errors.append('depth is required for completed observations')
 
         if 'pos_angle' in p:
             if isFloat(p['pos_angle']):
                 self.pos_angle = p['pos_angle']
             else:        
                 v.errors.append('Invalid pos_angle. Must be decimal')
+        elif self.status == pointing_status.completed:
+            v.errors.append('pos_angle is required for completed observations')
 
         if 'time' in p:
             try:
                 self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S")
             except:
                 v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
-        else:
-            v.errors.append("Field \"time\" is required")
+        elif self.status == pointing_status.planned:
+            v.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
+        elif self.status == pointing_status.completed:
+            v.errors.append('Field \"time\" is required for the observed pointing')
 
 
 #        if "submitterid" in p:
@@ -324,6 +332,9 @@ class glade_2p3(db.Model):
     flag2 = db.Column(db.Integer)
     flag3 = db.Column(db.Integer)
 
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
 
 class gw_alert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
