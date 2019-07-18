@@ -158,12 +158,11 @@ def search_pointings():
 def search_instruments():
 	form = forms.SearchInstrumentsForm()
 	if request.method == 'POST':
-		filter = []
-		if form.name.data != '':
-			filter.append(models.instrument.instrument_name.contains(form.name.data))
 		if form.types.data != '' and form.types.data != 'all':
-			filter.append(models.instrument.instrument_type == form.types.data)
-		results = db.session.query(models.instrument).filter(*filter).all()
+			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).\
+			filter(models.instrument.instrument_type == form.types.data).all()
+		else:
+			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).all()
 		return render_template('search_instruments.html', form=form, search_result=results)
 	return render_template('search_instruments.html', form=form)
 
