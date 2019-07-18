@@ -1,62 +1,90 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
-    
-    td, th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
-</style>
 
 <div style="padding-left:16px">
   <h2>Submit Pointing</h2>
   <form action="" method="post">
     {{ form.hidden_tag() }}
+    <p> {{ form.loadid.label }} {{ form.loadid }}</p>
     <p>
-        {{ form.graceids.label}} {{ form.graceids }}
+        {{ form.graceids.label}} {{ form.graceids }} {{ form.obs_status.label }} {{ form.obs_status }}
     </p>
     <p>
-      {{ form.ra.label }} {{ form.ra }}{{ form.dec.label }} {{ form.dec }}
+        {{ form.ra.label }} {{ form.ra }} {{ form.dec.label }} {{ form.dec }}
     </p>
     <p>
-        {{ form.instruments.label}} {{ form.instruments }}
+        {{ form.galaxy_id.label }} {{ form.galaxy_id }}
     </p>
     <p>
-      {{ form.obs_status.label }} {{ form.obs_status }}
+        {{ form.instruments.label}} {{ form.instruments }} <a class="photometric box1">{{ form.obs_bandpass.label }} {{ form.obs_bandpass }} </a>
     </p>
-    <div id="testtest">
-    <p>
-      {{ form.obs_time.label }} {{ form.obs_time }}
-    </p>
-  </div>
-    <p>
-      {{ form.obs_bandpass.label }} {{ form.obs_bandpass }}
-    </p>
-
+    <div class="planned box">
+      <p>
+        {{ form.planned_obs_time.label }} {{ form.planned_obs_time }}
+      </p>
+    </div>
+    <div class="completed box">
+      <p>
+        {{ form.completed_obs_time.label }} {{ form.completed_obs_time }}
+      </p>
+      <p>
+        {{ form.depth.label }} {{ form.depth }} {{ form.depth_err.label }} {{ form.depth_err }}
+      </p>
+      <p>
+        {{ form.pos_angle.label }} {{ form.pos_angle }}
+      </p>
+    </div>
     <p>{{ form.submit() }}</p>
-
-    
-    <script>  
-        $(document).ready(function(){
-            $('#obs_status').on('change', function() {
-              if ( this.value == 'planned')
-              {
-                $("#testest").show();
-              }
-              else
-              {
-                $("#testtest").hide();
-              }
-            });
-        });
-    </script>
     </form>
   </div>
+
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!--<script type="text/javascript">-->
+<script>
+$(document).ready(function(){
+  $("#loadid").focusout(function(){
+    var optionValue = $("#loadid").val()
+    $.get('/pointingfromid?id='+optionValue, function(data, status){
+      $('#ra').val(data["ra"]);
+      $("#dec").val(data["dec"]);
+      $('#obs_status').val("completed");
+      $('#instruments').val(data['instrument']);
+      $('#graceids').val(data['graceid']);
+      $('#obs_bandpass').val(data['band']);
+      $(".completed").show();
+      if(data['instrument'].includes('photometric')){
+        $(".photometric").show()
+      }
+    });
+  });
+});  
+$(document).ready(function(){
+    $("#obs_status").change(function(){
+        $(this).find("option:selected").each(function(){
+            var optionValue = $(this).attr("value");
+            if(optionValue){
+                $(".box").not("." + optionValue).hide();
+                $("." + optionValue).show();
+            } else{
+                $(".box").hide();
+            }
+        });
+    }).change();
+});
+$(document).ready(function(){
+    $("#instruments").change(function(){
+        $(this).find("option:selected").each(function(){
+            var optionValue = $(this).attr("value");
+            if(optionValue.includes('photometric')){
+                $(".box1").not(".photometric").hide();
+                $(".photometric").show();
+            } else{
+                $(".box1").hide();
+            }
+        });
+    }).change();
+});
+</script>
 {% endblock %}
