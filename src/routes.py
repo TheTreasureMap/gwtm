@@ -187,6 +187,8 @@ def submit_pointing():
 		dec = form.dec.data
 		instrument = form.instruments.data
 		band = form.obs_bandpass.data
+		depth_err = form.depth_err.data
+		depth = form.depth.data
 
 		#validation
 		if graceid == 'None':
@@ -211,6 +213,10 @@ def submit_pointing():
 			flash('Bandpass is required for photometric instrument')
 			return render_template('submit_pointings.html', form=form)
 
+		if depth is None:
+			flash('Depth is required')
+			return render_template('submit_pointings.html', form=form)
+
 		#inserting
 		pointing.datecreated = datetime.datetime.now()
 		pointing.position="POINT("+str(ra)+" "+str(dec)+")"
@@ -218,22 +224,19 @@ def submit_pointing():
 		pointing.status = status
 		pointing.instrumentid = instrumentid
 		pointing.band = band
+		pointing.depth = depth
+		pointing.depth_err = depth_err
 
 		#conditional status
 		if status == models.pointing_status.completed.name:
 
 			#required fields
 			completed_time = form.completed_obs_time.data
-			depth_err = form.depth_err.data
-			depth = form.depth.data
 			pos_angle = form.pos_angle.data
 
 			#validation
 			if completed_time is None:
 				flash('Completed time is required')
-				return render_template('submit_pointings.html', form=form)
-			if depth is None:
-				flash('Depth is required')
 				return render_template('submit_pointings.html', form=form)
 			if pos_angle is None:
 				flash('Position Angle is required')
@@ -241,8 +244,6 @@ def submit_pointing():
 
 			#inserting
 			pointing.time = completed_time
-			pointing.depth = depth
-			pointing.depth_err = depth_err
 			pointing.pos_angle = pos_angle
 
 		#conditional status
@@ -465,9 +466,9 @@ def get_galaxies():
 
 	filter = []
 	filter1 = []
-	filter1.append(models.glade_2p3.pgc_number != -1)
-	filter1.append(models.glade_2p3.distance > 0)
-	filter1.append(models.glade_2p3.distance < 100)
+	#filter1.append(models.glade_2p3.pgc_number != -1)
+	#filter1.append(models.glade_2p3.distance > 0)
+	#filter1.append(models.glade_2p3.distance < 100)
 	trim = db.session.query(models.glade_2p3).filter(*filter1)
 
 	orderby = []
