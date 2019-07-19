@@ -389,6 +389,32 @@
                 </ul>
             </div>
         </div>
+
+        <button class="collapsible">Glade Catalog</button>
+        <div class="content">
+            <div class="column">
+                <h2>REST API METHOD: GET Instructions</h2>
+                <p>Does take a second when searching based off of coordinates</p>
+                <p><b>Usage</b></p>
+                <p><i>/api/v0/glade?param1=value1&amp;param2=value2…</i></p>
+        
+                <p><b>Parameters</b></p>
+                <ul>
+                    <li><i>name=name1</i></li>
+                    <li><i>ra=ra1</i></li>
+                    <ul><li>must be decimal</li></ul>
+                    <li><i>dec=dec1</i></li>
+                    <ul><li>must be decimal</li></ul>
+                </ul>
+            </div>
+            <div class="column" style="background-color:#bbb;">
+                <h2>GET Examples</h2>
+                <p>GET top 15 glade catalog entries closest to coordinates:</p>
+                <ul>
+                    <li><i>/api/v0/glade?ra=-123.058502&dec=28.641853</i></li>
+                </ul>
+            </div>
+        </div>
     </div>
     
     <script>
