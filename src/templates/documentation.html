@@ -255,15 +255,7 @@
                 <div class="column">
                     <h2>REST API METHOD: GET Instructions</h2>
                     <p><b>Usage</b></p>
-                    <p><i>/api/v0/pointings?param1=value1&amp;p
-                            "position":"POINT(42, 42)",
-                            "band":"U",
-                            "galaxy_catalog":"1",
-                            "galaxy_catalogid":"2",
-                            "instrumentid":"instrumentname1",
-                            "depth":"19.5",
-                            "time":"2019-05-22T12:30:59",
-                            "status":"planned"aram2=value2…</i></p>
+                    <p><i>/api/v0/pointings?param1=value1&amp;param2=value2…</i></p>
             
                     <p><b>Parameters</b></p>
                     <ul>
@@ -344,14 +336,13 @@
                 </div>
                 <div class="column" style="background-color:#bbb;">
                     <h2>UPDATE Examples</h2>
-                    <p><i>/api/v0/update_pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]&amp;status=cancelled</i></p>
-                    <h3>Updating completed pointings</h3>
+                    <h3>Updating Planned Pointings to be cancelled</h3>
                     <pre>
                     <code class="language-json" data-lang="json">
         import requests
         import urllib.parse
 
-        BASE = 'http://treasuremap.space/api/v0/'
+        BASE = 'http://treasuremap.space/api/v0'
         TARGET = 'update_pointings'
 
         params = {
