@@ -56,12 +56,12 @@
                 <p>
                     Great! Before you can start you must register an account through this website. Then you will be issued a token that you will use to post your reports. <br>
                     Once you have an account, also please check whether your imaging instrument is listed (either on the website or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
-                    Once you and your instrument are registerd, here's a typical scenario to follow:<br>
+                    Once you and your instrument are registered, here's a typical scenario to follow:<br>
                 </p>
                 <ul>
                     <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
-                    <li>You send this list of pointings using the pointings POST method (see below), with a status of planned.</li>
-                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of observed.</li>
+                    <li>You send this list of pointings using the pointings POST method (see below), with a status of <em>planned</em>.</li>
+                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em>observed</em>.</li>
                     <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
                 </ul>
                 <p></p>
@@ -98,7 +98,8 @@
                         <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
                     </ul>
 
-                    <p>Valid <b>pointing</b> class parameters</p>
+                    <h3>Valid <b>pointing</b> class parameters</h3>
+                    <p><b>If you are posting a PLANNED pointing Observation</b></p>
                     <p><b>REQUIRED</b></p>
                     <ul>
                         <li><i>position</i>: two acceptable formats</li>
@@ -115,9 +116,9 @@
                             <li>Time of <b>planned</b>/<b>completed</b> pointing</li>
                             <li>Must be <b>%Y-%m-%dT%H:%M:%S</b> format; e.g. 1991-12-23T19:15:11</li>
                         </ul>
-                        <li><i>status</i></li>
+                        <li><i>status</i>=completed</li>
                         <ul>
-                            <li>Must be either <b>planned</b> or <b>completed</b></li>
+                            <li>planned<li></li>
                         </ul>
                         <li><i>depth</i></li>
                         <ul>
@@ -142,6 +143,29 @@
                         <li><i>pos_angle</i></li>
                         <ul>
                             <li>Position angle of telescope exposure</li>
+                        </ul>
+                        <li>
+                            <i>depth_err</i>
+                        </li>
+                        <ul>
+                            <li>(decimal) error in the depth, can be a rough estimation</li>
+                        </ul>
+                    </ul>
+                    <h3>If you are posting a pointing that has already been COMPLETED</h3>
+                    <ul>
+                        <li>All of the same requirements for a planned pointing are the same EXCEPT pos_angle is now required</li>
+                    </ul>
+                    <h3>You can update an already planned pointing to be completed</h3>
+                    <ul>
+                        <li>Inside the valid <b>pointing</b> class you can pass:</li>
+                        <ul>
+                            <li><i>id</i></li>
+                            <ul><li style="font-size: small">can only be for your planned pointings</li></ul>
+                            <li><i>time</i></li>
+                            <li><i>status</i></li>
+                            <li><i>pos_angle</i></li>
+                            <li><i>depth</i> and <i>depth_err</i></li>
+                            <ul><li style="font-size: small">If those values are to be updated</li></ul>
                         </ul>
                     </ul>
                 </div>
@@ -187,6 +211,42 @@
         print(r.text)
                     </code>
                     </pre>
+
+                    <h3>Updating completed pointings</h3>
+                    <pre>
+                    <code class="language-json" data-lang="json">
+        import requests
+
+        BASE = 'http://treasuremap.space/api/v0/'
+        TARGET = 'pointings'
+
+        json_data = {
+            "graceid":"graceid1",
+            "token":"abcdefghijkl",
+            "pointings":[
+            {
+                "id":"42"
+                "depth":"19.5",
+                "depth_err":"0.1"
+                "time":"2019-05-22T12:33:59",
+                "pos_angle":"45.0",
+                "status":"completed"
+            },
+            {
+                "id":"43"
+                "depth":"19.3",
+                "depth_err":"0.2"
+                "time":"2019-05-22T12:35:59",
+                "pos_angle":"45.0",
+                "status":"completed"	
+            }]
+        }
+
+        r = requests.post(url = BASE+TARGET, json = json_data)
+
+        print(r.text)
+        </code>
+        </pre>
                 </div>
             </div>
 
@@ -195,7 +255,15 @@
                 <div class="column">
                     <h2>REST API METHOD: GET Instructions</h2>
                     <p><b>Usage</b></p>
-                    <p><i>/api/v0/pointings?param1=value1&amp;param2=value2…</i></p>
+                    <p><i>/api/v0/pointings?param1=value1&amp;p
+                            "position":"POINT(42, 42)",
+                            "band":"U",
+                            "galaxy_catalog":"1",
+                            "galaxy_catalogid":"2",
+                            "instrumentid":"instrumentname1",
+                            "depth":"19.5",
+                            "time":"2019-05-22T12:30:59",
+                            "status":"planned"aram2=value2…</i></p>
             
                     <p><b>Parameters</b></p>
                     <ul>
@@ -253,13 +321,13 @@
                 </div>
             </div>
 
-            <button class="collapsible">Update Status</button>
+            <button class="collapsible">Update Status=<i>cancelled</i></button>
             <div class="content">
                 <div class="column">
                     <h2>REST API METHOD: POST Instructions</h2>
                     <p><i>NOTES</i></p>
                     <ul>
-                        <li>Will simply update all pointings' statuses</li>
+                        <li>Will simply cancel all pointings' statuses</li>
                     </ul>
                     <p><b>USAGE</b></p>
                     <p><i>/api/v0/pointings?param=value1</i></p>
@@ -268,7 +336,7 @@
                         <li>api_token=abcdefghijkl</li>
                         <li>status=status1</li>
                         <ul>
-                            <li>must be updated from planned to completed or cancelled</li>
+                            <li>must be updated from planned to cancelled</li>
                         </ul>
                         <li>id=id1</li>
                         <li>ids=[id1, id2, id3...]</li>
@@ -276,7 +344,29 @@
                 </div>
                 <div class="column" style="background-color:#bbb;">
                     <h2>UPDATE Examples</h2>
-                    <p><i>/api/v0/pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]&amp;status=cancelled</i></p>
+                    <p><i>/api/v0/update_pointings?api_token=abcdefghijkl&amp;ids=[42,43,44,45]&amp;status=cancelled</i></p>
+                    <h3>Updating completed pointings</h3>
+                    <pre>
+                    <code class="language-json" data-lang="json">
+        import requests
+        import urllib.parse
+
+        BASE = 'http://treasuremap.space/api/v0/'
+        TARGET = 'update_pointings'
+
+        params = {
+            "api_token":"abcdefghijkl",
+            "ids":[42,43,44,45],
+            "status":"cancelled"
+        }
+
+        url = "%s/%s?%s" % (BASE, TARGET, urllib.parse.urlencode(params))
+
+        r = requests.post(url = url)
+
+        print(r.text)
+        </code>
+        </pre>
                 </div>
             </div>
         </div>

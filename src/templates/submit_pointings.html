@@ -6,7 +6,7 @@
   <h2>Submit Pointing</h2>
   <form action="" method="post">
     {{ form.hidden_tag() }}
-    <p> {{ form.loadid.label }} {{ form.loadid }}</p>
+    <p> {{ form.loadid.label }} {{ form.loadid }} <a style="font-size: small">pre-loads existing information for your planned pointings</a></p>
     <p>
         {{ form.graceids.label}} {{ form.graceids }} {{ form.obs_status.label }} {{ form.obs_status }}
     </p>
@@ -19,6 +19,9 @@
     <p>
         {{ form.instruments.label}} {{ form.instruments }} <a class="photometric box1">{{ form.obs_bandpass.label }} {{ form.obs_bandpass }} </a>
     </p>
+    <p>
+      {{ form.depth.label }} {{ form.depth }} {{ form.depth_err.label }} {{ form.depth_err }}
+    </p>
     <div class="planned box">
       <p>
         {{ form.planned_obs_time.label }} {{ form.planned_obs_time }}
@@ -27,9 +30,6 @@
     <div class="completed box">
       <p>
         {{ form.completed_obs_time.label }} {{ form.completed_obs_time }}
-      </p>
-      <p>
-        {{ form.depth.label }} {{ form.depth }} {{ form.depth_err.label }} {{ form.depth_err }}
       </p>
       <p>
         {{ form.pos_angle.label }} {{ form.pos_angle }}
@@ -47,15 +47,17 @@ $(document).ready(function(){
   $("#loadid").focusout(function(){
     var optionValue = $("#loadid").val()
     $.get('/pointingfromid?id='+optionValue, function(data, status){
-      $('#ra').val(data["ra"]);
-      $("#dec").val(data["dec"]);
-      $('#obs_status').val("completed");
-      $('#instruments').val(data['instrument']);
-      $('#graceids').val(data['graceid']);
-      $('#obs_bandpass').val(data['band']);
-      $(".completed").show();
-      if(data['instrument'].includes('photometric')){
-        $(".photometric").show()
+        $('#ra').val(data["ra"]);
+        $("#dec").val(data["dec"]);
+        $('#obs_status').val("completed");
+        $('#instruments').val(data['instrument']);
+        $('#graceids').val(data['graceid']);
+        $('#obs_bandpass').val(data['band']);
+        $('#depth').val(data['depth']);
+        $('#depth_err').val(data['depth_err']);
+        $(".completed").show();
+        if(data['instrument'].includes('photometric')){
+          $(".photometric").show()
       }
     });
   });

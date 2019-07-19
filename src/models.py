@@ -14,6 +14,7 @@ from src.function import isInt, isFloat
 from src import app
 from src import login
 import secrets
+from . import routes
 
 db = SQLAlchemy(app)
 
@@ -172,8 +173,24 @@ class pointing(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
-    def from_json(self, p, dbinsts, userid): #dbusers):
+    def from_json(self, p, dbinsts, userid, planned_pointings): #dbusers):
         v = valid_mapping()
+
+        PLANNED = False
+        if 'id' in p:
+            PLANNED = True
+            pointingid = p['id']
+            planned_pointing = planned_pointings[str(pointingid)]
+
+            if planned_pointing.status == pointing_status.completed or planned_pointing.status == pointing_status.cancelled:
+                v.errors.append('This pointing has already been '+planned_pointing.status.name)
+                
+            self.position = planned_pointing.position
+            self.depth = planned_pointing.depth
+            self.depth_err = planned_pointing.depth_err
+            self.status = pointing_status.completed
+            self.band = planned_pointing.band
+            self.instrumentid = planned_pointing.instrumentid
 
         if 'status' in p:
             userstatus = p['status']
@@ -181,17 +198,19 @@ class pointing(db.Model):
             validstatusstr = [str(b.name) for b in pointing_status if b.name != 'cancelled']
             if userstatus in validstatusints or userstatus in validstatusstr:
                 self.status = userstatus
+        elif not PLANNED:
+            self.status = pointing_status.completed
         else:
             v.warnings.append("No status given, or unrecognized status. Setting the status to planned")
-            self.status = pointing_status.planned.name
+            self.status = pointing_status.planned
 
-        if 'position' in p:
+        if 'position' in p and not PLANNED:
             pos = p['position']
             if "POINT" in pos:
                 self.position = p['position']
             else:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
-        else:
+        elif not PLANNED:
             if 'ra' in p or 'RA' in p:
                 ra = p['ra'] if 'ra' in p else p['RA']
                 if not isFloat(ra):
@@ -219,7 +238,7 @@ class pointing(db.Model):
             if isInt(p['galaxy_catalogid']):    
                 self.galaxy_catalogid = p['galaxy_catalogid']
 
-        if 'instrumentid' in p:
+        if 'instrumentid' in p and not PLANNED:
             inst = p['instrumentid']
             validinst = False
             if isInt(inst):
@@ -237,16 +256,22 @@ class pointing(db.Model):
 
             if validinst is False:
                 v.errors.append("Invalid instrumentid. Can be id or name of instrument")
-        else:
+        elif not PLANNED:
             v.errors.append("Field instrumentid is required")
 
         if 'depth' in p:
             if isFloat(p['depth']):
                 self.depth = p['depth']
             else:        
-                v.errors.append('Invalid depth. Must be decimal')
-        elif self.status == pointing_status.completed:
+                v.errors.append('Invalid depth. Must b and not PLANNEDe decimal')
+        elif self.status == pointing_status.completed and not PLANNED:
             v.errors.append('depth is required for completed observations')
+
+        if 'depth_err' in p:
+            if isFloat(p['depth_err']):
+                self.depth_err = p['depth_err']
+            else:
+                v.errors.append('Invalid depth_err. Must be decimal')
 
         if 'pos_angle' in p:
             if isFloat(p['pos_angle']):
@@ -289,7 +314,7 @@ class pointing(db.Model):
         self.submitterid = userid
         self.datecreated = datetime.datetime.now()
 
-        if "band" in p:
+        if "band" in p and not PLANNED:
             validbandints = [int(b) for b in bandpass]
             validbandstr = [str(b.name) for b in bandpass]
             userband = p['band']
@@ -297,7 +322,7 @@ class pointing(db.Model):
                 self.band = userband
             else:
                 v.errors.append("Field \"band\" is invalid")
-        else:
+        elif not PLANNED:
             v.errors.append("Field \"band\" is required")
 
         v.valid = len(v.errors) == 0
