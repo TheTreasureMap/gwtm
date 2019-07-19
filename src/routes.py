@@ -158,11 +158,12 @@ def search_pointings():
 def search_instruments():
 	form = forms.SearchInstrumentsForm()
 	if request.method == 'POST':
+		filter = []
+		if form.name.data != '':
+			filter.append(models.instrument.instrument_name.contains(form.name.data))
 		if form.types.data != '' and form.types.data != 'all':
-			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).\
-			filter(models.instrument.instrument_type == form.types.data).all()
-		else:
-			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).all()
+			filter.append(models.instrument.instrument_type == form.types.data)
+		results = db.session.query(models.instrument).filter(*filter).all()
 		return render_template('search_instruments.html', form=form, search_result=results)
 	return render_template('search_instruments.html', form=form)
 
@@ -429,33 +430,64 @@ def logout():
 def get_pointing_fromID():
 	args = request.args
 	if 'id' in args:
-		try:
-			id = args.get('id')
-			pfilter = []
-			pfilter.append(models.pointing.submitterid == current_user.get_id())
-			pfilter.append(models.pointing.status == models.pointing_status.planned)
-			pfilter.append(models.pointing.id == int(id))
+		#try:
+		id = args.get('id')
+		pfilter = []
+		pfilter.append(models.pointing.submitterid == current_user.get_id())
+		pfilter.append(models.pointing.status == models.pointing_status.planned)
 
-			pointing = db.session.query(models.pointing).filter(*pfilter).first()
-			pointing_e = db.session.query(models.pointing_event).filter(models.pointing_event.pointingid == int(id)).first()
-			instrumentinfo = db.session.query(models.instrument).filter(models.instrument.id == pointing.instrumentid).first()
-			pointing_json = json.loads(pointing.json)
-			position = pointing_json['position']
+		pointings = pointings_from_IDS([id], pfilter)
+		pointing = pointings[str(id)]
+		
+		pointing_json = {}
 
-			ra = position.split('POINT (')[1].split(' ')[0]
-			dec = position.split('POINT (')[1].split(' ')[1].split(')')[0]
-			
-			pointing_json['ra'] = ra
-			pointing_json['dec'] = dec
-			pointing_json['graceid'] = pointing_e.graceid
-			pointing_json['instrument'] = str(instrumentinfo.id)+'_'+models.instrument_type(instrumentinfo.instrument_type).name
-			
-			print(pointing_json)
-			return jsonify(pointing_json)
-		except Exception as e:
-			print(e)
-			pass
+		position = pointing.position
+		print(position)
+		ra = position.split('POINT(')[1].split(' ')[0]
+		dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
+		
+		pointing_json['ra'] = ra
+		pointing_json['dec'] = dec
+		pointing_json['graceid'] = pointing.graceid
+		pointing_json['instrument'] = str(pointing.instrumentid)+'_'+models.instrument_type(pointing.instrument_type).name
+		pointing_json['band'] = pointing.band.name
+		pointing_json['depth'] = pointing.depth
+		pointing_json['depth_err'] = pointing.depth_err
+		
+		print(pointing_json)
+		return jsonify(pointing_json)
+		#except Exception as e:
+		#	print(e)
+		#	pass
 	return jsonify('')
+
+
+def pointings_from_IDS(ids, filter=[]):
+
+	filter.append(models.instrument.id == models.pointing.instrumentid)
+	filter.append(models.pointing_event.pointingid.in_(ids))
+	filter.append(models.pointing.id.in_(ids))
+
+	pointings = db.session.query(models.pointing.id,
+								   func.ST_AsText(models.pointing.position).label('position'),
+								   models.pointing.instrumentid,
+								   models.pointing.band,
+								   models.pointing.pos_angle,
+								   models.pointing.depth,
+								   models.pointing.depth_err,
+								   models.pointing.time,
+								   models.pointing.status,
+								   models.instrument.instrument_name,
+								   models.instrument.instrument_type,
+								   models.pointing_event.graceid
+								   ).filter(*filter).all()
+	
+	pointing_returns = {}
+	for p in pointings:
+		pointing_returns[str(p.id)] = p
+
+	return pointing_returns
+
 
 #API Endpoints
 #Get Galaxies From glade_2p3
@@ -535,10 +567,15 @@ def add_pointings():
 	errors = []
 	warnings = []
 
+	filter = [models.pointing.submitterid == userid]
+
 	if "pointing" in rd:
 		p = rd['pointing']
 		mp = models.pointing()
-		v = mp.from_json(p, dbinsts, userid)
+		if 'id' in p:
+			if function.isInt(p['id']):
+				planned_pointings = pointings_from_IDS([p['id']], filter)
+		v = mp.from_json(p, dbinsts, userid, planned_pointings)
 		if v.valid:
 			points.append(mp)
 			if len(v.warnings) > 0:
@@ -549,9 +586,16 @@ def add_pointings():
             
 	elif "pointings" in rd:
 		pointings = rd['pointings']
+		planned_ids = []
+		for p in pointings:
+			if 'id' in p:
+				if function.isInt(p['id']):
+					planned_ids.append(int(p['id']))
+		planned_pointings = pointings_from_IDS(planned_ids, filter)
+
 		for p in pointings:
 			mp = models.pointing()
-			v = mp.from_json(p, dbinsts, userid)
+			v = mp.from_json(p, dbinsts, userid, planned_pointings)
 			if v.valid:
 				points.append(mp)
 				db.session.add(mp)

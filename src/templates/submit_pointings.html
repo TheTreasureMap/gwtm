@@ -6,7 +6,7 @@
   <h2>Submit Pointing</h2>
   <form action="" method="post">
     {{ form.hidden_tag() }}
-    <p> {{ form.loadid.label }} {{ form.loadid }}</p>
+    <p> {{ form.loadid.label }} {{ form.loadid }} <a style="font-size: small">pre-loads existing information for your planned pointings</a></p>
     <p>
         {{ form.graceids.label}} {{ form.graceids }} {{ form.obs_status.label }} {{ form.obs_status }}
     </p>
