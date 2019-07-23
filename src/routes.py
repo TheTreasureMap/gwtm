@@ -217,7 +217,7 @@ def submit_pointing():
 		if depth is None:
 			flash('Depth is required')
 			return render_template('submit_pointings.html', form=form)
-		print(depth_unit)
+			
 		if depth_unit == 'None':
 			flash('Depth Unit is required')
 			return render_template('submit_pointings.html', form=form)
@@ -460,7 +460,6 @@ def get_pointing_fromID():
 		pointing_json['depth'] = pointing.depth
 		pointing_json['depth_err'] = pointing.depth_err
 		
-		print(pointing_json)
 		return jsonify(pointing_json)
 		#except Exception as e:
 		#	print(e)

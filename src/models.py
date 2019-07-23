@@ -246,13 +246,13 @@ class pointing(db.Model):
             else:
                 self.position = "POINT("+str(ra)+" "+str(dec)+")"
 
-        if 'galaxy_catalog' in p:
-            if isInt(p['galaxy_catalog']):
-                self.galaxy_catalog = p['galaxy_catalog']
+        #if 'galaxy_catalog' in p:
+        #    if isInt(p['galaxy_catalog']):
+        #        self.galaxy_catalog = p['galaxy_catalog']
 
-        if 'galaxy_catalogid' in p:
-            if isInt(p['galaxy_catalogid']):    
-                self.galaxy_catalogid = p['galaxy_catalogid']
+        #if 'galaxy_catalogid' in p:
+        #    if isInt(p['galaxy_catalogid']):    
+        #        self.galaxy_catalogid = p['galaxy_catalogid']
 
         if 'instrumentid' in p and not PLANNED:
             inst = p['instrumentid']
