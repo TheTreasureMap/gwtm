@@ -189,6 +189,7 @@ def submit_pointing():
 		band = form.obs_bandpass.data
 		depth_err = form.depth_err.data
 		depth = form.depth.data
+		depth_unit = form.depth_unit.data
 
 		#validation
 		if graceid == 'None':
@@ -216,6 +217,10 @@ def submit_pointing():
 		if depth is None:
 			flash('Depth is required')
 			return render_template('submit_pointings.html', form=form)
+			
+		if depth_unit == 'None':
+			flash('Depth Unit is required')
+			return render_template('submit_pointings.html', form=form)
 
 		#inserting
 		pointing.datecreated = datetime.datetime.now()
@@ -226,6 +231,7 @@ def submit_pointing():
 		pointing.band = band
 		pointing.depth = depth
 		pointing.depth_err = depth_err
+		pointing.depth_unit = depth_unit
 
 		#conditional status
 		if status == models.pointing_status.completed.name:
@@ -454,7 +460,6 @@ def get_pointing_fromID():
 		pointing_json['depth'] = pointing.depth
 		pointing_json['depth_err'] = pointing.depth_err
 		
-		print(pointing_json)
 		return jsonify(pointing_json)
 		#except Exception as e:
 		#	print(e)
@@ -475,6 +480,7 @@ def pointings_from_IDS(ids, filter=[]):
 								   models.pointing.pos_angle,
 								   models.pointing.depth,
 								   models.pointing.depth_err,
+								   models.pointing.depth_unit,
 								   models.pointing.time,
 								   models.pointing.status,
 								   models.instrument.instrument_name,

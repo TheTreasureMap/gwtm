@@ -37,7 +37,6 @@ class RegistrationForm(FlaskForm):
 class ManageUserForm(FlaskForm):
     submit = SubmitField('Search')
 
-
 class SearchPointingsForm(FlaskForm):
     graceids = SelectField('Grace ID', validators=[DataRequired()])
 
@@ -106,8 +105,13 @@ class SubmitPointingForm(FlaskForm):
 
     depth = DecimalField("Depth")
     depth_err = DecimalField("Depth Error")
-    galaxy_catalogid = IntegerField("Galaxy Catalog")
-    galaxy_id = IntegerField("Galaxy ID")
+
+    dus = [(None, 'Select')]
+    for a in models.depth_unit:
+        dus.append((str(a.name), str(a.name)))
+    depth_unit = SelectField('Depth Unit', choices=dus, validators=[DataRequired()])
+    #galaxy_catalogid = IntegerField("Galaxy Catalog")
+    #galaxy_id = IntegerField("Galaxy ID")
     pos_angle = DecimalField("Position Angle")
 
     submit = SubmitField('Submit')
