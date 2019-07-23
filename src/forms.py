@@ -37,7 +37,6 @@ class RegistrationForm(FlaskForm):
 class ManageUserForm(FlaskForm):
     submit = SubmitField('Search')
 
-
 class SearchPointingsForm(FlaskForm):
     graceids = SelectField('Grace ID', validators=[DataRequired()])
 
