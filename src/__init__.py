@@ -10,11 +10,9 @@ login.login_view = 'login'
 from . import routes
 from . import function
 
-configPath = '/var/www/gwtm'
-try:
-    configPath = os.environ.get('CONFIGPATH')
-except:
-    pass
+configPath = os.environ.get('CONFIGPATH')
+if configPath is None:
+    configPath = '/var/www/gwtm'
 
 config = function.readconfig(configPath, '/config')
 app.config["DEBUG"] = True
