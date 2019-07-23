@@ -41,6 +41,8 @@ def to_json(inst, cls):
             d[c.name] = v.name
         elif "bandpass" in str(v):
             d[c.name] = v.name
+        elif "depth_unit" in str(v):
+            d[c.name] = v.name
         elif "geography" in str(c.type):
             #try:
             d[c.name] = str(geoalchemy2.shape.to_shape(v))
@@ -51,6 +53,18 @@ def to_json(inst, cls):
         else:
             d[c.name] = v
     return json.dumps(d)
+
+
+class depth_unit(IntEnum):
+    ab_mag = 1
+    vega_mag = 2
+    flux_erg = 3
+    flux_jy = 4
+
+    def __str__(self):
+        split_name = str(self.name).split('_')
+        return str.upper(split_name[0]) + ' ' + split_name[1]
+
 
 class pointing_status(IntEnum):
     planned = 1
@@ -162,6 +176,7 @@ class pointing(db.Model):
     instrumentid = db.Column(db.Integer)
     depth = db.Column(db.Float)
     depth_err = db.Column(db.Float)
+    depth_unit = db.Column(db.Enum(depth_unit))
     time = db.Column(db.Date)
     datecreated = db.Column(db.Date)
     dateupdated = db.Column(db.Date)
@@ -184,10 +199,11 @@ class pointing(db.Model):
 
             if planned_pointing.status == pointing_status.completed or planned_pointing.status == pointing_status.cancelled:
                 v.errors.append('This pointing has already been '+planned_pointing.status.name)
-                
+
             self.position = planned_pointing.position
             self.depth = planned_pointing.depth
             self.depth_err = planned_pointing.depth_err
+            self.depth_unit = planned_pointing.depth_unit
             self.status = pointing_status.completed
             self.band = planned_pointing.band
             self.instrumentid = planned_pointing.instrumentid
@@ -266,6 +282,17 @@ class pointing(db.Model):
                 v.errors.append('Invalid depth. Must b and not PLANNEDe decimal')
         elif self.status == pointing_status.completed and not PLANNED:
             v.errors.append('depth is required for completed observations')
+
+        if 'depth_unit' in p:
+            du = p['depth_unit']
+            validdepthunit = [int(b) for b in depth_unit]
+            validdepthunitstr = [str(b.name) for b in depth_unit]
+            if du in validdepthunit or du in validdepthunitstr:
+                self.depth_unit = du
+            else:
+                v.errors.append('Invalid depth_unit. Must be ab_mag, vega_mag, flux_erg, or flux_jy')
+        else:
+            v.errors.append('depth_unit is required')
 
         if 'depth_err' in p:
             if isFloat(p['depth_err']):
