@@ -167,6 +167,15 @@ class instrument(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+class footprint_ccd(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    instrumentid = db.Column(db.Integer)
+    footprint = db.Column(Geography('POLYGON', srid=4326))
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
 class pointing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Enum(pointing_status))
@@ -319,24 +328,24 @@ class pointing(db.Model):
             v.errors.append('Field \"time\" is required for the observed pointing')
 
 
-#        if "submitterid" in p:
-#            validsubmitter = False
-#            submitter = p['submitterid']
-#            if isInt(submitter):
-#                subs = [x for x in dbusers if x.id == submitter]
-#                if len(subs) > 0:
-#                    self.submitterid = submitter
-#                    validsubmitter = True
-#            else:
-#                subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
-#                if len(subs) > 0:
-#                    self.submitterid = [x.id for x in subs][0] 
-#                    validsubmitter = True
-#
-#            if validsubmitter is False:
-#                v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
-#        else:
-#            v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
+        #if "submitterid" in p:
+        #   validsubmitter = False
+        #   submitter = p['submitterid']
+        #   if isInt(submitter):
+        #       subs = [x for x in dbusers if x.id == submitter]
+        #       if len(subs) > 0:
+        #           self.submitterid = submitter
+        #           validsubmitter = True
+        #       else:
+        #           subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
+        #               if len(subs) > 0:
+        #                   self.submitterid = [x.id for x in subs][0] 
+        #                   validsubmitter = True
+        #
+        #       if validsubmitter is False:
+        #           v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
+        #       else:
+        #           v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
 
         self.submitterid = userid
         self.datecreated = datetime.datetime.now()

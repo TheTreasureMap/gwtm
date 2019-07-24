@@ -290,9 +290,9 @@ def submit_instrument():
 	form = forms.SubmitInstrumentForm()
 	if request.method == 'POST':
 		submitterid = current_user.get_id()
-		instrument_type = form.instrument_type.data
+		instrument_type = models.instrument_type.photometric
 		instrument_name = form.instrument_name.data
-		footprint = None
+		footprint = []
 
 		u = form.unit.data
 		if u is None or u == "choose":
@@ -328,12 +328,8 @@ def submit_instrument():
 			vertices.append([-half_w, -half_h])
 			vertices.append([-half_w, half_h])
 
-			geom = "POLYGON(("
-			for v in vertices:
-				geom += str(v[0])+" "+str(v[1])+", "
-			geom = geom[0:len(geom)-2]
-			geom += "))"
-			footprint = geom
+			geom = create_geography(vertices)
+			footprint.append(geom)
 
 		if form.footprint_type.data == 'Circular':
 			r = form.radius.data
@@ -363,12 +359,8 @@ def submit_instrument():
 				vertices.append([x, y])
 			vertices.append(vertices[0])
 
-			geom = "POLYGON(("
-			for v in vertices:
-				geom += str(v[0])+" "+str(v[1])+", "
-			geom = geom[0:len(geom)-2]
-			geom += "))"
-			footprint = geom
+			geom = create_geography(vertices)
+			footprint.append(geom)
 
 		if form.footprint_type.data == 'Polygon':
 			p = form.polygon.data
@@ -378,35 +370,38 @@ def submit_instrument():
 
 			vertices = []
 
-			try:
-				for itera,line in enumerate(p.split('\r\n')):
-					if line.strip() != "":
-						splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
-						x = round(float(splitlineconfusion[0])*scale, 5)
-						y = round(float(splitlineconfusion[1])*scale, 5)
-						vertices.append([x, y])
+			if "[" in p and "]" in p:
+				polygons = p.split("#")
+				for poly in polygons:
+					try:
+						poly = poly.split('[')[1].split(']')[0]
+						result = extract_polygon(poly, scale)
+						if len(result[1]) > 0:
+							for e in result[1]:
+								flash(e)
+								return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+						else:
+							vertices = result[0]
 
-			except Exception as e:
-				flash("Error: " + str(e))
-				flash("For line "+str(itera+1)+": "+line)
-				flash("Please check the example for correct format")
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-			
-			if len(vertices) < 3:
-				flash('Invalid Polygon. Must have more than 2 vertices')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+						geom = create_geography(vertices)
+						footprint.append(geom)
+					except Exception as e:
+						flash("Invalid Polygon. If error persists, contact administrator")
+						return render_template('submit_instrument.html', form=form, again="/submit_instrument")
 
-			if vertices[0] != vertices[len(vertices)-1]:
-				vertices.append(vertices[0])
+			else:
+				result = extract_polygon(p, scale)
+				if len(result[1]) > 0:
+					for e in result[1]:
+						flash(e)
+						return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+				else:
+					vertices = result[0]
 
-			geom = "POLYGON(("
-			for v in vertices:
-				geom += str(v[0])+" "+str(v[1])+", "
-			geom = geom[0:len(geom)-2]
-			geom += "))"
-			footprint = geom
+				geom = create_geography(vertices)
+				footprint.append(geom)
 
-		if footprint is None:
+		if len(footprint) == 0:
 			flash('Footprint required')	
 			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
 
@@ -414,11 +409,20 @@ def submit_instrument():
 			instrument_name = instrument_name,
 			instrument_type = instrument_type,
 			submitterid = submitterid,
-			footprint = footprint,
+			#footprint = footprint,
 			datecreated = datetime.datetime.now()
 		)
+
 		db.session.add(instrument)
 		db.session.flush()
+
+		for f in footprint:
+			fccd = models.footprint_ccd(
+				instrumentid = instrument.id,
+				footprint = f
+			)
+			db.session.add(fccd)
+		
 		db.session.commit()
 
 		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
@@ -426,11 +430,45 @@ def submit_instrument():
 
 	return render_template('submit_instrument.html', form=form, again="/submit_instrument")
 
+def extract_polygon(p, scale):
+	vertices = []
+	errors = []
+	try:
+		for itera,line in enumerate(p.split('\r\n')):
+			if line.strip() != "":
+				splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
+				x = round(float(splitlineconfusion[0])*scale, 5)
+				y = round(float(splitlineconfusion[1])*scale, 5)
+				vertices.append([x, y])
+
+	except Exception as e:
+		errors.append("Error: " + str(e))
+		errors.append("For line "+str(itera+1)+": "+line)
+		errors.append("Please check the example for correct format")
+		return [vertices, errors]
+	
+	if len(vertices) < 3:
+		errors.append('Invalid Polygon. Must have more than 2 vertices')
+		return [vertices, errors]
+
+	if vertices[0] != vertices[len(vertices)-1]:
+		vertices.append(vertices[0])
+
+	return [vertices, errors]
+
+def create_geography(vertices):
+	geom = "POLYGON(("
+	for v in vertices:
+		geom += str(v[0])+" "+str(v[1])+", "
+	geom = geom[0:len(geom)-2]
+	geom += "))"
+	return geom
 
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect('/index')
+
 
 @app.route('/pointingfromid')
 def get_pointing_fromID():
@@ -466,6 +504,11 @@ def get_pointing_fromID():
 		#	pass
 	return jsonify('')
 
+
+@app.route('/fixshit', methods=['POST'])
+def fixshit():
+	#fixshitlogic
+	return 'success'
 
 def pointings_from_IDS(ids, filter=[]):
 

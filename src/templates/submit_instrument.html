@@ -13,6 +13,12 @@
       text-align: left;
       padding: 8px;
     }
+
+    .column {
+    float: left;
+    width: 18%;
+    padding: 10px;
+    }
 </style>
 
 <div style="padding-left:16px">
@@ -21,7 +27,7 @@
     {{ form.hidden_tag() }}
     <div>
       <p> {{ form.instrument_name.label }} {{ form.instrument_name }} </p>
-      <p>{{ form.instrument_type.label }} {{ form.instrument_type }} </p>
+      <!--<p>{{ form.instrument_type.label }} {{ form.instrument_type }} </p>-->
       <p> {{ form.footprint_type.label }} {{ form.footprint_type }} </p>
     </div>
     <div class="Rectangular box">
@@ -34,22 +40,48 @@
       </p>
     </div>
     <div class="Polygon box">
-      <p>
         <i>NOTES:</i><br>
-        <b>First and last vertices must be the same to complete polygon</b><br>
-        <b>Vertices must be in order going clockwise</b><br>
-        Example:<br>
-        <textarea disabled rows=5 cols="10">
+        <ul>
+          <li style="font-size: smaller"><b>First and last vertices must be the same to complete polygon</b></li>
+        </ul>
+        <ul>
+          <li style="font-size: smaller"><b>Vertices must be in order going clockwise. Separated by linebreak</b></li>
+        </ul>
+        <ul>
+          <li style="font-size: smaller"><b>Multiple polygons can be submitted in a [] deliminated by a #, as noted by the example below</b></li>
+        </ul>
+        <ul>
+          <li style="font-size: smaller"><b>Most importantly, All Polygons MUST be centered around 0,0</b></li>
+        </ul>
+        <div class="column">
+          Single Example:<br>
+            <textarea disabled rows=5 cols="10">
 (-1, 1)
 (1, 1)
 (1, -1)
 (-1, -1)
 (-1, 1)
-        </textarea>
-      </p>
-      <p>
-        {{ form.polygon.label }}<br> {{ form.polygon }}
-      </p>
+            </textarea>
+        </div>
+        <div style="padding: 10px">
+            Multi Example:<br>
+              <textarea disabled rows=12 cols="10">
+[(-1, 1)
+(1, 1)
+(1, -1)
+(-1, -1)
+(-1, 1)]
+#
+[(-1, 1)
+(1, 1)
+(1, -1)
+(-1, -1)
+(-1, 1)]
+#
+....
+              </textarea>
+        </div>
+        <p> {{ form.polygon.label }}  </p><p> {{ form.polygon }}</p>
     </div>
     <div>
       <p> {{ form.unit.label }} {{ form.unit }}</p>
