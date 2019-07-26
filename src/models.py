@@ -15,6 +15,7 @@ from src import app
 from src import login
 import secrets
 from . import routes
+import math
 
 db = SQLAlchemy(app)
 
@@ -166,6 +167,133 @@ class instrument(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    def from_json(self, form, userid, preview=False):
+        v = valid_mapping()
+        
+        submitterid = userid
+        instrument_name = form.instrument_name.data
+        footprint = []
+        multi_vertices = []
+
+        u = form.unit.data
+        if (u is None or u == "choose") and not preview:
+            v.errors.append('Unit is required')
+            return [v]
+
+        scale = 1
+        if u == "deg":
+            scale = 1
+        if u == "arcmin":
+            scale = 1/60.0
+        if u == "arcsec":
+            scale = 1/(60.0*60.0)
+
+        if form.footprint_type.data == 'Rectangular':
+            h,w = form.height.data, form.width.data
+            if h is None or w is None:
+                v.errors.append('Height and Width are required for Rectangular shape')
+                return [v]
+            if not isFloat(h) or not isFloat(w):
+                v.errors.append('Height and Width must be decimal')
+                return [v]
+                
+            vertices = []
+            half_h = round(0.5*float(h)*scale, 4)
+            half_w = round(0.5*float(w)*scale, 4)
+            vertices.append([-half_w, half_h])
+            vertices.append([half_w, half_h])
+            vertices.append([half_w, -half_h])
+            vertices.append([-half_w, -half_h])
+            vertices.append([-half_w, half_h])
+
+            multi_vertices.append(vertices)
+            geom = routes.create_geography(vertices)
+            footprint.append(geom)
+
+        if form.footprint_type.data == 'Circular':
+            r = form.radius.data
+
+            if r is None:
+                v.errors.append('Radius is required for Circular shape')
+                return [v]
+            if not isFloat(r):
+                v.errors.append('Radius must be decimal')
+                return [v]
+
+            r = float(r)*float(scale)
+            vertices = []
+            steps = len(range(0,360, int(360/20)))
+            ang = float(360/(steps))
+
+            for a in range(0,steps):
+                a = float(a)
+                x = r*math.cos(math.radians(90-a*ang))
+                y = r*math.sin(math.radians(90-a*ang))
+                if abs(x) < 1e-10:
+                    x = 0.0
+                if abs(y) < 1e-10:
+                    y = 0.0
+                x = round(x, 4)
+                y = round(y, 4)
+                vertices.append([x, y])
+            vertices.append(vertices[0])
+
+            multi_vertices.append(vertices)
+            geom = routes.create_geography(vertices)
+            footprint.append(geom)
+
+        if form.footprint_type.data == 'Polygon':
+            p = form.polygon.data
+            if p is None:
+                v.errors.append('Polygon is required for Polygon shape')
+                return [v]
+
+            vertices = []
+
+            if "[" in p and "]" in p:
+                polygons = p.split("#")
+                for poly in polygons:
+                    try:
+                        poly = poly.split('[')[1].split(']')[0]
+                        result = routes.extract_polygon(poly, scale)
+                        if len(result[1]) > 0:
+                            for e in result[1]:
+                                v.errors.append(e)
+                            return [v]
+                        else:
+                            vertices = result[0]
+
+                        multi_vertices.append(vertices)
+                        geom = routes.create_geography(vertices)
+                        footprint.append(geom)
+                    except Exception as e:
+                        v.errors.append("Invalid Polygon. If error persists, contact administrator")
+                        return [v]
+
+            else:
+                result = routes.extract_polygon(p, scale)
+                if len(result[1]) > 0:
+                    for e in result[1]:
+                        v.errors.append(e)
+                    return [v]
+                else:
+                    vertices = result[0]
+
+                multi_vertices.append(vertices)
+                geom = routes.create_geography(vertices)
+                footprint.append(geom)
+
+        if len(footprint) == 0:
+            v.errors.append('Footprint required')
+            return [v]
+
+        self.instrument_name = instrument_name,
+        self.instrument_type = instrument_type.photometric
+        self.submitterid = submitterid,
+        self.datecreated = datetime.datetime.now()
+        return [v, footprint, multi_vertices]
+
 
 class footprint_ccd(db.Model):
     id = db.Column(db.Integer, primary_key=True)

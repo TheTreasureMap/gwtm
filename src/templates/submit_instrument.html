@@ -51,7 +51,7 @@
           <li style="font-size: smaller"><b>Multiple polygons can be submitted in a [] deliminated by a #, as noted by the example below</b></li>
         </ul>
         <ul>
-          <li style="font-size: smaller"><b>Most importantly, All Polygons MUST be centered around 0,0</b></li>
+          <li style="font-size: smaller"><b>Most importantly, the entire configuration MUST be centered around 0,0</b></li>
         </ul>
         <div class="column">
           Single Example:<br>
@@ -67,16 +67,16 @@
             Multi Example:<br>
               <textarea disabled rows=12 cols="10">
 [(-1, 1)
-(1, 1)
-(1, -1)
+(-0.3, 1)
+(-0.3, -1)
 (-1, -1)
 (-1, 1)]
 #
-[(-1, 1)
+[(0.3, 1)
 (1, 1)
 (1, -1)
-(-1, -1)
-(-1, 1)]
+(0.3, -1)
+(0.3, 1)]
 #
 ....
               </textarea>
@@ -86,11 +86,18 @@
     <div>
       <p> {{ form.unit.label }} {{ form.unit }}</p>
     </div>
-    <p>{{ form.submit() }}</p>
+    <p> {{ form.submit() }}  </p>
   </form>
+  <p> <button onclick="preview()">Preview Footprint</button> </p>
+  <div style="width: 33%" id="preview_graph" name="preview_graph">
+    <script>
+        Plotly.plot('preview_graph',graphs,{});
+    </script>
+</div>
 </div>
 
 <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
     $("#footprint_type").change(function(){
@@ -105,6 +112,15 @@ $(document).ready(function(){
         });
     }).change();
 });
+
+function preview(){
+  var data = $('form').serialize();
+  $.get('/preview_footprint', data, function(returndata, status){
+    var graphs = JSON.parse(returndata);
+    Plotly.newPlot('preview_graph', graphs );
+  });
+}
+
 </script>
 
 {% endblock %}
