@@ -18,7 +18,6 @@ from src import app
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 
-from bokeh.plotting import figure, output_file, show
 import plotly
 import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
