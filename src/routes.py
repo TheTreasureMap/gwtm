@@ -18,6 +18,11 @@ from src import app
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 
+from bokeh.plotting import figure, output_file, show
+import plotly
+import plotly.graph_objs as go
+from plotly.tools import FigureFactory as FF
+
 db = models.db
 
 @app.route("/index", methods=["GET"])
@@ -94,6 +99,7 @@ def login():
             next_page = '/index'
         return redirect(next_page)
     return render_template('login.html', form=form)
+
 
 @app.route('/manage_user', methods=['GET', 'POST'])
 @login_required
@@ -288,130 +294,21 @@ def submit_pointing():
 @login_required
 def submit_instrument():
 	form = forms.SubmitInstrumentForm()
-	if request.method == 'POST':
-		submitterid = current_user.get_id()
-		instrument_type = models.instrument_type.photometric
-		instrument_name = form.instrument_name.data
-		footprint = []
 
-		u = form.unit.data
-		if u is None or u == "choose":
-			flash('Unit is required')
-			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
+	args = request.args
+	print(args)
 
-		if instrument_type == "choose":
-			flash('Instrument Type is required')
-			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
+	if request.method == 'POST' or False:
 
-		scale = 1
-		if u == "deg":
-			scale = 1
-		if u == "arcmin":
-			scale = 1/60.0
-		if u == "arcsec":
-			scale = 1/(60.0*60.0)
+		instrument = models.instrument()
+		valid_map = instrument.from_json(form, current_user.get_id())
 
-		if form.footprint_type.data == 'Rectangular':
-			h,w = form.height.data, form.width.data
-			if h is None or w is None:
-				flash('Height and Width are required for Rectangular shape')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-			if not function.isFloat(h) or not function.isFloat(w):
-				flash('Height and Width must be decimal')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-			vertices = []
-			half_h = round(0.5*float(h)*scale, 4)
-			half_w = round(0.5*float(w)*scale, 4)
-			vertices.append([-half_w, half_h])
-			vertices.append([half_w, half_h])
-			vertices.append([half_w, -half_h])
-			vertices.append([-half_w, -half_h])
-			vertices.append([-half_w, half_h])
+		if len(valid_map[0].errors) > 0:
+			for e in valid_map[0].errors:
+				flash(e)
+			return render_template('submit_instrument.html', form=form, plot=None)
 
-			geom = create_geography(vertices)
-			footprint.append(geom)
-
-		if form.footprint_type.data == 'Circular':
-			r = form.radius.data
-
-			if r is None:
-				flash('Radius is required for Circular shape')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-			if not function.isFloat(r):
-				flash('Radius must be decimal')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-
-			r = float(r)*float(scale)
-			vertices = []
-			steps = len(range(0,360, int(360/20)))
-			ang = float(360/(steps))
-
-			for a in range(0,steps):
-				a = float(a)
-				x = r*math.cos(math.radians(90-a*ang))
-				y = r*math.sin(math.radians(90-a*ang))
-				if abs(x) < 1e-10:
-					x = 0.0
-				if abs(y) < 1e-10:
-					y = 0.0
-				x = round(x, 4)
-				y = round(y, 4)
-				vertices.append([x, y])
-			vertices.append(vertices[0])
-
-			geom = create_geography(vertices)
-			footprint.append(geom)
-
-		if form.footprint_type.data == 'Polygon':
-			p = form.polygon.data
-			if p is None:
-				flash('Polygon is required for Polygon shape')
-				return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-
-			vertices = []
-
-			if "[" in p and "]" in p:
-				polygons = p.split("#")
-				for poly in polygons:
-					try:
-						poly = poly.split('[')[1].split(']')[0]
-						result = extract_polygon(poly, scale)
-						if len(result[1]) > 0:
-							for e in result[1]:
-								flash(e)
-								return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-						else:
-							vertices = result[0]
-
-						geom = create_geography(vertices)
-						footprint.append(geom)
-					except Exception as e:
-						flash("Invalid Polygon. If error persists, contact administrator")
-						return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-
-			else:
-				result = extract_polygon(p, scale)
-				if len(result[1]) > 0:
-					for e in result[1]:
-						flash(e)
-						return render_template('submit_instrument.html', form=form, again="/submit_instrument")
-				else:
-					vertices = result[0]
-
-				geom = create_geography(vertices)
-				footprint.append(geom)
-
-		if len(footprint) == 0:
-			flash('Footprint required')	
-			return render_template('submit_instrument.html', form=form, again='/submit_instrument')
-
-		instrument = models.instrument(
-			instrument_name = instrument_name,
-			instrument_type = instrument_type,
-			submitterid = submitterid,
-			#footprint = footprint,
-			datecreated = datetime.datetime.now()
-		)
+		footprint = valid_map[1]
 
 		db.session.add(instrument)
 		db.session.flush()
@@ -428,7 +325,8 @@ def submit_instrument():
 		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
 		return redirect("/index")
 
-	return render_template('submit_instrument.html', form=form, again="/submit_instrument")
+	return render_template('submit_instrument.html', form=form, plot=None)
+
 
 def extract_polygon(p, scale):
 	vertices = []
@@ -456,6 +354,7 @@ def extract_polygon(p, scale):
 
 	return [vertices, errors]
 
+
 def create_geography(vertices):
 	geom = "POLYGON(("
 	for v in vertices:
@@ -464,10 +363,51 @@ def create_geography(vertices):
 	geom += "))"
 	return geom
 
+
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect('/index')
+
+
+@app.route('/preview_footprint', methods=['GET'])
+def preview_footprint():
+	args = request.args
+	
+	form = forms.SubmitInstrumentForm(
+		instrument_name = args.get('instrument_name'),
+		instrument_type = args.get('instrument_type'),
+    	unit = args.get('unit'),
+    	footprint_type = args.get('footprint_type'),
+    	height = args.get('height'),
+    	width = args.get('width'),
+    	radius = args.get('radius'),
+    	polygon = args.get('polygon')
+	)
+
+	instrument = models.instrument()
+	v = instrument.from_json(form, 0, True)
+
+	if len(v[0].errors) == 0:
+		trace = []
+		vertices = v[2]
+		print(vertices, 'vertices')
+		for vert in vertices:
+			xs = [v[0] for v in vert]
+			ys = [v[1] for v in vert]
+			trace1 = go.Scatter(
+				x=xs,
+				y=ys,
+				mode='markers',
+				fill='tozeroy',
+			)
+			trace.append(trace1)
+		fig = go.Figure(data=trace)
+		data = fig
+		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+		return graphJSON
+
+	return jsonify("")
 
 
 @app.route('/pointingfromid')
@@ -481,12 +421,12 @@ def get_pointing_fromID():
 		pfilter.append(models.pointing.status == models.pointing_status.planned)
 
 		pointings = pointings_from_IDS([id], pfilter)
+
 		pointing = pointings[str(id)]
 		
 		pointing_json = {}
 
 		position = pointing.position
-		print(position)
 		ra = position.split('POINT(')[1].split(' ')[0]
 		dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
 		
