@@ -13,10 +13,12 @@
  * geoalchemy2
  * shapely
  * pygcn
+ * plotly
  * healpy
  
    this should install astropy, scipy, matplotlib... etc
    if not astropy is required
+   
 
 
 ### Database Configuration
