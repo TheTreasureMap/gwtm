@@ -9,6 +9,7 @@
  * flask-sqlalchemy
  * flask_login
  * flask_wtf
+ * flask_mail
  * pyscopg2
  * geoalchemy2
  * shapely
