@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, request, jsonify, render_template, redirect, flash, url_for
+from flask_login import current_user, login_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Message
+from werkzeug.urls import url_parse
 from sqlalchemy import func
-import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry
-import geoalchemy2
 from enum import Enum
-
+import geoalchemy2
+import flask_sqlalchemy as fsq
 import os, json, datetime
 import random, math
 
 from . import function
 from . import models
 from . import forms
+
 from src import app
-from flask_login import current_user, login_user, logout_user, login_required
-from werkzeug.urls import url_parse
+from src import mail
 
 import plotly
 import plotly.graph_objs as go
@@ -24,6 +26,7 @@ from plotly.tools import FigureFactory as FF
 
 db = models.db
 
+#WEBSITE ROUTES
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
 def home():
@@ -62,42 +65,64 @@ def documentation():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect('/index')
-    form = forms.RegistrationForm()
-    if form.validate_on_submit():
-        user = models.users(
+	if current_user.is_authenticated:
+		return redirect('/index')
+	form = forms.RegistrationForm()
+	if form.validate_on_submit():
+		user = models.users(
 			username=form.username.data, 
 			email=form.email.data,
 			firstname=form.firstname.data,
 			lastname=form.lastname.data,
-			datecreated=datetime.datetime.now()
+			datecreated=datetime.datetime.now(),
+			verified = False
 			)
-        user.set_password(form.password.data)
-        user.set_apitoken()
-        db.session.add(user)
-        db.session.commit()
-        return redirect('/login')
-    return render_template('register.html', form=form)
+		user.set_password(form.password.data)
+		user.set_verification_key()
+		db.session.add(user)
+		db.session.flush()
+		db.session.commit()
+		send_account_validation_email(user)
+		flash("An email has been sent to "+user.email+". Please follow further instructions to activate this account")
+		return redirect('/index')
+	return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = forms.LoginForm()
-    if form.validate_on_submit():
-        user = models.users.query.filter_by(username=form.username.data).first()
-        if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
-            #print("Invalid username or password")
-            return redirect('login')
-        login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
-            next_page = '/index'
-        return redirect(next_page)
-    return render_template('login.html', form=form)
+	verification_key = request.args.get("verification_key")
+	form = forms.LoginForm()
+
+	if verification_key and not form.validate_on_submit():
+		flash('Please login with your email and password to verify account')
+		user = models.users.query.filter_by(verification_key=verification_key).first()
+		form.username.data = user.username
+		form.verification_key = verification_key
+
+	if current_user.is_authenticated:
+		return redirect(url_for('index'))
+
+	if form.validate_on_submit():
+		user = models.users.query.filter_by(username=form.username.data).first()
+
+		if user is None or not user.check_password(form.password.data):
+			flash('Invalid username or password')
+			return redirect('login')
+
+		login_user(user, remember=form.remember_me.data)
+
+		if verification_key == user.verification_key and not user.verified:
+			user.verified = True
+			user.set_apitoken()
+			db.session.commit()
+			flash("Your account has been verified, go to manage account to access your api_token")
+
+		next_page = request.args.get('next')
+		if not next_page or url_parse(next_page).netloc != '':
+			next_page = '/index'
+
+		return redirect(next_page)
+	return render_template('login.html', form=form)
 
 
 @app.route('/manage_user', methods=['GET', 'POST'])
@@ -114,6 +139,7 @@ def manage_user():
 	#if form.validate_on_submit():
 
 	return render_template('manage_user.html', user=user, groups=groups)
+
 
 @app.route('/search_pointings', methods=['GET', 'POST'])
 @login_required
@@ -327,48 +353,12 @@ def submit_instrument():
 	return render_template('submit_instrument.html', form=form, plot=None)
 
 
-def extract_polygon(p, scale):
-	vertices = []
-	errors = []
-	try:
-		for itera,line in enumerate(p.split('\r\n')):
-			if line.strip() != "":
-				splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
-				x = round(float(splitlineconfusion[0])*scale, 5)
-				y = round(float(splitlineconfusion[1])*scale, 5)
-				vertices.append([x, y])
-
-	except Exception as e:
-		errors.append("Error: " + str(e))
-		errors.append("For line "+str(itera+1)+": "+line)
-		errors.append("Please check the example for correct format")
-		return [vertices, errors]
-	
-	if len(vertices) < 3:
-		errors.append('Invalid Polygon. Must have more than 2 vertices')
-		return [vertices, errors]
-
-	if vertices[0] != vertices[len(vertices)-1]:
-		vertices.append(vertices[0])
-
-	return [vertices, errors]
-
-
-def create_geography(vertices):
-	geom = "POLYGON(("
-	for v in vertices:
-		geom += str(v[0])+" "+str(v[1])+", "
-	geom = geom[0:len(geom)-2]
-	geom += "))"
-	return geom
-
-
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect('/index')
 
-
+#AJAX FUNCTIONS
 @app.route('/preview_footprint', methods=['GET'])
 def preview_footprint():
 	args = request.args
@@ -393,7 +383,7 @@ def preview_footprint():
 		print(vertices, 'vertices')
 		for vert in vertices:
 			xs = [v[0] for v in vert]
-			ys = [v[1] for v in vert]
+			ys =[v[1] for v in vert]
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
@@ -405,7 +395,7 @@ def preview_footprint():
 		data = fig
 		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 		return graphJSON
-
+	print(v[0].errors)
 	return jsonify("")
 
 
@@ -444,10 +434,49 @@ def get_pointing_fromID():
 	return jsonify('')
 
 
+#FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
 	#fixshitlogic
 	return 'success'
+
+
+#Internal Functions
+def extract_polygon(p, scale):
+	vertices = []
+	errors = []
+	try:
+		for itera,line in enumerate(p.split('\r\n')):
+			if line.strip() != "":
+				splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
+				x = round(float(splitlineconfusion[0])*scale, 5)
+				y = round(float(splitlineconfusion[1])*scale, 5)
+				vertices.append([x, y])
+
+	except Exception as e:
+		errors.append("Error: " + str(e))
+		errors.append("For line "+str(itera+1)+": "+line)
+		errors.append("Please check the example for correct format")
+		return [vertices, errors]
+	
+	if len(vertices) < 3:
+		errors.append('Invalid Polygon. Must have more than 2 vertices')
+		return [vertices, errors]
+
+	if vertices[0] != vertices[len(vertices)-1]:
+		vertices.append(vertices[0])
+
+	return [vertices, errors]
+
+
+def create_geography(vertices):
+	geom = "POLYGON(("
+	for v in vertices:
+		geom += str(v[0])+" "+str(v[1])+", "
+	geom = geom[0:len(geom)-2]
+	geom += "))"
+	return geom
+
 
 def pointings_from_IDS(ids, filter=[]):
 
@@ -475,6 +504,26 @@ def pointings_from_IDS(ids, filter=[]):
 		pointing_returns[str(p.id)] = p
 
 	return pointing_returns
+
+
+def send_email(subject, sender, recipients, text_body, html_body):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.body = text_body
+    msg.html = html_body
+    mail.send(msg)
+
+
+def send_account_validation_email(user):
+	send_email(
+		"Treasure Map Account Verification",
+		"gwtreasuremap@gmail.com",
+		[user.email],
+		"",
+		"<p>Hello "+user.firstname+",<br><br> \
+		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=treasuremap.space/login?verification_key="+user.verification_key+">address</a> to verify your account. <br>\
+		Please do not reply to this email<br><br> \
+		Cheers from the Treasure Map team </p>",
+	)
 
 
 #API Endpoints

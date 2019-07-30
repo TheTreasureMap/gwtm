@@ -5,7 +5,8 @@
     <div style="padding-left:16px">
     <h1>Sign In</h1>
     <form action="" method="post" novalidate>
-        {{ form.hidden_tag() }}
+        <p>{{ form.hidden_tag() }}</p>
+        <p hidden>{{ form.verification_key }}</p>
         <p>
             {{ form.username.label }}<br>
             {{ form.username(size=32) }}<br>
@@ -21,7 +22,12 @@
             {% endfor %}
         </p>
         <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
-        <p>{{ form.submit() }}</p>
+        {% if form.verification_key != None %}
+            <p>{{ form.submit() }}</p>
+        {% else %}
+            <p>TEST</p>
+            <button href='/login?verification_key={{form.verification_key}}'>Sign In</button>
+        {% endif %}
     </form>
     </div>  
 {% endblock %}

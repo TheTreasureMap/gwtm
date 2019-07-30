@@ -111,6 +111,7 @@ class valid_mapping():
 def load_user(id):
     return users.query.get(int(id))
 
+
 #API Models
 
 class users(UserMixin, db.Model):
@@ -122,6 +123,8 @@ class users(UserMixin, db.Model):
     datecreated = db.Column(db.Date)
     email = db.Column(db.String(100))
     api_token = db.Column(db.String(128))
+    verification_key = db.Column(db.String(128))
+    verified =  db.Column(db.Boolean)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -135,16 +138,25 @@ class users(UserMixin, db.Model):
     def check_apitoken(self, token):
         return token == self.api_token
 
+    def set_verification_key(self):
+        self.verification_key = secrets.token_urlsafe(28)
+    
+    def check_verification_key(self, verification_key):
+        return verification_key == self.verification_key
+
+
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
     groupid  = db.Column(db.Integer)
     role = db.Column(db.String(25))
 
+
 class groups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(25))
     datecreated = db.Column(db.Date)
+
 
 class useractions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -155,6 +167,7 @@ class useractions(db.Model):
     new_value = db.Column(db.String)
     type = db.Column(db.String(25))
     time = db.Column(db.Date)
+
 
 class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
