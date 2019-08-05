@@ -526,6 +526,16 @@ def send_account_validation_email(user):
 
 
 #API Endpoints
+
+#Get instrument footprints
+@app.route("/api/v0/footprints", methods=['GET'])
+def get_footprints():
+	footprints= db.session.query(models.footprint_ccd.instrumentid,\
+        func.ST_AsText(models.footprint_ccd.footprint)).all()
+	footprints = [x for x in footprints]
+
+	return jsonify(footprints)
+
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
