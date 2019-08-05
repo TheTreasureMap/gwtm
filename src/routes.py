@@ -530,9 +530,8 @@ def send_account_validation_email(user):
 #Get instrument footprints
 @app.route("/api/v0/footprints", methods=['GET'])
 def get_footprints():
-	footprints= db.session.query(models.footprint_ccd.instrumentid,\
-        func.ST_AsText(models.footprint_ccd.footprint)).all()
-	footprints = [x for x in footprints]
+	footprints= db.session.query(models.footprint_ccd).all()
+	footprints = [x.json for x in footprints]
 
 	return jsonify(footprints)
 
