@@ -9,6 +9,7 @@
  * flask-sqlalchemy
  * flask_login
  * flask_wtf
+ * flask_mail
  * pyscopg2
  * geoalchemy2
  * shapely
@@ -29,6 +30,13 @@ pwd    password
 db     database
 host   localhost
 port   5432
+MAIL_USERNAME [email]
+MAIL_DEFAULT_SENDER [email]
+ADMINS [email]
+MAIL_PASSWORD [email_pwd]
+MAIL_SERVER [smpt_server]
+MAIL_PORT [port]
+MAIL_USE_TLS True
 ```
 ```bash
 export CONFIGPATH='/path/to/config'

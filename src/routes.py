@@ -189,12 +189,11 @@ def search_pointings():
 def search_instruments():
 	form = forms.SearchInstrumentsForm()
 	if request.method == 'POST':
-		filter = []
-		if form.name.data != '':
-			filter.append(models.instrument.instrument_name.contains(form.name.data))
 		if form.types.data != '' and form.types.data != 'all':
-			filter.append(models.instrument.instrument_type == form.types.data)
-		results = db.session.query(models.instrument).filter(*filter).all()
+			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).\
+			filter(models.instrument.instrument_type == form.types.data).all()
+		else:
+			results = db.session.query(models.instrument).filter(models.instrument.instrument_name.ilike(form.name.data +'%')).all()
 		return render_template('search_instruments.html', form=form, search_result=results)
 	return render_template('search_instruments.html', form=form)
 
@@ -527,6 +526,15 @@ def send_account_validation_email(user):
 
 
 #API Endpoints
+
+#Get instrument footprints
+@app.route("/api/v0/footprints", methods=['GET'])
+def get_footprints():
+	footprints= db.session.query(models.footprint_ccd).all()
+	footprints = [x.json for x in footprints]
+
+	return jsonify(footprints)
+
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
