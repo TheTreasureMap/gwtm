@@ -99,7 +99,8 @@ def alerts():
 		overlays = []
 
 		#grab the precomputed localization contour region
-		contourpath = os.getcwd()+'/src/static/'+graceid+'-contours-smooth.json'
+		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
+		print(contourpath)
 		#contourpath = os.getcwd()+'/viz-example/contours-smooth.json'
 
 		#if it exists, add it to the overlay list
