@@ -173,8 +173,8 @@ class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     instrument_name = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(instrument_type))
-    footprint = db.Column(Geography('POLYGON', srid=4326))
     datecreated = db.Column(db.Date)
+    footprint = db.Column(Geography('POLYGON', srid=4326))
     submitterid = db.Column(db.Integer)
 
     @property
