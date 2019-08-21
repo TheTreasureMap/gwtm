@@ -56,7 +56,7 @@ class SearchPointingsForm(FlaskForm):
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = list(set([a.graceid for a in alerts]))
+        alerts = sorted(list(set([a.graceid for a in alerts])))
         self.graceids.choices = [(a, a) for a in alerts]
 
 
@@ -119,7 +119,7 @@ class SubmitPointingForm(FlaskForm):
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = list(set([a.graceid for a in alerts]))
+        alerts = sorted(list(set([a.graceid for a in alerts])))
         self.graceids.choices = [(None, 'Select')]
         for a in alerts:
             self.graceids.choices.append((a, a))
@@ -129,3 +129,16 @@ class SubmitPointingForm(FlaskForm):
         self.instruments.choices = [(None, 'Select')]
         for a in query:
             self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
+
+class AlertsForm(FlaskForm):
+
+    graceids = SelectField('Grace ID', validators=[DataRequired()])
+    overlays = {}
+    submit = SubmitField('Submit')
+
+    def populate_graceids(self):
+        alerts = models.gw_alert.query.filter_by(role='observation').all()
+        alerts = sorted(list(set([a.graceid for a in alerts])))
+        self.graceids.choices = [(None, 'Select')]
+        for a in alerts:
+            self.graceids.choices.append((a, a))

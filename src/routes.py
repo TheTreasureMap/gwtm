@@ -12,6 +12,7 @@ import geoalchemy2
 import flask_sqlalchemy as fsq
 import os, json, datetime
 import random, math
+import pandas as pd
 
 from . import function
 from . import models
@@ -25,7 +26,25 @@ import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
 
 db = models.db
-
+global colors
+colors = [
+	"#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
+	"#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
+	"#5A0007", "#809693", "#FEFFE6", "#1B4400", "#4FC601", "#3B5DFF", "#4A3B53", "#FF2F80",
+	"#61615A", "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA", "#D16100",
+	"#DDEFFF", "#000035", "#7B4F4B", "#A1C299", "#300018", "#0AA6D8", "#013349", "#00846F",
+	"#372101", "#FFB500", "#C2FFED", "#A079BF", "#CC0744", "#C0B9B2", "#C2FF99", "#001E09",
+	"#00489C", "#6F0062", "#0CBD66", "#EEC3FF", "#456D75", "#B77B68", "#7A87A1", "#788D66",
+	"#885578", "#FAD09F", "#FF8A9A", "#D157A0", "#BEC459", "#456648", "#0086ED", "#886F4C",
+	"#34362D", "#B4A8BD", "#00A6AA", "#452C2C", "#636375", "#A3C8C9", "#FF913F", "#938A81",
+	"#575329", "#00FECF", "#B05B6F", "#8CD0FF", "#3B9700", "#04F757", "#C8A1A1", "#1E6E00",
+	"#7900D7", "#A77500", "#6367A9", "#A05837", "#6B002C", "#772600", "#D790FF", "#9B9700",
+	"#549E79", "#FFF69F", "#201625", "#72418F", "#BC23FF", "#99ADC0", "#3A2465", "#922329",
+	"#5B4534", "#FDE8DC", "#404E55", "#0089A3", "#CB7E98", "#A4E804", "#324E72", "#6A3A4C",
+	"#83AB58", "#001C1E", "#D1F7CE", "#004B28", "#C8D0F6", "#A3A489", "#806C66", "#222800",
+	"#BF5650", "#E83000", "#66796D", "#DA007C", "#FF1A59", "#8ADBB4", "#1E0200", "#5B4E51",
+	"#C895C5", "#320033", "#FF6832", "#66E1D3", "#CFCDAC", "#D0AC94", "#7ED379", "#012C58"
+	]
 #WEBSITE ROUTES
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
@@ -33,19 +52,95 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/alerts", methods=['GET'])
+class overlay():
+	def __init__(self, name, color, contours):
+		self.name = name
+		self.color = color
+		self.contours = contours
+
+@app.route("/alerts", methods=['GET', 'POST'])
 @login_required
 def alerts():
-	alerts = models.gw_alert.query.filter_by(role="observation").all()
-	alerts = list(set([a.graceid for a in alerts]))
-	return render_template("alerts.html", alerts=alerts)
+	form = forms.AlertsForm()
+	form.populate_graceids()
+	if request.method == 'POST':
+		
+		graceid = form.graceids.data
+		
+		#filter and query for the relevant pointings
+		pointing_info = db.session.query(
+			models.pointing.instrumentid,
+			models.pointing.pos_angle,
+			func.ST_AsText(models.pointing.position).label('position'),
+		).filter(
+			models.pointing_event.graceid == graceid,
+			models.pointing_event.pointingid == models.pointing.id
+		).all()
 
+		#grab the pointings instrument ids
+		instrumentids = [x.instrumentid for x in pointing_info]
 
-@app.route("/gw_event", methods=['GET'])
-@login_required
-def ligo_alert():
-	#get graceID and display visulization.
-	return render_template('gw_event.html', graceid=graceid)
+		#filter and query for the relevant instruments
+		instrumentinfo = db.session.query(
+			models.instrument.instrument_name,
+			models.instrument.id
+		).filter(
+			models.instrument.id.in_(instrumentids)
+		).all()
+
+		#filter and query the relevant instrument footprints
+		footprintinfo = db.session.query(
+			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+			models.footprint_ccd.instrumentid
+		).filter(
+			models.footprint_ccd.instrumentid.in_(instrumentids)
+		).all()
+		
+		overlays = []
+
+		#grab the precomputed localization contour region
+		contourpath = os.getcwd()+'/src/static/'+graceid+'-contours-smooth.json'
+		#contourpath = os.getcwd()+'/viz-example/contours-smooth.json'
+
+		#if it exists, add it to the overlay list
+		if os.path.exists(contourpath):
+			contours_data=pd.read_json(contourpath)
+			contour_geometry = []
+			for contour in contours_data['features']:
+				contour_geometry.extend(contour['geometry']['coordinates'])
+
+			overlays.append({
+				"name":"GW Contour",
+				"color": '#e6194B',
+				"contours":function.polygons2footprints(contour_geometry)
+			})
+		
+		#iterate over each instrument and grab their pointings
+		#rotate and project the footprint and then add it to the overlay list
+		for inst in instrumentinfo:
+			name = inst.instrument_name
+			color = colors[inst.id]
+			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
+			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
+			pointing_geometries = []
+
+			for p in inst_pointings:
+				ra, dec = function.sanatize_pointing(p.position)
+				for ccd in sanatized_ccds:
+					rotated = function.rotate(ccd, p.pos_angle)
+					pointing_footprint = function.project(rotated, ra, dec)
+					pointing_geometries.append({"polygon":pointing_footprint})
+
+			overlays.append({
+				"name":name,
+				"color":color,
+				"contours":pointing_geometries
+			})
+
+		return render_template("alerts.html", form=form, viz=True, graceid=graceid, overlays=overlays)
+
+	return render_template("alerts.html", form=form)
 
 
 @app.route("/contact", methods=['GET'])
@@ -152,7 +247,6 @@ def search_pointings():
 		filter = []
 		filter.append(models.pointing_event.graceid.contains(form.graceids.data))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
-
 
 		if form.status_choices.data != '' and form.status_choices.data != 'all':
 			filter.append(models.pointing.status == form.status_choices.data)
@@ -534,6 +628,7 @@ def get_footprints():
 	footprints = [x.json for x in footprints]
 
 	return jsonify(footprints)
+
 
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
