@@ -98,24 +98,6 @@ def alerts():
 		
 		overlays = []
 
-		#grab the precomputed localization contour region
-		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
-		print(contourpath)
-		#contourpath = os.getcwd()+'/viz-example/contours-smooth.json'
-
-		#if it exists, add it to the overlay list
-		if os.path.exists(contourpath):
-			contours_data=pd.read_json(contourpath)
-			contour_geometry = []
-			for contour in contours_data['features']:
-				contour_geometry.extend(contour['geometry']['coordinates'])
-
-			overlays.append({
-				"name":"GW Contour",
-				"color": '#e6194B',
-				"contours":function.polygons2footprints(contour_geometry)
-			})
-		
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
 		for inst in instrumentinfo:
@@ -137,6 +119,24 @@ def alerts():
 				"name":name,
 				"color":color,
 				"contours":pointing_geometries
+			})
+
+		#grab the precomputed localization contour region
+		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
+		print(contourpath)
+		#contourpath = os.getcwd()+'/viz-example/contours-smooth.json'
+
+		#if it exists, add it to the overlay list
+		if os.path.exists(contourpath):
+			contours_data=pd.read_json(contourpath)
+			contour_geometry = []
+			for contour in contours_data['features']:
+				contour_geometry.extend(contour['geometry']['coordinates'])
+
+			overlays.append({
+				"name":"GW Contour",
+				"color": '#e6194B',
+				"contours":function.polygons2footprints(contour_geometry)
 			})
 
 		return render_template("alerts.html", form=form, viz=True, graceid=graceid, overlays=overlays)
