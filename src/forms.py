@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.recaptcha import RecaptchaField
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField, widgets, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
 from wtforms_components import TimeField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
@@ -22,6 +23,8 @@ class RegistrationForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
+    recaptcha = RecaptchaField()
+    fairuse = BooleanField('Fair Use', validators=[DataRequired()])
     submit = SubmitField('Register')
 
     def validate_username(self, username):
@@ -131,14 +134,11 @@ class SubmitPointingForm(FlaskForm):
             self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
 
 class AlertsForm(FlaskForm):
-
-    graceids = SelectField('Grace ID', validators=[DataRequired()])
-    overlays = {}
-    submit = SubmitField('Submit')
-
-    def populate_graceids(self):
-        alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = sorted(list(set([a.graceid for a in alerts])))
-        self.graceids.choices = [(None, 'Select')]
-        for a in alerts:
-            self.graceids.choices.append((a, a))
+    graceids = []
+    graceid = ''
+    viz = False
+    contours = []
+    alert_type = None
+    alert_types = []
+    selected_alert = None
+    avgra, avgdec = '', ''

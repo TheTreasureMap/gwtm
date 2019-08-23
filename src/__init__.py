@@ -29,7 +29,11 @@ app.config['ADMINS'] = [config['ADMINS']]
 app.config['MAIL_PASSWORD'] = config['MAIL_PASSWORD']
 app.config['MAIL_SERVER'] = config['MAIL_SERVER']
 app.config['MAIL_PORT'] = int(config['MAIL_PORT']) 
-app.config['MAIL_USE_TLS'] = bool(config['MAIL_USE_TLS']) 
+app.config['MAIL_USE_TLS'] = bool(config['MAIL_USE_TLS'])
+
+#RECAPTCHA
+app.config['RECAPTCHA_PUBLIC_KEY'] = config['RECAPTCHA_PUBLIC_KEY']
+app.config['RECAPTCHA_PRIVATE_KEY'] = config['RECAPTCHA_PRIVATE_KEY']
 
 db = SQLAlchemy(app)
 mail = Mail(app)

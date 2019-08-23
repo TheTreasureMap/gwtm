@@ -13,6 +13,7 @@ import flask_sqlalchemy as fsq
 import os, json, datetime
 import random, math
 import pandas as pd
+import numpy as np
 
 from . import function
 from . import models
@@ -26,6 +27,7 @@ import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
 
 db = models.db
+RECAPTCHA_PUBLIC_KEY = '6LeYIbsSAAAAACRPIllxxA7wvXjIE411PfdB2gt2J'
 global colors
 colors = [
 	"#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
@@ -61,12 +63,77 @@ class overlay():
 @app.route("/alerts", methods=['GET', 'POST'])
 @login_required
 def alerts():
-	form = forms.AlertsForm()
-	form.populate_graceids()
-	if request.method == 'POST':
-		
-		graceid = form.graceids.data
-		
+
+	form = forms.AlertsForm
+	form.viz = False
+	form.avgra = "90"
+	form.avgdec = "-30"
+
+	#grab all observation alerts
+	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
+	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])))
+
+	#link all alert types to its graceid
+	#we want to be able to label the retracted ones individual for the custom dropdown
+	gid_types = {}
+	for g in gwalerts_ids:
+		types = [x.alert_type for x in gwalerts if x.graceid == g]
+		gid_types[g] = types
+
+
+	#form the custom dropdown dictionary
+	graceids = [{'name':'--Select--', 'value':None}]
+	for g in gwalerts_ids:
+		#get the alert types for each graceid to test for retractions
+		g_types = gid_types[g]
+
+		if 'Retraction' in g_types:
+			graceids.append({'name':g + ' -retracted-', 'value':g})
+		else:
+			graceids.append({'name':g, 'value':g})
+
+	form.graceids = graceids
+
+	#if there is a selected graceid
+	graceid = request.args.get('graceids')
+	if graceid != 'None' and graceid is not None:
+
+		form.graceid = graceid
+
+		#Here we get the relevant alert type information
+
+		#if there is a specificly selected usertype
+		alerttype = request.args.get('alert_type')
+
+		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
+
+		#Getting the alert types do display as tabs
+		#Also involves logic to handle multiple alert types that are the same
+		#Update, Update 1, Update 2...
+		alert_types = [x.alert_type for x in alert_info]
+		form.alert_types = []
+		for at in alert_types:
+			if at in form.alert_types:
+				num = len([x for x in form.alert_types if x == at])
+				form.alert_types.append(at + ' ' + str(num))
+			else:
+				form.alert_types.append(at)
+
+		if alerttype is not None and alerttype != 'None':
+			at = alerttype.split()[0]
+			if len(alerttype.split()) > 1:
+				itera = int(alerttype.split()[1])
+			else:
+				itera = 0
+			print(at,itera)
+			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
+			form.alert_type = alerttype
+		else: 
+			form.selected_alert_info = alert_info[0]
+			form.alert_type = form.selected_alert_info.alert_type
+
+		form.viz = True
+
 		#filter and query for the relevant pointings
 		pointing_info = db.session.query(
 			models.pointing.instrumentid,
@@ -123,8 +190,6 @@ def alerts():
 
 		#grab the precomputed localization contour region
 		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
-		print(contourpath)
-		#contourpath = os.getcwd()+'/viz-example/contours-smooth.json'
 
 		#if it exists, add it to the overlay list
 		if os.path.exists(contourpath):
@@ -133,26 +198,30 @@ def alerts():
 			for contour in contours_data['features']:
 				contour_geometry.extend(contour['geometry']['coordinates'])
 
+			#Kind of guess as to where the center of the contour is
+			cgra, cgdec = [], []
+			for cg_list in contour_geometry:
+				for cg in cg_list:
+					cgra.append(cg[0])
+					cgdec.append(cg[1])
+			form.avgra = str(np.mean(cgra))
+			form.avgdec = str(np.mean(cgdec))
+
 			overlays.append({
 				"name":"GW Contour",
 				"color": '#e6194B',
 				"contours":function.polygons2footprints(contour_geometry)
 			})
 
-		return render_template("alerts.html", form=form, viz=True, graceid=graceid, overlays=overlays)
-
+		return render_template("alerts.html", form=form, overlays=overlays)
+		
+	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
 
 
-@app.route("/contact", methods=['GET'])
-def contact():
-    return render_template("contact.html")
-
-
-@app.route("/about", methods=['GET'])
-def about():
-    return render_template('about.html')
-
+@app.route("/fairuse", methods=['GET'])
+def fairuse():
+	return render_template('fairuse.html')
 
 @app.route("/documentation", methods=['GET'])
 def documentation():
@@ -179,6 +248,7 @@ def register():
 		db.session.flush()
 		db.session.commit()
 		send_account_validation_email(user)
+		
 		flash("An email has been sent to "+user.email+". Please follow further instructions to activate this account")
 		return redirect('/index')
 	return render_template('register.html', form=form)
@@ -411,7 +481,7 @@ def submit_pointing():
 
 @app.route('/submit_instrument', methods=['GET', 'POST'])
 @login_required
-def submit_instrument():
+def submit_in0strument():
 	form = forms.SubmitInstrumentForm()
 
 	args = request.args
@@ -496,32 +566,33 @@ def preview_footprint():
 @app.route('/pointingfromid')
 def get_pointing_fromID():
 	args = request.args
-	if 'id' in args:
+	if 'id' in args and function.isInt(args.get('id')):
 		#try:
-		id = args.get('id')
+		id = int(args.get('id'))
 		pfilter = []
 		pfilter.append(models.pointing.submitterid == current_user.get_id())
 		pfilter.append(models.pointing.status == models.pointing_status.planned)
 
 		pointings = pointings_from_IDS([id], pfilter)
 
-		pointing = pointings[str(id)]
-		
-		pointing_json = {}
+		if len(pointings) > 0:
+			pointing = pointings[str(id)]
+			
+			pointing_json = {}
 
-		position = pointing.position
-		ra = position.split('POINT(')[1].split(' ')[0]
-		dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
-		
-		pointing_json['ra'] = ra
-		pointing_json['dec'] = dec
-		pointing_json['graceid'] = pointing.graceid
-		pointing_json['instrument'] = str(pointing.instrumentid)+'_'+models.instrument_type(pointing.instrument_type).name
-		pointing_json['band'] = pointing.band.name
-		pointing_json['depth'] = pointing.depth
-		pointing_json['depth_err'] = pointing.depth_err
-		
-		return jsonify(pointing_json)
+			position = pointing.position
+			ra = position.split('POINT(')[1].split(' ')[0]
+			dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
+			
+			pointing_json['ra'] = ra
+			pointing_json['dec'] = dec
+			pointing_json['graceid'] = pointing.graceid
+			pointing_json['instrument'] = str(pointing.instrumentid)+'_'+models.instrument_type(pointing.instrument_type).name
+			pointing_json['band'] = pointing.band.name
+			pointing_json['depth'] = pointing.depth
+			pointing_json['depth_err'] = pointing.depth_err
+			
+			return jsonify(pointing_json)
 		#except Exception as e:
 		#	print(e)
 		#	pass
@@ -536,7 +607,7 @@ def fixshit():
 
 
 #Internal Functions
-def extract_polygon(p, scale):
+def extract_p0olygon(p, scale):
 	vertices = []
 	errors = []
 	try:
@@ -574,6 +645,7 @@ def create_geography(vertices):
 
 def pointings_from_IDS(ids, filter=[]):
 
+	print(ids, type(ids[0]))
 	filter.append(models.instrument.id == models.pointing.instrumentid)
 	filter.append(models.pointing_event.pointingid.in_(ids))
 	filter.append(models.pointing.id.in_(ids))
@@ -593,6 +665,7 @@ def pointings_from_IDS(ids, filter=[]):
 								   models.pointing_event.graceid
 								   ).filter(*filter).all()
 	
+	print(pointings)
 	pointing_returns = {}
 	for p in pointings:
 		pointing_returns[str(p.id)] = p
@@ -618,6 +691,21 @@ def send_account_validation_email(user):
 		Please do not reply to this email<br><br> \
 		Cheers from the Treasure Map team </p>",
 	)
+	send_email(
+		"Treasure Map Account Verification",
+		"gwtreasuremap@gmail.com",
+		['swyatt@email.arizona.edu'],
+		"",
+		"<p>Hey Sam,<br><br> \
+		 New GWTM account registration: <br> \
+		"+user.firstname+" "+user.lastname+" <br> \
+		email: "+user.email+" <br> \
+		username: "+user.username+" <br><br> \
+		Cheers you beautiful bastard</p>",
+	)
+
+
+
 
 
 #API Endpoints
