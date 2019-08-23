@@ -38,7 +38,7 @@ def rotate(footprint, angle):
 
 	rot_footprint = []
 	for p in footprint:
-		x, y = p[0], p[1];print(x,y,angle)
+		x, y = p[0], p[1]
 		r = math.sqrt(x*x + y*y)
 		if x < 0:
 			r = (-1.0)*r

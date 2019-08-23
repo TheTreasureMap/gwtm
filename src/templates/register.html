@@ -13,21 +13,21 @@
             {{ form.username.label }}<br>
             {{ form.username(size=32) }}<br>
             {% for error in form.username.errors %}
-            <span style="color: red;">[{{ error }}]</span>
+            <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
             {{ form.email.label }}<br>
             {{ form.email(size=64) }}<br>
             {% for error in form.email.errors %}
-            <span style="color: red;">[{{ error }}]</span>
+            <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
             {{ form.password.label }}<br>
             {{ form.password(size=32) }}<br>
             {% for error in form.password.errors %}
-            <span style="color: red;">[{{ error }}]</span>
+            <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
@@ -37,6 +37,13 @@
             <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
+        <p>
+            {% for error in form.recaptcha.errors %}
+                {{ error }}
+            {% endfor %}
+            {{ form.recaptcha }}
+        </p>
+        <p>{{ form.fairuse() }} <span style="font-size: small">by clicking you adhere to the <a href="/fairuse" target="_blank">fair use areement</a></span></p>
         <p>{{ form.submit() }}</p>
     </form>
     </div>

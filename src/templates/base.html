@@ -1,129 +1,73 @@
 <!DOCTYPE html>
-<html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-}
-.navbar {
-  overflow: hidden;
-  background-color: #333;
-}
+	<meta charset="utf-8">
+	<title>Treasure Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/css/bootstrap-select.min.css">
 
-.navbar a {
-  float: left;
-  font-size: 16px;
-  color: white;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-}
-
-.dropdown {
-  float: left;
-  overflow: hidden;
-}
-
-.dropdown .dropbtn {
-  font-size: 16px;  
-  border: none;
-  outline: none;
-  color: white;
-  padding: 14px 16px;
-  background-color: inherit;
-  font-family: inherit;
-  margin: 0;
-}
-
-.navbar a:hover, .dropdown:hover .dropbtn {
-  background-color: red;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f9f9f9;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
-}
-
-.dropdown-content a {
-  float: none;
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-  text-align: left;
-}
-
-.dropdown-content a:hover {
-  background-color: #ddd;
-}
-
-.dropdown:hover .dropdown-content {
-  display: block;
-}
-
-</style>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/js/bootstrap-select.min.js"></script>
 </head>
+
 <body>
-
-
-<div class="navbar">
-  <a href="/index">Home</a>
-  <a href="/alerts">GW Alerts</a>
-  {% if not current_user.is_anonymous %}
-  <div class="dropdown">
-      <button class="dropbtn">Query Pages 
-        <i class="fa fa-caret-down"></i>
-      </button>
-      <div class="dropdown-content">
-        <a href="/search_pointings">Pointings</a>
-        <a href="/search_instruments">Instruments</a>
-      </div>
-  </div> 
-  <div class="dropdown">
-      <button class="dropbtn">Submit Pages 
-        <i class="fa fa-caret-down"></i>
-      </button>
-      <div class="dropdown-content">
-        <a href="/submit_pointings">Pointing</a>
-        <a href="/submit_instrument">Instrument</a>
-      </div>
-  </div> 
-  {% endif %}
-  <a href="/documentation">User Guide</a>
-  <div style="float:right" class="dropdown">
-    <button class="dropbtn">Account 
-      <i class="fa fa-caret-down"></i>
-    </button>
-    <div class="dropdown-content">
-      {% if current_user.is_anonymous %}
-      <a href="/login">Login</a>
-      <a href="/register">Register</a>
-      {% else %}
-      <a href="/logout">Logout</a>
-      <a href="{{ url_for('manage_user') }}">Manage</a>
-      {% endif %}
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">Treasure Map</a>
     </div>
-  </div> 
-</div>
-<hr>
-
-{% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li style="color: red">{{ message }}</li>
-            {% endfor %}
+    <ul class="nav navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/alerts">Alerts</a>
+      </li>
+      <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Query Pages <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="/search_pointings">Pointings</a></li>
+          <li><a href="/search_instruments">Instruments</a></li>
         </ul>
+      </li>
+      <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Submit Pages <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li><a href="/submit_pointings">Pointings</a></li>
+          <li><a href="/submit_instrument">Instruments</a></li>
+        </ul>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/documentation">Documentation</a>
+      </li>
+    </ul> 
+    <ul class="nav navbar-nav navbar-right">
+        {% if current_user.is_anonymous %}
+          <li><a href="/login">Login</a></li>
+          <li><a href="/register">Register</a></li>
+        {% else %}
+          <li><a href="/manage_user">Profile</a></li>
+          <li><a href="/logout">Logout</a></li>
         {% endif %}
-{% endwith %}
-        
-{% block content %}{% endblock %}
+    </ul>
+  </div>
+</nav>
+
+{% block content %}
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-info" role="alert">{{ message }}</div>
+              {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block app_content %}{% endblock %}
+
+    </div>
+{% endblock %}
 
 </body>
 </html>
