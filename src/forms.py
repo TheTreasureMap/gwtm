@@ -134,6 +134,9 @@ class SubmitPointingForm(FlaskForm):
             self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
 
 class AlertsForm(FlaskForm):
+
+    pointing_status = []
+    status =''
     graceids = []
     graceid = ''
     viz = False
