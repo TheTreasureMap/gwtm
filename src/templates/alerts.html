@@ -6,15 +6,15 @@
   <p></p>
   <form action="" method="post">
 
-      <select class='selectpicker' name=graceids id=graceids>
-          {% for a in form.graceids %}
-            {% if a['value'] == form.graceid %}
-              <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
-            {% else %}
-              <option value={{ a['value'] }}>{{ a['name'] }}</option>
-            {% endif %}
-          {% endfor %}
-      </select>
+    <select class='selectpicker' name=graceids id=graceids>
+        {% for a in form.graceids %}
+          {% if a['value'] == form.graceid %}
+            <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% else %}
+            <option value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% endif %}
+        {% endfor %}
+    </select>
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }}</h3>
@@ -22,9 +22,9 @@
       <ul class="nav nav-tabs">
         {% for a_type in form.alert_types %}
           {% if a_type == form.alert_type %}
-            <li class="active"><a href="/alerts?graceids={{ form.graceid }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
+            <li class="active"><a href="/alerts?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
           {% else %}
-            <li><a href="/alerts?graceids={{ form.graceid }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
+            <li><a href="/alerts?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
           {% endif %}
         {% endfor %}
       </ul>
@@ -114,7 +114,19 @@
           </div>
         </div>
       </div>
-   
+      <div>
+        <p><b>Pointing Status</b> 
+        <select class='selectpicker' name=pointing_status id=pointing_status>
+          {% for a in form.pointing_status %}
+            {% if a['value'] == form.status %}
+              <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
+            {% else %}
+              <option value={{ a['value'] }}>{{ a['name'] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        </p>
+      </div>
       <body>
         <link rel="stylesheet" href="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
         <div id="aladin-lite-div" style="width:900px;height:500px;"></div>
@@ -143,6 +155,9 @@
       <script type="text/javascript">
         $('#graceids').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
           window.location='/alerts?graceids='+$(this).val()
+        });
+        $('#pointing_status').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+          window.location='/alerts?graceids={{form.graceid}}&alert_type={{form.alert_type}}&pointing_status='+$(this).val()
         });
 
       </script>

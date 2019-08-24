@@ -69,6 +69,12 @@ def alerts():
 	form.avgra = "90"
 	form.avgdec = "-30"
 
+	statuses = [{'name':'All', 'value':'all'}]
+	for m in models.pointing_status:
+		statuses.append({'name':m.name, 'value':m.name})
+	form.pointing_status = statuses
+	form.status = 'all'
+
 	#grab all observation alerts
 	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
 	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])))
@@ -135,14 +141,20 @@ def alerts():
 		form.viz = True
 
 		#filter and query for the relevant pointings
+		pointing_filter = []
+		pointing_filter.append(models.pointing_event.graceid == graceid)
+		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+		status = request.args.get('pointing_status')
+		if status is not None and status != 'all':
+			pointing_filter.append(models.pointing.status == status)
+			form.status = status
+
 		pointing_info = db.session.query(
 			models.pointing.instrumentid,
 			models.pointing.pos_angle,
 			func.ST_AsText(models.pointing.position).label('position'),
-		).filter(
-			models.pointing_event.graceid == graceid,
-			models.pointing_event.pointingid == models.pointing.id
-		).all()
+		).filter(*pointing_filter).all()
 
 		#grab the pointings instrument ids
 		instrumentids = [x.instrumentid for x in pointing_info]
@@ -189,6 +201,7 @@ def alerts():
 			})
 
 		#grab the precomputed localization contour region
+
 		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
 
 		#if it exists, add it to the overlay list
