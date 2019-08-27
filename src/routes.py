@@ -14,6 +14,7 @@ import os, json, datetime
 import random, math
 import pandas as pd
 import numpy as np
+import healpy
 
 from . import function
 from . import models
@@ -27,7 +28,7 @@ import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
 
 db = models.db
-RECAPTCHA_PUBLIC_KEY = '6LeYIbsSAAAAACRPIllxxA7wvXjIE411PfdB2gt2J'
+
 global colors
 colors = [
 	"#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
@@ -47,6 +48,7 @@ colors = [
 	"#BF5650", "#E83000", "#66796D", "#DA007C", "#FF1A59", "#8ADBB4", "#1E0200", "#5B4E51",
 	"#C895C5", "#320033", "#FF6832", "#66E1D3", "#CFCDAC", "#D0AC94", "#7ED379", "#012C58"
 	]
+
 #WEBSITE ROUTES
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
@@ -59,6 +61,7 @@ class overlay():
 		self.name = name
 		self.color = color
 		self.contours = contours
+
 
 @app.route("/alerts", methods=['GET', 'POST'])
 @login_required
@@ -202,7 +205,13 @@ def alerts():
 
 		#grab the precomputed localization contour region
 
-		contourpath = '/var/www/gwtm/src/static/'+graceid+'-contours-smooth.json'
+		if len(form.alert_type.split()) > 1:
+			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
+		else:
+			path_info = graceid + '-' + form.alert_type.split()[0]
+		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
+
+		print(contourpath)
 
 		#if it exists, add it to the overlay list
 		if os.path.exists(contourpath):
@@ -235,6 +244,7 @@ def alerts():
 @app.route("/fairuse", methods=['GET'])
 def fairuse():
 	return render_template('fairuse.html')
+
 
 @app.route("/documentation", methods=['GET'])
 def documentation():
@@ -272,14 +282,14 @@ def login():
 	verification_key = request.args.get("verification_key")
 	form = forms.LoginForm()
 
+	if current_user.is_authenticated:
+		return redirect('index')
+
 	if verification_key and not form.validate_on_submit():
 		flash('Please login with your email and password to verify account')
 		user = models.users.query.filter_by(verification_key=verification_key).first()
 		form.username.data = user.username
 		form.verification_key = verification_key
-
-	if current_user.is_authenticated:
-		return redirect(url_for('index'))
 
 	if form.validate_on_submit():
 		user = models.users.query.filter_by(username=form.username.data).first()
@@ -535,6 +545,7 @@ def logout():
     logout_user()
     return redirect('/index')
 
+
 #AJAX FUNCTIONS
 @app.route('/preview_footprint', methods=['GET'])
 def preview_footprint():
@@ -686,13 +697,6 @@ def pointings_from_IDS(ids, filter=[]):
 	return pointing_returns
 
 
-def send_email(subject, sender, recipients, text_body, html_body):
-    msg = Message(subject, sender=sender, recipients=recipients)
-    msg.body = text_body
-    msg.html = html_body
-    mail.send(msg)
-
-
 def send_account_validation_email(user):
 	send_email(
 		"Treasure Map Account Verification",
@@ -700,7 +704,7 @@ def send_account_validation_email(user):
 		[user.email],
 		"",
 		"<p>Hello "+user.firstname+",<br><br> \
-		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=treasuremap.space/login?verification_key="+user.verification_key+">address</a> to verify your account. <br>\
+		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=\"http://treasuremap.space/login?verification_key="+user.verification_key+"\">address</a> to verify your account. <br>\
 		Please do not reply to this email<br><br> \
 		Cheers from the Treasure Map team </p>",
 	)
@@ -718,14 +722,21 @@ def send_account_validation_email(user):
 	)
 
 
-
-
-
 #API Endpoints
 
 #Get instrument footprints
 @app.route("/api/v0/footprints", methods=['GET'])
 def get_footprints():
+	args = request.args
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
 	footprints= db.session.query(models.footprint_ccd).all()
 	footprints = [x.json for x in footprints]
 
@@ -735,7 +746,15 @@ def get_footprints():
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
-	args = request.args
+	args = request.argsrd
+
+	if "api_token" in rd:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
 
 	filter = []
 	filter1 = []
@@ -765,6 +784,7 @@ def get_galaxies():
 	galaxies = [x.json for x in galaxies]
 
 	return jsonify(galaxies)
+
 
 #Post Pointing/s
 #Parameters: List of Pointing JSON objects
@@ -861,14 +881,22 @@ def add_pointings():
 	db.session.commit()
 	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
 
+
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
 #Returns: List of PlannedPointing JSON objects
-
 @app.route("/api/v0/pointings", methods=["GET"])
 def get_pointings():
 
 	args = request.args
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
 
 	filter=[]
 
@@ -1023,9 +1051,9 @@ def get_pointings():
 
 	return jsonify(pointings)
 
+
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen
-
 @app.route("/api/v0/update_pointings", methods=["POST"])
 def del_pointings():
 	args = request.args
@@ -1069,16 +1097,25 @@ def del_pointings():
 	else:
 		return jsonify("Please Don't update the ENTIRE POINTING table")
 
+
 #Get Instrument/s
 #Parameters: List of ID/s, type/s (to be AND’ed).
 #Returns: List of Instrument JSON objects
-
 @app.route("/api/v0/instruments", methods=["GET"])
 def get_instruments():
 
 	args = request.args
 
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
 	filter=[]
+
 	if "id" in args:
 		#validate
 		_id = args.get('id')
@@ -1109,6 +1146,7 @@ def get_instruments():
 	insts = [x.json for x in insts]
 
 	return jsonify(insts)
+
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
