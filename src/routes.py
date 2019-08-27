@@ -186,9 +186,14 @@ def alerts():
 
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
-		for inst in instrumentinfo:
+		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
+		for i,inst in enumerate(instrumentinfo):
 			name = inst.instrument_name
-			color = colors[inst.id]
+			try:
+				color = colorlist[i]
+			except:
+				color = colors[inst.id]
+				pass
 			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
 			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
 			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
@@ -706,7 +711,7 @@ def send_email(subject, sender, recipients, text_body, html_body):
     msg.body = text_body
     msg.html = html_body
     mail.send(msg)
-	
+
 
 def send_account_validation_email(user):
 	send_email(
