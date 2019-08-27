@@ -18,7 +18,7 @@ if configPath is None:
 from . import function
 config = function.readconfig(configPath, '/config')
 
-app.config["DEBUG"] = False
+app.config["DEBUG"] = config['DEBUG']
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@'+config['host']+':'+str(config['port'])+'/'+config['db']+''
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CSRF_ENABLED'] = True
