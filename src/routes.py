@@ -120,10 +120,11 @@ def alerts():
 		#Also involves logic to handle multiple alert types that are the same
 		#Update, Update 1, Update 2...
 		alert_types = [x.alert_type for x in alert_info]
+		print(alert_types)
 		form.alert_types = []
 		for at in alert_types:
 			if at in form.alert_types:
-				num = len([x for x in form.alert_types if x == at])
+				num = len([x for x in form.alert_types if at in x])
 				form.alert_types.append(at + ' ' + str(num))
 			else:
 				form.alert_types.append(at)
@@ -138,8 +139,11 @@ def alerts():
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
 			form.alert_type = alerttype
 		else: 
-			form.selected_alert_info = alert_info[0]
-			form.alert_type = form.selected_alert_info.alert_type
+			pre_alert = alert_info[len(alert_info)-1]
+			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
+			form.selected_alert_info = pre_alert
+			form.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
+			print(form.alert_type)
 
 		form.viz = True
 
@@ -696,6 +700,13 @@ def pointings_from_IDS(ids, filter=[]):
 
 	return pointing_returns
 
+
+def send_email(subject, sender, recipients, text_body, html_body):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.body = text_body
+    msg.html = html_body
+    mail.send(msg)
+	
 
 def send_account_validation_email(user):
 	send_email(
