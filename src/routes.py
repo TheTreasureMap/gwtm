@@ -233,10 +233,13 @@ def alerts():
 		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
 		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
 		if os.path.exists(mappathinfo):
-			GWmap = hp.read_map(mappathinfo)
-			bestpixel = np.argmax(GWmap)
-			nside = hp.npix2nside(len(GWmap))
-			form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+			try:
+				GWmap = hp.read_map(mappathinfo)
+				bestpixel = np.argmax(GWmap)
+				nside = hp.npix2nside(len(GWmap))
+				form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+			except:
+				pass
 
 		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
 
