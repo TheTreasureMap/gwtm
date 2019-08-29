@@ -14,7 +14,7 @@ import os, json, datetime
 import random, math
 import pandas as pd
 import numpy as np
-import healpy
+import healpy as hp
 
 from . import function
 from . import models
@@ -227,6 +227,13 @@ def alerts():
 			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
 		else:
 			path_info = graceid + '-' + form.alert_type.split()[0]
+
+		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
+		# GWmap = hp.read_map(mappath)
+		# bestpixel = np.argmax(GWmap)
+		# nside = hp.npix2nside(len(GWmap))
+		# bestra, bestdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+
 		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
 
 		print(contourpath)
