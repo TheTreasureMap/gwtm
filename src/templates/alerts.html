@@ -134,7 +134,11 @@
         
         <!-- Creation of Aladin Lite instance with initial parameters -->
         <script type="text/javascript">
-            var aladin = A.aladin('#aladin-lite-div', {survey: "P/DSS2/color", fov:180, target: "{{ form.avgra }} {{ form.avgdec }}", cooFrame:"ICRSd"});
+            var survey = "P/DSS2/color"
+            var fov = 180
+            var target = "{{form.avgra}} {{form.avgdec}}"
+            var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd"};
+            var aladin = A.aladin('#aladin-lite-div', aladinParams)
             $('input[name=survey]').change(function() {
             aladin.setImageSurvey($(this).val());});
 
