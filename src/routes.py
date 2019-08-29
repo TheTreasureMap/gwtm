@@ -225,14 +225,18 @@ def alerts():
 
 		if len(form.alert_type.split()) > 1:
 			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
+			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
 		else:
 			path_info = graceid + '-' + form.alert_type.split()[0]
+			mappath = graceid + '-' + form.alert_type.split()[0]
 
 		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
-		# GWmap = hp.read_map(mappath)
-		# bestpixel = np.argmax(GWmap)
-		# nside = hp.npix2nside(len(GWmap))
-		# bestra, bestdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+		if os.path.exists(mappathinfo):
+			GWmap = hp.read_map(mappathinfo)
+			bestpixel = np.argmax(GWmap)
+			nside = hp.npix2nside(len(GWmap))
+			form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
 
 		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
 
@@ -246,13 +250,13 @@ def alerts():
 				contour_geometry.extend(contour['geometry']['coordinates'])
 
 			#Kind of guess as to where the center of the contour is
-			cgra, cgdec = [], []
-			for cg_list in contour_geometry:
-				for cg in cg_list:
-					cgra.append(cg[0])
-					cgdec.append(cg[1])
-			form.avgra = str(np.mean(cgra))
-			form.avgdec = str(np.mean(cgdec))
+			#cgra, cgdec = [], []
+			#for cg_list in contour_geometry:
+			#	for cg in cg_list:
+			#		cgra.append(cg[0])
+			#		cgdec.append(cg[1])
+			#form.avgra = str(np.mean(cgra))
+			#form.avgdec = str(np.mean(cgdec))
 
 			overlays.append({
 				"name":"GW Contour",
