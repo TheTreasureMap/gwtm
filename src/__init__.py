@@ -58,7 +58,7 @@ if not app.debug:
 
 
     if not os.path.exists('/var/www/gwtm/logs'):
-        os.mkdir('logs', 0777)
+        os.mkdir('/var/www/gwtm/logs',mode=0o777)
     file_handler = RotatingFileHandler('/var/www/gwtm/logs/gwtm.log', maxBytes=10240,backupCount=10)
     file_handler.setFormatter(logging.Formatter( '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
     file_handler.setLevel(logging.INFO)
