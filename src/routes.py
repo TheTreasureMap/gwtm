@@ -663,7 +663,7 @@ def fixshit():
 
 
 #Internal Functions
-def extract_p0olygon(p, scale):
+def extract_polygon(p, scale):
 	vertices = []
 	errors = []
 	try:
