@@ -891,8 +891,7 @@ def add_pointings():
 			if 'id' in p:
 				if function.isInt(p['id']):
 					planned_ids.append(int(p['id']))
-		if len(planned_ids) > 0:
-			planned_pointings = pointings_from_IDS(planned_ids, filter)
+		planned_pointings = pointings_from_IDS(planned_ids, filter)
 
 		for p in pointings:
 			mp = models.pointing()
