@@ -701,7 +701,6 @@ def create_geography(vertices):
 
 def pointings_from_IDS(ids, filter=[]):
 
-	print(ids, type(ids[0]))
 	filter.append(models.instrument.id == models.pointing.instrumentid)
 	filter.append(models.pointing_event.pointingid.in_(ids))
 	filter.append(models.pointing.id.in_(ids))
@@ -892,7 +891,8 @@ def add_pointings():
 			if 'id' in p:
 				if function.isInt(p['id']):
 					planned_ids.append(int(p['id']))
-		planned_pointings = pointings_from_IDS(planned_ids, filter)
+		if len(planned_ids) > 0:
+			planned_pointings = pointings_from_IDS(planned_ids, filter)
 
 		for p in pointings:
 			mp = models.pointing()
