@@ -89,7 +89,7 @@ def alerts():
 	
 	#grab all observation alerts
 	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
-	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])))
+	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
 
 	#link all alert types to its graceid
 	#we want to be able to label the retracted ones individual for the custom dropdown
@@ -1116,12 +1116,15 @@ def del_pointings():
 	filter1 = []
 	filter1.append(models.pointing.status == models.pointing_status.planned)
 	filter1.append(models.pointing.submitterid == userid)
-	if "id" in args:
-		filter1.append(models.pointing.id == int(args.get('id')))
-	elif "ids" in args:
-		filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
-	else:
-		return jsonify('id or ids of pointing event is required')
+	try:
+		if "id" in args:
+			filter1.append(models.pointing.id == int(args.get('id')))
+		elif "ids" in args:
+			filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
+		else:
+			return jsonify('id or ids of pointing event is required')
+	except:
+		return jsonify('There was a problem reading your list of ids')
 
 	if len(filter1) > 0:
 		pointings = db.session.query(models.pointing).filter(*filter1)
@@ -1130,7 +1133,8 @@ def del_pointings():
 				setattr(p, 'status', models.pointing_status.cancelled)
 				setattr(p, 'dateupdated', datetime.datetime.now())
 		db.session.commit()
-		return jsonify("Updated Pointings successfully")
+
+		return jsonify("Updated "+str(len(pointings))+" Pointings successfully")
 
 	else:
 		return jsonify("Please Don't update the ENTIRE POINTING table")
