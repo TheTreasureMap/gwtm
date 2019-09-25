@@ -28,26 +28,30 @@ def isFloat(i):
 		return False
 
 def rotate(footprint, angle):
-        #footprint is a list of vertices points
-        #   vertice points = [ra, dec]
+    #footprint is a list of vertices points
+    #   vertice points = [ra, dec]
 
-        # angle is the pos_angle of the pointing
+    # angle is the pos_angle of the pointing
 
-	if angle is None:
-		return footprint
+    if angle is None:
+        return footprint
 
-	rot_footprint = []
-	for p in footprint:
-		x, y = p[0], p[1]
-		r = math.sqrt(x*x + y*y)
-		if x < 0:
-			r = (-1.0)*r
-		theta = math.atan(y/x)-angle
-		new_x = r*math.cos(theta)
-		new_y = r*math.sin(theta)
-		rot_footprint.append([new_x, new_y])
+    rot_footprint = []
+        
+    for p in footprint:
+        x, y = p[0], p[1]
+        r = math.sqrt(x*x + y*y)
+        angle = angle * math.pi/180.
+        if x < 0:
+            r = (-1.0)*r
+        theta = math.atan(y/x)-angle
+        new_x = r*math.cos(theta)
+        new_y = r*math.sin(theta)
+        rot_footprint.append([new_x, new_y])
 
-	return rot_footprint
+
+    print(len(footprint),len(rot_footprint))
+    return rot_footprint
 
 def project(footprint, _ra, _dec):
         #footprint is a list of vertices points
