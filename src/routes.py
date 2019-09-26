@@ -211,8 +211,8 @@ def alerts():
 			for p in inst_pointings:
 				ra, dec = function.sanatize_pointing(p.position)
 				for ccd in sanatized_ccds:
-					#rotated = function.rotate(ccd, p.pos_angle)
-					pointing_footprint = function.project(ccd, ra, dec)
+					rotated = function.rotate(ccd, p.pos_angle)
+					pointing_footprint = function.project(rotated, ra, dec)
 					print(len(pointing_footprint))
 					pointing_geometries.append({"polygon":pointing_footprint})
 
