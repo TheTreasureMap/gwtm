@@ -73,7 +73,7 @@ class overlay():
 
 
 @app.route("/alerts", methods=['GET', 'POST'])
-@login_required
+#@login_required
 def alerts():
 
 	form = forms.AlertsForm
@@ -120,19 +120,15 @@ def alerts():
 
 		#Here we get the relevant alert type information
 
-
-
 		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
 		#if there is a specificly selected usertype
 		alerttype = request.args.get('alert_type')
-		if alerttype is None or alerttype == 'None':
-			alerttype = alert_info[len(alert_info)-1].alert_type
 
 		#Getting the alert types do display as tabs
 		#Also involves logic to handle multiple alert types that are the same
 		#Update, Update 1, Update 2...
 		alert_types = [x.alert_type for x in alert_info]
-		print(alert_types)
+		#print(alert_types)
 		form.alert_types = []
 		for at in alert_types:
 			if at in form.alert_types:
@@ -141,40 +137,43 @@ def alerts():
 			else:
 				form.alert_types.append(at)
 
+		#user selected an alert type?
 		if alerttype is not None and alerttype != 'None':
 			at = alerttype.split()[0]
 			if len(alerttype.split()) > 1:
 				itera = int(alerttype.split()[1])
 			else:
 				itera = 0
-			print(at,itera)
+			#print(at,itera)
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
-			farrate = 1/form.selected_alert_info.far
-			farunit = "s"
-			if farrate > 86400:
-				farunit = "days"
-				farrate /= 86400
-				if farrate > 365:
-					farrate /= 365.25
-					farunit = "years"
-				elif farrate > 30:
-					farrate /= 30
-					farunit = "months"
-				elif farrate > 7:
-					farrate /= 7
-					farunit = "weeks"
-			form.selected_alert_info.human_far=round(farrate,2)
-			form.selected_alert_info.human_far_unit = farunit
-
-			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
-			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
 			form.alert_type = alerttype
+		#user did not select an alert type, so get the most recent one
 		else: 
 			pre_alert = alert_info[len(alert_info)-1]
 			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
 			form.selected_alert_info = pre_alert
+			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
 			form.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
-			print(form.alert_type)
+
+		farrate = 1/form.selected_alert_info.far
+		farunit = "s"
+		if farrate > 86400:
+			farunit = "days"
+			farrate /= 86400
+			if farrate > 365:
+				farrate /= 365.25
+				farunit = "years"
+			elif farrate > 30:
+				farrate /= 30
+				farunit = "months"
+			elif farrate > 7:
+				farrate /= 7
+				farunit = "weeks"
+		form.selected_alert_info.human_far=round(farrate,2)
+		form.selected_alert_info.human_far_unit = farunit
+
+		form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
+		form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
 
 		form.viz = True
 
@@ -235,7 +234,7 @@ def alerts():
 				for ccd in sanatized_ccds:
 					rotated = function.rotate(ccd, p.pos_angle)
 					pointing_footprint = function.project(rotated, ra, dec)
-					print(len(pointing_footprint))
+					#print(len(pointing_footprint))
 					pointing_geometries.append({"polygon":pointing_footprint})
 
 			overlays.append({
@@ -386,7 +385,7 @@ def manage_user():
 
 
 @app.route('/search_pointings', methods=['GET', 'POST'])
-@login_required
+#@login_required
 def search_pointings():
 
 	form = forms.SearchPointingsForm()
@@ -428,7 +427,7 @@ def search_pointings():
 
 
 @app.route('/search_instruments', methods=['GET', 'POST'])
-@login_required
+#@login_required
 def search_instruments():
 	form = forms.SearchInstrumentsForm()
 	if request.method == 'POST':

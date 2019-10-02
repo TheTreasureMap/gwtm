@@ -49,8 +49,6 @@ def rotate(footprint, angle):
         new_y = r*math.sin(theta)
         rot_footprint.append([new_x, new_y])
 
-
-    print(len(footprint),len(rot_footprint))
     return rot_footprint
 
 def project(footprint, _ra, _dec):
