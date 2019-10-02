@@ -155,22 +155,23 @@ def alerts():
 			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
 			form.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
 
-		farrate = 1/form.selected_alert_info.far
-		farunit = "s"
-		if farrate > 86400:
-			farunit = "days"
-			farrate /= 86400
-			if farrate > 365:
-				farrate /= 365.25
-				farunit = "years"
-			elif farrate > 30:
-				farrate /= 30
-				farunit = "months"
-			elif farrate > 7:
-				farrate /= 7
-				farunit = "weeks"
-		form.selected_alert_info.human_far=round(farrate,2)
-		form.selected_alert_info.human_far_unit = farunit
+		if form.selected_alert_info.far != 0:
+			farrate = 1/form.selected_alert_info.far
+			farunit = "s"
+			if farrate > 86400:
+				farunit = "days"
+				farrate /= 86400
+				if farrate > 365:
+					farrate /= 365.25
+					farunit = "years"
+				elif farrate > 30:
+					farrate /= 30
+					farunit = "months"
+				elif farrate > 7:
+					farrate /= 7
+					farunit = "weeks"
+			form.selected_alert_info.human_far=round(farrate,2)
+			form.selected_alert_info.human_far_unit = farunit
 
 		form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
 		form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
