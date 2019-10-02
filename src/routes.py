@@ -52,17 +52,17 @@ colors = [
 #WEBSITE ROUTES
 @app.errorhandler(404)
 def not_found_error(error):
-    return render_template('404.html'), 404
+	return render_template('404.html'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    db.session.rollback()
-    return render_template('500.html'), 500
+	db.session.rollback()
+	return render_template('500.html'), 500
 
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
 def home():
-    return render_template("index.html")
+	return render_template("index.html")
 
 
 class overlay():
@@ -120,10 +120,13 @@ def alerts():
 
 		#Here we get the relevant alert type information
 
-		#if there is a specificly selected usertype
-		alerttype = request.args.get('alert_type')
+
 
 		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
+		#if there is a specificly selected usertype
+		alerttype = request.args.get('alert_type')
+		if alerttype is None or alerttype == 'None':
+			alerttype = alert_info[len(alert_info)-1].alert_type
 
 		#Getting the alert types do display as tabs
 		#Also involves logic to handle multiple alert types that are the same
@@ -146,6 +149,25 @@ def alerts():
 				itera = 0
 			print(at,itera)
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
+			farrate = 1/form.selected_alert_info.far
+			farunit = "s"
+			if farrate > 86400:
+				farunit = "days"
+				farrate /= 86400
+				if farrate > 365:
+					farrate /= 365.25
+					farunit = "years"
+				elif farrate > 30:
+					farrate /= 30
+					farunit = "months"
+				elif farrate > 7:
+					farrate /= 7
+					farunit = "weeks"
+			form.selected_alert_info.human_far=round(farrate,2)
+			form.selected_alert_info.human_far_unit = farunit
+
+			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
+			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
 			form.alert_type = alerttype
 		else: 
 			pre_alert = alert_info[len(alert_info)-1]
@@ -575,8 +597,8 @@ def submit_in0strument():
 
 @app.route('/logout')
 def logout():
-    logout_user()
-    return redirect('/index')
+	logout_user()
+	return redirect('/index')
 
 
 #AJAX FUNCTIONS
@@ -587,12 +609,12 @@ def preview_footprint():
 	form = forms.SubmitInstrumentForm(
 		instrument_name = args.get('instrument_name'),
 		instrument_type = args.get('instrument_type'),
-    	unit = args.get('unit'),
-    	footprint_type = args.get('footprint_type'),
-    	height = args.get('height'),
-    	width = args.get('width'),
-    	radius = args.get('radius'),
-    	polygon = args.get('polygon')
+		unit = args.get('unit'),
+		footprint_type = args.get('footprint_type'),
+		height = args.get('height'),
+		width = args.get('width'),
+		radius = args.get('radius'),
+		polygon = args.get('polygon')
 	)
 
 	instrument = models.instrument()
@@ -730,10 +752,10 @@ def pointings_from_IDS(ids, filter=[]):
 
 
 def send_email(subject, sender, recipients, text_body, html_body):
-    msg = Message(subject, sender=sender, recipients=recipients)
-    msg.body = text_body
-    msg.html = html_body
-    mail.send(msg)
+	msg = Message(subject, sender=sender, recipients=recipients)
+	msg.body = text_body
+	msg.html = html_body
+	mail.send(msg)
 
 
 def send_account_validation_email(user):
@@ -838,7 +860,7 @@ def add_pointings():
 		rd = request.get_json()
 	except:
 		return("Whoaaaa that JSON is a little wonky")
-		     
+			 
 	valid_gid = False
 
 	if "graceid" in rd:
@@ -862,7 +884,7 @@ def add_pointings():
 		return jsonify("api_token is required")
 
 	dbinsts = db.session.query(models.instrument.instrument_name,
-                               models.instrument.id).all()
+							   models.instrument.id).all()
 
 	points = []
 	errors = []
@@ -884,7 +906,7 @@ def add_pointings():
 			db.session.add(mp)
 		else:
 			errors.append(["Object: "+json.dumps(p), v.errors])
-            
+			
 	elif "pointings" in rd:
 		pointings = rd['pointings']
 		planned_ids = []

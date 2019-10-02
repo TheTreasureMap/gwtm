@@ -41,33 +41,22 @@
               </thead>
               <tbody>
                 <tr>
-                <tr class="info">
-                  <td>Role</td>
-                  <td>{{ form.selected_alert_info.role }}</td>
-                </tr>
-                <tr class="info">
-                  <td>Packet Type</td>
-                  <td>{{ form.selected_alert_info.packet_type }}</td>
-                </tr>
+
                 <tr class="info">
                   <td>Dectectors</td>
                   <td>{{ form.selected_alert_info.detectors }}</td>
                 </tr>
                 <tr class="info">
                   <td>Time of Signal</td>
-                  <td>{{ form.selected_alert_info.time_of_signal }}</td>
+                  <td>{{ form.selected_alert_info.time_of_signal }} UTC</td>
                 </tr>
                 <tr class="info">
-                  <td>FAR</td>
-                  <td>{{ form.selected_alert_info.far }}</td>
+                  <td>False Alarm Rate</td>
+                  <td>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
                 </tr>
                 <tr class="info">
                   <td>Distance</td>
-                  <td>{{ form.selected_alert_info.distance }} +/- {{ form.selected_alert_info.distance_error }}</td>
-                </tr>
-                <tr class="info">
-                  <td>Date Created</td>
-                  <td>{{ form.selected_alert_info.datecreated }}</td>
+                  <td>{{ form.selected_alert_info.distance }} +/- {{ form.selected_alert_info.distance_error }} Mpc</td>
                 </tr>
               </tbody>
             </table>
@@ -76,7 +65,7 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Probabilties</th>
+                  <th>Classification (CBC Only)</th>
                   <th></th>
                 </tr>
               </thead>
@@ -90,7 +79,7 @@
                   <td>{{ form.selected_alert_info.prob_nsbh }}</td>
                 </tr>
                 <tr class="info">
-                  <td>GAP</td>
+                  <td>Mass Gap</td>
                   <td>{{ form.selected_alert_info.prob_gap }}</td>
                 </tr>
                 <tr class="info">
