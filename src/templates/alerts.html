@@ -179,7 +179,11 @@
 
             $("#InstrumentSelector input[type='color']").change(function() {
                 var hipsId = $(this).parents('fieldset').find("input[type='checkbox']").val();
-                overlaylist[hipsId].updateShape({color: this.value});
+                //overlay.color = this.value;
+                //#aladin.view.requestRedraw();
+                //overlaylist[hipsId].updateShape({color: this.value});
+                overlaylist[hipsId].color=this.value;
+                aladin.view.requestRedraw();
             });
 
             $('.indicator').click(function() {
