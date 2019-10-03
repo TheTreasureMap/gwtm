@@ -155,10 +155,9 @@
             for (var k=0 ; k<overlays.length; k++) {
                 var cat = overlays[k];
                 html += '<fieldset><span class="indicator right-triangle"></span><label for="overlay-' + k + '">';
-                html += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" >' + cat.name + '</input></label>';
+                html += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" checked="checked"  >' + cat.name + '</input></label>';
                 html += '<div class="cat-options" style="display: none;"><table><tr><td>Color</td><td><input type="color"></input></td></tr></select></td></tr></table></div>';
                 html += '</fieldset>';
-
             }
             html += '</form>';
 
