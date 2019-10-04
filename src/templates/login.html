@@ -4,6 +4,7 @@
 {% block content %}
     <div style="padding-left:16px">
     <h1>Sign In</h1>
+    <p>Don't have an account? <a href='/register'>Register here</a></p>
     <form action="" method="post" novalidate>
         <p>{{ form.hidden_tag() }}</p>
         <p hidden>{{ form.verification_key }}</p>
@@ -25,7 +26,6 @@
         {% if form.verification_key != None %}
             <p>{{ form.submit() }}</p>
         {% else %}
-            <p>TEST</p>
             <button href='/login?verification_key={{form.verification_key}}'>Sign In</button>
         {% endif %}
     </form>

@@ -62,7 +62,16 @@ def internal_error(error):
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
 def home():
-	return render_template("index.html")
+	#get latest alert. Construct the form alertsform
+	graceid = db.session.query(models.gw_alert.graceid).order_by(models.gw_alert.graceid.desc()).first()
+	
+	status = request.args.get('pointing_status')
+	alerttype = request.args.get('alert_type')
+	args = {'graceid':graceid.graceid, 'pointing_status':status, 'alert_type':alerttype} 
+	form = forms.AlertsForm
+	form, overlays = construct_alertform(form, args)
+	form.page = 'index'
+	return render_template("index.html", form=form, overlays=overlays)
 
 
 class overlay():
@@ -76,222 +85,14 @@ class overlay():
 #@login_required
 def alerts():
 
-	form = forms.AlertsForm
-	form.viz = False
-	form.avgra = "90"
-	form.avgdec = "-30"
-
-	statuses = [{'name':'All', 'value':'all'}]
-	for m in models.pointing_status:
-		statuses.append({'name':m.name, 'value':m.name})
-	form.pointing_status = statuses
-	form.status = 'all'
-	
-	#grab all observation alerts
-	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
-	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
-
-	#link all alert types to its graceid
-	#we want to be able to label the retracted ones individual for the custom dropdown
-	gid_types = {}
-	for g in gwalerts_ids:
-		types = [x.alert_type for x in gwalerts if x.graceid == g]
-		gid_types[g] = types
-
-
-	#form the custom dropdown dictionary
-	graceids = [{'name':'--Select--', 'value':None}]
-	for g in gwalerts_ids:
-		#get the alert types for each graceid to test for retractions
-		g_types = gid_types[g]
-
-		if 'Retraction' in g_types:
-			graceids.append({'name':g + ' -retracted-', 'value':g})
-		else:
-			graceids.append({'name':g, 'value':g})
-
-	form.graceids = graceids
-
-	#if there is a selected graceid
 	graceid = request.args.get('graceids')
+	status = request.args.get('pointing_status')
+	alerttype = request.args.get('alert_type')
+	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
+	form = forms.AlertsForm
+	form.page = 'alerts'
+	form, overlays = construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
-
-		form.graceid = graceid
-
-		#Here we get the relevant alert type information
-
-		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
-		#if there is a specificly selected usertype
-		alerttype = request.args.get('alert_type')
-
-		#Getting the alert types do display as tabs
-		#Also involves logic to handle multiple alert types that are the same
-		#Update, Update 1, Update 2...
-		alert_types = [x.alert_type for x in alert_info]
-		#print(alert_types)
-		form.alert_types = []
-		for at in alert_types:
-			if at in form.alert_types:
-				num = len([x for x in form.alert_types if at in x])
-				form.alert_types.append(at + ' ' + str(num))
-			else:
-				form.alert_types.append(at)
-
-		#user selected an alert type?
-		if alerttype is not None and alerttype != 'None':
-			at = alerttype.split()[0]
-			if len(alerttype.split()) > 1:
-				itera = int(alerttype.split()[1])
-			else:
-				itera = 0
-			#print(at,itera)
-			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
-			form.alert_type = alerttype
-		#user did not select an alert type, so get the most recent one
-		else: 
-			pre_alert = alert_info[len(alert_info)-1]
-			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
-			form.selected_alert_info = pre_alert
-			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
-			form.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
-
-		if form.selected_alert_info.far != 0:
-			farrate = 1/form.selected_alert_info.far
-			farunit = "s"
-			if farrate > 86400:
-				farunit = "days"
-				farrate /= 86400
-				if farrate > 365:
-					farrate /= 365.25
-					farunit = "years"
-				elif farrate > 30:
-					farrate /= 30
-					farunit = "months"
-				elif farrate > 7:
-					farrate /= 7
-					farunit = "weeks"
-			form.selected_alert_info.human_far=round(farrate,2)
-			form.selected_alert_info.human_far_unit = farunit
-
-		if form.selected_alert_info.distance is not None:
-			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
-		if form.selected_alert_info.distance_error is not None:
-			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
-
-		form.viz = True
-
-		#filter and query for the relevant pointings
-		pointing_filter = []
-		pointing_filter.append(models.pointing_event.graceid == graceid)
-		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
-
-		status = request.args.get('pointing_status')
-		if status is not None and status != 'all':
-			pointing_filter.append(models.pointing.status == status)
-			form.status = status
-
-		pointing_info = db.session.query(
-			models.pointing.instrumentid,
-			models.pointing.pos_angle,
-			func.ST_AsText(models.pointing.position).label('position'),
-		).filter(*pointing_filter).all()
-
-		#grab the pointings instrument ids
-		instrumentids = [x.instrumentid for x in pointing_info]
-
-		#filter and query for the relevant instruments
-		instrumentinfo = db.session.query(
-			models.instrument.instrument_name,
-			models.instrument.id
-		).filter(
-			models.instrument.id.in_(instrumentids)
-		).all()
-
-		#filter and query the relevant instrument footprints
-		footprintinfo = db.session.query(
-			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
-			models.footprint_ccd.instrumentid
-		).filter(
-			models.footprint_ccd.instrumentid.in_(instrumentids)
-		).all()
-		
-		overlays = []
-
-		#iterate over each instrument and grab their pointings
-		#rotate and project the footprint and then add it to the overlay list
-		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
-		for i,inst in enumerate(instrumentinfo):
-			name = inst.instrument_name
-			try:
-				color = colorlist[i]
-			except:
-				color = colors[inst.id]
-				pass
-			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
-			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
-			pointing_geometries = []
-
-			for p in inst_pointings:
-				ra, dec = function.sanatize_pointing(p.position)
-				for ccd in sanatized_ccds:
-					rotated = function.rotate(ccd, p.pos_angle)
-					pointing_footprint = function.project(rotated, ra, dec)
-					#print(len(pointing_footprint))
-					pointing_geometries.append({"polygon":pointing_footprint})
-
-			overlays.append({
-				"name":name,
-				"color":color,
-				"contours":pointing_geometries
-			})
-
-		#grab the precomputed localization contour region
-
-		if len(form.alert_type.split()) > 1:
-			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
-			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
-		else:
-			path_info = graceid + '-' + form.alert_type.split()[0]
-			mappath = graceid + '-' + form.alert_type.split()[0]
-
-		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
-		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
-		if os.path.exists(mappathinfo):
-			try:
-				GWmap = hp.read_map(mappathinfo)
-				bestpixel = np.argmax(GWmap)
-				nside = hp.npix2nside(len(GWmap))
-				form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
-			except:
-				pass
-
-		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-
-		print(contourpath)
-
-		#if it exists, add it to the overlay list
-		if os.path.exists(contourpath):
-			contours_data=pd.read_json(contourpath)
-			contour_geometry = []
-			for contour in contours_data['features']:
-				contour_geometry.extend(contour['geometry']['coordinates'])
-
-			#Kind of guess as to where the center of the contour is
-			#cgra, cgdec = [], []
-			#for cg_list in contour_geometry:
-			#	for cg in cg_list:
-			#		cgra.append(cg[0])
-			#		cgdec.append(cg[1])
-			#form.avgra = str(np.mean(cgra))
-			#form.avgdec = str(np.mean(cgdec))
-
-			overlays.append({
-				"name":"GW Contour",
-				"color": '#e6194B',
-				"contours":function.polygons2footprints(contour_geometry)
-			})
-
 		return render_template("alerts.html", form=form, overlays=overlays)
 		
 	form.graceid = 'None'
@@ -688,6 +489,226 @@ def fixshit():
 
 
 #Internal Functions
+def construct_alertform(form, args):
+
+	graceid = args['graceid']
+	status = args['pointing_status']
+	alerttype = args['alert_type']
+
+	overlays = None
+	form.viz = False
+	form.avgra = "90"
+	form.avgdec = "-30"
+
+	statuses = [{'name':'All', 'value':'all'}]
+	for m in models.pointing_status:
+		statuses.append({'name':m.name, 'value':m.name})
+	form.pointing_status = statuses
+	form.status = 'all'
+	
+	#grab all observation alerts
+	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
+	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
+
+	#link all alert types to its graceid
+	#we want to be able to label the retracted ones individual for the custom dropdown
+	gid_types = {}
+	for g in gwalerts_ids:
+		types = [x.alert_type for x in gwalerts if x.graceid == g]
+		gid_types[g] = types
+
+	#form the custom dropdown dictionary
+	graceids = [{'name':'--Select--', 'value':None}]
+	for g in gwalerts_ids:
+		#get the alert types for each graceid to test for retractions
+		g_types = gid_types[g]
+
+		if 'Retraction' in g_types:
+			graceids.append({'name':g + ' -retracted-', 'value':g})
+		else:
+			graceids.append({'name':g, 'value':g})
+
+	form.graceids = graceids
+
+	#if there is a selected graceid
+	if graceid != 'None' and graceid is not None:
+
+		form.graceid = graceid
+
+		#Here we get the relevant alert type information
+
+		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
+		#if there is a specificly selected usertype
+
+		#Getting the alert types do display as tabs
+		#Also involves logic to handle multiple alert types that are the same
+		#Update, Update 1, Update 2...
+		alert_types = [x.alert_type for x in alert_info]
+		#print(alert_types)
+		form.alert_types = []
+		for at in alert_types:
+			if at in form.alert_types:
+				num = len([x for x in form.alert_types if at in x])
+				form.alert_types.append(at + ' ' + str(num))
+			else:
+				form.alert_types.append(at)
+
+		#user selected an alert type?
+		if alerttype is not None and alerttype != 'None':
+			at = alerttype.split()[0]
+			if len(alerttype.split()) > 1:
+				itera = int(alerttype.split()[1])
+			else:
+				itera = 0
+			#print(at,itera)
+			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
+			form.alert_type = alerttype
+		#user did not select an alert type, so get the most recent one
+		else: 
+			pre_alert = alert_info[len(alert_info)-1]
+			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
+			form.selected_alert_info = pre_alert
+			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
+			form.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
+
+		if form.selected_alert_info.far != 0:
+			farrate = 1/form.selected_alert_info.far
+			farunit = "s"
+			if farrate > 86400:
+				farunit = "days"
+				farrate /= 86400
+				if farrate > 365:
+					farrate /= 365.25
+					farunit = "years"
+				elif farrate > 30:
+					farrate /= 30
+					farunit = "months"
+				elif farrate > 7:
+					farrate /= 7
+					farunit = "weeks"
+			form.selected_alert_info.human_far=round(farrate,2)
+			form.selected_alert_info.human_far_unit = farunit
+
+		if form.selected_alert_info.distance is not None:
+			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
+		if form.selected_alert_info.distance_error is not None:
+			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
+
+		form.viz = True
+
+		#filter and query for the relevant pointings
+		pointing_filter = []
+		pointing_filter.append(models.pointing_event.graceid == graceid)
+		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+		if status is not None and status != 'all':
+			pointing_filter.append(models.pointing.status == status)
+			form.status = status
+
+		pointing_info = db.session.query(
+			models.pointing.instrumentid,
+			models.pointing.pos_angle,
+			func.ST_AsText(models.pointing.position).label('position'),
+		).filter(*pointing_filter).all()
+
+		#grab the pointings instrument ids
+		instrumentids = [x.instrumentid for x in pointing_info]
+
+		#filter and query for the relevant instruments
+		instrumentinfo = db.session.query(
+			models.instrument.instrument_name,
+			models.instrument.id
+		).filter(
+			models.instrument.id.in_(instrumentids)
+		).all()
+
+		#filter and query the relevant instrument footprints
+		footprintinfo = db.session.query(
+			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+			models.footprint_ccd.instrumentid
+		).filter(
+			models.footprint_ccd.instrumentid.in_(instrumentids)
+		).all()
+		
+		overlays = []
+
+		#iterate over each instrument and grab their pointings
+		#rotate and project the footprint and then add it to the overlay list
+		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
+		for i,inst in enumerate(instrumentinfo):
+			name = inst.instrument_name
+			try:
+				color = colorlist[i]
+			except:
+				color = colors[inst.id]
+				pass
+			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
+			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
+			pointing_geometries = []
+
+			for p in inst_pointings:
+				ra, dec = function.sanatize_pointing(p.position)
+				for ccd in sanatized_ccds:
+					rotated = function.rotate(ccd, p.pos_angle)
+					pointing_footprint = function.project(rotated, ra, dec)
+					#print(len(pointing_footprint))
+					pointing_geometries.append({"polygon":pointing_footprint})
+
+			overlays.append({
+				"name":name,
+				"color":color,
+				"contours":pointing_geometries
+			})
+
+		#grab the precomputed localization contour region
+
+		if len(form.alert_type.split()) > 1:
+			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
+			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+		else:
+			path_info = graceid + '-' + form.alert_type.split()[0]
+			mappath = graceid + '-' + form.alert_type.split()[0]
+
+		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
+		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+		if os.path.exists(mappathinfo):
+			try:
+				GWmap = hp.read_map(mappathinfo)
+				bestpixel = np.argmax(GWmap)
+				nside = hp.npix2nside(len(GWmap))
+				form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+			except:
+				pass
+
+		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
+
+		print(contourpath)
+
+		#if it exists, add it to the overlay list
+		if os.path.exists(contourpath):
+			contours_data=pd.read_json(contourpath)
+			contour_geometry = []
+			for contour in contours_data['features']:
+				contour_geometry.extend(contour['geometry']['coordinates'])
+
+			#Kind of guess as to where the center of the contour is
+			#cgra, cgdec = [], []
+			#for cg_list in contour_geometry:
+			#	for cg in cg_list:
+			#		cgra.append(cg[0])
+			#		cgdec.append(cg[1])
+			#form.avgra = str(np.mean(cgra))
+			#form.avgdec = str(np.mean(cgdec))
+
+			overlays.append({
+				"name":"GW Contour",
+				"color": '#e6194B',
+				"contours":function.polygons2footprints(contour_geometry)
+			})
+
+	return form, overlays
+
 def extract_polygon(p, scale):
 	vertices = []
 	errors = []
