@@ -172,6 +172,38 @@ def login():
 	return render_template('login.html', form=form)
 
 
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+	token = request.args.get('token')
+	if current_user.is_authenticated:
+		return redirect(url_for('index'))
+	user = models.users.verify_reset_password_token(token)
+	if not user:
+		return redirect(url_for('index'))
+	form = forms.ResetPasswordForm()
+	if form.validate_on_submit():
+		user.set_password(form.password.data)
+		db.session.commit()
+		flash('Your password has been reset.')
+		return redirect(url_for('login'))
+	return render_template('reset_password.html', form=form)
+
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = forms.ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = models.users.query.filter_by(email=form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+        flash('Check your email for the instructions to reset your password')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html',
+                           title='Reset Password', form=form)
+
+
 @app.route('/manage_user', methods=['GET', 'POST'])
 @login_required
 def manage_user():
@@ -617,6 +649,7 @@ def construct_alertform(form, args):
 		#filter and query for the relevant instruments
 		instrumentinfo = db.session.query(
 			models.instrument.instrument_name,
+			models.instrument.nickname,
 			models.instrument.id
 		).filter(
 			models.instrument.id.in_(instrumentids)
@@ -636,7 +669,7 @@ def construct_alertform(form, args):
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 		for i,inst in enumerate(instrumentinfo):
-			name = inst.instrument_name
+			name = inst.nickname if inst.nickname else inst.instrument_name
 			try:
 				color = colorlist[i]
 			except:
@@ -805,6 +838,26 @@ def send_account_validation_email(user):
 		Cheers you beautiful bastard</p>",
 	)
 
+def send_password_reset_email(user):
+	token = user.get_reset_password_token()
+	print(token, user.firstname)
+	send_email('GWTM Reset Your Password',
+               "gwtreasuremap@gmail.com",
+               [user.email],
+               "",
+			   "<p>Dear "+user.username+",</p> \
+				<p>\
+    			To reset your password \
+    			<a href=\"http://treasuremap.space/reset_password?token="+token+"&_external=True\"> \
+        		click here \
+    			</a>.\
+       			</p>\
+				<p>Alternatively, you can paste the following link in your browser's address bar:</p>\
+				<p>http://treasuremap.space/reset_password?token="+token+"&_external=True</p>\
+				<p>If you have not requested a password reset simply ignore this message.</p>\
+				<p>Sincerely,</p>\
+				<p>The Treasure Map Team</p>"
+	)
 
 #API Endpoints
 

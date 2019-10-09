@@ -37,9 +37,21 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    password2 = PasswordField(
+        'Repeat Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Request Password Reset')
+
 
 class ManageUserForm(FlaskForm):
     submit = SubmitField('Search')
+
 
 class SearchPointingsForm(FlaskForm):
     graceids = SelectField('Grace ID', validators=[DataRequired()])
@@ -78,6 +90,7 @@ class SubmitInstrumentForm(FlaskForm):
         type_choices.append((m.name, m.name))
     instrument_type = SelectField('Instrument Types', choices=type_choices, default='choose')
     instrument_name = StringField('Name', validators=[DataRequired()])
+    instrument_nickname = StringField('Short Name')
     unit = SelectField('Unit', choices=[('choose', 'Choose'), ('deg', 'Degrees'), ('arcmin', 'Arc Minutes'), ('arcsec', 'Arc Seconds')], validators=[DataRequired()])
     footprint_type = SelectField('Footprint Shape', choices=[('choose', 'Choose'), ('Rectangular', 'Rectangular') ,('Circular', 'Circular'), ('Polygon', 'Polygon')], default='choose', validators=[DataRequired()])
     height = DecimalField('Height')

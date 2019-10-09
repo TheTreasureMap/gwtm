@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from time import time
+import jwt
 import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry, Geography
 import geoalchemy2
@@ -144,6 +146,24 @@ class users(UserMixin, db.Model):
     def check_verification_key(self, verification_key):
         return verification_key == self.verification_key
 
+    def get_reset_password_token(self, expires_in=600):
+        print(self.id, app.config['SECRET_KEY'])
+        token = jwt.encode(
+            {'reset_password': self.id, 'exp': time() + expires_in},
+            app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+        print(token)
+        return jwt.encode(
+            {'reset_password': self.id, 'exp': time() + expires_in},
+            app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+
+    @staticmethod
+    def verify_reset_password_token(token):
+        try:
+            id = jwt.decode(token, app.config['SECRET_KEY'],
+                            algorithms=['HS256'])['reset_password']
+        except:
+            return
+        return users.query.get(id)
 
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -172,6 +192,7 @@ class useractions(db.Model):
 class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     instrument_name = db.Column(db.String(25))
+    nickname = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(instrument_type))
     datecreated = db.Column(db.Date)
     footprint = db.Column(Geography('POLYGON', srid=4326))
@@ -184,6 +205,7 @@ class instrument(db.Model):
     def from_json(self, form, userid, preview=False):
         v = valid_mapping()
         
+        nickname = form.instrument_nickname.data
         submitterid = userid
         instrument_name = form.instrument_name.data
         footprint = []
@@ -301,9 +323,10 @@ class instrument(db.Model):
             v.errors.append('Footprint required')
             return [v]
 
-        self.instrument_name = instrument_name,
+        self.nickname = nickname
+        self.instrument_name = instrument_name
         self.instrument_type = instrument_type.photometric
-        self.submitterid = submitterid,
+        self.submitterid = submitterid
         self.datecreated = datetime.datetime.now()
         return [v, footprint, multi_vertices]
 
