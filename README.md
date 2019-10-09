@@ -10,6 +10,7 @@
  * flask_login
  * flask_wtf
  * flask_mail
+ * pyjwt
  * psycopg2
  * geoalchemy2
  * shapely
