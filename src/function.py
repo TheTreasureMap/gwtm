@@ -60,11 +60,11 @@ def project(footprint, _ra, _dec):
         proj_footprint = []
         for p in footprint:
             if p[0]+_ra > 360:
-                  ra = 360 - p[0]+_ra
+                  ra = 360 - p[0]/math.cos(math.radians(_dec))+_ra
             elif p[0]+_ra < 0:
-                  ra = 360 + p[0]+_ra
+                  ra = 360 + p[0]/math.cos(math.radians(_dec))+_ra
             else:
-                  ra = p[0] + _ra
+                  ra = p[0]/math.cos(math.radians(_dec)) + _ra
 
             if p[1]+_dec > 90:
                 dec = 90 - p[1]+_dec
