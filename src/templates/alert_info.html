@@ -120,8 +120,16 @@
         $('input[name=survey]').change(function() {
         aladin.setImageSurvey($(this).val());});
 
+        var sunImg = new Image();
+        sunImg.src = '{{url_for('static',filename='sun-logo-100.png')}}';
+        sunImg.onload = function() {
+            var cat = A.catalog({shape: sunImg});
+            aladin.addCatalog(cat);
+            cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
+        };
+
         var moonImg = new Image();
-        //moonImg.src = find a working image logo
+        moonImg.src = '{{url_for('static',filename='moon-supersmall.png')}}';
         moonImg.onload = function() {
             var cat = A.catalog({shape: moonImg});
             aladin.addCatalog(cat);
