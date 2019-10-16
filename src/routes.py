@@ -15,6 +15,9 @@ import random, math
 import pandas as pd
 import numpy as np
 import healpy as hp
+import astropy
+from astropy import coordinates
+from astropy.time import Time
 
 from . import function
 from . import models
@@ -625,6 +628,13 @@ def construct_alertform(form, args):
 			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
 		if form.selected_alert_info.distance_error is not None:
 			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
+
+		if form.selected_alert_info.time_of_signal is not None:
+			t=astropy.time.Time(form.selected_alert_info.time_of_signal,format='datetime',scale='utc')
+			form.selected_alert_info.sun_ra =  astropy.coordinates.get_sun(t).ra.deg
+			form.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
+			form.selected_alert_info.moon_ra =  astropy.coordinates.get_moon(t).ra.deg
+			form.selected_alert_info.moon_dec =  astropy.coordinates.get_moon(t).dec.deg
 
 		form.viz = True
 

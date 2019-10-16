@@ -120,6 +120,14 @@
         $('input[name=survey]').change(function() {
         aladin.setImageSurvey($(this).val());});
 
+        var moonImg = new Image();
+        //moonImg.src = find a working image logo
+        moonImg.onload = function() {
+            var cat = A.catalog({shape: moonImg});
+            aladin.addCatalog(cat);
+            cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
+        };
+
         var overlaylist = {};
 
         var overlays = JSON.parse('{{ overlays | tojson }}');
