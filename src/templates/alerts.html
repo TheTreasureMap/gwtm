@@ -2,19 +2,17 @@
 
 {% block content %}
 <div style="padding-left:16px">
-  <h2>Gravitational Wave Ligo Alerts</h2>
-  <p></p>
   <form action="" method="post">
-
-    <select class='selectpicker' name=graceids id=graceids>
-        {% for a in form.graceids %}
-          {% if a['value'] == form.graceid %}
-            <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
-          {% else %}
-            <option value={{ a['value'] }}>{{ a['name'] }}</option>
-          {% endif %}
-        {% endfor %}
-    </select>
+    <div class="dropdown" name=gracieds id=graceids>
+    <h2>Gravitational Wave Ligo Alerts</h2><button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Alerts
+      <span class="caret"></span></button>
+      <ul class="dropdown-menu">
+          <input class="form-control" id="gidSearch" type="text" placeholder="Search..">
+          {% for a in form.graceids[1:] %}
+            <li><a href="/alerts?graceids={{ a['value'] }}">{{ a['name'] }}</a></li>
+          {% endfor %}
+      </ul>
+    </div>  
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }}</h3>
@@ -24,8 +22,13 @@
 
   <body>
     <script type="text/javascript">
-      $('#graceids').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-        window.location='/alerts?graceids='+$(this).val()
+      $(document).ready(function(){
+        $("#gidSearch").on("keyup", function() {
+          var value = $(this).val().toLowerCase();
+          $(".dropdown-menu li").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+          });
+        });
       });
 
       // window.onload = function () {
