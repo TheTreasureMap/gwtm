@@ -11,6 +11,7 @@
  * flask_wtf
  * flask_mail
  * pyjwt
+ * ephem
  * psycopg2
  * geoalchemy2
  * shapely
