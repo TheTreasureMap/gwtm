@@ -114,7 +114,7 @@ def plot_prob_coverage():
 			nside = hp.npix2nside(len(GWmap))
 			print(nside)
 		except:
-			pass
+			return 'Map error, contact administrator.'
 	else:
 		return 'Map not found.'
 
@@ -802,6 +802,7 @@ def construct_alertform(form, args):
 
 		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
 		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+
 		form.mappathinfo = mappathinfo
 		if os.path.exists(mappathinfo):
 			try:
