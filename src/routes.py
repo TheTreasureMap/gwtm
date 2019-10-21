@@ -21,6 +21,7 @@ from astropy.time import Time
 import time
 import plotly
 import plotly.graph_objects as go
+import ephem
 
 from . import function
 from . import models
@@ -102,90 +103,6 @@ def alerts():
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
 
-@app.route("/coverage", methods=['GET','POST'])
-def plot_prob_coverage():
-	graceid = request.args.get('graceid')
-	mappathinfo = request.args.get('mappathinfo')
-
-	if os.path.exists(mappathinfo):
-		try:
-			GWmap = hp.read_map(mappathinfo)
-			bestpixel = np.argmax(GWmap)
-			nside = hp.npix2nside(len(GWmap))
-			print(nside)
-		except:
-			return 'Map error, contact administrator.'
-	else:
-		return 'Map not found.'
-
-	pointing_filter = []
-	pointing_filter.append(models.pointing_event.graceid == graceid)
-	pointing_filter.append(models.pointing.status == 'completed')
-	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
-	
-	pointings_sorted = db.session.query(
-			models.pointing.instrumentid,
-			models.pointing.pos_angle,
-			func.ST_AsText(models.pointing.position).label('position'),
-			models.pointing.band,
-			models.pointing.depth,
-			models.pointing.time
-		).filter(*pointing_filter).order_by(models.pointing.time.asc()).all()
-
-	instrumentids = [x.instrumentid for x in pointings_sorted]
-		#filter and query for the relevant instruments
-	instrumentinfo = db.session.query(
-		models.instrument.instrument_name,
-		models.instrument.nickname,
-		models.instrument.id
-	).filter(
-		models.instrument.id.in_(instrumentids)
-	).all()
-
-	#filter and query the relevant instrument footprints
-	footprintinfo = db.session.query(
-		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
-		models.footprint_ccd.instrumentid
-	).filter(
-		models.footprint_ccd.instrumentid.in_(instrumentids)
-	).all()
-
-	#get GW T0 time
-	time_of_signal = db.session.query(models.gw_alert.time_of_signal).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.desc()).first()[0]
-
-	qps = []
-	times=[]
-	probs=[]
-	for p in pointings_sorted:
-		ra, dec = function.sanatize_pointing(p.position)
-
-		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
-		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-		for ccd in sanatized_ccds:
-			rotated = function.rotate(ccd, p.pos_angle)
-			pointing_footprint = function.project(rotated, ra, dec)
-
-			ras_poly = [x[0] for x in pointing_footprint][:-1]
-			decs_poly = [x[1] for x in pointing_footprint][:-1]
-			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
-			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
-
-			qps.extend(qp)
-			#deduplicate indices, so that pixels already covered are not double counted
-			deduped_indices=list(dict.fromkeys(qps))
-
-			prob = 0
-			for ind in deduped_indices:
-				prob += GWmap[ind]
-			elapsed = p.time - time_of_signal
-			elapsed = elapsed.total_seconds()/3600
-			times.append(elapsed)
-			probs.append(prob)
-	fig=go.Figure(data=go.Scatter(x=times,y=[prob*100 for prob in probs],mode='lines'))
-	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Percent of GW localization covered')
-	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
-
-	return coverage_div
 
 @app.route("/fairuse", methods=['GET'])
 def fairuse():
@@ -525,6 +442,112 @@ def logout():
 
 
 #AJAX FUNCTIONS
+@app.route("/coverage", methods=['GET','POST'])
+def plot_prob_coverage():
+	graceid = request.args.get('graceid')
+	mappathinfo = request.args.get('mappathinfo')
+	inst_cov = request.args.get('inst_cov')
+	band_cov = request.args.get('band_cov')
+	depth = request.args.get('depth_cov')
+
+	print(depth, type(depth))
+
+	if os.path.exists(mappathinfo):
+		try:
+			GWmap = hp.read_map(mappathinfo)
+			bestpixel = np.argmax(GWmap)
+			nside = hp.npix2nside(len(GWmap))
+		except:
+			return 'Map error, contact administrator.'
+	else:
+		return 'Map not found.'
+
+	pointing_filter = []
+	pointing_filter.append(models.pointing_event.graceid == graceid)
+	pointing_filter.append(models.pointing.status == 'completed')
+	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+	if inst_cov != 'None':
+		pointing_filter.append(models.pointing.instrumentid == int(inst_cov))
+	if band_cov != 'None':
+		pointing_filter.append(models.pointing.band == band_cov)
+	if depth != None and isFloat(depth):
+		pointing_filter.append(models.pointing.depth > float(depth))
+	
+	pointings_sorted = db.session.query(
+		models.pointing.instrumentid,
+		models.pointing.pos_angle,
+		func.ST_AsText(models.pointing.position).label('position'),
+		models.pointing.band,
+		models.pointing.depth,
+		models.pointing.time
+	).filter(
+		*pointing_filter
+	).order_by(
+		models.pointing.time.asc()
+	).all()
+
+	instrumentids = [x.instrumentid for x in pointings_sorted]
+	#filter and query for the relevant instruments
+	instrumentinfo = db.session.query(
+		models.instrument.instrument_name,
+		models.instrument.nickname,
+		models.instrument.id
+	).filter(
+		models.instrument.id.in_(instrumentids)
+	).all()
+
+	#filter and query the relevant instrument footprints
+	footprintinfo = db.session.query(
+		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+		models.footprint_ccd.instrumentid
+	).filter(
+		models.footprint_ccd.instrumentid.in_(instrumentids)
+	).all()
+
+	#get GW T0 time
+	time_of_signal = db.session.query(
+		models.gw_alert.time_of_signal
+	).filter(
+		models.gw_alert.graceid == graceid
+	).order_by(
+		models.gw_alert.datecreated.desc()
+	).first()[0]
+
+	qps = []
+	times=[]
+	probs=[]
+	for p in pointings_sorted:
+		ra, dec = function.sanatize_pointing(p.position)
+
+		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
+		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+		for ccd in sanatized_ccds:
+			rotated = function.rotate(ccd, p.pos_angle)
+			pointing_footprint = function.project(rotated, ra, dec)
+
+			ras_poly = [x[0] for x in pointing_footprint][:-1]
+			decs_poly = [x[1] for x in pointing_footprint][:-1]
+			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
+			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
+
+			qps.extend(qp)
+			#deduplicate indices, so that pixels already covered are not double counted
+			deduped_indices=list(dict.fromkeys(qps))
+
+			prob = 0
+			for ind in deduped_indices:
+				prob += GWmap[ind]
+			elapsed = p.time - time_of_signal
+			elapsed = elapsed.total_seconds()/3600
+			times.append(elapsed)
+			probs.append(prob)
+	fig=go.Figure(data=go.Scatter(x=times,y=[prob*100 for prob in probs],mode='lines'))
+	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Percent of GW localization covered')
+	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
+
+	return coverage_div
+
 @app.route('/preview_footprint', methods=['GET'])
 def preview_footprint():
 	args = request.args
@@ -609,6 +632,30 @@ def fixshit():
 
 
 #Internal Functions
+
+def pointing_crossmatch(pointing, filter=[], dist_thresh=None):
+	graceid = pointing.graceid
+	status = pointing.status
+
+	filter.append(models.pointing.graceid == graceid)
+	filter.append(models.pointing.status == status)
+
+	pointings = db.session.query(models.poining).filter(*filter).all()
+
+	if dist_thresh is None:
+		for p in pointings:
+			if p.ra == pointing.ra and p.dec == pointing.dec:
+				return True
+
+	else:
+		for p in pointings:
+			sep = 206264.806*(float(ephem.separation((p.ra, p.dec ), (pointing.ra, pointing.dec))))
+			if sep < dist_thresh:
+				return True
+
+	return False
+
+
 def construct_alertform(form, args):
 
 	graceid = args['graceid']
@@ -740,6 +787,10 @@ def construct_alertform(form, args):
 			models.pointing.depth
 		).filter(*pointing_filter).all()
 
+		form.band_cov = [{'name':'--Select--', 'value':None}]
+		for band in list(set([x.band.name for x in pointing_info])):
+			form.band_cov.append({'name':band, 'value':band})
+
 		#grab the pointings instrument ids
 		instrumentids = [x.instrumentid for x in pointing_info]
 
@@ -751,6 +802,10 @@ def construct_alertform(form, args):
 		).filter(
 			models.instrument.id.in_(instrumentids)
 		).all()
+
+		form.inst_cov = [{'name':'--Select--', 'value':None}]
+		for inst in instrumentinfo:
+			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
 
 		#filter and query the relevant instrument footprints
 		footprintinfo = db.session.query(
@@ -815,23 +870,12 @@ def construct_alertform(form, args):
 
 		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
 
-		print(contourpath)
-
 		#if it exists, add it to the overlay list
 		if os.path.exists(contourpath):
 			contours_data=pd.read_json(contourpath)
 			contour_geometry = []
 			for contour in contours_data['features']:
 				contour_geometry.extend(contour['geometry']['coordinates'])
-
-			#Kind of guess as to where the center of the contour is
-			#cgra, cgdec = [], []
-			#for cg_list in contour_geometry:
-			#	for cg in cg_list:
-			#		cgra.append(cg[0])
-			#		cgdec.append(cg[1])
-			#form.avgra = str(np.mean(cgra))
-			#form.avgdec = str(np.mean(cgdec))
 
 			overlays.append({
 				"name":"GW Contour",
