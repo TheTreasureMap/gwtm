@@ -471,7 +471,7 @@ def plot_prob_coverage():
 		pointing_filter.append(models.pointing.instrumentid == int(inst_cov))
 	if band_cov != 'None':
 		pointing_filter.append(models.pointing.band == band_cov)
-	if depth != None and isFloat(depth):
+	if depth != None and function.isFloat(depth):
 		pointing_filter.append(models.pointing.depth > float(depth))
 	
 	pointings_sorted = db.session.query(
