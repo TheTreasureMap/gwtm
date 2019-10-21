@@ -789,7 +789,7 @@ def construct_alertform(form, args):
 		).filter(*pointing_filter).all()
 
 		form.band_cov = [{'name':'--Select--', 'value':None}]
-		for band in list(set([x.band.name for x in pointing_info if x.status = models.pointing_status.completed])):
+		for band in list(set([x.band.name for x in pointing_info if x.status == models.pointing_status.completed])):
 			form.band_cov.append({'name':band, 'value':band})
 
 		#grab the pointings instrument ids
