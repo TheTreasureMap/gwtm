@@ -785,7 +785,7 @@ def construct_alertform(form, args):
 			func.ST_AsText(models.pointing.position).label('position'),
 			models.pointing.band,
 			models.pointing.depth,
-			models.poitning.status
+			models.pointing.status
 		).filter(*pointing_filter).all()
 
 		form.band_cov = [{'name':'--Select--', 'value':None}]
