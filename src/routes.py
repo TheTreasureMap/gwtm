@@ -18,6 +18,9 @@ import healpy as hp
 import astropy
 from astropy import coordinates
 from astropy.time import Time
+import time
+import plotly
+import plotly.graph_objects as go
 
 from . import function
 from . import models
@@ -76,7 +79,6 @@ def home():
 	form.page = 'index'
 	return render_template("index.html", form=form, overlays=overlays)
 
-
 class overlay():
 	def __init__(self, name, color, contours):
 		self.name = name
@@ -87,7 +89,6 @@ class overlay():
 @app.route("/alerts", methods=['GET', 'POST'])
 #@login_required
 def alerts():
-
 	graceid = request.args.get('graceids')
 	status = request.args.get('pointing_status')
 	alerttype = request.args.get('alert_type')
@@ -101,6 +102,90 @@ def alerts():
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
 
+@app.route("/coverage", methods=['GET','POST'])
+def plot_prob_coverage():
+	graceid = request.args.get('graceid')
+	mappathinfo = request.args.get('mappathinfo')
+
+	if os.path.exists(mappathinfo):
+		try:
+			GWmap = hp.read_map(mappathinfo)
+			bestpixel = np.argmax(GWmap)
+			nside = hp.npix2nside(len(GWmap))
+			print(nside)
+		except:
+			pass
+	else:
+		return 'Map not found.'
+
+	pointing_filter = []
+	pointing_filter.append(models.pointing_event.graceid == graceid)
+	pointing_filter.append(models.pointing.status == 'completed')
+	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+	
+	pointings_sorted = db.session.query(
+			models.pointing.instrumentid,
+			models.pointing.pos_angle,
+			func.ST_AsText(models.pointing.position).label('position'),
+			models.pointing.band,
+			models.pointing.depth,
+			models.pointing.time
+		).filter(*pointing_filter).order_by(models.pointing.time.asc()).all()
+
+	instrumentids = [x.instrumentid for x in pointings_sorted]
+		#filter and query for the relevant instruments
+	instrumentinfo = db.session.query(
+		models.instrument.instrument_name,
+		models.instrument.nickname,
+		models.instrument.id
+	).filter(
+		models.instrument.id.in_(instrumentids)
+	).all()
+
+	#filter and query the relevant instrument footprints
+	footprintinfo = db.session.query(
+		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+		models.footprint_ccd.instrumentid
+	).filter(
+		models.footprint_ccd.instrumentid.in_(instrumentids)
+	).all()
+
+	#get GW T0 time
+	time_of_signal = db.session.query(models.gw_alert.time_of_signal).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.desc()).first()[0]
+
+	qps = []
+	times=[]
+	probs=[]
+	for p in pointings_sorted:
+		ra, dec = function.sanatize_pointing(p.position)
+
+		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
+		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+		for ccd in sanatized_ccds:
+			rotated = function.rotate(ccd, p.pos_angle)
+			pointing_footprint = function.project(rotated, ra, dec)
+
+			ras_poly = [x[0] for x in pointing_footprint][:-1]
+			decs_poly = [x[1] for x in pointing_footprint][:-1]
+			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
+			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
+
+			qps.extend(qp)
+			#deduplicate indices, so that pixels already covered are not double counted
+			deduped_indices=list(dict.fromkeys(qps))
+
+			prob = 0
+			for ind in deduped_indices:
+				prob += GWmap[ind]
+			elapsed = p.time - time_of_signal
+			elapsed = elapsed.total_seconds()/3600
+			times.append(elapsed)
+			probs.append(prob)
+	fig=go.Figure(data=go.Scatter(x=times,y=probs,mode='lines'))
+	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Fraction of GW localization covered')
+	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
+
+	return coverage_div
 
 @app.route("/fairuse", methods=['GET'])
 def fairuse():
@@ -194,17 +279,17 @@ def reset_password():
 
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = forms.ResetPasswordRequestForm()
-    if form.validate_on_submit():
-        user = models.users.query.filter_by(email=form.email.data).first()
-        if user:
-            send_password_reset_email(user)
-        flash('Check your email for the instructions to reset your password')
-        return redirect(url_for('login'))
-    return render_template('reset_password_request.html',
-                           title='Reset Password', form=form)
+	if current_user.is_authenticated:
+		return redirect(url_for('index'))
+	form = forms.ResetPasswordRequestForm()
+	if form.validate_on_submit():
+		user = models.users.query.filter_by(email=form.email.data).first()
+		if user:
+			send_password_reset_email(user)
+		flash('Check your email for the instructions to reset your password')
+		return redirect(url_for('login'))
+	return render_template('reset_password_request.html',
+						   title='Reset Password', form=form)
 
 
 @app.route('/manage_user', methods=['GET', 'POST'])
@@ -651,6 +736,8 @@ def construct_alertform(form, args):
 			models.pointing.instrumentid,
 			models.pointing.pos_angle,
 			func.ST_AsText(models.pointing.position).label('position'),
+			models.pointing.band,
+			models.pointing.depth
 		).filter(*pointing_filter).all()
 
 		#grab the pointings instrument ids
@@ -715,6 +802,7 @@ def construct_alertform(form, args):
 
 		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
 		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+		form.mappathinfo = mappathinfo
 		if os.path.exists(mappathinfo):
 			try:
 				GWmap = hp.read_map(mappathinfo)
@@ -852,16 +940,16 @@ def send_password_reset_email(user):
 	token = user.get_reset_password_token()
 	print(token, user.firstname)
 	send_email('GWTM Reset Your Password',
-               "gwtreasuremap@gmail.com",
-               [user.email],
-               "",
+			   "gwtreasuremap@gmail.com",
+			   [user.email],
+			   "",
 			   "<p>Dear "+user.username+",</p> \
 				<p>\
-    			To reset your password \
-    			<a href=\"http://treasuremap.space/reset_password?token="+token+"&_external=True\"> \
-        		click here \
-    			</a>.\
-       			</p>\
+				To reset your password \
+				<a href=\"http://treasuremap.space/reset_password?token="+token+"&_external=True\"> \
+				click here \
+				</a>.\
+				</p>\
 				<p>Alternatively, you can paste the following link in your browser's address bar:</p>\
 				<p>http://treasuremap.space/reset_password?token="+token+"&_external=True</p>\
 				<p>If you have not requested a password reset simply ignore this message.</p>\
