@@ -181,7 +181,7 @@ def plot_prob_coverage():
 			elapsed = elapsed.total_seconds()/3600
 			times.append(elapsed)
 			probs.append(prob)
-	fig=go.Figure(data=go.Scatter(x=times*100,y=probs,mode='lines'))
+	fig=go.Figure(data=go.Scatter(x=times,y=[prob*100 for prob in probs],mode='lines'))
 	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Percent of GW localization covered')
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
 
