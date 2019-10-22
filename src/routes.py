@@ -477,9 +477,9 @@ def plot_prob_coverage():
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth != None and function.isFloat(depth):
 		if 'mag' in depth_unit:
-			pointing_filter.append(models.pointing.depth > float(depth))
+			pointing_filter.append(models.pointing.depth >= float(depth))
 		if 'flux' in depth_unit:
-			pointing_filter.append(models.pointing.depth < float(depth))
+			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
 			return "Depth Unit required for a depth"
 
