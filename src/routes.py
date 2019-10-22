@@ -798,7 +798,7 @@ def construct_alertform(form, args):
 			models.pointing.status
 		).filter(*pointing_filter).all()
 
-		form.band_cov = [{'name':'--Select--', 'value':None}]
+		form.band_cov = []
 		for band in list(set([x.band.name for x in pointing_info if x.status == models.pointing_status.completed])):
 			form.band_cov.append({'name':band, 'value':band})
 
@@ -814,11 +814,11 @@ def construct_alertform(form, args):
 			models.instrument.id.in_(instrumentids)
 		).all()
 
-		form.inst_cov = [{'name':'--Select--', 'value':None}]
+		form.inst_cov = []
 		for inst in instrumentinfo:
 			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
 		
-		form.depth_unit = [{'name':'--Select--', 'value':None}]
+		form.depth_unit=[]
 		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed])):
 			form.depth_unit.append({'name':str(dp), 'value':dp.name})
 
