@@ -478,11 +478,10 @@ def plot_prob_coverage():
 	if depth != None and function.isFloat(depth):
 		if 'mag' in depth_unit:
 			pointing_filter.append(models.pointing.depth >= float(depth))
-		if 'flux' in depth_unit:
+		elif 'flux' in depth_unit:
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
 			return "Depth Unit required for a depth"
-
 	
 	pointings_sorted = db.session.query(
 		models.pointing.instrumentid,
