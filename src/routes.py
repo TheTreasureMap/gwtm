@@ -466,15 +466,16 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing.status == 'completed')
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
 
-	if inst_cov != 'None':
+	if inst_cov != '':
+		print(inst_cov)
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	if band_cov != 'None':
+	if band_cov != '':
 		bands_cov = [x for x in band_cov.split(',')]
 		pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth != None and function.isFloat(depth):
 		pointing_filter.append(models.pointing.depth < float(depth))
-	if depth_unit != 'None':
+	if depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	
 	pointings_sorted = db.session.query(
@@ -626,7 +627,6 @@ def get_pointing_fromID():
 		#	pass
 	return jsonify('')
 
-
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
@@ -722,6 +722,7 @@ def construct_alertform(form, args):
 				form.alert_types.append(at + ' ' + str(num))
 			else:
 				form.alert_types.append(at)
+
 
 		#user selected an alert type?
 		if alerttype is not None and alerttype != 'None':
