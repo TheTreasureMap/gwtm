@@ -449,8 +449,7 @@ def plot_prob_coverage():
 	inst_cov = request.args.get('inst_cov')
 	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
-
-	print(depth, type(depth))
+	depth_unit = request.args.get('depth_unit')
 
 	if os.path.exists(mappathinfo):
 		try:
@@ -468,11 +467,15 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
 
 	if inst_cov != 'None':
-		pointing_filter.append(models.pointing.instrumentid == int(inst_cov))
+		insts_cov = [int(x) for x in inst_cov.split(',')]
+		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
 	if band_cov != 'None':
-		pointing_filter.append(models.pointing.band == band_cov)
+		bands_cov = [x for x in band_cov.split(',')]
+		pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth != None and function.isFloat(depth):
 		pointing_filter.append(models.pointing.depth < float(depth))
+	if depth_unit != 'None':
+		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	
 	pointings_sorted = db.session.query(
 		models.pointing.instrumentid,
@@ -489,13 +492,13 @@ def plot_prob_coverage():
 
 	instrumentids = [x.instrumentid for x in pointings_sorted]
 	#filter and query for the relevant instruments
-	instrumentinfo = db.session.query(
-		models.instrument.instrument_name,
-		models.instrument.nickname,
-		models.instrument.id
-	).filter(
-		models.instrument.id.in_(instrumentids)
-	).all()
+	#instrumentinfo = db.session.query(
+	#	models.instrument.instrument_name,
+	#	models.instrument.nickname,
+	#	models.instrument.id
+	#).filter(
+	#	models.instrument.id.in_(instrumentids)
+	#).all()
 
 	#filter and query the relevant instrument footprints
 	footprintinfo = db.session.query(
@@ -785,6 +788,7 @@ def construct_alertform(form, args):
 			func.ST_AsText(models.pointing.position).label('position'),
 			models.pointing.band,
 			models.pointing.depth,
+			models.pointing.depth_unit,
 			models.pointing.status
 		).filter(*pointing_filter).all()
 
@@ -807,6 +811,10 @@ def construct_alertform(form, args):
 		form.inst_cov = [{'name':'--Select--', 'value':None}]
 		for inst in instrumentinfo:
 			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
+		
+		form.depth_unit = [{'name':'--Select--', 'value':None}]
+		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed])):
+			form.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 		#filter and query the relevant instrument footprints
 		footprintinfo = db.session.query(

@@ -108,19 +108,16 @@
           var inst_cov = $('#inst_cov').val()
           var band_cov = $('#band_cov').val()
           var depth_cov = $('#depth_cov').val()
+          var depth_unit = $('#depth_unit').val()
            $.ajax(
              {
                 url: '/coverage',
-                data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov
+                data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit
              }
            ).done(function (reply) {
              $('#coveragediv').html(reply);
              $btn.button('reset');
            });
-           //$.ajax("{{ url_for('plot_prob_coverage', graceid= form.graceid, mappathinfo=form.mappathinfo, inst_cov='+inst_cov+', band_cov='+band_cov+') | safe }}").done(function (reply) {
-           //   $('#coveragediv').html(reply);
-           //$btn.button('reset');
-           //});
         });
     });
     $(document).ready(function () {
@@ -137,19 +134,27 @@
   Calculate the coverage of the GW localization over time as a function of wavelength (and depth, soon). Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability when the same field is covered multiple times. After clicking, be patient, it may take up to 20 seconds to fully compute the coverage profile.</i>
   <br>
   <b>Instrument</b>
-  <select class='selectpicker' name=inst_cov id=inst_cov>
+  <select class="selectpicker" multiple data-live-search="true" name=inst_cov id=inst_cov>
       {% for a in form.inst_cov %}
           <option value={{ a['value'] }}>{{ a['name'] }}</option>
       {% endfor %}
   </select>
   <b>Band</b>
-  <select class='selectpicker' name=band_cov id=band_cov>
+  <select class="selectpicker" multiple data-live-search="true" name=band_cov id=band_cov>
       {% for a in form.band_cov %}
         <option value={{ a['value'] }}>{{ a['name'] }}</option>
       {% endfor %}
   </select>
   <b>Depth</b>
   <input type="text" name=depth_cov id=depth_cov>
+  <b>Depth Unit</b>
+  <select class="selectpicker" data-live-search="true" name=depth_unit id=depth_unit>
+      {% for a in form.depth_unit %}
+        <option value={{ a['value'] }}>{{ a['name'] }}</option>
+      {% endfor %}
+  </select>
+  <br><br>
+
   <input type="button" id="calculate" value="Calculate" class="btn btn-primary" style="display: block; margin: 0 auto;"/>
   </div>
   <div id ="coveragediv"></div>
@@ -173,7 +178,7 @@
         aladin.setImageSurvey($(this).val());});
 
         var sunImg = new Image();
-        sunImg.src = '{{url_for('static',filename='sun-logo-100.png')}}';
+        sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
         sunImg.onload = function() {
             var cat = A.catalog({shape: sunImg});
             aladin.addCatalog(cat);
@@ -182,7 +187,7 @@
         };
 
         var moonImg = new Image();
-        moonImg.src = '{{url_for('static',filename='moon-supersmall.png')}}';
+        moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
         moonImg.onload = function() {
             var cat = A.catalog({shape: moonImg});
             aladin.addCatalog(cat);
