@@ -150,7 +150,11 @@
   <b>Depth Unit</b>
   <select class="selectpicker" data-live-search="true" name=depth_unit id=depth_unit>
       {% for a in form.depth_unit %}
+        {% if 'erg' in a['name'] %}
+        <option value={{ a['value'] }}>FLUX erg cm^-2 s^-1</option>
+        {% else %}
         <option value={{ a['value'] }}>{{ a['name'] }}</option>
+        {% endif %}
       {% endfor %}
   </select>
   <br><br>
