@@ -61,14 +61,14 @@
                 <ul>
                     <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
                     <li>You send this list of pointings using the pointings POST method (see below), with a status of <em>planned</em>.</li>
-                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em>observed</em>.</li>
+                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em>completed</em>.</li>
                     <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
                 </ul>
                 <p></p>
             <li>
                 <b>I would like to see what others are observing in order to plan my observations accordingly</b>
                 <p>
-                        You are required to register. Use your API token you receive upon registration along with the pointings GET method (see below) to retrieve reported planned or observed pointings for a specific GW alert, time window, instrument, and/or band.
+                        You are required to register. Use your API token you receive upon registration along with the pointings GET method (see below) to retrieve reported planned or completed pointings for a specific GW alert, time window, instrument, and/or band.
                 </p>
             </li>
         </ol>
