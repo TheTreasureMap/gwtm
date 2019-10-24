@@ -473,7 +473,7 @@ def plot_prob_coverage():
 	if band_cov != '':
 		bands_cov = [x for x in band_cov.split(',')]
 		pointing_filter.append(models.pointing.band.in_(bands_cov))
-	if depth_unit != 'None' or depth_unit != '' or depth_unit != None:
+	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth != None and function.isFloat(depth):
 		if 'mag' in depth_unit:
