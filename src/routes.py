@@ -222,7 +222,11 @@ def manage_user():
 	#form = froms.ManageUserForm():
 	#if form.validate_on_submit():
 
-	return render_template('manage_user.html', user=user, groups=groups)
+	if userid == 2 or userid == 5:
+		all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
+		return render_template('manage_user.html', user=user, groups=groups, users=all_users)
+	else:
+		return render_template('manage_user.html', user=user, groups=groups)
 
 
 @app.route('/search_pointings', methods=['GET', 'POST'])

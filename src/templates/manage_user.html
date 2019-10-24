@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -17,6 +18,22 @@
 			</ul>
 		{% endfor %}
 		</ul>
+	{% endif %}
+	{% if users %}
+		<h3> Registered Users </h3>
+		<table>
+		<tr>
+    	<th>First</th><th>Last</th><th>Creation</th><th>Verified?</th>
+		</tr>
+		{% for user in users %}
+			<tr>
+			<td>{{user.firstname}}</td>
+			<td>{{user.lastname}}</td>
+			<td>{{user.datecreated.strftime('%Y-%m-%d')}}&nbsp;</td>
+			<td>{{user.verified}}</td>
+			</tr>
+		{% endfor %}
+		</table>
 	{% endif %}
 	</div>
 {% endblock %}
