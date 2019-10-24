@@ -261,6 +261,7 @@
             
                     <p><b>Parameters</b></p>
                     <ul>
+                        <li><i>api_token=abcdefghijkl</i></li>
                         <li><i>graceid=gid1</i></li>
                         <li><i>id=id1</i></li>
                         <li><i>ids=[id1, id2, id3...]</i></li>
@@ -309,9 +310,28 @@
                 <div class="column" style="background-color:#bbb;">
                     <h2>GET Examples</h2>
                     <p>GET all planned pointings taken in XRT for graceid gw170817:</p>
-                    <ul>
-                        <li><i>/api/v0/pointings?band=XRT&amp;status=planned&amp;graceid=gw170817</i></li>
-                    </ul>
+                    <pre>
+                            <code class="language-json" data-lang="json">
+        import requests
+        import urllib.parse
+
+        BASE = 'http://treasuremap.space/api/v0'
+        TARGET = 'pointings'
+
+        params = {
+            "api_token":"abcdefghijkl",
+            "band":XRT,
+            "status":"planned",
+            "graceid":"gw170817"
+        }
+
+        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
+
+        r = requests.get(url = url)
+
+        print(r.text)
+                </code>
+                </pre>
                 </div>
             </div>
 
@@ -373,6 +393,7 @@
         
                 <p><b>Parameters</b></p>
                 <ul>
+                    <li><i>api_token=abcdefghijkl</i></li>
                     <li><i>id=id1</i></li>
                     <li><i>ids=[id1, id2, id3...]</i></li>
                     <li><i>name=name1</i></li>
@@ -386,9 +407,26 @@
             <div class="column" style="background-color:#bbb;">
                 <h2>GET Examples</h2>
                 <p>GET all photometric instruments:</p>
-                <ul>
-                    <li><i>/api/v0/instruments?type=photometric</i></li>
-                </ul>
+                <pre>
+                        <code class="language-json" data-lang="json">
+        import requests
+        import urllib.parse
+
+        BASE = 'http://treasuremap.space/api/v0'
+        TARGET = 'instruments'
+
+        params = {
+            "api_token":"abcdefghijkl",
+            "type":"photometric"
+        }
+
+        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
+
+        r = requests.get(url = url)
+
+        print(r.text)
+            </code>
+            </pre>
             </div>
         </div>
 
