@@ -904,7 +904,7 @@ def construct_alertform(form, args):
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 		for i,inst in enumerate(instrumentinfo):
-			name = inst.nickname if inst.nickname else inst.instrument_name
+			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
 			try:
 				color = colorlist[i]
 			except:
