@@ -70,7 +70,14 @@ def internal_error(error):
 @app.route("/", methods=["GET"])
 def home():
 	#get latest alert. Construct the form alertsform
-	graceid = db.session.query(models.gw_alert.graceid).order_by(models.gw_alert.graceid.desc()).first()
+	
+	graceid = db.session.query(
+		models.gw_alert.graceid
+	).filter(
+		models.gw_alert.graceid != 'TEST_EVENT'
+	).order_by(
+		models.gw_alert.graceid.desc()
+	).first()
 	
 	status = request.args.get('pointing_status')
 	alerttype = request.args.get('alert_type')
