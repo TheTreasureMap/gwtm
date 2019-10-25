@@ -97,7 +97,7 @@ class SubmitInstrumentForm(FlaskForm):
     height = DecimalField('Height')
     width = DecimalField('Width')
     radius = DecimalField('Radius')
-    polygon = TextAreaField('Polygon', render_kw={"rows": 20, "cols": 11})
+    polygon = TextAreaField('Polygon', render_kw={"rows": 20, "cols": 20})
     submit =  SubmitField('Submit')
 
 

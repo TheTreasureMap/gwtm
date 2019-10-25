@@ -406,8 +406,11 @@ def submit_pointing():
 def submit_in0strument():
 	form = forms.SubmitInstrumentForm()
 
+	insts = db.session.query(
+		models.instrument
+	).all()
+
 	args = request.args
-	print(args)
 
 	if request.method == 'POST' or False:
 
@@ -436,7 +439,58 @@ def submit_in0strument():
 		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
 		return redirect("/index")
 
-	return render_template('submit_instrument.html', form=form, plot=None)
+	return render_template('submit_instrument.html', form=form, plot=None, insts=insts)
+
+@app.route('/instrument_info')
+def instrument_info():
+	instid = request.args.get('id')
+
+	instrument = db.session.query(
+		models.instrument,
+		models.users.username,
+		func.ST_AsText(models.footprint_ccd.footprint).label('footprint')
+	).filter(
+		models.instrument.id == instid,
+		models.instrument.id == models.footprint_ccd.instrumentid,
+		models.instrument.submitterid == models.users.id
+	).all()
+
+	events_contributed = db.session.query(
+		models.pointing,
+		models.gw_alert.graceid
+	).filter(
+		models.pointing.instrumentid == instid,
+		models.pointing_event.pointingid == models.pointing.id,
+		models.gw_alert.graceid == models.pointing_event.graceid,
+	).all()
+
+	gids = sorted(list(set([x.graceid for x in events_contributed])), reverse=True)
+	events = []
+	for g in gids:
+		numevents = len([x for x in events_contributed if x.graceid == g])
+		events.append({'event':g, 'count':str(numevents)})
+
+	if len(instrument) > 0:
+		inst = instrument[0].instrument
+		username = instrument[0].username
+		sanatized_ccds = function.sanatize_footprint_ccds([x.footprint for x in instrument])
+		trace = []
+		vertices = sanatized_ccds
+		for vert in vertices:
+			xs = [v[0] for v in vert]
+			ys =[v[1] for v in vert]
+			trace1 = go.Scatter(
+				x=xs,
+				y=ys,
+				mode='markers',
+				fill='tozeroy',
+			)
+			trace.append(trace1)
+		fig = go.Figure(data=trace)
+		data = fig
+		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+
+	return render_template('instrument_info.html', inst=inst, graph=graphJSON, events=events, username=username)
 
 
 @app.route('/logout')
@@ -458,7 +512,7 @@ def plot_prob_coverage():
 	if os.path.exists(mappathinfo):
 		try:
 			GWmap = hp.read_map(mappathinfo)
-			bestpixel = np.argmax(GWmap)
+			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
 		except:
 			return 'Map error, contact administrator.'

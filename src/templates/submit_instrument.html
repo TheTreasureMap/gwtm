@@ -1,100 +1,162 @@
 {% extends "base.html" %}
 
-{% block content %}
-<style>
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
-    
-    td, th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
+{% block content %}<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+  .collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    padding: 18px;
+    width: 99%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+  }
+  
+  .active, .collapsible:hover {
+    background-color: #555;
+  }
+  
+  .content {
+    padding: 0 18px;
+    display:inherit;
+    overflow: hidden;
+    background-color: #f1f1f1;
+  }
+  * {
+  box-sizing: border-box;
+  }
 
-    .column {
-    float: left;
-    width: 18%;
-    padding: 10px;
-    }
+  /* Create two equal columns that floats next to each other */
+  .column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  }
+
+  /* Clear floats after the columns */
+  .row:after {
+  content: "";
+  display: table;
+  clear: both;
+  }
+  table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
 </style>
+</head>
 
 <div style="padding-left:16px">
-  <h2>Submit Instrument</h2>
-  <form action="" method="post">
-    {{ form.hidden_tag() }}
-    <div>
-      <p> {{ form.instrument_name.label }} {{ form.instrument_name }} </p>
-      <p>{{ form.instrument_nickname.label }} {{ form.instrument_nickname }} </p>
-      <p> {{ form.footprint_type.label }} {{ form.footprint_type }} </p>
-    </div>
-    <div class="Rectangular box">
-      <p> {{ form.height.label }} {{ form.height }} </p>
-      <p> {{ form.width.label }} {{ form.width }} </p>
-    </div>
-    <div class="Circular box">
-      <p>
-        {{form.radius.label}} {{form.radius}}
-      </p>
-    </div>
-    <div class="Polygon box">
-        <i>NOTES:</i><br>
-        <ul>
-          <li style="font-size: smaller"><b>First and last vertices must be the same to complete polygon</b></li>
-        </ul>
-        <ul>
-          <li style="font-size: smaller"><b>Vertices must be in order going clockwise. Separated by linebreak</b></li>
-        </ul>
-        <ul>
-          <li style="font-size: smaller"><b>Multiple polygons can be submitted in a [] deliminated by a #, as noted by the example below</b></li>
-        </ul>
-        <ul>
-          <li style="font-size: smaller"><b>Most importantly, the entire configuration MUST be centered around 0,0</b></li>
-        </ul>
-        <div class="column">
-          Single Example:<br>
-            <textarea disabled rows=5 cols="10">
-(-1, 1)
-(1, 1)
-(1, -1)
-(-1, -1)
-(-1, 1)
-            </textarea>
+    <div style="padding-left:16px">
+        <div class="content">
+          <h2>Submit Instrument</h2>
+          <div class="content">
+            <div class="column">
+              <button class="collapsible" aria-expanded="true">Instrument Information</button>
+              <br>
+              <form action="" method="POST">
+                  {{ form.hidden_tag() }}
+              <div class="content">
+                <p> {{ form.instrument_name.label }} {{ form.instrument_name }} </p>
+                <p> {{ form.instrument_nickname.label }} {{ form.instrument_nickname }} </p>
+                <p> {{ form.footprint_type.label }} {{ form.footprint_type }} </p>
+    
+                <div class="Rectangular box">
+                  <p> {{ form.height.label }} {{ form.height }} </p>
+                  <p> {{ form.width.label }} {{ form.width }} </p>
+                </div>
+                <div class="Circular box">
+                  <p> {{form.radius.label}} {{form.radius}} </p>
+                </div>
+                <div class="Polygon box">
+                    <i>NOTES:</i><br>
+                    <ul>
+                      <li style="font-size: smaller"><b>First and last vertices must be the same to complete polygon</b></li>
+                    </ul>
+                    <ul>
+                      <li style="font-size: smaller"><b>Vertices must be in order going clockwise. Separated by linebreak</b></li>
+                    </ul>
+                    <ul>
+                      <li style="font-size: smaller"><b>Multiple polygons can be submitted in a [] deliminated by a #, as noted by the example below</b></li>
+                    </ul>
+                    <ul>
+                      <li style="font-size: smaller"><b>Most importantly, the entire configuration MUST be centered around 0,0</b></li>
+                    </ul>
+                    <div class="column">
+                      Single Example:<br>
+                        <textarea disabled rows=5>
+    (-1, 1)
+    (1, 1)
+    (1, -1)
+    (-1, -1)
+    (-1, 1)
+                        </textarea>
+                    </div>
+                    <div style="padding: 10px">
+                        Multi Example:<br>
+                          <textarea disabled rows=12>
+    [(-1, 1)
+    (-0.3, 1)
+    (-0.3, -1)
+    (-1, -1)
+    (-1, 1)]
+    #
+    [(0.3, 1)
+    (1, 1)
+    (1, -1)
+    (0.3, -1)
+    (0.3, 1)]
+    #
+    ....
+                          </textarea>
+                    </div>
+                    <p> {{ form.polygon.label }}  </p><p> {{ form.polygon }}</p>
+                </div>
+                <div>
+                  <p> {{ form.unit.label }} {{ form.unit }}</p>
+                </div>
+              </div>
+              <p> {{ form.submit() }} </p>
+              </form>
+
+              <p> <button onclick="preview()">Preview Footprint</button> </p>
+              <div style="width: 50%" id="preview_graph" name="preview_graph">
+                <script>
+                    Plotly.plot('preview_graph',graphs,{});
+                </script>
+              </div>
+            </div>
+            <div class="column">
+              <button class="collapsible" aria-expanded="true">Existing Instruments</button>
+              <div class="content">
+                <table>
+                  <tr>
+                    <th>ID</th><th>Name</th><th>Short Name</th><th>Type</th>
+                  </tr>
+                    {% for r in insts %}
+                      <tr>
+                        <td>{{ r.id }}</td>
+                        <td><a href="/instrument_info?id={{ r.id }}">{{ r.instrument_name }}</a></td>
+                        <td>{{ r.nickname }} </td>
+                        <td>{{ r.instrument_type.name }}</td>
+                      </tr>
+                    {% endfor %}
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style="padding: 10px">
-            Multi Example:<br>
-              <textarea disabled rows=12 cols="10">
-[(-1, 1)
-(-0.3, 1)
-(-0.3, -1)
-(-1, -1)
-(-1, 1)]
-#
-[(0.3, 1)
-(1, 1)
-(1, -1)
-(0.3, -1)
-(0.3, 1)]
-#
-....
-              </textarea>
-        </div>
-        <p> {{ form.polygon.label }}  </p><p> {{ form.polygon }}</p>
-    </div>
-    <div>
-      <p> {{ form.unit.label }} {{ form.unit }}</p>
-    </div>
-    <p> {{ form.submit() }}  </p>
-  </form>
-  <p> <button onclick="preview()">Preview Footprint</button> </p>
-  <div style="width: 33%" id="preview_graph" name="preview_graph">
-    <script>
-        Plotly.plot('preview_graph',graphs,{});
-    </script>
-</div>
-</div>
+     </div>
 
 <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>

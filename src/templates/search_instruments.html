@@ -30,12 +30,13 @@
   {% if search_result %}
   <table>
     <tr>
-      <th>ID</th><th>Name</th><th>Type</th>
+      <th>ID</th><th>Name</th><th>Short Name</th><th>Type</th>
     </tr>
       {% for r in search_result %}
         <tr>
           <td>{{ r.id }}</td>
-          <td>{{ r.instrument_name }}</td>
+          <td><a href="/instrument_info?id={{ r.id }}">{{ r.instrument_name }}</a></td>
+          <td>{{ r.nickname }} </td>
           <td>{{ r.instrument_type.name }}</td>
         </tr>
       {% endfor %}
