@@ -686,7 +686,7 @@ def construct_alertform(form, args):
 	form.status = 'all'
 	
 	#grab all observation alerts
-	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
+	gwalerts = models.gw_alert.query.filter_by(role='observation').order_by(models.gw_alert.time_of_signal).all()
 	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
 
 	#link all alert types to its graceid
@@ -698,15 +698,18 @@ def construct_alertform(form, args):
 
 	#form the custom dropdown dictionary
 	graceids = [{'name':'--Select--', 'value':None}]
+
 	for g in gwalerts_ids:
+		if g != 'TEST_EVENT':
 		#get the alert types for each graceid to test for retractions
-		g_types = gid_types[g]
+			g_types = gid_types[g]
 
-		if 'Retraction' in g_types:
-			graceids.append({'name':g + ' -retracted-', 'value':g})
-		else:
-			graceids.append({'name':g, 'value':g})
+			if 'Retraction' in g_types:
+				graceids.append({'name':g + ' -retracted-', 'value':g})
+			else:
+				graceids.append({'name':g, 'value':g})
 
+	graceids.append({'name':'TEST_EVENT', 'value':'TEST_EVENT'})
 	form.graceids = graceids
 
 	#if there is a selected graceid

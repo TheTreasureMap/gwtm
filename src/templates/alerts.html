@@ -17,6 +17,9 @@
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }}</h3>
+      {% if form.graceid == 'TEST_EVENT' %}
+        <h5>These pointings are automatically deleted every 12 hours (12:00 and 24:00 PST)</h5>
+      {% endif %}
       {% include "alert_info.html" %}
   {% endif %}
 
