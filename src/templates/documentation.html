@@ -55,13 +55,14 @@
             <li><b>I am an observer and I would like to report my observations</b><br>
                 <p>
                     Great! Before you can start you must register an account through this website. Then you will be issued a token that you will use to post your reports. <br>
-                    Once you have an account, also please check whether your imaging instrument is listed (either on the website or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
-                    Once you and your instrument are registered, here's a typical scenario to follow:<br>
+                    Once you have an account, also please check whether your imaging instrument is listed (either on the <a href="/search_instruments">website</a> or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
                 </p>
+
+                    Once you and your instrument are registered, here's a typical scenario to follow: <b>(You may test your <em>POST</em> scripts using the graceid 'TEST_EVENT', and inspect the results <a href="/alerts?graceids=TEST_EVENT">here</a>.)</b><br>
                 <ul>
                     <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
-                    <li>You send this list of pointings using the pointings POST method (see below), with a status of <em>planned</em>.</li>
-                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em>completed</em>.</li>
+                    <li>You send this list of pointings using the pointings POST method (see below), with a status of <em><b>planned</b></em>.</li>
+                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em><b>completed</b></em>.</li>
                     <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
                 </ul>
                 <p></p>
