@@ -594,6 +594,7 @@ def preview_footprint():
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
+		fig.update_layout(yaxis=dict(scaleanchor="x",scaleratio=1))
 		data = fig
 		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 		return graphJSON
