@@ -494,6 +494,15 @@ def instrument_info():
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
+		fig.update_layout(
+			#title = ,
+			yaxis=dict(
+				matches='x',
+				scaleanchor="x",
+				scaleratio=1,
+				constrain='domain'
+			)
+		)
 		data = fig
 		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 
@@ -655,7 +664,15 @@ def preview_footprint():
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
-		fig.update_layout(yaxis=dict(scaleanchor="x",scaleratio=1))
+		fig.update_layout(
+			#title = ,
+			yaxis=dict(
+				matches='x',
+				scaleanchor="x",
+				scaleratio=1,
+				constrain='domain'
+			)
+		)
 		data = fig
 		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 		return graphJSON
