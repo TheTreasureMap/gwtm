@@ -70,7 +70,14 @@ def internal_error(error):
 @app.route("/", methods=["GET"])
 def home():
 	#get latest alert. Construct the form alertsform
-	graceid = db.session.query(models.gw_alert.graceid).order_by(models.gw_alert.graceid.desc()).first()
+	
+	graceid = db.session.query(
+		models.gw_alert.graceid
+	).filter(
+		models.gw_alert.graceid != 'TEST_EVENT'
+	).order_by(
+		models.gw_alert.graceid.desc()
+	).first()
 	
 	status = request.args.get('pointing_status')
 	alerttype = request.args.get('alert_type')
@@ -406,8 +413,11 @@ def submit_pointing():
 def submit_in0strument():
 	form = forms.SubmitInstrumentForm()
 
+	insts = db.session.query(
+		models.instrument
+	).all()
+
 	args = request.args
-	print(args)
 
 	if request.method == 'POST' or False:
 
@@ -436,7 +446,58 @@ def submit_in0strument():
 		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
 		return redirect("/index")
 
-	return render_template('submit_instrument.html', form=form, plot=None)
+	return render_template('submit_instrument.html', form=form, plot=None, insts=insts)
+
+@app.route('/instrument_info')
+def instrument_info():
+	instid = request.args.get('id')
+
+	instrument = db.session.query(
+		models.instrument,
+		models.users.username,
+		func.ST_AsText(models.footprint_ccd.footprint).label('footprint')
+	).filter(
+		models.instrument.id == instid,
+		models.instrument.id == models.footprint_ccd.instrumentid,
+		models.instrument.submitterid == models.users.id
+	).all()
+
+	events_contributed = db.session.query(
+		models.pointing,
+		models.gw_alert.graceid
+	).filter(
+		models.pointing.instrumentid == instid,
+		models.pointing_event.pointingid == models.pointing.id,
+		models.gw_alert.graceid == models.pointing_event.graceid,
+	).all()
+
+	gids = sorted(list(set([x.graceid for x in events_contributed])), reverse=True)
+	events = []
+	for g in gids:
+		numevents = len([x for x in events_contributed if x.graceid == g])
+		events.append({'event':g, 'count':str(numevents)})
+
+	if len(instrument) > 0:
+		inst = instrument[0].instrument
+		username = instrument[0].username
+		sanatized_ccds = function.sanatize_footprint_ccds([x.footprint for x in instrument])
+		trace = []
+		vertices = sanatized_ccds
+		for vert in vertices:
+			xs = [v[0] for v in vert]
+			ys =[v[1] for v in vert]
+			trace1 = go.Scatter(
+				x=xs,
+				y=ys,
+				mode='markers',
+				fill='tozeroy',
+			)
+			trace.append(trace1)
+		fig = go.Figure(data=trace)
+		data = fig
+		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+
+	return render_template('instrument_info.html', inst=inst, graph=graphJSON, events=events, username=username)
 
 
 @app.route('/logout')
@@ -458,7 +519,7 @@ def plot_prob_coverage():
 	if os.path.exists(mappathinfo):
 		try:
 			GWmap = hp.read_map(mappathinfo)
-			bestpixel = np.argmax(GWmap)
+			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
 		except:
 			return 'Map error, contact administrator.'
@@ -687,7 +748,7 @@ def construct_alertform(form, args):
 	form.status = 'all'
 	
 	#grab all observation alerts
-	gwalerts = models.gw_alert.query.filter_by(role='observation').all()
+	gwalerts = models.gw_alert.query.filter_by(role='observation').order_by(models.gw_alert.time_of_signal).all()
 	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
 
 	#link all alert types to its graceid
@@ -699,15 +760,18 @@ def construct_alertform(form, args):
 
 	#form the custom dropdown dictionary
 	graceids = [{'name':'--Select--', 'value':None}]
+
 	for g in gwalerts_ids:
+		if g != 'TEST_EVENT':
 		#get the alert types for each graceid to test for retractions
-		g_types = gid_types[g]
+			g_types = gid_types[g]
 
-		if 'Retraction' in g_types:
-			graceids.append({'name':g + ' -retracted-', 'value':g})
-		else:
-			graceids.append({'name':g, 'value':g})
+			if 'Retraction' in g_types:
+				graceids.append({'name':g + ' -retracted-', 'value':g})
+			else:
+				graceids.append({'name':g, 'value':g})
 
+	graceids.append({'name':'TEST_EVENT', 'value':'TEST_EVENT'})
 	form.graceids = graceids
 
 	#if there is a selected graceid
@@ -841,7 +905,7 @@ def construct_alertform(form, args):
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 		for i,inst in enumerate(instrumentinfo):
-			name = inst.nickname if inst.nickname else inst.instrument_name
+			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
 			try:
 				color = colorlist[i]
 			except:

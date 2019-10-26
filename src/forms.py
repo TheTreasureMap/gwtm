@@ -71,7 +71,8 @@ class SearchPointingsForm(FlaskForm):
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = sorted(list(set([a.graceid for a in alerts])))
+        alerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
+        alerts.append('TEST_EVENT')
         self.graceids.choices = [(a, a) for a in alerts]
 
 
@@ -96,7 +97,7 @@ class SubmitInstrumentForm(FlaskForm):
     height = DecimalField('Height')
     width = DecimalField('Width')
     radius = DecimalField('Radius')
-    polygon = TextAreaField('Polygon', render_kw={"rows": 20, "cols": 11})
+    polygon = TextAreaField('Polygon', render_kw={"rows": 20, "cols": 20})
     submit =  SubmitField('Submit')
 
 
@@ -135,7 +136,8 @@ class SubmitPointingForm(FlaskForm):
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = sorted(list(set([a.graceid for a in alerts])))
+        alerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
+        alerts.append('TEST_EVENT')
         self.graceids.choices = [(None, 'Select')]
         for a in alerts:
             self.graceids.choices.append((a, a))
