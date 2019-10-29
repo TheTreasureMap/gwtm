@@ -483,9 +483,9 @@ class pointing(db.Model):
 
         if 'time' in p:
             try:
-                self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S")
+                self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
             except:
-                v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+                v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
         elif self.status == pointing_status.planned:
             v.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
         elif self.status == pointing_status.completed:

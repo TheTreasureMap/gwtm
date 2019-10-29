@@ -1321,36 +1321,36 @@ def get_pointings():
 	if "completed_after" in args:
 		time = args.get('completed_after')
 		try:
-			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
+			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
 		filter.append(models.pointing.status == models.pointing_status.completed)
 		filter.append(models.pointing.time >= time)
 
 	if "completed_before" in args:
 		time = args.get('completed_before')
 		try:
-			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
+			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
 		filter.append(models.pointing.status == models.pointing_status.completed)
 		filter.append(models.pointing.time <= time)
 
 	if "planned_after" in args:
 		time = args.get('planned_after')
 		try:
-			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
+			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
 		filter.append(models.pointing.status == models.pointing_status.planned)
 		filter.append(models.pointing.time >= time)
 
 	if "planned_before" in args:
 		time = args.get('planned_before')
 		try:
-			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
+			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S format. e.g. 2019-05-01T12:00:00")
+			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
 		filter.append(models.pointing.status == models.pointing_status.planned)
 		filter.append(models.pointing.time <= time)
 
