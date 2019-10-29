@@ -724,23 +724,31 @@ def fixshit():
 
 #Internal Functions
 
-def pointing_crossmatch(pointing, filter=[], dist_thresh=None):
-	graceid = pointing.graceid
+def pointing_crossmatch(pointing, graceid, filter=[], dist_thresh=None):
+	#graceid = graceid
 	status = pointing.status
 
-	filter.append(models.pointing.graceid == graceid)
+	filter.append(models.pointing_event.graceid == graceid)
+	filter.append(models.pointing_event.pointingid == models.pointing.id)
 	filter.append(models.pointing.status == status)
+	filter.append(models.pointing.instrumentid == pointing.instrumentid)
 
-	pointings = db.session.query(models.poining).filter(*filter).all()
+	pointings = db.session.query(models.pointing).filter(*filter).all()
 
 	if dist_thresh is None:
 		for p in pointings:
-			if p.ra == pointing.ra and p.dec == pointing.dec:
+			#ra, dec = function.sanatize_pointing(p.position)
+			#if ra == pointing.ra and dec == pointing.dec:
+			p_pos = str(geoalchemy2.shape.to_shape(p.position))
+			print(p_pos, pointing.position)
+			if function.sanatize_pointing(p_pos) == function.sanatize_pointing(pointing.position):
 				return True
 
 	else:
+		p_ra, p_dec = function.sanatize_pointing(pointing.position)
 		for p in pointings:
-			sep = 206264.806*(float(ephem.separation((p.ra, p.dec ), (pointing.ra, pointing.dec))))
+			ra, dec == function.sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
+			sep = 206264.806*(float(ephem.separation((ra, dec ), (p_ra, p_dec))))
 			if sep < dist_thresh:
 				return True
 
@@ -1218,7 +1226,7 @@ def add_pointings():
 		if 'id' in p:
 			if function.isInt(p['id']):
 				planned_pointings = pointings_from_IDS([p['id']], filter)
-		v = mp.from_json(p, dbinsts, userid, planned_pointings)
+		v = mp.from_json(p, dbinsts, userid, planned_pointings, gid)
 		if v.valid:
 			points.append(mp)
 			if len(v.warnings) > 0:
@@ -1238,7 +1246,7 @@ def add_pointings():
 
 		for p in pointings:
 			mp = models.pointing()
-			v = mp.from_json(p, dbinsts, userid, planned_pointings)
+			v = mp.from_json(p, dbinsts, userid, planned_pointings, gid)
 			if v.valid:
 				points.append(mp)
 				db.session.add(mp)

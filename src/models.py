@@ -361,7 +361,7 @@ class pointing(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
-    def from_json(self, p, dbinsts, userid, planned_pointings): #dbusers):
+    def from_json(self, p, dbinsts, userid, planned_pointings, graceid): #dbusers):
         v = valid_mapping()
 
         PLANNED = False
@@ -524,6 +524,9 @@ class pointing(db.Model):
                 v.errors.append("Field \"band\" is invalid")
         elif not PLANNED:
             v.errors.append("Field \"band\" is required")
+
+        #if routes.pointing_crossmatch(self, graceid):
+        #    v.errors.append("Pointing already submitted")
 
         v.valid = len(v.errors) == 0
         return v

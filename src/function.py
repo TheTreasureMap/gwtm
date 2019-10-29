@@ -38,7 +38,7 @@ def rotate(footprint, angle):
 
     rot_footprint = []
     angle = angle * math.pi/180.
-    
+
     for p in footprint:
         x, y = p[0], p[1]
         r = math.sqrt(x*x + y*y)
@@ -102,7 +102,7 @@ def sanatize_footprint_ccds(ccds):
 
 
 def sanatize_pointing(p):
-	ra = float(p.split('POINT(')[1].split(')')[0].split()[0])
-	dec = float(p.split('POINT(')[1].split(')')[0].split()[1])
-	return ra,dec
+    ra = float(p.split('(')[1].split(')')[0].split()[0])
+    dec = float(p.split('(')[1].split(')')[0].split()[1])
+    return ra,dec
 
