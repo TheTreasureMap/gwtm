@@ -361,7 +361,7 @@ class pointing(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
-    def from_json(self, p, dbinsts, userid, planned_pointings, graceid): #dbusers):
+    def from_json(self, p, dbinsts, userid, planned_pointings, otherpointings): #dbusers):
         v = valid_mapping()
 
         PLANNED = False
@@ -491,26 +491,6 @@ class pointing(db.Model):
         elif self.status == pointing_status.completed:
             v.errors.append('Field \"time\" is required for the observed pointing')
 
-
-        #if "submitterid" in p:
-        #   validsubmitter = False
-        #   submitter = p['submitterid']
-        #   if isInt(submitter):
-        #       subs = [x for x in dbusers if x.id == submitter]
-        #       if len(subs) > 0:
-        #           self.submitterid = submitter
-        #           validsubmitter = True
-        #       else:
-        #           subs = [x for x in dbusers if x.username == submitter or x.firstname + " " + x.lastname == submitter]
-        #               if len(subs) > 0:
-        #                   self.submitterid = [x.id for x in subs][0] 
-        #                   validsubmitter = True
-        #
-        #       if validsubmitter is False:
-        #           v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
-        #       else:
-        #           v.errors.append("Field \"submitterid\" is required. Can be the ID, \"username\", or \"FirstName LastName\" of a valid user")
-
         self.submitterid = userid
         self.datecreated = datetime.datetime.now()
 
@@ -525,8 +505,8 @@ class pointing(db.Model):
         elif not PLANNED:
             v.errors.append("Field \"band\" is required")
 
-        #if routes.pointing_crossmatch(self, graceid):
-        #    v.errors.append("Pointing already submitted")
+        if routes.pointing_crossmatch(self, otherpointings):
+            v.errors.append("Pointing already submitted")
 
         v.valid = len(v.errors) == 0
         return v

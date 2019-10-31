@@ -365,6 +365,7 @@ def submit_pointing():
 			pos_angle = form.pos_angle.data
 
 			#validation
+			print(completed_time)
 			if completed_time is None:
 				flash('Completed time is required')
 				return render_template('submit_pointings.html', form=form)
@@ -389,6 +390,16 @@ def submit_pointing():
 		
 			#inserting
 			pointing.time = planned_time
+
+
+		otherpointings = db.session.query(models.pointing).filter(
+			models.pointing.id == models.pointing_event.pointingid,
+			models.pointing_event.graceid == graceid
+		).all()
+
+		if pointing_crossmatch(pointing, otherpointings):
+			flash("Pointing already submitted")
+			return render_template('submit_pointings.html', form=form)
 
 		#commiting data
 		db.session.add(pointing)
@@ -724,29 +735,34 @@ def fixshit():
 
 #Internal Functions
 
-def pointing_crossmatch(pointing, graceid, filter=[], dist_thresh=None):
-	#graceid = graceid
-	status = pointing.status
-
-	filter.append(models.pointing_event.graceid == graceid)
-	filter.append(models.pointing_event.pointingid == models.pointing.id)
-	filter.append(models.pointing.status == status)
-	filter.append(models.pointing.instrumentid == pointing.instrumentid)
-
-	pointings = db.session.query(models.pointing).filter(*filter).all()
+def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 
 	if dist_thresh is None:
-		for p in pointings:
-			#ra, dec = function.sanatize_pointing(p.position)
-			#if ra == pointing.ra and dec == pointing.dec:
+
+		filtered_pointings = [x for x in otherpointings if (
+			x.status.name == pointing.status and \
+			x.instrumentid == int(pointing.instrumentid) and \
+			x.band.name == pointing.band and \
+			x.time == pointing.time and \
+			x.pos_angle == float(pointing.pos_angle)
+		)]
+
+		for p in filtered_pointings:
 			p_pos = str(geoalchemy2.shape.to_shape(p.position))
-			print(p_pos, pointing.position)
 			if function.sanatize_pointing(p_pos) == function.sanatize_pointing(pointing.position):
 				return True
 
 	else:
+
 		p_ra, p_dec = function.sanatize_pointing(pointing.position)
-		for p in pointings:
+
+		filtered_pointings = [x for x in otherpointings if (
+			x.status.name == pointing.status and \
+			x.instrumentid == int(pointing.instrumentid) and \
+			x.band.name == pointing.band
+		)]
+
+		for p in filtered_pointings:
 			ra, dec == function.sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
 			sep = 206264.806*(float(ephem.separation((ra, dec ), (p_ra, p_dec))))
 			if sep < dist_thresh:
@@ -1220,13 +1236,18 @@ def add_pointings():
 
 	filter = [models.pointing.submitterid == userid]
 
+	otherpointings = db.session.query(models.pointing).filter(
+		models.pointing.id == models.pointing_event.pointingid,
+		models.pointing_event.graceid == gid
+	).all()
+
 	if "pointing" in rd:
 		p = rd['pointing']
 		mp = models.pointing()
 		if 'id' in p:
 			if function.isInt(p['id']):
 				planned_pointings = pointings_from_IDS([p['id']], filter)
-		v = mp.from_json(p, dbinsts, userid, planned_pointings, gid)
+		v = mp.from_json(p, dbinsts, userid, planned_pointings, otherpointings)
 		if v.valid:
 			points.append(mp)
 			if len(v.warnings) > 0:
@@ -1246,7 +1267,7 @@ def add_pointings():
 
 		for p in pointings:
 			mp = models.pointing()
-			v = mp.from_json(p, dbinsts, userid, planned_pointings, gid)
+			v = mp.from_json(p, dbinsts, userid, planned_pointings, otherpointings)
 			if v.valid:
 				points.append(mp)
 				db.session.add(mp)

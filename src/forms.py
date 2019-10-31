@@ -112,8 +112,8 @@ class SubmitPointingForm(FlaskForm):
         if 'cancelled' not in a.name:
             statuses.append((a.name, a.name))
     obs_status = SelectField('Observation Status', choices=statuses, validators=[DataRequired()])
-    completed_obs_time = DateTimeField('Completed Time', format='%Y-%m-%dT%H:%M:%S')
-    planned_obs_time = DateTimeField('Planned Time', format='%Y-%m-%dT%H:%M:%S')
+    completed_obs_time = DateTimeField('Completed Time', format='%Y-%m-%dT%H:%M:%S.%f')
+    planned_obs_time = DateTimeField('Planned Time', format='%Y-%m-%dT%H:%M:%S.%f')
     bands = [(None, 'Select')]
     for a in models.bandpass:
         bands.append((a.name, a.name))
