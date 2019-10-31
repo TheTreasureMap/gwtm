@@ -27,6 +27,15 @@ def isFloat(i):
 	except:
 		return False
 
+def floatNone(i):
+    if i is not None:
+        try:
+            return float(i)
+        except:
+            return 0.0
+    else:
+        return None
+
 def rotate(footprint, angle):
     #footprint is a list of vertices points
     #   vertice points = [ra, dec]

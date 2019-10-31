@@ -744,7 +744,7 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 			x.instrumentid == int(pointing.instrumentid) and \
 			x.band.name == pointing.band and \
 			x.time == pointing.time and \
-			x.pos_angle == float(pointing.pos_angle)
+			x.pos_angle == function.floatNone(pointing.pos_angle)
 		)]
 
 		for p in filtered_pointings:
