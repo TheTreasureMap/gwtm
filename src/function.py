@@ -185,7 +185,7 @@ def z_rot(theta_deg):
 def project_footprint(footprint, ra, dec, pos_angle):
     if pos_angle is None:
         pos_angle = 0.0
-        
+
     footprint_zero_center_ra = np.asarray([pt[0] for pt in footprint])
     footprint_zero_center_dec = np.asarray([pt[1] for pt in footprint])
     footprint_zero_center_uvec = ra_dec_to_uvec(footprint_zero_center_ra, footprint_zero_center_dec)
