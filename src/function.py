@@ -53,6 +53,8 @@ def rotate(footprint, angle):
         r = math.sqrt(x*x + y*y)
         if x < 0:
             r = (-1.0)*r
+        if x==0:
+            x+=.00001
         theta = math.atan(y/x)-angle
         new_x = r*math.cos(theta)
         new_y = r*math.sin(theta)
