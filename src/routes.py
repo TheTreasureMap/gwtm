@@ -960,9 +960,7 @@ def construct_alertform(form, args):
 			for p in inst_pointings:
 				ra, dec = function.sanatize_pointing(p.position)
 				for ccd in sanatized_ccds:
-					rotated = function.rotate(ccd, p.pos_angle)
-					pointing_footprint = function.project(rotated, ra, dec)
-					#print(len(pointing_footprint))
+					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 					pointing_geometries.append({"polygon":pointing_footprint})
 
 			overlays.append({

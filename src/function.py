@@ -1,4 +1,5 @@
 from numpy import genfromtxt
+import numpy as np
 
 import math
 
@@ -53,7 +54,7 @@ def rotate(footprint, angle):
         r = math.sqrt(x*x + y*y)
         if x < 0:
             r = (-1.0)*r
-        theta = math.atan(y/x)-angle
+        theta = math.atan2(y, x)-angle
         new_x = r*math.cos(theta)
         new_y = r*math.sin(theta)
         rot_footprint.append([new_x, new_y])
@@ -67,20 +68,34 @@ def project(footprint, _ra, _dec):
         #_ra and _dec are the translated coordinates
 
         proj_footprint = []
+        print(_ra, _dec)
         for p in footprint:
-            if p[0]+_ra > 360:
-                  ra = 360 - p[0]/math.cos(math.radians(_dec))+_ra
-            elif p[0]+_ra < 0:
-                  ra = 360 + p[0]/math.cos(math.radians(_dec))+_ra
+            print(p[0], p[1])
+            if _dec >= 89:
+                cosdec = 1
             else:
-                  ra = p[0]/math.cos(math.radians(_dec)) + _ra
+                cosdec = math.cos(math.radians(_dec))
+            if p[0]+_ra > 360:
+                  ra = 360 - (p[0]/cosdec) +_ra
+            elif p[0]+_ra < 0:
+                  ra = 360 + (p[0]/cosdec)+_ra
+            else:
+                ra = (p[0]/cosdec) + _ra
 
             if p[1]+_dec > 90:
+                #ra = (ra + 180) % 360
+                print("p[1] + dec > 90")
                 dec = 90 - p[1]+_dec
-            elif p[1]+_dec < -90:
+
+            if p[1]+_dec < -90:
+                #ra = (ra + 180) % 360
+                print("p[1]+dec < -90")
                 dec = -90 + p[1] + _dec
             else:
-                  dec = p[1] + _dec
+                print("else")
+                dec = p[1] + _dec
+
+            print(ra, dec)
 
             proj_footprint.append([ra, dec])
         return proj_footprint
@@ -115,3 +130,71 @@ def sanatize_pointing(p):
     dec = float(p.split('(')[1].split(')')[0].split()[1])
     return ra,dec
 
+
+def ra_dec_to_uvec(ra, dec):
+    phi = np.deg2rad(90 - dec)
+    theta = np.deg2rad(ra)
+    x = np.cos(theta) * np.sin(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(phi)
+    return x, y, z
+
+
+def uvec_to_ra_dec(x, y, z):
+    r = np.sqrt(x**2 + y ** 2 + z ** 2)
+    x /= r
+    y /= r
+    z /= r
+    theta = np.arctan2(y, x)
+    phi = np.arccos(z)
+    dec = 90 - np.rad2deg(phi)
+    if theta < 0:
+        ra = 360 + np.rad2deg(theta)
+    else:
+        ra = np.rad2deg(theta)
+    return ra, dec
+
+
+def x_rot(theta_deg):
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [1, 0, 0],
+        [0, np.cos(theta), -np.sin(theta)],
+        [0, np.sin(theta), np.cos(theta)]
+    ])
+
+
+def y_rot(theta_deg):
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [np.cos(theta), 0, np.sin(theta)],
+        [0, 1, 0],
+        [-np.sin(theta), 0, np.cos(theta)]
+    ])
+
+
+def z_rot(theta_deg):
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta), np.cos(theta), 0],
+        [0, 0, 1]
+    ])
+
+
+def project_footprint(footprint, ra, dec, pos_angle):
+    if pos_angle is None:
+        pos_angle = 0.0
+        
+    footprint_zero_center_ra = np.asarray([pt[0] for pt in footprint])
+    footprint_zero_center_dec = np.asarray([pt[1] for pt in footprint])
+    footprint_zero_center_uvec = ra_dec_to_uvec(footprint_zero_center_ra, footprint_zero_center_dec)
+    footprint_zero_center_x, footprint_zero_center_y, footprint_zero_center_z = footprint_zero_center_uvec
+    proj_footprint = []
+    for idx in range(footprint_zero_center_x.shape[0]):
+        vec = np.asarray([footprint_zero_center_x[idx], footprint_zero_center_y[idx], footprint_zero_center_z[idx]])
+        new_vec = vec @ x_rot(-pos_angle) @ y_rot(dec) @ z_rot(-ra)
+        new_x, new_y, new_z = new_vec.flat
+        pt_ra, pt_dec = uvec_to_ra_dec(new_x, new_y, new_z)
+        proj_footprint.append([pt_ra, pt_dec])
+    return proj_footprint
