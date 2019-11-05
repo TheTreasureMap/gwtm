@@ -187,23 +187,29 @@
         var sunImg = new Image();
         sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
         sunImg.onload = function() {
-            var cat = A.catalog({shape: sunImg});
+            var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
             aladin.addCatalog(cat);
             cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
-            cat.name = 'Sun at GW T0';
         };
 
         var moonImg = new Image();
         moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
         moonImg.onload = function() {
-            var cat = A.catalog({shape: moonImg});
+            var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
             aladin.addCatalog(cat);
             cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
-            cat.name = 'Moon at GW T0';
         };
+        var GRBoverlaylist={};
+        var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+        for (i = 0; i < GRBoverlays.length; i++) {
+          var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
+          aladin.addMOC(moc);
+          GRBoverlaylist[i] = moc;
+          //initialize unshown
+          moc.hide()
+          }
 
         var overlaylist = {};
-
         var overlays = JSON.parse('{{ overlays | tojson }}');
         for (i = 0; i < overlays.length; i++) {
           var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
@@ -216,7 +222,9 @@
           }
         }
 
-        var layersControl = aladin.box({title: 'Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+        var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+
+        var GRBlayersControl = aladin.box({title: 'GRB Instruments', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var html = '<form id="InstrumentSelector">';
         for (var k=0 ; k<overlays.length; k++) {
@@ -227,11 +235,19 @@
             html += '</fieldset>';
         }
         html += '</form>';
+        instlayersControl.setContent(html);
+        instlayersControl.show();
 
-
-
-        layersControl.setContent(html);
-        layersControl.show();
+        var GRBhtml = '<form id="GRBInstrumentSelector">';
+        for (var k=0 ; k<GRBoverlays.length; k++) {
+            var cat = GRBoverlays[k];
+            GRBhtml += '<fieldset><label for="overlay-' + k + '">';
+            GRBhtml += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" >' + cat.name + '</input></label>';
+            GRBhtml += '</fieldset>';
+        }
+        GRBhtml += '</form>';
+        GRBlayersControl.setContent(GRBhtml);
+        GRBlayersControl.show();
 
         $('#InstrumentSelector :checkbox').change(function() {
             var contour = overlaylist[this.value];
@@ -241,6 +257,17 @@
             }
             else {
                 contour.hide();
+            }
+        });
+
+        $('#GRBInstrumentSelector :checkbox').change(function() {
+            var moc = GRBoverlaylist[this.value];
+
+            if (this.checked) {
+                moc.show();
+            }
+            else {
+                moc.hide();
             }
         });
 
