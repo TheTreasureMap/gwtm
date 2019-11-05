@@ -209,8 +209,6 @@
           moc.hide()
           }
 
-        aladin.addCatalog(A.catalogFromURL('https://vizier.u-strasbg.fr/viz-bin/votable?-source=GLADE&-out.add=_RAJ,_DEJ&-out.max=9999&Dist={{form.selected_alert_info.distance - 3*form.selected_alert_info.distance_error}}..{{form.selected_alert_info.distance + 3*form.selected_alert_info.distance_error}}', {sourceSize:12, color: '#f08080', onClick:'showPopup', name:'GLADE galaxies'}));
-
         var overlaylist = {};
         var overlays = JSON.parse('{{ overlays | tojson }}');
         for (i = 0; i < overlays.length; i++) {
