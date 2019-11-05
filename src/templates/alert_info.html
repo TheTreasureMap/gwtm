@@ -187,20 +187,20 @@
         var sunImg = new Image();
         sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
         sunImg.onload = function() {
-            var cat = A.catalog({shape: sunImg});
+            var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
             aladin.addCatalog(cat);
             cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
-            cat.name = 'Sun at GW T0';
         };
 
         var moonImg = new Image();
         moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
         moonImg.onload = function() {
-            var cat = A.catalog({shape: moonImg});
+            var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
             aladin.addCatalog(cat);
             cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
-            cat.name = 'Moon at GW T0';
         };
+
+        aladin.addCatalog(A.catalogFromURL('https://vizier.u-strasbg.fr/viz-bin/votable?-source=GLADE&-out.add=_RAJ,_DEJ&-out.max=9999&Dist={{form.selected_alert_info.distance - 3*form.selected_alert_info.distance_error}}..{{form.selected_alert_info.distance + 3*form.selected_alert_info.distance_error}}', {sourceSize:12, color: '#f08080', onClick:'showPopup', name:'GLADE galaxies'}));
 
         var overlaylist = {};
 
