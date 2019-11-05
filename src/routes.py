@@ -782,6 +782,7 @@ def construct_alertform(form, args):
 	alerttype = args['alert_type']
 
 	overlays = None
+	GRBoverlays = None
 	form.viz = False
 	form.avgra = "90"
 	form.avgdec = "-30"
