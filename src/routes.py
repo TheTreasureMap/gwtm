@@ -554,6 +554,7 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing_event.graceid == graceid)
 	pointing_filter.append(models.pointing.status == 'completed')
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+	pointing_filter.append(fsq.sqlalchemy.not_(models.pointing.instrumentid == 49))
 
 	if inst_cov != '':
 		print(inst_cov)
@@ -621,8 +622,8 @@ def plot_prob_coverage():
 		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
 		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
 		for ccd in sanatized_ccds:
-			rotated = function.rotate(ccd, p.pos_angle)
-			pointing_footprint = function.project(rotated, ra, dec)
+			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+
 
 			ras_poly = [x[0] for x in pointing_footprint][:-1]
 			decs_poly = [x[1] for x in pointing_footprint][:-1]
