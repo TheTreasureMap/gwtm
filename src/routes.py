@@ -671,6 +671,7 @@ def preview_footprint():
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
+				line_color='blue',
 				fill='tozeroy',
 				fillcolor='violet'
 			)
