@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-	<div style="padding-left:16px">
+	<div class="container" style="text-align: left">
   		<h2>Welcome to the Gravitational Wave Treasure Map</h2>
 		  <p>The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events. It allows observers to easily report their planned and executed observations in search of counterparts to GW events, and to query the reports of other observers, in a programatic way. The goal is to enable coordination between observatories in order to minimize unnecessary overlap in these searches and find the counterpart as quickly and as efficiently as possible.</p>
 		  <p>For more details on how to use the Treasure Map see our  <a href="/documentation">User Guide</a>.</p>
@@ -19,6 +19,8 @@
 				Please direct any inqueries to <a href="mailto:arcavi@tauex.tau.ac.il" target="_top">Iair Arcavi</a>
 		  </p>
 		  <br>
+	</div>
+	<div style="padding-left: 16px">
 		<h2>Most Recent Event: {{ form.graceid }} </h3>
 		{% include "alert_info.html" %}
 	</div>

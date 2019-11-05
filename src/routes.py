@@ -18,6 +18,9 @@ import healpy as hp
 import astropy
 from astropy import coordinates
 from astropy.time import Time
+from mocpy import MOC, WCS
+from astropy.coordinates import Angle, SkyCoord
+import astropy.units as u
 import time
 import plotly
 import plotly.graph_objects as go
@@ -83,9 +86,9 @@ def home():
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid.graceid, 'pointing_status':status, 'alert_type':alerttype} 
 	form = forms.AlertsForm
-	form, overlays = construct_alertform(form, args)
+	form, overlays, GRBoverlays = construct_alertform(form, args)
 	form.page = 'index'
-	return render_template("index.html", form=form, overlays=overlays)
+	return render_template("index.html", form=form, overlays=overlays, GRBoverlays=GRBoverlays)
 
 class overlay():
 	def __init__(self, name, color, contours):
@@ -103,9 +106,9 @@ def alerts():
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
 	form.page = 'alerts'
-	form, overlays = construct_alertform(form, args)
+	form, overlays, GRBoverlays = construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
-		return render_template("alerts.html", form=form, overlays=overlays)
+		return render_template("alerts.html", form=form, overlays=overlays, GRBoverlays=GRBoverlays)
 		
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
@@ -500,13 +503,14 @@ def instrument_info():
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
-				mode='markers',
+				line_color='blue',
 				fill='tozeroy',
+				fillcolor='violet'
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
 		fig.update_layout(
-			#title = ,
+			showlegend=False,
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
@@ -550,6 +554,7 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing_event.graceid == graceid)
 	pointing_filter.append(models.pointing.status == 'completed')
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+	pointing_filter.append(fsq.sqlalchemy.not_(models.pointing.instrumentid == 49))
 
 	if inst_cov != '':
 		print(inst_cov)
@@ -617,8 +622,8 @@ def plot_prob_coverage():
 		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
 		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
 		for ccd in sanatized_ccds:
-			rotated = function.rotate(ccd, p.pos_angle)
-			pointing_footprint = function.project(rotated, ra, dec)
+			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+
 
 			ras_poly = [x[0] for x in pointing_footprint][:-1]
 			decs_poly = [x[1] for x in pointing_footprint][:-1]
@@ -670,13 +675,13 @@ def preview_footprint():
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
-				mode='markers',
 				fill='tozeroy',
+				fillcolor='violet'
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
 		fig.update_layout(
-			#title = ,
+			showlegend=False,
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
@@ -778,6 +783,7 @@ def construct_alertform(form, args):
 	alerttype = args['alert_type']
 
 	overlays = None
+	GRBoverlays = None
 	form.viz = False
 	form.avgra = "90"
 	form.avgdec = "-30"
@@ -941,7 +947,7 @@ def construct_alertform(form, args):
 		).all()
 		
 		overlays = []
-
+		GRBoverlays = []
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
@@ -960,16 +966,24 @@ def construct_alertform(form, args):
 			for p in inst_pointings:
 				ra, dec = function.sanatize_pointing(p.position)
 				for ccd in sanatized_ccds:
-					rotated = function.rotate(ccd, p.pos_angle)
-					pointing_footprint = function.project(rotated, ra, dec)
-					#print(len(pointing_footprint))
+					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 					pointing_geometries.append({"polygon":pointing_footprint})
-
-			overlays.append({
+			if inst.id ==49:
+				skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
+				inside = SkyCoord(ra=ra, dec=dec, unit="deg", frame="icrs")
+				moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+				mocfootprint = moc.serialize(format='json')
+				GRBoverlays.append({
 				"name":name,
 				"color":color,
-				"contours":pointing_geometries
-			})
+				"json":mocfootprint
+				})
+			else:
+				overlays.append({
+					"name":name,
+					"color":color,
+					"contours":pointing_geometries
+				})
 
 		#grab the precomputed localization contour region
 
@@ -1008,7 +1022,7 @@ def construct_alertform(form, args):
 				"contours":function.polygons2footprints(contour_geometry)
 			})
 
-	return form, overlays
+	return form, overlays, GRBoverlays
 
 def extract_polygon(p, scale):
 	vertices = []

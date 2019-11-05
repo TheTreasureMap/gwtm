@@ -1,38 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div style="padding-left:16px">
+    <div class="container" style="text-align: left">
     <h1>Register</h1>
+    <style lang="text/css">
+    label { width: 15em; }
+    </style>
     <form action="" method="post">
         {{ form.hidden_tag() }}
         <p>
-            {{ form.firstname.label }}<br> {{ form.firstname }}<br><br>
-            {{ form.lastname.label }} <br>{{ form.lastname }}
+            {{ form.firstname.label }} {{ form.firstname }}<br>
+            {{ form.lastname.label }}  {{ form.lastname }}
         </p>
         <p>
-            {{ form.username.label }}<br>
-            {{ form.username(size=32) }}<br>
+            {{ form.username.label }} {{ form.username(size=32) }}<br>
             {% for error in form.username.errors %}
             <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
-            {{ form.email.label }}<br>
-            {{ form.email(size=64) }}<br>
+            {{ form.email.label }} {{ form.email(size=64) }}<br>
             {% for error in form.email.errors %}
             <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
-            {{ form.password.label }}<br>
-            {{ form.password(size=32) }}<br>
+            {{ form.password.label }} {{ form.password(size=32) }}<br>
             {% for error in form.password.errors %}
             <span style="color: red;">{{ error }}</span>
             {% endfor %}
         </p>
         <p>
-            {{ form.password2.label }}<br>
-            {{ form.password2(size=32) }}<br>
+            {{ form.password2.label }} {{ form.password2(size=32) }}<br>
             {% for error in form.password2.errors %}
             <span style="color: red;">{{ error }}</span>
             {% endfor %}

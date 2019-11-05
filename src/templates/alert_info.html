@@ -199,11 +199,19 @@
             aladin.addCatalog(cat);
             cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
         };
+        var GRBoverlaylist={};
+        var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+        for (i = 0; i < GRBoverlays.length; i++) {
+          var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
+          aladin.addMOC(moc);
+          GRBoverlaylist[i] = moc;
+          //initialize unshown
+          moc.hide()
+          }
 
         aladin.addCatalog(A.catalogFromURL('https://vizier.u-strasbg.fr/viz-bin/votable?-source=GLADE&-out.add=_RAJ,_DEJ&-out.max=9999&Dist={{form.selected_alert_info.distance - 3*form.selected_alert_info.distance_error}}..{{form.selected_alert_info.distance + 3*form.selected_alert_info.distance_error}}', {sourceSize:12, color: '#f08080', onClick:'showPopup', name:'GLADE galaxies'}));
 
         var overlaylist = {};
-
         var overlays = JSON.parse('{{ overlays | tojson }}');
         for (i = 0; i < overlays.length; i++) {
           var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
@@ -216,7 +224,9 @@
           }
         }
 
-        var layersControl = aladin.box({title: 'Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+        var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+
+        var GRBlayersControl = aladin.box({title: 'GRB Instruments', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var html = '<form id="InstrumentSelector">';
         for (var k=0 ; k<overlays.length; k++) {
@@ -227,11 +237,19 @@
             html += '</fieldset>';
         }
         html += '</form>';
+        instlayersControl.setContent(html);
+        instlayersControl.show();
 
-
-
-        layersControl.setContent(html);
-        layersControl.show();
+        var GRBhtml = '<form id="GRBInstrumentSelector">';
+        for (var k=0 ; k<GRBoverlays.length; k++) {
+            var cat = GRBoverlays[k];
+            GRBhtml += '<fieldset><label for="overlay-' + k + '">';
+            GRBhtml += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" >' + cat.name + '</input></label>';
+            GRBhtml += '</fieldset>';
+        }
+        GRBhtml += '</form>';
+        GRBlayersControl.setContent(GRBhtml);
+        GRBlayersControl.show();
 
         $('#InstrumentSelector :checkbox').change(function() {
             var contour = overlaylist[this.value];
@@ -241,6 +259,17 @@
             }
             else {
                 contour.hide();
+            }
+        });
+
+        $('#GRBInstrumentSelector :checkbox').change(function() {
+            var moc = GRBoverlaylist[this.value];
+
+            if (this.checked) {
+                moc.show();
+            }
+            else {
+                moc.hide();
             }
         });
 
