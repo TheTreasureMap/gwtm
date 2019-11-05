@@ -500,13 +500,14 @@ def instrument_info():
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
-				mode='markers',
+				line_color='blue',
 				fill='tozeroy',
+				fillcolor='violet'
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
 		fig.update_layout(
-			#title = ,
+			showlegend=False,
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
@@ -670,13 +671,13 @@ def preview_footprint():
 			trace1 = go.Scatter(
 				x=xs,
 				y=ys,
-				mode='markers',
 				fill='tozeroy',
+				fillcolor='violet'
 			)
 			trace.append(trace1)
 		fig = go.Figure(data=trace)
 		fig.update_layout(
-			#title = ,
+			showlegend=False,
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
