@@ -882,10 +882,10 @@ def construct_alertform(form, args):
 			form.selected_alert_info.human_far=round(farrate,2)
 			form.selected_alert_info.human_far_unit = farunit
 
-		if form.selected_alert_info.distance is not None:
-			form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
-		if form.selected_alert_info.distance_error is not None:
-			form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
+		# if form.selected_alert_info.distance is not None:
+		# 	form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
+		# if form.selected_alert_info.distance_error is not None:
+		# 	form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
 
 		if form.selected_alert_info.time_of_signal is not None:
 			t=astropy.time.Time(form.selected_alert_info.time_of_signal,format='datetime',scale='utc')
