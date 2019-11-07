@@ -987,18 +987,19 @@ def construct_alertform(form, args):
 				})
 
 		#do Fermi stuff
-		earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
-		contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
-		skycoord = SkyCoord(contour, unit="deg", frame="icrs")
-		inside = SkyCoord(ra=earth_ra+180, dec=earth_dec, unit="deg", frame="icrs")
-		moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-		moc = moc.complement()
-		mocfootprint = moc.serialize(format='json')
-		GRBoverlays.append({
-			"name":"Fermi/GBM",
-			"color":'magenta',
-			"json":mocfootprint
-			})
+		if form.selected_alert_info.time_of_signal:
+			earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
+			contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
+			skycoord = SkyCoord(contour, unit="deg", frame="icrs")
+			inside = SkyCoord(ra=earth_ra+180, dec=earth_dec, unit="deg", frame="icrs")
+			moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+			moc = moc.complement()
+			mocfootprint = moc.serialize(format='json')
+			GRBoverlays.append({
+				"name":"Fermi/GBM",
+				"color":'magenta',
+				"json":mocfootprint
+				})
 		#grab the precomputed localization contour region
 
 		if len(form.alert_type.split()) > 1:
