@@ -987,7 +987,7 @@ def construct_alertform(form, args):
 				})
 
 		#do Fermi stuff
-		if form.selected_alert_info.time_of_signal:
+		if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
 			earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
 			contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
 			skycoord = SkyCoord(contour, unit="deg", frame="icrs")
