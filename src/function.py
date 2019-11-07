@@ -303,7 +303,8 @@ def getearthsatpos(datetime):
 
 def makeEarthContour(ra,dec,radius):
     thetas = np.linspace(0, -2*np.pi, 200)
-    ras = radius * np.cos(thetas) + ra
-    decs = radius * np.sin(thetas) + dec
+    ras = radius * np.cos(thetas)
+    decs = radius * np.sin(thetas)
     contour = np.c_[ras,decs]
-    return contour
+    Earthcont = project_footprint(contour, ra, dec, 0)
+    return Earthcont
