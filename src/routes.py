@@ -996,7 +996,7 @@ def construct_alertform(form, args):
 		mocfootprint = moc.serialize(format='json')
 		GRBoverlays.append({
 			"name":"Fermi/GBM",
-			"color":colorlist[i+1],
+			"color":'magenta',
 			"json":mocfootprint
 			})
 		#grab the precomputed localization contour region
