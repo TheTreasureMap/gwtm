@@ -21,6 +21,7 @@ config = function.readconfig(configPath, '/config')
 app.config["DEBUG"] = bool(config['DEBUG'])
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@'+config['host']+':'+str(config['port'])+'/'+config['db']+'?sslmode=verify-full&sslrootcert='+configPath+'/rds-ca-2019-root.pem'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_POOL_TIMEOUT'] = 300
 app.config['CSRF_ENABLED'] = True
 
 #Mail Settings
