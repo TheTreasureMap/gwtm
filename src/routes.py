@@ -33,8 +33,6 @@ from . import forms
 from src import app
 from src import mail
 
-import plotly
-import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
 
 db = models.db
@@ -554,7 +552,7 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing_event.graceid == graceid)
 	pointing_filter.append(models.pointing.status == 'completed')
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
-	pointing_filter.append(fsq.sqlalchemy.not_(models.pointing.instrumentid == 49))
+	pointing_filter.append(models.pointing.instrumentid != 49)
 
 	if inst_cov != '':
 		print(inst_cov)
@@ -587,15 +585,6 @@ def plot_prob_coverage():
 	).all()
 
 	instrumentids = [x.instrumentid for x in pointings_sorted]
-	#filter and query for the relevant instruments
-	#instrumentinfo = db.session.query(
-	#	models.instrument.instrument_name,
-	#	models.instrument.nickname,
-	#	models.instrument.id
-	#).filter(
-	#	models.instrument.id.in_(instrumentids)
-	#).all()
-
 	#filter and query the relevant instrument footprints
 	footprintinfo = db.session.query(
 		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
@@ -901,7 +890,7 @@ def construct_alertform(form, args):
 		pointing_filter.append(models.pointing_event.graceid == graceid)
 		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
 
-		if status is not None and status != 'all':
+		if status is not None and status != 'all' and status != '':
 			pointing_filter.append(models.pointing.status == status)
 			form.status = status
 
@@ -971,14 +960,14 @@ def construct_alertform(form, args):
 					pointing_geometries.append({"polygon":pointing_footprint})
 			if inst.id ==49:
 				skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
-				inside = SkyCoord(ra=ra, dec=dec, unit="deg", frame="icrs")
-				moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-				mocfootprint = moc.serialize(format='json')
-				GRBoverlays.append({
-				"name":name,
-				"color":color,
-				"json":mocfootprint
-				})
+				#inside = SkyCoord(ra=ra, dec=dec, unit="deg", frame="icrs")
+				#moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+				#mocfootprint = moc.serialize(format='json')
+				#GRBoverlays.append({
+				#"name":name,
+				#"color":color,
+				#"json":mocfootprint
+				#})
 			else:
 				overlays.append({
 					"name":name,
@@ -992,14 +981,14 @@ def construct_alertform(form, args):
 			contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
 			skycoord = SkyCoord(contour, unit="deg", frame="icrs")
 			inside = SkyCoord(ra=earth_ra+180, dec=earth_dec, unit="deg", frame="icrs")
-			moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-			moc = moc.complement()
-			mocfootprint = moc.serialize(format='json')
-			GRBoverlays.append({
-				"name":"Fermi/GBM",
-				"color":'magenta',
-				"json":mocfootprint
-				})
+			#moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+			#moc = moc.complement()
+			#mocfootprint = moc.serialize(format='json')
+			#GRBoverlays.append({
+			#		"name":"Fermi/GBM",
+			#		"color":'magenta',
+			#	"json":mocfootprint
+			#	})
 		#grab the precomputed localization contour region
 
 		if len(form.alert_type.split()) > 1:
@@ -1009,7 +998,7 @@ def construct_alertform(form, args):
 			path_info = graceid + '-' + form.alert_type.split()[0]
 			mappath = graceid + '-' + form.alert_type.split()[0]
 
-		# mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
+		#mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
 		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
 
 		form.mappathinfo = mappathinfo
