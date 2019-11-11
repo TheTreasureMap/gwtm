@@ -977,20 +977,17 @@ def construct_alertform(form, args):
 
 		#do Fermi stuff
 		if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
-			earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
-			contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
-			skycoord = SkyCoord(contour, unit="deg", frame="icrs")
-			inside = SkyCoord(ra=earth_ra+180, dec=earth_dec, unit="deg", frame="icrs")
-			#moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-			#moc = moc.complement()
-			#mocfootprint = moc.serialize(format='json')
-			#GRBoverlays.append({
-			#		"name":"Fermi/GBM",
-			#		"color":'magenta',
-			#	"json":mocfootprint
-			#	})
-		#grab the precomputed localization contour region
+			fermipathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
+			if os.path.exists(fermipathinfo):
+				with open(fermipathinfo) as json_data:
+					contours_data = json.load(json_data)
+				GRBoverlays.append({
+					'name':'Fermi/GBM',
+					'color':'magenta',
+					'json':contours_data
+				})
 
+		#grab the precomputed localization contour region
 		if len(form.alert_type.split()) > 1:
 			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
 			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
