@@ -566,3 +566,6 @@ class gw_alert(db.Model):
     prob_hasns = db.Column(db.Float)
     prob_hasremenant = db.Column(db.Float)
     datecreated = db.Column(db.Date)
+    group = db.Column(db.String)
+    centralfreq = db.Column(db.Float)
+    duration = db.Column(db.Float)
