@@ -75,9 +75,10 @@ def home():
 	graceid = db.session.query(
 		models.gw_alert.graceid
 	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT'
+		models.gw_alert.graceid != 'TEST_EVENT',
+		models.gw_alert.alert_type != 'Retraction'
 	).order_by(
-		models.gw_alert.graceid.desc()
+		models.gw_alert.time_of_signal.desc()
 	).first()
 	
 	status = request.args.get('pointing_status')
