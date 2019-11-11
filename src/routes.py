@@ -726,6 +726,7 @@ def get_pointing_fromID():
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
 	#fixshitlogic
+
 	return 'success'
 
 
@@ -941,8 +942,8 @@ def construct_alertform(form, args):
 		GRBoverlays = []
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
-		colorlist=['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
-		for i,inst in enumerate(instrumentinfo):
+		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
+		for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
 			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
 			try:
 				color = colorlist[i]
@@ -959,21 +960,26 @@ def construct_alertform(form, args):
 				for ccd in sanatized_ccds:
 					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 					pointing_geometries.append({"polygon":pointing_footprint})
-			if inst.id ==49:
-				skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
-				#inside = SkyCoord(ra=ra, dec=dec, unit="deg", frame="icrs")
-				#moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-				#mocfootprint = moc.serialize(format='json')
-				#GRBoverlays.append({
-				#"name":name,
-				#"color":color,
-				#"json":mocfootprint
-				#})
 			else:
 				overlays.append({
 					"name":name,
 					"color":color,
 					"contours":pointing_geometries
+				})
+
+		#do BAT stuff
+		#BAT instrumentid == 49
+		# If there are any pointings with BAT. Find the file
+		# that should have been created by the BAT listener
+		if len([x for x in pointing_info if x.instrumentid == 49]):
+			batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
+			if os.path.exists(batpathinfo):
+				with open(batpathinfo) as json_data:
+					contours_data = json.load(json_data)
+				GRBoverlays.append({
+					'name':'Swift_BAT',
+					'color':'#3cb44b',
+					'json':contours_data
 				})
 
 		#do Fermi stuff
