@@ -39,7 +39,12 @@
           </thead>
           <tbody>
             <tr>
-
+            {% if form.selected_alert_info.group != 'None' and form.selected_alert_info.group != '' and form.selected_alert_info.group != None %}
+            <tr class="info">
+              <td>Group</td>
+              <td>{{ form.selected_alert_info.group }}</td>
+            </tr>
+            {% endif %}
             <tr class="info">
               <td>Dectectors</td>
               <td>{{ form.selected_alert_info.detectors }}</td>
@@ -52,13 +57,25 @@
               <td>False Alarm Rate</td>
               <td>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
             </tr>
+            {% if form.selected_alert_info.group != 'Burst' %}
             <tr class="info">
               <td>Distance</td>
               <td>{{ form.selected_alert_info.distance }} +/- {{ form.selected_alert_info.distance_error }} Mpc</td>
             </tr>
+            {% else %}
+            <tr class="info">
+              <td>Central Frequency</td>
+              <td>{{form.selected_alert_info.centralfreq}} Hz</td>
+            </tr>
+            <tr class="info">
+              <td>Duration</td>
+              <td>{{form.selected_alert_info.duration}} seconds</td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
+      {% if form.selected_alert_info.group != 'Burst' %}
       <div class="col-sm-6">
         <table class="table">
           <thead>
@@ -99,6 +116,7 @@
           </tbody>
         </table>
       </div>
+      {% endif %}
     </div>
   </div>
   <script>
