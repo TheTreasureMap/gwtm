@@ -977,7 +977,7 @@ def construct_alertform(form, args):
 				with open(batpathinfo) as json_data:
 					contours_data = json.load(json_data)
 				GRBoverlays.append({
-					'name':'Swift_BAT',
+					'name':'Swift/BAT',
 					'color':'#3cb44b',
 					'json':contours_data
 				})
