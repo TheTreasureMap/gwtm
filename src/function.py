@@ -1,6 +1,8 @@
 from numpy import genfromtxt
 import numpy as np
 import ephem
+from shapely.geometry import Polygon
+from shapely.geometry import Point
 from urllib.request import urlopen
 import math
 from bs4 import BeautifulSoup
@@ -242,7 +244,17 @@ def getDataFromTLE(datetime, tleLatOffset=0, tleLonOffset=0.21):
         lon = lon[0]
         lat = lat[0]
         elevation = elevation[0]
-    
+
+    #check if spacecraft is in South Atlantic Anomaly polygon, flat space projection for now.
+    SAAlonvertices = [33.900, 12.398, -9.103, -30.605, -38.400, -45.000, -65.000, -84.000, -89.200, -94.300, -94.300, -86.100, 33.900 ]
+    SAAlatvertices = [-30.000, -19.867, -9.733, 0.400, 2.000, 2.000, -1.000, -6.155, -8.880, -14.220, -18.404, -30.000, -30.000 ]
+    SAApoly = Polygon(list(zip(SAAlonvertices,SAAlatvertices)))
+
+    satpos = Point(-(360-lon),lat)
+    inSAA = SAApoly.contains(satpos)
+    if inSAA:
+        return False,False,False
+
     return lon, lat, elevation
 
 # convert degrees to deg:amin:asec
@@ -290,6 +302,8 @@ def getearthsatpos(datetime):
     tleLatOffset = 0
 
     lon, lat, elevation= getDataFromTLE(datetime, tleLatOffset=tleLatOffset, tleLonOffset=tleLonOffset)
+    if lon == False and lat == False and elevation == False:
+        return False, False, False
 
     # Get the geo center coordinates in ra and dec
     ra_geocenter, dec_geocenter = getGeoCenter(datetime, lon, lat)

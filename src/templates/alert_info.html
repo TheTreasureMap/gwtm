@@ -259,9 +259,14 @@
         var GRBhtml = '<form id="GRBInstrumentSelector">';
         for (var k=0 ; k<GRBoverlays.length; k++) {
             var cat = GRBoverlays[k];
+            if (cat.name == 'Fermi in South Atlantic Anomaly'){
+              GRBhtml += '<fieldset><label for="overlay-' + k + '">' + cat.name + '</label>';
+              GRBhtml += '</fieldset>';
+            } else {
             GRBhtml += '<fieldset><label for="overlay-' + k + '">';
             GRBhtml += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" >' + cat.name + '</input></label>';
             GRBhtml += '</fieldset>';
+            }
         }
         GRBhtml += '</form>';
         GRBlayersControl.setContent(GRBhtml);
