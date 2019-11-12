@@ -937,7 +937,7 @@ def construct_alertform(form, args):
 		).filter(
 			models.footprint_ccd.instrumentid.in_(instrumentids)
 		).all()
-		
+
 		overlays = []
 		GRBoverlays = []
 		#iterate over each instrument and grab their pointings
@@ -983,9 +983,10 @@ def construct_alertform(form, args):
 				})
 
 		#do Fermi stuff
+		earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
 		if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
 			fermipathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
-			if os.path.exists(fermipathinfo):
+			if os.path.exists(fermipathinfo) and earth_ra != False:
 				with open(fermipathinfo) as json_data:
 					contours_data = json.load(json_data)
 				GRBoverlays.append({
@@ -993,6 +994,11 @@ def construct_alertform(form, args):
 					'color':'magenta',
 					'json':contours_data
 				})
+			elif earth_ra == False:
+				GRBoverlays.append({
+					'name': 'Fermi in South Atlantic Anomaly'
+					})
+
 
 		#grab the precomputed localization contour region
 		if len(form.alert_type.split()) > 1:
