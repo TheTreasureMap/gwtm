@@ -23,6 +23,8 @@ td, th {
   padding: 8px;
 }
 </style>
+<div class="container" style="text-align: left">
+
   		<h2>Welcome to the Gravitational Wave Treasure Map</h2>
   		<div class="column">
 		  <p>The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events. It allows observers to easily report their planned and executed observations in search of counterparts to GW events, and to query the reports of other observers, in a programatic way. The goal is to enable coordination between observatories in order to minimize unnecessary overlap in these searches and find the counterpart as quickly and as efficiently as possible.</p>
@@ -66,5 +68,6 @@ td, th {
 		<h2>Most Recent Event: {{ form.graceid }} </h3>
 		{% include "alert_info.html" %}
 	</div>
+</div>
 {% endblock %}}
 
