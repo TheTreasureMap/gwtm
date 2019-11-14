@@ -71,6 +71,36 @@ def internal_error(error):
 @app.route("/", methods=["GET"])
 def home():
 	#get latest alert. Construct the form alertsform
+	inst_count_pointings = db.session.query(
+		models.pointing.instrumentid, 
+		func.count(models.pointing.id),
+		).filter(
+		models.pointing.status=='completed',
+		).group_by(
+		models.pointing.instrumentid
+		).order_by(
+		func.count(models.pointing.id).desc()
+		).all()
+
+	events_contributed = db.session.query(
+		models.gw_alert.graceid
+	).filter(
+		models.gw_alert.graceid != 'TEST_EVENT',
+		models.gw_alert.graceid != 'GW170817'
+	).group_by(models.gw_alert.graceid).count()
+
+	table = []
+	for inst_count in inst_count_pointings:
+		instnames = db.session.query(
+			models.instrument.instrument_name,
+			models.instrument.nickname,
+			models.instrument.id
+		).filter(models.instrument.id == inst_count[0]
+		).all()
+		table_row = [instnames[0][1],inst_count[1]]
+		table.append(table_row)
+	table.append(['Fermi/GBM',events_contributed])
+
 	
 	graceid = db.session.query(
 		models.gw_alert.graceid
@@ -87,7 +117,7 @@ def home():
 	form = forms.AlertsForm
 	form, overlays, GRBoverlays = construct_alertform(form, args)
 	form.page = 'index'
-	return render_template("index.html", form=form, overlays=overlays, GRBoverlays=GRBoverlays)
+	return render_template("index.html", form=form, table=table, overlays=overlays, GRBoverlays=GRBoverlays)
 
 class overlay():
 	def __init__(self, name, color, contours):
