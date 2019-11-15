@@ -101,16 +101,22 @@ def home():
 		table.append(table_row)
 	table.append(['Fermi/GBM',events_contributed])
 
+
+	retractions = db.session.query(
+		models.gw_alert.graceid
+	).filter(
+		models.gw_alert.alert_type == 'Retraction'
+	).all()
 	
 	graceid = db.session.query(
 		models.gw_alert.graceid
 	).filter(
 		models.gw_alert.graceid != 'TEST_EVENT',
-		models.gw_alert.alert_type != 'Retraction'
+		~models.gw_alert.graceid.in_(retractions)
 	).order_by(
 		models.gw_alert.time_of_signal.desc()
 	).first()
-	
+
 	status = request.args.get('pointing_status')
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid.graceid, 'pointing_status':status, 'alert_type':alerttype} 
