@@ -52,12 +52,16 @@ td, th {
     <tr>
       <th>Name</th><th>Pointings reported </th>
     </tr>
-      {% for inst in table %}
+      {% for inst in inst_table[0] %}
         <tr>
-          <td>{{ inst[0] }}</td>
-          <td>{{ inst[1] }} </td>
+          <td>{{ inst.instrument_name }}</td>
+          <td>{{ inst.count }} </td>
         </tr>
-      {% endfor %}
+	  {% endfor %}
+	  <tr>
+		  <td>Fermi/GRB</td>
+		  <td>{{ inst_table[1] }}</td>
+	  </tr>
   	</table>
 	</div>
 </div>

@@ -71,59 +71,57 @@ def internal_error(error):
 @app.route("/", methods=["GET"])
 def home():
 	#get latest alert. Construct the form alertsform
-	inst_count_pointings = db.session.query(
-		models.pointing.instrumentid, 
-		func.count(models.pointing.id),
-		).filter(
-		models.pointing.status=='completed',
-		).group_by(
-		models.pointing.instrumentid
-		).order_by(
+
+	fermi_events = len([x for x in os.listdir('/var/www/gwtm/src/static') if 'Fermi' in x])
+
+	inst_info = db.session.query(
+		models.pointing,
+		models.instrument
+	).group_by(
+		models.pointing.instrumentid,
+		models.instrument
+	).filter(
+		models.pointing.status == models.pointing_status.completed,	
+		models.instrument.id == models.pointing.instrumentid,
+		models.pointing_event.pointingid == models.pointing.id,
+		models.pointing_event.graceid != 'TEST_EVENT'
+	).order_by(
 		func.count(models.pointing.id).desc()
-		).all()
+	).values(
+		func.count(models.pointing.id).label('count'),
+		models.instrument.instrument_name
+	)
 
-	events_contributed = db.session.query(
-		models.gw_alert.graceid
-	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT',
-		models.gw_alert.graceid != 'GW170817'
-	).group_by(models.gw_alert.graceid).count()
+	inst_info = [list(inst_info), fermi_events]
 
-	table = []
-	for inst_count in inst_count_pointings:
-		instnames = db.session.query(
-			models.instrument.instrument_name,
-			models.instrument.nickname,
-			models.instrument.id
-		).filter(models.instrument.id == inst_count[0]
-		).all()
-		table_row = [instnames[0][1],inst_count[1]]
-		table.append(table_row)
-	table.append(['Fermi/GBM',events_contributed])
-
-
-	retractions = db.session.query(
-		models.gw_alert.graceid
-	).filter(
-		models.gw_alert.alert_type == 'Retraction'
-	).all()
-	
-	graceid = db.session.query(
-		models.gw_alert.graceid
-	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT',
-		~models.gw_alert.graceid.in_(retractions)
+	graceids = db.session.query(
+		models.gw_alert.graceid,
+		models.gw_alert.alert_type,
 	).order_by(
 		models.gw_alert.time_of_signal.desc()
-	).first()
+	).filter(
+		models.gw_alert.graceid != 'TEST_EVENT'
+	).all()
+
+	gids = list(sorted(set([x.graceid for x in graceids]), reverse=True))
+	rets = []
+	for g in gids:
+		gw_alerts = [x.alert_type for x in graceids if x.graceid == g]
+		if 'Retraction' in gw_alerts:
+			rets.append(g)
+
+	gids = [x for x in gids if x not in rets]
+	graceid = gids[0]
 
 	status = request.args.get('pointing_status')
+	status = status if status is not None else models.pointing_status.completed
+
 	alerttype = request.args.get('alert_type')
-	args = {'graceid':graceid.graceid, 'pointing_status':status, 'alert_type':alerttype} 
+	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype} 
 	form = forms.AlertsForm
 	form, overlays, GRBoverlays = construct_alertform(form, args)
 	form.page = 'index'
-	return render_template("index.html", form=form, table=table, overlays=overlays, GRBoverlays=GRBoverlays)
+	return render_template("index.html", form=form, inst_table=inst_info, overlays=overlays, GRBoverlays=GRBoverlays)
 
 class overlay():
 	def __init__(self, name, color, contours):
@@ -131,12 +129,40 @@ class overlay():
 		self.color = color
 		self.contours = contours
 
+@app.route("/alert_select", methods=['GET'])
+def alert_select():
+	allerts = db.session.query(
+		models.gw_alert
+	).filter(
+		models.gw_alert.graceid != 'TEST_EVENT',
+		models.gw_alert.graceid != 'GW170817'
+	).all()
+
+	p_event_counts = db.session.query(
+		models.pointing_event
+	).group_by(
+		models.pointing_event.graceid
+	).filter(
+		models.pointing.id == models.pointing_event.pointingid,
+		models.pointing.status == models.pointing_status.completed
+	).values(
+		func.count(models.pointing_event.graceid).label('pcount'),
+		pointing_event.graceid
+	)
+
+	p_event_counts = list(p_event_counts)
+	
+	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
+	
+	non_retracted_alerts = []
+	pass
 
 @app.route("/alerts", methods=['GET', 'POST'])
 #@login_required
 def alerts():
 	graceid = request.args.get('graceids')
 	status = request.args.get('pointing_status')
+	status = status if status is not None else models.pointing_status.completed
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
