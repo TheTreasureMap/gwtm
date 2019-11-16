@@ -184,6 +184,10 @@ def fairuse():
 def documentation():
 	return render_template('documentation.html')
 
+@app.route("/development_blog", methods=['GET'])
+def devblog():
+	return render_template('development_blog.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
