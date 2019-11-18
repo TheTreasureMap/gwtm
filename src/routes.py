@@ -221,7 +221,7 @@ def login():
 	form = forms.LoginForm()
 
 	if current_user.is_authenticated:
-		return redirect('index')
+		logout_user()
 
 	if verification_key and not form.validate_on_submit():
 		flash('Please login with your email and password to verify account')
