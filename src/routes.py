@@ -114,7 +114,7 @@ def home():
 	graceid = gids[0]
 
 	status = request.args.get('pointing_status')
-	status = status if status is not None else models.pointing_status.completed
+	status = status if status is not None else 'completed'
 
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype} 
@@ -147,7 +147,7 @@ def alert_select():
 		models.pointing.status == models.pointing_status.completed
 	).values(
 		func.count(models.pointing_event.graceid).label('pcount'),
-		pointing_event.graceid
+		models.pointing_event.graceid
 	)
 
 	p_event_counts = list(p_event_counts)
@@ -162,7 +162,7 @@ def alert_select():
 def alerts():
 	graceid = request.args.get('graceids')
 	status = request.args.get('pointing_status')
-	status = status if status is not None else models.pointing_status.completed
+	status = status if status is not None else 'completed'
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
@@ -973,7 +973,7 @@ def construct_alertform(form, args):
 		).filter(*pointing_filter).all()
 
 		form.band_cov = []
-		for band in list(set([x.band.name for x in pointing_info if x.status == models.pointing_status.completed])):
+		for band in list(set([x.band.name for x in pointing_info if x.status == models.pointing_status.completed and x.instrumentid != 49])):
 			form.band_cov.append({'name':band, 'value':band})
 
 		#grab the pointings instrument ids
