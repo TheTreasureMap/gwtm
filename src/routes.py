@@ -200,7 +200,7 @@ def alert_select():
 			   most_recent_alert.prob_bbh > most_recent_alert.prob_nsbh
 		):
 			all_alerts[g] = {
-				'class':'NSBH',
+				'class':'BBH',
 				'class_prob': most_recent_alert.prob_bbh,
 				'pcounts':pointing_counts
 			}
