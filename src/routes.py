@@ -163,11 +163,10 @@ def alert_select():
 		most_recent_date = list(sorted([x.datecreated for x in allerts if x.graceid == g], reverse=True))[0]
 		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
 		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
+		
 		pointing_counts = 0
 		if len(pcounts):
 			pointing_counts = pcounts[0]
-
-		print(alert_types)
 
 		if 'Retraction' in alert_types:
 			all_alerts[g] = {
