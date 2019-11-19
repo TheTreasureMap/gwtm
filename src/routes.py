@@ -163,7 +163,7 @@ def alert_select():
 		most_recent_date = list(sorted([x.datecreated for x in allerts if x.graceid == g], reverse=True))[0]
 		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
 		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
-		
+
 		pointing_counts = 0
 		if len(pcounts):
 			pointing_counts = pcounts[0]
@@ -1081,11 +1081,11 @@ def construct_alertform(form, args):
 		).all()
 
 		form.inst_cov = []
-		for inst in instrumentinfo:
+		for inst in [x for x in instrumentinfo if x.id != 49]:
 			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
 		
 		form.depth_unit=[]
-		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed])):
+		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed and x.instrumentid != 49])):
 			form.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 		#filter and query the relevant instrument footprints
