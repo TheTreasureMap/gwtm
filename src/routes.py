@@ -171,6 +171,7 @@ def alert_select():
 		if 'Retraction' in alert_types:
 			all_alerts[g] = {
 				'class':'Retracted',
+				'distance':'',
 				'pcounts':pointing_counts 
 			}
 
@@ -178,11 +179,13 @@ def alert_select():
 			classification = most_recent_alert.getClassification()
 			all_alerts[g] = {
 				'class':classification,
+				'distance':str(round(most_recent_alert.distance, 2)) + ' +/- ' + str(round(most_recent_alert.distance_error, 2)),
 				'pcounts':pointing_counts
 			}
 
 	all_alerts['TEST_EVENT'] = {
 		'class':'Test',
+		'distance':'',
 		'pcounts':''
 	}
 
@@ -877,7 +880,10 @@ def construct_alertform(form, args):
 	form.avgra = "90"
 	form.avgdec = "-30"
 
-	statuses = [{'name':'All', 'value':'all'}]
+	statuses = [
+		{'name':'All', 'value':'all'},
+		{'name':'Planned+Completed', 'value':'pandc'}
+	]
 	for m in models.pointing_status:
 		statuses.append({'name':m.name, 'value':m.name})
 	form.pointing_status = statuses
@@ -970,10 +976,10 @@ def construct_alertform(form, args):
 			form.selected_alert_info.human_far=round(farrate,2)
 			form.selected_alert_info.human_far_unit = farunit
 
-		# if form.selected_alert_info.distance is not None:
-		# 	form.selected_alert_info.distance = round(form.selected_alert_info.distance,3)
-		# if form.selected_alert_info.distance_error is not None:
-		# 	form.selected_alert_info.distance_error = round(form.selected_alert_info.distance_error, 3)
+		if form.selected_alert_info.distance is not None:
+			form.distance = round(form.selected_alert_info.distance,3)
+		if form.selected_alert_info.distance_error is not None:
+			 form.distance_error = round(form.selected_alert_info.distance_error, 3)
 
 		if form.selected_alert_info.time_of_signal is not None:
 			t=astropy.time.Time(form.selected_alert_info.time_of_signal,format='datetime',scale='utc')
@@ -989,7 +995,13 @@ def construct_alertform(form, args):
 		pointing_filter.append(models.pointing_event.graceid == graceid)
 		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
 
-		if status is not None and status != 'all' and status != '':
+		if status == 'pandc':
+			ors = []
+			ors.append(models.pointing.status == models.pointing_status.completed)
+			ors.append(models.pointing.status == models.pointing_status.planned)
+			pointing_filter.append(fsq.sqlalchemy.or_(*ors))
+			form.status = 'pandc'
+		elif (status is not None and status != 'all' and status != ''):
 			pointing_filter.append(models.pointing.status == status)
 			form.status = status
 

@@ -159,4 +159,6 @@ class AlertsForm(FlaskForm):
     alert_type = None
     alert_types = []
     selected_alert = None
+    distance = None
+    distance_error = None
     avgra, avgdec = '', ''

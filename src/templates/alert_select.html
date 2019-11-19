@@ -15,6 +15,7 @@
           <tr>
             <th>Alert</th>
             <th>Classification</th>
+            <th>Distance (Mpc)</th>
             <th># Pointings</th>
           </tr>
         </thead>
@@ -23,6 +24,7 @@
             <tr>
               <td><a href="/alerts?graceids={{ a }}">{{ a }}</a></td>
               <td>{{ alerts[a]['class'] }}</td>
+              <td>{{ alerts[a]['distance'] }}</td>
               <td>{{ alerts[a]['pcounts'] }}</td>
             </tr>
           {% endfor %}
