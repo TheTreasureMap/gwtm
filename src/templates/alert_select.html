@@ -9,12 +9,12 @@
       <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>  
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
       <br>
+      <p>Click on an alert name to see its visualization</p>
       <table class="table table-bordered table-striped">
         <thead>
           <tr>
             <th>Alert</th>
             <th>Classification</th>
-            <th>Probability</th>
             <th># Pointings</th>
           </tr>
         </thead>
@@ -23,7 +23,6 @@
             <tr>
               <td><a href="/alerts?graceids={{ a }}">{{ a }}</a></td>
               <td>{{ alerts[a]['class'] }}</td>
-              <td>{{ alerts[a]['class_prob'] }}</td>
               <td>{{ alerts[a]['pcounts'] }}</td>
             </tr>
           {% endfor %}

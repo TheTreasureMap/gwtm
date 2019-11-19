@@ -569,3 +569,20 @@ class gw_alert(db.Model):
     group = db.Column(db.String)
     centralfreq = db.Column(db.Float)
     duration = db.Column(db.Float)
+
+    def getClassification(self):
+        probs = [
+            {'prob':self.prob_bns, 'class':'BNS'},
+            {'prob':self.prob_nsbh, 'class':'NSBH'},
+            {'prob':self.prob_bbh, 'class':'BBH'},
+            {'prob':self.prob_terrestrial, 'class':'Terrestrial'},
+            {'prob':self.prob_gap, 'class':'Mass Gap'}
+        ]
+
+        sorted_probs = sorted([x for x in probs if x['prob'] > 0.01], key = lambda i: i['prob'], reverse=True)
+        
+        classification = ''
+        for p in sorted_probs:
+            classification += p['class'] + ': ('+str(round(100*p['prob'], 1))+'%) '
+
+        return classification

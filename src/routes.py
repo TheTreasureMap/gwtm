@@ -171,81 +171,20 @@ def alert_select():
 		if 'Retraction' in alert_types:
 			all_alerts[g] = {
 				'class':'Retracted',
-				'class_prob':'',
 				'pcounts':pointing_counts 
 			}
 
-		elif ( most_recent_alert.prob_bns > most_recent_alert.prob_nsbh and \
-			   #most_recent_alert.prob_bns > most_recent_alert.prob_gap and \
-			   most_recent_alert.prob_bns > most_recent_alert.prob_bbh
-		):
+		else:
+			classification = most_recent_alert.getClassification()
 			all_alerts[g] = {
-				'class':'BNS',
-				'class_prob': most_recent_alert.prob_bns,
-				'pcounts':pointing_counts
-			}
-
-		elif ( most_recent_alert.prob_nsbh > most_recent_alert.prob_bns and \
-			   #most_recent_alert.prob_nsbh > most_recent_alert.prob_gap and \
-			   most_recent_alert.prob_nsbh > most_recent_alert.prob_bbh
-		):
-			all_alerts[g] = {
-				'class':'NSBH',
-				'class_prob': most_recent_alert.prob_nsbh,
-				'pcounts':pointing_counts
-			}
-		
-		elif ( most_recent_alert.prob_bbh > most_recent_alert.prob_bns and \
-			   #most_recent_alert.prob_bbh > most_recent_alert.prob_gap and \
-			   most_recent_alert.prob_bbh > most_recent_alert.prob_nsbh
-		):
-			all_alerts[g] = {
-				'class':'BBH',
-				'class_prob': most_recent_alert.prob_bbh,
+				'class':classification,
 				'pcounts':pointing_counts
 			}
 
 	all_alerts['TEST_EVENT'] = {
 		'class':'Test',
-		'class_prob':'',
 		'pcounts':''
 	}
-
-	bns_events = [
-		x for x in non_retracted_alerts \
-		if (
-			x.prob_bns > x.prob_nsbh and \
-			#x.prob_bns > x.prob_gap and \
-			x.prob_bns > x.prob_bbh
-		)
-	]
-
-	nshb_events = [
-		x for x in non_retracted_alerts \
-		if (
-			x.prob_nsbh > x.prob_bns and \
-			#x.prob_nsbh > x.prob_gap and \
-			x.prob_nsbh > x.prob_bbh
-		)
-	]
-
-	bbh_events = [
-		x for x in non_retracted_alerts \
-		if (
-			x.prob_bbh > x.prob_bns and \
-			#x.prob_bbh > x.prob_gap and \
-			x.prob_bbh > x.prob_nsbh
-		)
-	]
-
-	gap_events = [
-		x for x in non_retracted_alerts \
-		if (
-			x.prob_gap > x.prob_bns and \
-			x.prob_gap > x.prob_nsbh and \
-			x.prob_gap > x.prob_bbh
-		)
-	]
 
 	return render_template("alert_select.html", alerts=all_alerts)
 
