@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="padding-left:16px">
+  <body>
+
+    <div class="container">
+      <h2>Gravitational Wave Events</h2>
+      <p>Type something in the input field to search the table for first names, last names or emails:</p>  
+      <input class="form-control" id="myInput" type="text" placeholder="Search..">
+      <br>
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Alert</th>
+            <th>Classification</th>
+            <th>Probability</th>
+            <th># Pointings</th>
+          </tr>
+        </thead>
+        <tbody id="myTable">
+          {% for a in alerts %}
+            <tr>
+              <td><a href="/alerts?graceids={{ a }}">{{ a }}</a></td>
+              <td>{{ alerts[a]['class'] }}</td>
+              <td>{{ alerts[a]['class_prob'] }}</td>
+              <td>{{ alerts[a]['pcounts'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <script>
+    $(document).ready(function(){
+      $("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#myTable tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+    </script>
+    
+    </body>
+{% endblock %}

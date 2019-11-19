@@ -131,6 +131,7 @@ class overlay():
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
+
 	allerts = db.session.query(
 		models.gw_alert
 	).filter(
@@ -155,7 +156,99 @@ def alert_select():
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 	
 	non_retracted_alerts = []
-	pass
+	all_alerts = {}
+
+	for g in gids:
+		alert_types = [x.alert_type for x in allerts if x.graceid == g]
+		most_recent_date = list(sorted([x.datecreated for x in allerts if x.graceid == g], reverse=True))[0]
+		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
+		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
+		pointing_counts = 0
+		if len(pcounts):
+			pointing_counts = pcounts[0]
+
+		print(alert_types)
+
+		if 'Retraction' in alert_types:
+			all_alerts[g] = {
+				'class':'Retracted',
+				'class_prob':'',
+				'pcounts':pointing_counts 
+			}
+
+		elif ( most_recent_alert.prob_bns > most_recent_alert.prob_nsbh and \
+			   #most_recent_alert.prob_bns > most_recent_alert.prob_gap and \
+			   most_recent_alert.prob_bns > most_recent_alert.prob_bbh
+		):
+			all_alerts[g] = {
+				'class':'BNS',
+				'class_prob': most_recent_alert.prob_bns,
+				'pcounts':pointing_counts
+			}
+
+		elif ( most_recent_alert.prob_nsbh > most_recent_alert.prob_bns and \
+			   #most_recent_alert.prob_nsbh > most_recent_alert.prob_gap and \
+			   most_recent_alert.prob_nsbh > most_recent_alert.prob_bbh
+		):
+			all_alerts[g] = {
+				'class':'NSBH',
+				'class_prob': most_recent_alert.prob_nsbh,
+				'pcounts':pointing_counts
+			}
+		
+		elif ( most_recent_alert.prob_bbh > most_recent_alert.prob_bns and \
+			   #most_recent_alert.prob_bbh > most_recent_alert.prob_gap and \
+			   most_recent_alert.prob_bbh > most_recent_alert.prob_nsbh
+		):
+			all_alerts[g] = {
+				'class':'NSBH',
+				'class_prob': most_recent_alert.prob_bbh,
+				'pcounts':pointing_counts
+			}
+
+	all_alerts['TEST_EVENT'] = {
+		'class':'Test',
+		'class_prob':'',
+		'pcounts':''
+	}
+
+	bns_events = [
+		x for x in non_retracted_alerts \
+		if (
+			x.prob_bns > x.prob_nsbh and \
+			#x.prob_bns > x.prob_gap and \
+			x.prob_bns > x.prob_bbh
+		)
+	]
+
+	nshb_events = [
+		x for x in non_retracted_alerts \
+		if (
+			x.prob_nsbh > x.prob_bns and \
+			#x.prob_nsbh > x.prob_gap and \
+			x.prob_nsbh > x.prob_bbh
+		)
+	]
+
+	bbh_events = [
+		x for x in non_retracted_alerts \
+		if (
+			x.prob_bbh > x.prob_bns and \
+			#x.prob_bbh > x.prob_gap and \
+			x.prob_bbh > x.prob_nsbh
+		)
+	]
+
+	gap_events = [
+		x for x in non_retracted_alerts \
+		if (
+			x.prob_gap > x.prob_bns and \
+			x.prob_gap > x.prob_nsbh and \
+			x.prob_gap > x.prob_bbh
+		)
+	]
+
+	return render_template("alert_select.html", alerts=all_alerts)
 
 @app.route("/alerts", methods=['GET', 'POST'])
 #@login_required
