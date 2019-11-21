@@ -103,11 +103,16 @@ class bandpass(IntEnum):
     other = 20
 
 
+class gw_galaxy_score_type(IntEnum):
+    default = 1
+
+
 class valid_mapping():
     def __init__(self):
         self.valid = False
         self.errors = []
         self.warnings = []
+
 
 @login.user_loader
 def load_user(id):
@@ -164,6 +169,7 @@ class users(UserMixin, db.Model):
         except:
             return
         return users.query.get(id)
+
 
 class usergroups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -586,3 +592,17 @@ class gw_alert(db.Model):
             classification += p['class'] + ': ('+str(round(100*p['prob'], 1))+'%) '
 
         return classification
+
+
+class gw_galaxy(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    graceid = db.Column(db.String)
+    galaxy_catalog = db.Column(db.Integer)
+    galaxy_catalogID = db.Column(db.Integer)
+
+
+class gw_galaxy_score(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gw_galaxyID = db.Column(db.Integer)
+    score_type = db.Column(db.Enum(gw_galaxy_score_type))
+    score = db.Column(db.Float)
