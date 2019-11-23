@@ -1,5 +1,42 @@
 {% block alert_viz %}
+<head>
+<style>
+.slidecontainer {
+  width: 100%;
+}
 
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 25px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+</style>
+</head>
 <body>
   <ul class="nav nav-tabs">
     {% for a_type in form.alert_types %}
@@ -26,6 +63,13 @@
       {% endfor %}
     </select>
     </p>
+
+    <p>
+      <label for="amount">Date range:</label>
+      <input type="text" id="amount" style="border: 0; color: #f6931f; font-weight: bold;" size="100"/>
+    </p>
+     
+    <div id="slider-range"></div>
   </div>
     <div class="container-fluid">
     <div class="row">
@@ -191,12 +235,75 @@
     <script type="text/javascript" src="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
     
     <!-- Creation of Aladin Lite instance with initial parameters -->
-    <script type="text/javascript">
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+
         var survey = "P/DSS2/color"
         var fov = 180
         var target = "{{form.avgra}} {{form.avgdec}}"
         var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd"};
         var aladin = A.aladin('#aladin-lite-div', aladinParams)
+
+        $(function() {
+          $( "#slider-range" ).slider({
+            range: true,
+            min: new Number('{{ form.mintime }}'),
+            max: new Number('{{ form.maxtime }}'),
+            step: new Number('{{ form.step }}'),
+            values: [ new Number('{{ form.mintime }}'), new Number('{{ form.maxtime }}') ],
+            slide: function( event, ui ) {
+              $( "#amount" ).val( (new Number(ui.values[ 0 ])  ) + " - " + (new Number(ui.values[ 1 ])) );
+              aladin.removeLayers()
+
+              var sunImg = new Image();
+              sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
+              sunImg.onload = function() {
+                  var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
+                  aladin.addCatalog(cat);
+                  cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
+              };
+
+              var moonImg = new Image();
+              moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
+              moonImg.onload = function() {
+                  var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
+                  aladin.addCatalog(cat);
+                  cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
+              };
+              
+              var GRBoverlaylist={};
+              var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+              for (i = 0; i < GRBoverlays.length; i++) {
+                var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
+                aladin.addMOC(moc);
+                GRBoverlaylist[i] = moc;
+                //initialize unshown
+                moc.hide()
+              }
+
+              var overlaylist = {};
+              var overlays = JSON.parse('{{ overlays | tojson }}');
+              var mint = new Number(ui.values[0])
+              var maxt = new Number(ui.values[1])
+              for (i = 0; i < overlays.length; i++) {
+                  var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
+                  aladin.addOverlay(contour);
+                  var overlay_contours = overlays[i].contours
+                  for (j = 0; j < overlay_contours.length; j++){
+                    if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || overlays[i].name == 'GW Contour'){
+                      contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+                      overlaylist[i] = contour;
+                    }
+                  }
+                
+              }
+            }
+          });
+          $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +
+            " - " + (new Number($( "#slider-range" ).slider( "values", 1 ))));
+        });
 
 
         $('input[name=survey]').change(function() {

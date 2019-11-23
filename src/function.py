@@ -106,13 +106,13 @@ def project(footprint, _ra, _dec):
         return proj_footprint
 
 
-def polygons2footprints(polygons):
+def polygons2footprints(polygons, time_of_signal):
     #split list of poly corners into ra list and dec list
     footprints= []
     for polygon in polygons:
         if type(polygon[0]) != list:
             polygon = [l.tolist() for l in polygon]
-        footprints.append({'polygon':polygon})
+        footprints.append({'polygon':polygon, 'time':time_of_signal})
     return footprints
 
 
