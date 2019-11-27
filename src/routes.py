@@ -1050,6 +1050,11 @@ def construct_alertform(form, args):
 
 		overlays = []
 		GRBoverlays = []
+
+		tos = form.selected_alert_info.time_of_signal
+		t = Time([tos])
+		form.tos_mjd = round(t.mjd[0], 2)
+
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
@@ -1070,9 +1075,10 @@ def construct_alertform(form, args):
 				ra, dec = function.sanatize_pointing(p.position)
 				for ccd in sanatized_ccds:
 					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
-					pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0], 2)})
+					pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
 			else:
 				overlays.append({
+					"display":True,
 					"name":name,
 					"color":color,
 					"contours":pointing_geometries
@@ -1136,17 +1142,16 @@ def construct_alertform(form, args):
 
 		#if it exists, add it to the overlay list
 		if os.path.exists(contourpath):
-			tos = form.selected_alert_info.time_of_signal
-			t = Time([tos])
 			contours_data=pd.read_json(contourpath)
 			contour_geometry = []
 			for contour in contours_data['features']:
 				contour_geometry.extend(contour['geometry']['coordinates'])
 
 			overlays.append({
+				"display":True,
 				"name":"GW Contour",
 				"color": '#e6194B',
-				"contours":function.polygons2footprints(contour_geometry, round(t.mjd[0], 2))
+				"contours":function.polygons2footprints(contour_geometry, 0)
 			})
 
 		if len(overlays):
@@ -1157,7 +1162,7 @@ def construct_alertform(form, args):
 					
 			form.mintime = min(times)
 			form.maxtime = max(times)
-			form.step = (form.maxtime*100 - form.mintime*100)/10000
+			form.step = (form.maxtime*100 - form.mintime*100)/100000
 
 	return form, overlays, GRBoverlays
 

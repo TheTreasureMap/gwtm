@@ -65,7 +65,7 @@
     </p>
 
     <p>
-      <label for="amount">Date range:</label>
+      <label for="amount">Date range (days since Time of Signal):</label>
       <input type="text" id="amount" style="border: 0; color: #f6931f; font-weight: bold;" size="100"/>
     </p>
      
@@ -243,110 +243,50 @@
         var survey = "P/DSS2/color"
         var fov = 180
         var target = "{{form.avgra}} {{form.avgdec}}"
-        var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd"};
+        var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd", showReticle: false};
         var aladin = A.aladin('#aladin-lite-div', aladinParams)
 
-        $(function() {
-          $( "#slider-range" ).slider({
-            range: true,
-            min: new Number('{{ form.mintime }}'),
-            max: new Number('{{ form.maxtime }}'),
-            step: new Number('{{ form.step }}'),
-            values: [ new Number('{{ form.mintime }}'), new Number('{{ form.maxtime }}') ],
-            slide: function( event, ui ) {
-              $( "#amount" ).val( (new Number(ui.values[ 0 ])  ) + " - " + (new Number(ui.values[ 1 ])) );
-              aladin.removeLayers()
-
-              var sunImg = new Image();
-              sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
-              sunImg.onload = function() {
-                  var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
-                  aladin.addCatalog(cat);
-                  cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
-              };
-
-              var moonImg = new Image();
-              moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
-              moonImg.onload = function() {
-                  var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
-                  aladin.addCatalog(cat);
-                  cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
-              };
-              
-              var GRBoverlaylist={};
-              var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
-              for (i = 0; i < GRBoverlays.length; i++) {
-                var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
-                aladin.addMOC(moc);
-                GRBoverlaylist[i] = moc;
-                //initialize unshown
-                moc.hide()
-              }
-
-              var overlaylist = {};
-              var overlays = JSON.parse('{{ overlays | tojson }}');
-              var mint = new Number(ui.values[0])
-              var maxt = new Number(ui.values[1])
-              for (i = 0; i < overlays.length; i++) {
-                  var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
-                  aladin.addOverlay(contour);
-                  var overlay_contours = overlays[i].contours
-                  for (j = 0; j < overlay_contours.length; j++){
-                    if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || overlays[i].name == 'GW Contour'){
-                      contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-                      overlaylist[i] = contour;
-                    }
-                  }
-                
-              }
-            }
-          });
-          $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +
-            " - " + (new Number($( "#slider-range" ).slider( "values", 1 ))));
-        });
-
+        var overlays = JSON.parse('{{ overlays | tojson }}');
+        var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
 
         $('input[name=survey]').change(function() {
         aladin.setImageSurvey($(this).val());});
 
         var sunImg = new Image();
         sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
-        sunImg.onload = function() {
-            var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
-            aladin.addCatalog(cat);
-            cat.addSources(A.source({{form.selected_alert_info.sun_ra}},{{form.selected_alert_info.sun_dec}}));
-        };
-
+        var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
+        aladin.addCatalog(cat);
+        cat.addSources(A.source('{{ form.selected_alert_info.sun_ra }}', '{{ form.selected_alert_info.sun_dec }}'));
+    
         var moonImg = new Image();
         moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
-        moonImg.onload = function() {
-            var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
-            aladin.addCatalog(cat);
-            cat.addSources(A.source({{form.selected_alert_info.moon_ra}},{{form.selected_alert_info.moon_dec}}));
-        };
-        var GRBoverlaylist={};
-        var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+        var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
+        aladin.addCatalog(cat);
+        cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
+
+        GRBoverlaylist=[];
         for (i = 0; i < GRBoverlays.length; i++) {
           var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
           aladin.addMOC(moc);
           GRBoverlaylist[i] = moc;
           //initialize unshown
           moc.hide()
-          }
+        }
 
-        var overlaylist = {};
-        var overlays = JSON.parse('{{ overlays | tojson }}');
+        overlaylist = [];
         for (i = 0; i < overlays.length; i++) {
           var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
           aladin.addOverlay(contour);
           var overlay_contours = overlays[i].contours
           for (j = 0; j < overlay_contours.length; j++){
             contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-          overlaylist[i] = contour;
-
           }
+          overlaylist[i] = []
+          overlaylist[i][0] = contour;
+          overlaylist[i][1] = true //toshow
+          overlaylist[i][2] = overlays[i].color //tocolor
         }
-
+        
         var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var GRBlayersControl = aladin.box({title: 'GRB Instruments', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
@@ -354,8 +294,8 @@
         var html = '<form id="InstrumentSelector">';
         for (var k=0 ; k<overlays.length; k++) {
             var cat = overlays[k];
-            html += '<fieldset><span class="indicator right-triangle"></span><label for="overlay-' + k + '">';
-            html += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" checked="checked"  >' + cat.name + '</input></label>';
+            html += '<fieldset><span class="indicator right-triangle"></span><label for="' + cat.name + '">';
+            html += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
             html += '<div class="cat-options" style="display: none;"><table><tr><td>Color</td><td><input type="color"></input></td></tr></select></td></tr></table></div>';
             html += '</fieldset>';
         }
@@ -367,11 +307,11 @@
         for (var k=0 ; k<GRBoverlays.length; k++) {
             var cat = GRBoverlays[k];
             if (cat.name == 'Fermi in South Atlantic Anomaly'){
-              GRBhtml += '<fieldset><label for="overlay-' + k + '">' + cat.name + '</label>';
+              GRBhtml += '<fieldset><label for="' + cat.name + '">' + cat.name + '</label>';
               GRBhtml += '</fieldset>';
             } else {
-            GRBhtml += '<fieldset><label for="overlay-' + k + '">';
-            GRBhtml += '<input id="overlay-' + k + '" type="checkbox" value="' + k + '" >' + cat.name + '</input></label>';
+            GRBhtml += '<fieldset><label for="' + cat.name + '">';
+            GRBhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" >' + cat.name + '</input></label>';
             GRBhtml += '</fieldset>';
             }
         }
@@ -380,18 +320,34 @@
         GRBlayersControl.show();
 
         $('#InstrumentSelector :checkbox').change(function() {
-            var contour = overlaylist[this.value];
-
+            var contour = overlaylist[0][0];
+            var iter = 0
+            for(var k=0; k<overlaylist.length; k++)
+            {
+              if (this.value == overlaylist[k][0].name) {
+                countour = overlaylist[k][0]
+                iter = k
+              }
+            }
             if (this.checked) {
                 contour.show();
+                overlaylist[iter][1] = true
             }
             else {
                 contour.hide();
+                overlaylist[iter][1] = false
             }
         });
 
         $('#GRBInstrumentSelector :checkbox').change(function() {
-            var moc = GRBoverlaylist[this.value];
+            var moc;
+            var moc_ref
+            for(var k=0; k<GRBoverlaylist.length; k++)
+            {
+              if (this.value == GRBoverlaylist[k].name) {
+                moc = GRBoverlaylist[k]
+              }
+            }
 
             if (this.checked) {
                 moc.show();
@@ -424,6 +380,63 @@
                 $this.addClass('right-triangle');
                 $this.parent().find('.cat-options').slideUp(300);
             }
+        });
+
+        
+        $(function() {
+          $( "#slider-range" ).slider({
+            range: true,
+            min: new Number('{{ form.mintime }}'),
+            max: new Number('{{ form.maxtime }}'),
+            step: new Number('{{ form.step }}'),
+            values: [ (new Number('{{ form.mintime }}')), (new Number('{{ form.maxtime }}')) ],
+
+            slide: function( event, ui ) {
+                $( "#amount" ).val((new Number(ui.values[ 0 ])).toFixed(3) + " - " + (new Number(ui.values[ 1 ])).toFixed(3));
+                aladin.removeLayers()
+
+                var sunImg = new Image();
+                sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
+                var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
+                aladin.addCatalog(cat);
+                cat.addSources(A.source('{{ form.selected_alert_info.sun_ra }}', '{{ form.selected_alert_info.sun_dec }}'));;
+
+                var moonImg = new Image();
+                moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
+                var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
+                aladin.addCatalog(cat);
+                cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
+                
+                for (i = 0; i < GRBoverlaylist.length; i++) {
+                  aladin.addMOC(GRBoverlaylist[i]);
+                  //initialize unshown
+                  //moc.hide()
+                }
+
+                var mint = new Number(ui.values[0])
+                var maxt = new Number(ui.values[1])
+                for (i = 0; i < overlays.length; i++) {
+                    var toshow = false
+                    var tocolor = ''
+                    for (j = 0; j < overlaylist.length; j++) {
+                      if (overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]}
+                    }
+                    //alert(overlays[i].name + ' ' + toshow + ' ' + tocolor)
+                    
+                    var contour = A.graphicOverlay({id: i, color:tocolor, lineWidth: 2, name:overlays[i].name});
+                    aladin.addOverlay(contour);
+                    var overlay_contours = overlays[i].contours
+                    for (j = 0; j < overlay_contours.length; j++){
+                      if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || overlays[i].name == 'GW Contour'){
+                        contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+                      }
+                      if (!toshow) { contour.hide() }
+                    }
+                }
+            }
+          });
+          $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +
+            " - " + (new Number($( "#slider-range" ).slider( "values", 1 ))));
         });
 
     </script>
