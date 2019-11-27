@@ -320,49 +320,53 @@
         GRBlayersControl.show();
 
         $('#InstrumentSelector :checkbox').change(function() {
-            var contour = overlaylist[0][0];
             var iter = 0
             for(var k=0; k<overlaylist.length; k++)
             {
               if (this.value == overlaylist[k][0].name) {
-                countour = overlaylist[k][0]
                 iter = k
               }
             }
             if (this.checked) {
-                contour.show();
+                overlaylist[iter][0].show()
                 overlaylist[iter][1] = true
             }
             else {
-                contour.hide();
+                overlaylist[iter][0].hide()
                 overlaylist[iter][1] = false
             }
         });
 
         $('#GRBInstrumentSelector :checkbox').change(function() {
-            var moc;
-            var moc_ref
+            var iter = 0
             for(var k=0; k<GRBoverlaylist.length; k++)
             {
               if (this.value == GRBoverlaylist[k].name) {
-                moc = GRBoverlaylist[k]
+                iter = k
               }
             }
 
             if (this.checked) {
-                moc.show();
+                GRBoverlaylist[iter].show()
             }
             else {
-                moc.hide();
+                GRBoverlaylist[iter].hide()
             }
         });
 
         $("#InstrumentSelector input[type='color']").change(function() {
-            var hipsId = $(this).parents('fieldset').find("input[type='checkbox']").val();
-            //overlay.color = this.value;
-            //#aladin.view.requestRedraw();
-            //overlaylist[hipsId].updateShape({color: this.value});
-            overlaylist[hipsId].color=this.value;
+            var contname = $(this).parents('fieldset').find("input[type='checkbox']").val();
+
+            var iter = 0
+            for(var k=0; k<overlaylist.length; k++)
+            {
+              if (contname == overlaylist[k][0].name) {
+                iter = k
+              }
+            }
+
+            overlaylist[iter][0].color=this.value;
+            overlaylist[iter][2] = this.value
             aladin.view.requestRedraw();
         });
 
@@ -373,7 +377,14 @@
                 $this.addClass('down-triangle');
                 $this.parent().find('.cat-options').slideDown(300);
                 var hipsId = $(this).parent().find("input[type='checkbox']").val();
-                $this.parent().find("input[type='color']").val(overlaylist[hipsId].color);
+                var iter = 0
+                for(var k=0; k<overlaylist.length; k++)
+                {
+                  if (hipsId == overlaylist[k][0].name) {
+                    iter = k
+                  }
+                }
+                $this.parent().find("input[type='color']").val(overlaylist[iter][0].color);
             }
             else {
                 $this.removeClass('down-triangle');
@@ -409,8 +420,6 @@
                 
                 for (i = 0; i < GRBoverlaylist.length; i++) {
                   aladin.addMOC(GRBoverlaylist[i]);
-                  //initialize unshown
-                  //moc.hide()
                 }
 
                 var mint = new Number(ui.values[0])
@@ -418,10 +427,11 @@
                 for (i = 0; i < overlays.length; i++) {
                     var toshow = false
                     var tocolor = ''
+                    var iter = 0
+
                     for (j = 0; j < overlaylist.length; j++) {
-                      if (overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]}
+                      if (overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]; iter = j}
                     }
-                    //alert(overlays[i].name + ' ' + toshow + ' ' + tocolor)
                     
                     var contour = A.graphicOverlay({id: i, color:tocolor, lineWidth: 2, name:overlays[i].name});
                     aladin.addOverlay(contour);
@@ -432,6 +442,7 @@
                       }
                       if (!toshow) { contour.hide() }
                     }
+                    overlaylist[iter][0] = contour
                 }
             }
           });
