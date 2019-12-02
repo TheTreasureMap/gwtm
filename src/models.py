@@ -186,6 +186,7 @@ class groups(db.Model):
 
 class useractions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    userid = db.Column(db.Integer)
     modified_table = db.Column(db.String(25))
     modified_id = db.Column(db.Integer)
     modified_column = db.Column(db.String(25))
@@ -201,7 +202,7 @@ class instrument(db.Model):
     nickname = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(instrument_type))
     datecreated = db.Column(db.Date)
-    footprint = db.Column(Geography('POLYGON', srid=4326))
+    #footprint = db.Column(Geography('POLYGON', srid=4326))
     submitterid = db.Column(db.Integer)
 
     @property
