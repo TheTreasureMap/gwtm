@@ -1051,9 +1051,12 @@ def construct_alertform(form, args):
 		overlays = []
 		GRBoverlays = []
 
-		tos = form.selected_alert_info.time_of_signal
-		t = Time([tos])
-		form.tos_mjd = round(t.mjd[0], 2)
+		if form.selected_alert_info.time_of_signal:
+			tos = form.selected_alert_info.time_of_signal
+			t = Time([tos])
+			form.tos_mjd = round(t.mjd[0], 2)
+		else:
+			form.tos_mjd = None
 
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
