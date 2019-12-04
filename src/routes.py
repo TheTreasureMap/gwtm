@@ -1122,7 +1122,7 @@ def construct_alertform(form, args):
 
 		#grab the precomputed localization contour region
 		if len(form.alert_type.split()) > 1:
-			path_info = graceid + '-' + form.alert_type.split()[0] + '-' + form.alert_type.split()[1]
+			path_info = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
 			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
 		else:
 			path_info = graceid + '-' + form.alert_type.split()[0]
@@ -1142,7 +1142,7 @@ def construct_alertform(form, args):
 				pass
 
 		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-
+		print(contourpath)
 		#if it exists, add it to the overlay list
 		if os.path.exists(contourpath):
 			contours_data=pd.read_json(contourpath)
