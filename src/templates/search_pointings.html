@@ -34,7 +34,7 @@
     {% if search_result %}
     <table>
       <tr>
-        <th>ID</th><th>Position (RA, DEC)</th><th>Status</th><th>Instrument</th><th>Band</th><th>Depth</th><th>Position Angle</th><th>Time</th><th>Submitter</th>
+        <th>ID</th><th>Position (RA, DEC)</th><th>Status</th><th>Instrument</th><th>Band</th><th>Depth</th><th>Position Angle</th><th>Time</th><th>Submitter</th><th>DOI</th>
       </tr>
         {% for r in search_result %}
           <tr>
@@ -47,6 +47,11 @@
             <td>{{ r.pos_angle }}</td>
             <td>{{ r.time }}</td>
             <td>{{ r.username }}</td>
+            {% if r.doi_url %}
+              <td><a href="{{ r.doi_url }}">{{ r.doi_url }}</a></td>
+            {% else %}
+              <td></td>
+            {% endif %}
           </tr>
         {% endfor %}
     </table>

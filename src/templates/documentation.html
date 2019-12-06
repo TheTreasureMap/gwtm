@@ -97,6 +97,8 @@
                         <li><i>graceid</i> - string value of the gw_alert graceid</li>
                         <li><i>api_token</i> -  authentication api token</li>
                         <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
+                        <li><i>request_doi</i> - [default=false] to request a Digital Object Identifier. <b>This is only valid for posting completed pointing observations</b></li>
+                        <li><i>creators</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
                     </ul>
 
                     <h3>Valid <b>pointing</b> class parameters</h3>
@@ -173,6 +175,16 @@
                             <ul><li style="font-size: small">If those values are to be updated</li></ul>
                         </ul>
                     </ul>
+                    <h3>To request a DOI</h3>
+                    <h5><i>(Only for completed pointings)</i></h5>
+                    <ul>
+                        <li>You must pass in fields:</li>
+                        <ul>
+                            <li><i>request_doi=true</i></li>
+                            <li><i>creators=[{'name':'name1', 'affiliation':'affiliation1'}]</i></li>
+                        </ul>
+                    </ul>
+
                 </div>
                 <div class="column" style="background-color:#bbb;">
                     <h2>JSON example</h2>
@@ -226,6 +238,11 @@
         json_data = {
             "graceid":"graceid1",
             "api_token":"abcdefghijkl",
+            "request_doi":true,
+            "creators":[
+                {"name":"Name1", "affiliation":"affil_1"},
+                {"name":"Name2", "affiliation":"affil_2"}
+            ],
             "pointings":[
             {
                 "id":"42"
@@ -382,9 +399,50 @@
         </code>
         </pre>
                 </div>
-            </div>
-        </div>
+            <div class="content">
+                    <div class="column">
+                        <h2>REST API METHOD: POST Instructions</h2>
+                        <p><i>NOTES</i></p>
+                        <ul>
+                            <li>Will simply cancel all instruments' planned pointings' statuses for a given GW event</li>
+                        </ul>
+                        <p><b>USAGE</b></p>
+                        <p><i>/api/v0/cancel_all?param=value1</i></p>
+                        <p><b>Parameters</b></p>
+                        <ul>
+                            <li>api_token=abcdefghijkl</li>
+                            <li>graceid=graceid1</li>
+                            <li>instrumentid=instrumentid1</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="background-color:#bbb;">
+                        <h2>UPDATE Examples</h2>
+                        <h3>Updating Planned Pointings to be cancelled</h3>
+                        <pre>
+                        <code class="language-json" data-lang="json">
+        import requests
+        import urllib.parse
 
+        BASE = 'http://treasuremap.space/api/v0'
+        TARGET = 'cancel_all'
+
+        params = {
+            "api_token":"abcdefghijkl",
+            "graceid":"TEST_EVENT",
+            "instrumentid":1
+        }
+
+        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
+
+        r = requests.post(url = url)
+
+        print(r.text)
+            </code>
+            </pre>
+                    </div>
+                </div>
+        </div>
+        </div>
         <button class="collapsible">Instruments</button>
         <div class="content">
             <div class="column">

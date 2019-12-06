@@ -37,6 +37,7 @@ app.config['MAIL_USE_TLS'] = bool(config['MAIL_USE_TLS'])
 #RECAPTCHA
 app.config['RECAPTCHA_PUBLIC_KEY'] = config['RECAPTCHA_PUBLIC_KEY']
 app.config['RECAPTCHA_PRIVATE_KEY'] = config['RECAPTCHA_PRIVATE_KEY']
+app.config['ZENODO_ACCESS_KEY'] = config['ZENODO_ACCESS_KEY']
 
 db = SQLAlchemy(app)
 mail = Mail(app)

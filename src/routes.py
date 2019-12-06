@@ -25,6 +25,8 @@ import time
 import plotly
 import plotly.graph_objects as go
 import ephem
+import io
+import requests
 
 from . import function
 from . import models
@@ -369,12 +371,11 @@ def search_pointings():
 								   models.pointing.depth,
 								   models.pointing.time,
 								   models.pointing.status,
+								   models.pointing.doi_url,
+								   models.pointing.doi_id,
 								   models.instrument.instrument_name,
 								   models.users.username
 								   ).filter(*filter).all()
-
-		#for r in results:
-		#	r.position = str(geoalchemy2.shape.to_shape(r.position))
 
 		return render_template('search_pointings.html', form=form, search_result=results)
 	return render_template('search_pointings.html', form=form)
@@ -516,6 +517,15 @@ def submit_pointing():
 
 		flash("Successful submission of Pointing. Your Pointing ID is "+str(pointing.id))
 		flash("Please keep track of your pointing ids")
+
+		if form.request_doi.data:
+			user = models.users.query.filter_by(id=pointing.submitterid).first()
+			creators = [{"name":str(user.firstname) + " " + str(user.lastname), "affiliation":""}]
+			points = [pointing]
+			pointing.doi_id, pointing.doi_url = create_doi(points, graceid, creators)
+			db.session.commit()
+			flash("Your DOI url is: "+pointing.doi_url)
+
 		return redirect("/index")
 
 	return render_template('submit_pointings.html', form=form)
@@ -1287,6 +1297,39 @@ def send_password_reset_email(user):
 				<p>The Treasure Map Team</p>"
 	)
 
+def create_doi(points, graceid, creators):
+	
+	ACCESS_TOKEN = app.config['ZENODO_ACCESS_KEY']
+	points_json = []
+
+	for p in points:
+		if p.status == models.pointing_status.completed:
+			points_json.append(p.json)
+
+	if len(points_json):
+		data = {
+			"metadata": {
+				"title":"Submitted Completed pointings to the Gravitational Wave Treasure Map for event " + graceid,
+				"upload_type":"dataset",
+				"creators":creators,
+				"description":"Attached in a .json file is the completed pointing information for "+str(len(points_json))+" observation(s) for the EM counterpart search associated with the gravitational wave event " + graceid +". "
+			}
+		}
+
+		data_file = { 'name':'completed_pointings_'+graceid+'.json' }
+		files = { 'file':io.StringIO(json.dumps(points_json)) }
+		headers = { "Content-Type": "application/json" }
+		
+		r = requests.post('https://zenodo.org/api/deposit/depositions', params={'access_token': ACCESS_TOKEN}, json={}, headers=headers)
+		d_id = r.json()['id']
+		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id, params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
+		r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % d_id, data=json.dumps(data), params={'access_token': ACCESS_TOKEN}, headers=headers)
+		#r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
+		return_json = r.json()
+		return int(d_id), return_json['doi_url']
+	
+	return None, None
+
 #API Endpoints
 
 #Get instrument footprints
@@ -1366,6 +1409,11 @@ def add_pointings():
 		return("Whoaaaa that JSON is a little wonky")
 			 
 	valid_gid = False
+	post_doi = False
+
+	points = []
+	errors = []
+	warnings = []
 
 	if "graceid" in rd:
 		gid = rd['graceid']
@@ -1387,12 +1435,19 @@ def add_pointings():
 	else:
 		return jsonify("api_token is required")
 
+	if 'request_doi' in rd:
+		post_doi = bool(rd['request_doi'])
+		if 'creators' in rd:
+			creators = rd['creators']
+			for c in creators:
+				if 'name' not in c.keys() or 'affiliation' not in c.keys():
+					return jsonify('name and affiliation are required for DOI creators json list')
+		else:
+			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+
 	dbinsts = db.session.query(models.instrument.instrument_name,
 							   models.instrument.id).all()
 
-	points = []
-	errors = []
-	warnings = []
 
 	filter = [models.pointing.submitterid == userid]
 
@@ -1446,9 +1501,24 @@ def add_pointings():
 				pointingid = p.id,
 				graceid = gid)
 			db.session.add(pe)
-
+	
 	db.session.flush()
 	db.session.commit()
+
+	if post_doi:
+		print("creating doi")
+		doi_id, doi_url = create_doi(points, gid, creators)
+		if doi_id is not None:
+			for p in points:
+				p.doi_url = doi_url
+				p.doi_id = doi_id
+
+			db.session.flush()
+			db.session.commit()
+
+			return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings, "DOI":doi_url})
+			
+
 	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
 
 
@@ -1621,6 +1691,48 @@ def get_pointings():
 
 	return jsonify(pointings)
 
+
+@app.route("/api/v0/cancel_all", methods=["POST"])
+def cancel_all():
+	args = request.args
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+		else:
+			userid = user.id
+	else:
+		return jsonify("api_token is required")
+
+	filter1 = []
+	filter1.append(models.pointing.status == models.pointing_status.planned)
+	filter1.append(models.pointing.submitterid == userid)
+
+	if "graceid" in args:
+		graceid = args['graceid']
+		filter1.append(models.pointing_event.graceid == graceid)
+		filter1.append(models.pointing.id == models.pointing_event.pointingid)
+	else:
+		return jsonify("graceid is required")
+	
+	if "instrumentid" in args:
+		instid = args['instrumentid']
+		if function.isInt(instid):
+			filter1.append(models.pointing.instrumentid == instid)
+		else:
+			return jsonify('invalid instrumentid')
+	else:
+		return jsonify('instrumentid is required')
+
+	pointings = db.session.query(models.pointing).filter(*filter1)
+	for p in pointings:
+		setattr(p, 'status', models.pointing_status.cancelled)
+		setattr(p, 'dateupdated', datetime.datetime.now())
+
+	db.session.commit()
+	return jsonify("Updated "+str(len(pointings.all()))+" Pointings successfully")
 
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen

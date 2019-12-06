@@ -131,6 +131,7 @@ class SubmitPointingForm(FlaskForm):
     #galaxy_catalogid = IntegerField("Galaxy Catalog")
     #galaxy_id = IntegerField("Galaxy ID")
     pos_angle = DecimalField("Position Angle")
+    request_doi = BooleanField('Request DOI')
 
     submit = SubmitField('Submit')
 
