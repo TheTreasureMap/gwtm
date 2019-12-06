@@ -514,8 +514,8 @@ class pointing(db.Model):
         elif not PLANNED:
             v.errors.append("Field \"band\" is required")
 
-        #if routes.pointing_crossmatch(self, otherpointings):
-        #   v.errors.append("Pointing already submitted")
+        if routes.pointing_crossmatch(self, otherpointings):
+           v.errors.append("Pointing already submitted")
 
         v.valid = len(v.errors) == 0
         return v
