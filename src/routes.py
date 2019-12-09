@@ -620,11 +620,13 @@ def instrument_info():
 		fig = go.Figure(data=trace)
 		fig.update_layout(
 			showlegend=False,
+			xaxis_title = 'degrees',
+			yaxis_title = 'degrees',
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
 				scaleratio=1,
-				constrain='domain'
+				constrain='domain',
 			)
 		)
 		data = fig
@@ -783,11 +785,13 @@ def preview_footprint():
 		fig = go.Figure(data=trace)
 		fig.update_layout(
 			showlegend=False,
+			xaxis_title = 'degrees',
+			yaxis_title = 'degrees',
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
 				scaleratio=1,
-				constrain='domain'
+				constrain='domain',
 			)
 		)
 		data = fig
