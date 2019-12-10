@@ -29,13 +29,15 @@
       {{ form.status_choices.label }} {{ form.status_choices }}
     </p>
     <p>
-      {{ form.my_points.label }} {{ form.my_points }}
+      {{ form.my_points.label }} {{ form.my_points }} <text style="font-size: small;">(required for DOI request)</text>
     </p>
 
     <p>{{ form.submit() }}</p>
     </form>
-    
-    <p><button onclick="ajax_request_doi()">Request DOI for Selected</button></p>
+
+    {% if form.my_points.data %}
+      <p><button id="ajax_request_doi" class="btn btn-primary" style="display: block; margin: 0 auto;">Request DOI for Selected</button></p>
+    {% endif %}
     
     <table id=pointing_table>
       <tr>
@@ -100,41 +102,52 @@
      }
   }
 
-  function ajax_request_doi(){
-    var data = ''
-    var iter = 0
-    var cb = document.getElementsByTagName('input');
-    var IDs = []
-    for (var i = 0; i < cb.length; i++) {
-        if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]' && cb[i].checked) {
-            data = data + cb[i].id + ',';
-            IDs[iter] = cb[i].id
-            iter = iter + 1
-        }
-    }
-    var graceid = $('#graceids').val()
-    str = data.substring(0, data.length - 1);
-
-    $.get('/ajax_request_doi?ids=' + str + '&graceid=' + graceid, function(doi_url, status){
-
-      var tds = document.getElementsByTagName('td')
-      for (var i = 0; i < tds.length; i++){
-        if (IDs.includes(tds[i].id)) {
-          tds[i].innerHTML = "<a href=\""+doi_url+"\" target=\"_blank\">"+doi_url+"</a>"
-        }
-      }
-
+  $(document).ready( function() {
+    $('#ajax_request_doi').click(function() {
+      var data = ''
+      var iter = 0
+      var cb = document.getElementsByTagName('input');
+      var IDs = []
       for (var i = 0; i < cb.length; i++) {
-        if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]') {
-          if (IDs.includes(cb[i].id)) {
-            cb[i].checked = false
-            cb[i].disabled = true
+          if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]' && cb[i].checked) {
+              data = data + cb[i].id + ',';
+              IDs[iter] = cb[i].id
+              iter = iter + 1
+          }
+      }
+      var graceid = $('#graceids').val()
+      str = data.substring(0, data.length - 1);
+
+      $.get('/ajax_request_doi?ids=' + str + '&graceid=' + graceid, function(doi_url, status){
+
+        var tds = document.getElementsByTagName('td')
+        for (var i = 0; i < tds.length; i++){
+          if (IDs.includes(tds[i].id)) {
+            tds[i].innerHTML = "<a href=\""+doi_url+"\" target=\"_blank\">"+doi_url+"</a>"
           }
         }
-      }
-    });
-  }
 
+        for (var i = 0; i < cb.length; i++) {
+          if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]') {
+            if (IDs.includes(cb[i].id)) {
+              cb[i].checked = false
+              cb[i].disabled = true
+            }
+          }
+        }
+      }).done(function () {
+      });
+    });
+  });
+  $(document).ready(function () {
+    $(document).ajaxStart(function () {
+      document.getElementById("ajax_request_doi").innerText = "Loading";
+      $('#ajax_request_doi').addClass('disabled');
+    }).ajaxStop(function () {
+      $('#ajax_request_doi').removeClass('disabled');
+      document.getElementById("ajax_request_doi").innerText = "Request DOI for Selected"
+    });
+  });
 </script>
 
 {% endblock %}
