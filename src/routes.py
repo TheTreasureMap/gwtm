@@ -343,7 +343,6 @@ def manage_user():
 @app.route('/search_pointings', methods=['GET', 'POST'])
 #@login_required
 def search_pointings():
-
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
 
@@ -357,8 +356,10 @@ def search_pointings():
 
 		if len(form.band_choices.data):
 			if "all" not in form.band_choices.data:
-				print(form.band_choices.data)
 				filter.append(models.pointing.band.in_(form.band_choices.data))
+
+		if form.my_points.data:
+			filter.append(models.pointing.submitterid == current_user.get_id())
 
 		filter.append(models.pointing.submitterid == models.users.id)
 		filter.append(models.pointing.instrumentid == models.instrument.id)
@@ -374,11 +375,13 @@ def search_pointings():
 								   models.pointing.doi_url,
 								   models.pointing.doi_id,
 								   models.instrument.instrument_name,
-								   models.users.username
+								   models.users.username,
+								   models.pointing.submitterid
 								   ).filter(*filter).all()
 
 		return render_template('search_pointings.html', form=form, search_result=results)
 	return render_template('search_pointings.html', form=form)
+
 
 
 @app.route('/search_instruments', methods=['GET', 'POST'])
@@ -634,7 +637,6 @@ def instrument_info():
 
 	return render_template('instrument_info.html', inst=inst, graph=graphJSON, events=events, username=username)
 
-
 @app.route('/logout')
 def logout():
 	logout_user()
@@ -642,6 +644,37 @@ def logout():
 
 
 #AJAX FUNCTIONS
+
+@app.route('/ajax_request_doi')
+def ajax_request_doi():
+	args = request.args
+	graceid = args['graceid']
+	if args['ids'] != '':
+		ids = [int(x) for x in args['ids'].split(',')]
+
+		points = db.session.query(
+			models.pointing
+		).filter(
+			models.pointing_event.pointingid == models.pointing.id,
+			models.pointing.id.in_(ids),
+			models.pointing_event.graceid == graceid
+		).all()
+		
+		user = db.session.query(models.users).filter(models.users.id == current_user.get_id()).first()
+		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+
+		doi_id, doi_url = create_doi(points, graceid, creators)
+
+		for p in points:
+			p.doi_url = doi_url
+			p.doi_id = doi_id
+		
+		db.session.commit()
+
+		return jsonify(doi_url)
+	
+	return jsonify('')
+
 @app.route("/coverage", methods=['GET','POST'])
 def plot_prob_coverage():
 	graceid = request.args.get('graceid')

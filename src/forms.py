@@ -66,6 +66,7 @@ class SearchPointingsForm(FlaskForm):
     for m in models.pointing_status:
         statuses.append((m.name, m.name))
     status_choices = SelectField('Status', choices=statuses)
+    my_points = BooleanField('Show Only My Pointings')
 
     submit = SubmitField('Search')
 

@@ -28,34 +28,113 @@
     <p>
       {{ form.status_choices.label }} {{ form.status_choices }}
     </p>
+    <p>
+      {{ form.my_points.label }} {{ form.my_points }}
+    </p>
 
     <p>{{ form.submit() }}</p>
     </form>
-    {% if search_result %}
-    <table>
+    
+    <p><button onclick="ajax_request_doi()">Request DOI for Selected</button></p>
+    
+    <table id=pointing_table>
       <tr>
-        <th>ID</th><th>Position (RA, DEC)</th><th>Status</th><th>Instrument</th><th>Band</th><th>Depth</th><th>Position Angle</th><th>Time</th><th>Submitter</th><th>DOI</th>
+        {% if form.my_points.data %}
+          <th><INPUT type="checkbox" onchange="checkAll(this)" name="chk[]"></th>
+        {% else %}
+          <th><INPUT type="checkbox" onchange="checkAll(this)" name="chk[]" disabled></th>
+        {% endif %}
+        <th>ID</th>
+        <th>Position (RA, DEC)</th>
+        <th>Status</th>
+        <th>Instrument</th>
+        <th>Band</th>
+        <th>Depth</th>
+        <th>Position Angle</th>
+        <th>Time</th>
+        <th>Submitter</th>
+        <th>DOI</th>
       </tr>
-        {% for r in search_result %}
-          <tr>
-            <td>{{ r.id }}</td>
-            <td>{{ r.position }}</td>
-            <td>{{ r.status.name }}</td>
-            <td>{{ r.instrument_name }}</td>
-            <td>{{ r.band.name }}</td>
-            <td>{{ r.depth }}</td>
-            <td>{{ r.pos_angle }}</td>
-            <td>{{ r.time }}</td>
-            <td>{{ r.username }}</td>
-            {% if r.doi_url %}
-              <td><a href="{{ r.doi_url }}" target="_blank">{{ r.doi_url }}</a></td>
-            {% else %}
-              <td></td>
-            {% endif %}
-          </tr>
-        {% endfor %}
+      {% for r in search_result %}
+        <tr>
+          {% if r.status.name == 'completed' and form.my_points.data and not r.doi_url %}
+            <td><input type='checkbox' name='table_check[]' id="{{ r.id }}"></td>
+          {% else %}
+            <td><input type='checkbox' name='table_check[]' id="{{ r.id }}" disabled></td>
+          {% endif %}
+          <td>{{ r.id }}</td>
+          <td>{{ r.position }}</td>
+          <td>{{ r.status.name }}</td>
+          <td>{{ r.instrument_name }}</td>
+          <td>{{ r.band.name }}</td>
+          <td>{{ r.depth }}</td>
+          <td>{{ r.pos_angle }}</td>
+          <td>{{ r.time }}</td>
+          <td>{{ r.username }}</td>
+          {% if r.doi_url %}
+            <td id="{{ r.id }}"><a href="{{ r.doi_url }}" target="_blank">{{ r.doi_url }}</a></td>
+          {% else %}
+            <td id="{{ r.id }}"></td>
+          {% endif %}
+        </tr>
+      {% endfor %}
     </table>
-    {% endif %}
 </div>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+   function checkAll(ele) {
+     var cb = document.getElementsByTagName('input');
+     if (ele.checked) {
+         for (var i = 0; i < cb.length; i++) {
+             if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]' && cb[i].disabled == false) {
+                 cb[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < cb.length; i++) {
+             if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]' && cb[i].disabled == false) {
+                 cb[i].checked = false;
+             }
+         }
+     }
+  }
+
+  function ajax_request_doi(){
+    var data = ''
+    var iter = 0
+    var cb = document.getElementsByTagName('input');
+    var IDs = []
+    for (var i = 0; i < cb.length; i++) {
+        if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]' && cb[i].checked) {
+            data = data + cb[i].id + ',';
+            IDs[iter] = cb[i].id
+            iter = iter + 1
+        }
+    }
+    var graceid = $('#graceids').val()
+    str = data.substring(0, data.length - 1);
+
+    $.get('/ajax_request_doi?ids=' + str + '&graceid=' + graceid, function(doi_url, status){
+
+      var tds = document.getElementsByTagName('td')
+      for (var i = 0; i < tds.length; i++){
+        if (IDs.includes(tds[i].id)) {
+          tds[i].innerHTML = "<a href=\""+doi_url+"\" target=\"_blank\">"+doi_url+"</a>"
+        }
+      }
+
+      for (var i = 0; i < cb.length; i++) {
+        if (cb[i].type == 'checkbox' && cb[i].name == 'table_check[]') {
+          if (IDs.includes(cb[i].id)) {
+            cb[i].checked = false
+            cb[i].disabled = true
+          }
+        }
+      }
+    });
+  }
+
+</script>
 
 {% endblock %}
