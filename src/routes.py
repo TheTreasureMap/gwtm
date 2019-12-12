@@ -525,7 +525,11 @@ def submit_pointing():
 			user = models.users.query.filter_by(id=pointing.submitterid).first()
 			creators = [{"name":str(user.firstname) + " " + str(user.lastname), "affiliation":""}]
 			points = [pointing]
-			pointing.doi_id, pointing.doi_url = create_doi(points, graceid, creators)
+
+			insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
+			inst_set = list(set([x.instrument_name for x in insts]))
+
+			pointing.doi_id, pointing.doi_url = create_doi(points, graceid, creators, inst_set)
 			db.session.commit()
 			flash("Your DOI url is: "+pointing.doi_url)
 
@@ -663,7 +667,10 @@ def ajax_request_doi():
 		user = db.session.query(models.users).filter(models.users.id == current_user.get_id()).first()
 		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
-		doi_id, doi_url = create_doi(points, graceid, creators)
+		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
+		inst_set = list(set([x.instrument_name for x in insts]))
+
+		doi_id, doi_url = create_doi(points, graceid, creators, inst_set)
 
 		for p in points:
 			p.doi_url = doi_url
@@ -1334,14 +1341,30 @@ def send_password_reset_email(user):
 				<p>The Treasure Map Team</p>"
 	)
 
-def create_doi(points, graceid, creators):
+def create_doi(points, graceid, creators, insts):
 	
 	ACCESS_TOKEN = app.config['ZENODO_ACCESS_KEY']
 	points_json = []
 
+
 	for p in points:
 		if p.status == models.pointing_status.completed:
+			#p.doi_id = d_id
 			points_json.append(p.json)
+
+	if len(insts) > 1:
+		inst_str = "These observations were taken on the"
+		for i in insts:
+			if i == insts[len(insts)-1]:
+				inst_str +=  " and " + i
+			else:
+				inst_str += " " + i + ","
+			
+		inst_str += " instruments."
+	else:
+		inst_str = "These observations were taken on the " + insts[0] + " instrument."
+
+	print(inst_str)
 
 	if len(points_json):
 		data = {
@@ -1349,7 +1372,7 @@ def create_doi(points, graceid, creators):
 				"title":"Submitted Completed pointings to the Gravitational Wave Treasure Map for event " + graceid,
 				"upload_type":"dataset",
 				"creators":creators,
-				"description":"Attached in a .json file is the completed pointing information for "+str(len(points_json))+" observation(s) for the EM counterpart search associated with the gravitational wave event " + graceid +". "
+				"description":"Attached in a .json file is the completed pointing information for "+str(len(points_json))+" observation(s) for the EM counterpart search associated with the gravitational wave event " + graceid +". " + inst_str
 			}
 		}
 
@@ -1361,7 +1384,7 @@ def create_doi(points, graceid, creators):
 		d_id = r.json()['id']
 		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id, params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
 		r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % d_id, data=json.dumps(data), params={'access_token': ACCESS_TOKEN}, headers=headers)
-		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
+		#r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
 		return_json = r.json()
 		return int(d_id), return_json['doi_url']
 	
@@ -1543,7 +1566,8 @@ def add_pointings():
 	db.session.commit()
 
 	if post_doi:
-		print("creating doi")
+		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
+		inst_set = list(set([x.instrument_name for x in insts]))
 		doi_id, doi_url = create_doi(points, gid, creators)
 		if doi_id is not None:
 			for p in points:
@@ -1728,6 +1752,92 @@ def get_pointings():
 
 	return jsonify(pointings)
 
+@app.route("/api/v0/request_doi", methods=['POST'])
+def api_request_doi():
+	
+	try:
+		args = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+		else:
+			userid = user.id
+	else:
+		return jsonify("api_token is required")
+	
+	if 'creators' in args:
+		creators = args['creators']
+		for c in creators:
+			if 'name' not in c.keys() or 'affiliation' not in c.keys():
+				return jsonify('name and affiliation are required for DOI creators json list')
+	#elif 'creator_group_id' in args:
+	#	pass
+	else:
+		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+
+	filter=[]
+
+	if "graceid" in args:
+		graceid = args.get('graceid')
+		filter.append(models.pointing_event.graceid == graceid)
+		filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+	if "id" in args:
+		_id = args.get('id')
+		if function.isInt(_id):
+			filter.append(models.pointing.id == int(_id))
+		else:
+			return jsonify("Invalid ID")
+	elif "ids" in args:
+		try:
+			ids = json.loads(args.get('ids'))
+			filter.append(models.pointing.id.in_(ids))
+		except:
+			return jsonify('Invalid list format of IDs')
+
+	if len(filter) == 0:
+		return jsonify("Insufficient filter parameters")
+
+	points = db.session.query(models.pointing).filter(*filter).all()
+
+	gids, doi_points, warnings = [], [], []
+
+	for p in points:
+		if p.status == models.pointing_status.completed and p.submitterid == user.id and p.doi_id == None:
+			doi_points.append(p)
+		else:
+			warnings.append("Invalid doi request for pointing: " + str(p.id))
+
+	if len(doi_points) == 0:
+		return jsonify("No pointings to give DOI")
+
+	insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in doi_points]))
+	inst_set = list(set([x.instrument_name for x in insts]))
+
+	gids = list(set([x.graceid for x in db.session.query(models.pointing_event).filter(models.pointing_event.pointingid.in_([x.id for x in doi_points]))]))
+	if len(gids) > 1:
+		return jsonify("Pointings must be only for a single GW event")
+
+	gid = gids[0]
+
+	print(len(points), gid, creators)
+	doi_id, doi_url = create_doi(points, gid, creators, inst_set)
+
+	if doi_id is not None:
+		for p in doi_points:
+			p.doi_url = doi_url
+			p.doi_id = doi_id
+
+		db.session.flush()
+		db.session.commit()
+	
+	return jsonify({"DOI URL":doi_url, "WARNINGS":warnings})
+	
 
 @app.route("/api/v0/cancel_all", methods=["POST"])
 def cancel_all():
