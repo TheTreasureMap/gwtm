@@ -63,6 +63,7 @@
                     <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
                     <li>You send this list of pointings using the pointings POST method (see below), with a status of <em><b>planned</b></em>.</li>
                     <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em><b>completed</b></em>.</li>
+                    <ul><li>For validation of your efforts you can request a <a href="https://www.doi.org">DOI</a> for your completed pointings as you post them in bulk, or after the fact through the api endpoint for a list of pointing IDs</li></ul>
                     <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
                 </ul>
                 <p></p>
@@ -488,7 +489,82 @@
             </pre>
             </div>
         </div>
+        <button class="collapsible">DOI Request</button>
+        <div class="content">
+            <div class="column">
+                <h2>REST API METHOD: POST Instructions</h2>
+                <p>Requesting a Batch DOI for completed pointings</p>
+                <p><b>Usage</b></p>
+                <p><i>/api/v0/request_doi</i></p>
+        
+                <p><b>Notes</b></p>
+                <p>This endpoint will ideally be utilized as an <i>end of the night</i> routine as you are uploading your completed pointings as they are taken in real time</p>
+                <p>You will request your DOI Url from a list of completed pointings, or just a GW Event GraceID for completed pointings that do not have a DOI yet.</p>
+                <p>This endpoint will validate:</p>
+                <ul>
+                    <li>whether the pointings have a status completed</li>
+                    <li>whether the pointings were submitted by the user associated with the api_token</li>
+                    <li>whether the pointings were taken for the same GW event. They must be associated with the same graceid</li>
+                </ul>
+                <p>JSON Parameters</p>
+                <ul>
+                    <li><i>graceid=graceid1</i></li>
+                    <li><i>api_token=api_token1</i></li>
+                    <ul><li>this will ensure only your completed pointings are queried</li></ul>
+                    <li><i>creators=json list of creator objects</i></li>
+                    <ul><li>json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li><li>also accepts <i>orcid</i> and <i>gnd</i> for each creator</li></ul>
+                    <li><i>ids=[id1, id2, id3....]</i></li>
+                    <ul><li>List of INTs</li></ul>
+                </ul>
+            </div>
+            <div class="column" style="background-color:#bbb;">
+                <h2>POST Examples</h2>
+                <p>Request a DOI for your completed pointings for a GW Event</p>
+                <pre>
+                        <code class="language-json" data-lang="json">
+        import requests
 
+        BASE = 'http://treasuremap.space/api/v0/'
+        TARGET = 'request_doi'
+
+        json_data = {
+            "api_token":"abcdefghijkl",
+            "graceid":"graceid1",
+            "creators":[
+                {"name":"Name1", "affiliation":"affil_1"},
+                {"name":"Name2", "affiliation":"affil_2"}
+            ]
+        }
+
+        r = requests.post(url = BASE+TARGET, json = json_data)
+
+        print(r.text)
+            </code>
+            </pre>
+            <p>Request a DOI for individual pointing IDs</p>
+            <pre>
+                    <code class="language-json" data-lang="json">
+        import requests
+
+        BASE = 'http://treasuremap.space/api/v0/'
+        TARGET = 'request_doi'
+
+        json_data = {
+            "api_token":"abcdefghijkl",
+            "ids":"[id1, id2, id3, ...]",
+            "creators":[
+                    {"name":"Name1", "affiliation":"affil_1"},
+                    {"name":"Name2", "affiliation":"affil_2"}
+            ]
+        }
+
+        r = requests.post(url = BASE+TARGET, json = json_data)
+
+        print(r.text)
+        </code>
+        </pre>
+            </div>
+        </div>
         <!--<button class="collapsible">Glade Catalog</button>
         <div class="content">
             <div class="column">
