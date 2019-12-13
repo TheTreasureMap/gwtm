@@ -879,6 +879,7 @@ def get_pointing_fromID():
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
+	
 	#fixshitlogic
 
 	return 'success'
@@ -1384,7 +1385,7 @@ def create_doi(points, graceid, creators, insts):
 		d_id = r.json()['id']
 		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id, params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
 		r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % d_id, data=json.dumps(data), params={'access_token': ACCESS_TOKEN}, headers=headers)
-		#r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
+		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
 		return_json = r.json()
 		return int(d_id), return_json['doi_url']
 	
