@@ -1257,30 +1257,32 @@ def construct_alertform(form, args):
 			t = Time([tos])
 			form.tos_mjd = round(t.mjd[0], 2)
 		else:
-			form.tos_mjd = None
+			form.tos_mjd = 0
 
 		#iterate over each instrument and grab their pointings
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
-		for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
-			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
-			try:
-				color = colorlist[i]
-			except:
-				color = colors[inst.id]
-				pass
-			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
-			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
-			pointing_geometries = []
 
-			for p in inst_pointings:
-				t = Time([p.time])
-				ra, dec = function.sanatize_pointing(p.position)
-				for ccd in sanatized_ccds:
-					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
-					pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
-			else:
+		if 'Retracted' not in form.alert_type:
+			for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
+				name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
+				try:
+					color = colorlist[i]
+				except:
+					color = colors[inst.id]
+					pass
+				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
+				sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+				inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
+				pointing_geometries = []
+
+				for p in inst_pointings:
+					t = Time([p.time])
+					ra, dec = function.sanatize_pointing(p.position)
+					for ccd in sanatized_ccds:
+						pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+						pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
+				
 				overlays.append({
 					"display":True,
 					"name":name,
@@ -1288,85 +1290,84 @@ def construct_alertform(form, args):
 					"contours":pointing_geometries
 				})
 
-		#do BAT stuff
-		#BAT instrumentid == 49
-		# If there are any pointings with BAT. Find the file
-		# that should have been created by the BAT listener
-		if len([x for x in pointing_info if x.instrumentid == 49]):
-			batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
-			if os.path.exists(batpathinfo):
-				with open(batpathinfo) as json_data:
-					contours_data = json.load(json_data)
-				GRBoverlays.append({
-					'name':'Swift/BAT',
-					'color':'#3cb44b',
-					'json':contours_data
-				})
-
-		#do Fermi stuff
-		if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
-			earth_ra,earth_dec,earth_rad=function.getearthsatpos(form.selected_alert_info.time_of_signal)
-			fermipathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
-			if os.path.exists(fermipathinfo) and earth_ra != False:
-				with open(fermipathinfo) as json_data:
-					contours_data = json.load(json_data)
-				GRBoverlays.append({
-					'name':'Fermi/GBM',
-					'color':'magenta',
-					'json':contours_data
-				})
-			elif earth_ra == False:
-				GRBoverlays.append({
-					'name': 'Fermi in South Atlantic Anomaly'
+			#do BAT stuff
+			#BAT instrumentid == 49
+			# If there are any pointings with BAT. Find the file
+			# that should have been created by the BAT listener
+			if len([x for x in pointing_info if x.instrumentid == 49]):
+				batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
+				if os.path.exists(batpathinfo):
+					with open(batpathinfo) as json_data:
+						contours_data = json.load(json_data)
+					GRBoverlays.append({
+						'name':'Swift/BAT',
+						'color':'#3cb44b',
+						'json':contours_data
 					})
 
+			#do Fermi stuff
+			if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
+				earth_ra, earth_dec, earth_rad = function.getearthsatpos(form.selected_alert_info.time_of_signal)
+				fermipathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
+				if os.path.exists(fermipathinfo) and earth_ra != False:
+					with open(fermipathinfo) as json_data:
+						contours_data = json.load(json_data)
+					GRBoverlays.append({
+						'name':'Fermi/GBM',
+						'color':'magenta',
+						'json':contours_data
+					})
+				elif earth_ra == False:
+					GRBoverlays.append({
+						'name': 'Fermi in South Atlantic Anomaly'
+						})
 
-		#grab the precomputed localization contour region
-		if len(form.alert_type.split()) > 1:
-			path_info = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
-			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
-		else:
-			path_info = graceid + '-' + form.alert_type.split()[0]
-			mappath = graceid + '-' + form.alert_type.split()[0]
 
-		#mappath = '/var/www/gwtm/src/static/gwa.'+path_info+'.fits.gz' #wherever the skymap lives
-		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+			#grab the precomputed localization contour region
+			if len(form.alert_type.split()) > 1:
+				path_info = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+				mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+			else:
+				path_info = graceid + '-' + form.alert_type.split()[0]
+				mappath = graceid + '-' + form.alert_type.split()[0]
 
-		form.mappathinfo = mappathinfo
-		if os.path.exists(mappathinfo):
-			try:
-				GWmap = hp.read_map(mappathinfo)
-				bestpixel = np.argmax(GWmap)
-				nside = hp.npix2nside(len(GWmap))
-				form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
-			except:
-				pass
+			mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
 
-		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-		print(contourpath)
-		#if it exists, add it to the overlay list
-		if os.path.exists(contourpath):
-			contours_data=pd.read_json(contourpath)
-			contour_geometry = []
-			for contour in contours_data['features']:
-				contour_geometry.extend(contour['geometry']['coordinates'])
+			form.mappathinfo = mappathinfo
+			if os.path.exists(mappathinfo):
+				try:
+					GWmap = hp.read_map(mappathinfo)
+					bestpixel = np.argmax(GWmap)
+					nside = hp.npix2nside(len(GWmap))
+					form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
+				except:
+					pass
 
-			overlays.append({
-				"display":True,
-				"name":"GW Contour",
-				"color": '#e6194B',
-				"contours":function.polygons2footprints(contour_geometry, 0)
-			})
+			contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
+			
+			#if it exists, add it to the overlay list
+			if os.path.exists(contourpath):
+				contours_data=pd.read_json(contourpath)
+				contour_geometry = []
+				for contour in contours_data['features']:
+					contour_geometry.extend(contour['geometry']['coordinates'])
 
-		if len(overlays):
-			times = []
-			for o in overlays:
-				for c in o['contours']:
-					times.append(c['time'])
-					
-			form.mintime = min(times)
-			form.maxtime = max(times)
-			form.step = (form.maxtime*100 - form.mintime*100)/100000
+				overlays.append({
+					"display":True,
+					"name":"GW Contour",
+					"color": '#e6194B',
+					"contours":function.polygons2footprints(contour_geometry, 0)
+				})
+
+			if len(overlays):
+				times = []
+				for o in overlays:
+					for c in o['contours']:
+						times.append(c['time'])
+						
+				form.mintime = min(times)
+				form.maxtime = max(times)
+				form.step = (form.maxtime*100 - form.mintime*100)/100000
 
 	return form, overlays, GRBoverlays
 
