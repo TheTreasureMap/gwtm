@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div style="padding-left:16px">
+  <h2>DOI Author Group</h2>
+  {% if create %}
+    <h3>Create New Author Group</h3>
+  {% else %}
+    <h3>Manage Author Group</h3>
+  {% endif%}
+  <form action="" method="POST">
+      {% if not create %}
+        <input type="hidden" name="doi_group_id" id="doi_group_id" value="{{ group_info.id }}">
+      {% endif %}
+      {% if group_info %}
+      <p>
+        <b>Group Name</b> <input id="group_name" name="group_name" value="{{ group_info.name }}">
+      </p>
+      {% else %}
+        <p>
+          <b>Group Name</b> <input id="group_name" name="group_name" value="">
+        </p>
+      {% endif%}
+    <p>
+        <input class="btn btn-primary" id=insert_btn type="button" value="Insert row">
+    </p>
+    <div class=container-fluid>
+      <table class=table id="author_table">
+        <thead>
+          <th>ID</th>
+          <th>Name*</th>
+          <th>Affiliation*</th>
+          <th>ORCID</th>
+          <th>GND</th>
+          <th>Remove</th>
+          <!--<th>Move</th>-->
+        </thead>
+        <tbody>
+          {% if authors %}
+            {% for a in authors %}
+            <tr>
+              <td><input type="hidden" name="author_id" id="author_id" value="{{ a.id }}"></td>
+              <td><input type="text" id="author_name" name="author_name" value="{{ a.name }}"></td>
+              <td><input type="text" id="affiliation" name="affiliation" value="{{ a.affiliation }}"></td>
+              <td><input type="text" id="orcid" name="orcid" value="{{ a._orcid }}"></td>
+              <td><input type="text" id="gnd" name="gnd" value="{{ a.gnd }}"></td>
+              <td><input class="btn btn-primary" type="button" onclick="delRow(this)" value="delete"></td>
+            </tr>
+              <!-- <td><input class="btn btn-primary" type="button" value="Up"> <input class="btn btn-primary" type="button" value="Down"></td> -->
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td><input type="hidden" id="author_id" name="author_id"></td>
+              <td><input type="text" id="author_name" name="author_name" value=""></td>
+              <td><input type="text" id="affiliation" name="affiliation" value=""></td>
+              <td><input type="text" id="orcid" name="orcid" value=""></td>
+              <td><input type="text" id="gnd" name="gnd" value=""></td>
+              <td><input class="btn btn-primary" type="button" onclick="delRow(this)" value="delete"></td>
+              <!-- <td><input class="btn btn-primary"value="Up"> <input class="btn btn-primary" value="Down"></td> -->
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size: small;"><b>* denotes required</b></p>
+    <input class="btn btn-primary" type="submit">
+  </form>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script>
+
+    function delRow(currElement) {
+        var parentRowIndex = currElement.parentNode.parentNode.rowIndex;
+        document.getElementById("author_table").deleteRow(parentRowIndex);
+    }
+
+    $('p input[type="button"]').click(function () {
+      $('#author_table').append('<tr>' +
+                                  '<td><input type="hidden" name="author_id" id="author_id"></td>' + 
+                                  '<td><input type="text" id="author_name" name="author_name" value=""></td>' +
+                                  '<td><input type="text" id="affiliation" name="affiliation" value=""></td>' +
+                                  '<td><input type="text" id="orcid" name="orcid" value=""></td>' + 
+                                  '<td><input type="text" id="gnd" name="gnd" value=""></td>' + 
+                                  '<td><input class="btn btn-primary" type="button" onclick="delRow(this)" value="delete"></td>' +
+                                '</tr>'
+                                )
+    });
+  </script>
+</div>
+
+{% endblock %}
