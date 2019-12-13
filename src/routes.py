@@ -711,7 +711,6 @@ def doi_author_group():
 	
 	#test to save
 	if groupid and request.method == 'POST':
-		print("test")
 		authors = authors_from_page(form)
 		group_name = form.get('group_name')
 
