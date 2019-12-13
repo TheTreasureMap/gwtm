@@ -714,11 +714,10 @@ def doi_author_group():
 		print("test")
 		authors = authors_from_page(form)
 		group_name = form.get('group_name')
-		group_info = models.doi_author_group(
-			id=int(groupid),
-			name=group_name,
-			userid=current_user.get_id()
-		)
+
+		group_info = db.session.query(models.doi_author_group).filter(models.doi_author_group.id == groupid).first()
+		group_info.name = group_name
+
 		valid, message = validate_authors(authors)
 		if not valid:
 			flash(message)
@@ -728,7 +727,7 @@ def doi_author_group():
 			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=False)
 		
 		prev_authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid)
-		#prev_ids = [x.id for x in prev_authors.all()]
+		
 		curr_ids = [x.id for x in authors]
 		for pre_auth in prev_authors:
 			if pre_auth.id not in curr_ids:
@@ -1263,7 +1262,7 @@ def construct_alertform(form, args):
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 
-		if 'Retracted' not in form.alert_type:
+		if 'Retraction' not in form.alert_type:
 			for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
 				name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
 				try:
