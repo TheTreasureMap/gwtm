@@ -36,7 +36,7 @@
     </form>
 
     {% if form.my_points.data %}
-      <p><button id="ajax_request_doi" class="btn btn-primary" style="display: block; margin: 0 auto;">Request DOI for Selected</button></p>
+      <p><button id="ajax_request_doi" class="btn btn-primary" style="display: block; margin: 0 auto;">Request DOI for Selected</button></p> {{ form.doi_creator_groups.label }} {{ form.doi_creator_groups }}
     {% endif %}
     
     <table id=pointing_table>
@@ -116,9 +116,10 @@
           }
       }
       var graceid = $('#graceids').val()
+      var groupid = $('#doi_creator_groups').val()
       str = data.substring(0, data.length - 1);
 
-      $.get('/ajax_request_doi?ids=' + str + '&graceid=' + graceid, function(doi_url, status){
+      $.get('/ajax_request_doi?ids=' + str + '&graceid=' + graceid + '&doi_group_id=' + groupid, function(doi_url, status){
 
         var tds = document.getElementsByTagName('td')
         for (var i = 0; i < tds.length; i++){

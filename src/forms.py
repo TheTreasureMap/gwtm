@@ -54,6 +54,7 @@ class ManageUserForm(FlaskForm):
 
 
 class SearchPointingsForm(FlaskForm):
+    doi_creator_groups = SelectField('DOI Creator Groups')
     graceids = SelectField('Grace ID', validators=[DataRequired()])
 
     bands = [('all', 'All')]
@@ -70,6 +71,12 @@ class SearchPointingsForm(FlaskForm):
 
     submit = SubmitField('Search')
 
+    def populate_creator_groups(self, current_userid):
+        dag = models.doi_author_group.query.filter_by(userid=current_userid).all()
+        self.doi_creator_groups.choices = [('None', 'None')]
+        for a in dag:
+            self.doi_creator_groups.choices.append((a.id, a.name))
+            
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
         alerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
@@ -129,11 +136,10 @@ class SubmitPointingForm(FlaskForm):
     for a in models.depth_unit:
         dus.append((str(a.name), str(a.name)))
     depth_unit = SelectField('Depth Unit', choices=dus, validators=[DataRequired()])
-    #galaxy_catalogid = IntegerField("Galaxy Catalog")
-    #galaxy_id = IntegerField("Galaxy ID")
     pos_angle = DecimalField("Position Angle")
     request_doi = BooleanField('Request DOI')
 
+    doi_creator_groups = SelectField('DOI Creator Groups')
     submit = SubmitField('Submit')
 
     def populate_graceids(self):
@@ -149,6 +155,12 @@ class SubmitPointingForm(FlaskForm):
         self.instruments.choices = [(None, 'Select')]
         for a in query:
             self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
+        
+    def populate_creator_groups(self, current_userid):
+        dag = models.doi_author_group.query.filter_by(userid=current_userid).all()
+        self.doi_creator_groups.choices = [('None', 'None')]
+        for a in dag:
+            self.doi_creator_groups.choices.append((a.id, a.name))
 
 class AlertsForm(FlaskForm):
     page = ''

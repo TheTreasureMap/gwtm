@@ -347,6 +347,9 @@ def manage_user():
 def search_pointings():
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
+	form.populate_creator_groups(current_user.get_id())
+	print(form.doi_creator_groups.choices)
+
 
 	if form.validate_on_submit():
 		filter = []
@@ -406,6 +409,8 @@ def submit_pointing():
 	form = forms.SubmitPointingForm()
 	form.populate_graceids()
 	form.populate_instruments()
+	form.populate_creator_groups(current_user.get_id())
+	print(form.doi_creator_groups.choices)
 	
 	if request.method == 'POST':
 
@@ -525,7 +530,14 @@ def submit_pointing():
 
 		if form.request_doi.data:
 			user = models.users.query.filter_by(id=pointing.submitterid).first()
-			creators = [{"name":str(user.firstname) + " " + str(user.lastname), "affiliation":""}]
+			if form.doi_creator_groups.data != 'None':
+				valid, creators = construct_creators(form.doi_creator_groups.data, user.id)
+				print(creators)
+				if not valid:
+					creators = [{"name":str(user.firstname) + " " + str(user.lastname), "affiliation":""}]
+			else:
+				creators = [{"name":str(user.firstname) + " " + str(user.lastname), "affiliation":""}]
+
 			points = [pointing]
 
 			insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
@@ -792,7 +804,14 @@ def ajax_request_doi():
 		).all()
 		
 		user = db.session.query(models.users).filter(models.users.id == current_user.get_id()).first()
-		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+
+		if 'doi_group_id' in args:
+			valid, creators = construct_creators(args['doi_group_id'], current_user.get_id())
+			if not valid:
+				creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+		else:
+			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
+
 
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
@@ -1387,6 +1406,40 @@ def create_geography(vertices):
 	return geom
 
 
+def construct_creators(doi_group_id, userid):
+
+	if function.isInt(doi_group_id):
+		authors = db.session.query(models.doi_author).filter(
+			models.doi_author.author_groupid == int(doi_group_id),
+			models.doi_author.author_groupid == models.doi_author_group.id,
+			models.doi_author_group.userid == userid
+		).order_by(
+			models.doi_author.id
+		).all()
+	else:
+		authors = db.session.query(models.doi_author).filter(
+			models.doi_author.author_groupid == models.doi_author_group.id,
+			models.doi_author_group.name == doi_group_id,
+			models.doi_author_group.userid == userid
+		).order_by(
+			models.doi_author.id
+		).all()
+
+	if len(authors) == 0:
+		return False, []
+
+	creators = []
+	for a in authors:
+		a_dict = { "name":a.name, "affiliation":a.affiliation }
+		if a.orcid:
+			a_dict['orcid'] = a.orcid
+		if a.gnd:
+			a_dict['gnd'] = a.gnd
+		creators.append(a_dict)
+
+	return True, creators
+
+
 def pointings_from_IDS(ids, filter=[]):
 
 	filter.append(models.instrument.id == models.pointing.instrumentid)
@@ -1491,8 +1544,6 @@ def create_doi(points, graceid, creators, insts):
 		inst_str += " instruments."
 	else:
 		inst_str = "These observations were taken on the " + insts[0] + " instrument."
-
-	print(inst_str)
 
 	if len(points_json):
 		data = {
@@ -1630,6 +1681,10 @@ def add_pointings():
 			for c in creators:
 				if 'name' not in c.keys() or 'affiliation' not in c.keys():
 					return jsonify('name and affiliation are required for DOI creators json list')
+		elif 'doi_group_id' in rd:
+				valid, creators = construct_creators(rd['doi_group_id'], userid)
+				if not valid:
+					return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
 		else:
 			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
@@ -1696,7 +1751,7 @@ def add_pointings():
 	if post_doi:
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
-		doi_id, doi_url = create_doi(points, gid, creators)
+		doi_id, doi_url = create_doi(points, gid, creators, inst_set)
 		if doi_id is not None:
 			for p in points:
 				p.doi_url = doi_url
