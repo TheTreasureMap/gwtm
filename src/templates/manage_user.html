@@ -10,12 +10,14 @@
 	<div class=container-fluid>
 		<table class=table id="doi_groups">
 			<thead>
+				<th>ID</th>
 				<th>Name</th>
 			</thead>
 			<tbody>
 				{% if doi_groups%}
 					{% for d in doi_groups %}
 						<tr>
+							<td>{{ d.id }}</td>
 							<td><a href="/doi_author_group?doi_group_id={{ d.id }}">{{ d.name }}</a></td>
 						</tr>
 					{% endfor%}
