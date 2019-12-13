@@ -54,7 +54,7 @@ class ManageUserForm(FlaskForm):
 
 
 class SearchPointingsForm(FlaskForm):
-    doi_creator_groups = SelectField('DOI Creator Groups')
+    doi_creator_groups = SelectField('DOI Author Groups')
     graceids = SelectField('Grace ID', validators=[DataRequired()])
 
     bands = [('all', 'All')]
@@ -139,7 +139,7 @@ class SubmitPointingForm(FlaskForm):
     pos_angle = DecimalField("Position Angle")
     request_doi = BooleanField('Request DOI')
 
-    doi_creator_groups = SelectField('DOI Creator Groups')
+    doi_creator_groups = SelectField('DOI Author Groups')
     submit = SubmitField('Submit')
 
     def populate_graceids(self):
