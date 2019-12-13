@@ -4,14 +4,29 @@
 {% block content %}
 	<div style="padding-left:16px">
     <h2>User: {{ user.username }}</h2>
-    <hr>
-    <p>
-    Your API Token: <b>{{ user.api_token }}</b>
-    </p>
-    {% if groups %}
+    <p>Your API Token: <b>{{ user.api_token }}</b></p>
+	<h3>DOI Author Groups </h3>
+	<a class="btn btn-primary" href="{{ url_for('doi_author_group') }}">Create New DOI Author Group</a>
+	<div class=container-fluid>
+		<table class=table id="doi_groups">
+			<thead>
+				<th>Name</th>
+			</thead>
+			<tbody>
+				{% if doi_groups%}
+					{% for d in doi_groups %}
+						<tr>
+							<td><a href="/doi_author_group?doi_group_id={{ d.id }}">{{ d.name }}</a></td>
+						</tr>
+					{% endfor%}
+				{% endif %}
+			</tbody>
+		</table>
+	</div>
+	<!--{% if groups %}
 		<h3> Your Groups </h3>
 		<ul>
-    	{% for g in groups %}
+		{% for g in groups %}
 			<li> Group: <b> {{ g.name }}</b></li>
 			<ul>
 				<p>Role: {{ g.role }}</p>
@@ -23,7 +38,7 @@
 		<h3> Registered Users </h3>
 		<table>
 		<tr>
-    	<th>First</th><th>Last</th><th>Creation</th><th>Verified?</th>
+		<th>First</th><th>Last</th><th>Creation</th><th>Verified?</th>
 		</tr>
 		{% for user in users %}
 			<tr>
@@ -34,6 +49,6 @@
 			</tr>
 		{% endfor %}
 		</table>
-	{% endif %}
+	{% endif %}-->
 	</div>
 {% endblock %}

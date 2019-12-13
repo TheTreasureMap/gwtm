@@ -330,14 +330,16 @@ def manage_user():
 	groupfilter.append(models.usergroups.groupid == models.groups.id)
 	groupfilter.append(models.usergroups.userid == userid)
 	groups = db.session.query(models.groups.name, models.usergroups.role).filter(*groupfilter).all()
+
+	doi_groups = db.session.query(models.doi_author_group).filter(models.doi_author_group.userid == userid)
 	#form = froms.ManageUserForm():
 	#if form.validate_on_submit():
 
 	if userid == 2 or userid == 5:
 		all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
-		return render_template('manage_user.html', user=user, groups=groups, users=all_users)
+		return render_template('manage_user.html', user=user, doi_groups=doi_groups, users=all_users)
 	else:
-		return render_template('manage_user.html', user=user, groups=groups)
+		return render_template('manage_user.html', user=user, doi_groups=doi_groups)
 
 
 @app.route('/search_pointings', methods=['GET', 'POST'])
@@ -540,7 +542,7 @@ def submit_pointing():
 
 @app.route('/submit_instrument', methods=['GET', 'POST'])
 @login_required
-def submit_in0strument():
+def submit_instrument():
 	form = forms.SubmitInstrumentForm()
 
 	insts = db.session.query(
@@ -640,6 +642,131 @@ def instrument_info():
 		graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 
 	return render_template('instrument_info.html', inst=inst, graph=graphJSON, events=events, username=username)
+
+def authors_from_page(form):
+	authors = []
+	for aid, an, aff, orc, gnd in zip(
+			form.getlist('author_id'),
+			form.getlist('author_name'),
+			form.getlist('affiliation'),
+			form.getlist('orcid'),
+			form.getlist('gnd')
+		):
+		print(aid, an, aff, orc, gnd)
+		if  str(aid) == "" or str(aid) == "None":
+			authors.append(
+				models.doi_author(
+					name=an,
+					affiliation=aff,
+					orcid=orc,
+					gnd=gnd
+				)
+			)
+		else:
+			authors.append(
+				models.doi_author(
+					id=int(aid),
+					name=an,
+					affiliation=aff,
+					orcid=orc,
+					gnd=gnd
+				)
+			)	
+	return authors
+
+def validate_authors(authors):
+	if len(authors) == 0:
+		return False, "At least one author is required"
+	for a in authors:
+		if a.name is None or a.name == "":
+			return False, "Author Name is required"
+		if a.affiliation is None or a.affiliation == "":
+			return False, "Affiliation is required"
+	return True, ''
+
+@app.route('/doi_author_group', methods=['GET','POST'])
+def doi_author_group():
+	#I want to be able to edit/and create on the same page
+	#test for the id, if there is one, then load it
+	form = request.form
+	groupid = request.args.get('doi_group_id')
+
+	#test to load page
+	if groupid and request.method != 'POST':
+		doi_author_group = db.session.query(models.doi_author_group).filter(models.doi_author_group.id == groupid).first()
+		authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid).order_by(models.doi_author.id).all()
+		return render_template('doi_author_group.html', group_info=doi_author_group, authors=authors)
+	
+	#test to save
+	if groupid and request.method == 'POST':
+		print("test")
+		authors = authors_from_page(form)
+		group_name = form.get('group_name')
+		group_info = models.doi_author_group(
+			id=int(groupid),
+			name=group_name,
+			userid=current_user.get_id()
+		)
+		valid, message = validate_authors(authors)
+		if not valid:
+			flash(message)
+			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=False)
+		if group_name is None or group_name == "":
+			flash("Group Name is required")
+			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=False)
+		
+		prev_authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid)
+		#prev_ids = [x.id for x in prev_authors.all()]
+		curr_ids = [x.id for x in authors]
+		for pre_auth in prev_authors:
+			if pre_auth.id not in curr_ids:
+				db.session.delete(pre_auth)
+
+		for a in authors:
+			a.author_groupid = int(groupid)
+			if a.id is None:
+				db.session.add(a)
+			prev = prev_authors.filter(models.doi_author.id == a.id).first()
+			if prev:
+				prev.name = a.name
+				prev.affiliation = a.affiliation
+				prev.orcid = a.orcid
+				prev.gnd = a.gnd
+				prev.pos_order = a.pos_order
+				
+		db.session.flush()
+		db.session.commit()
+
+		return redirect('/manage_user')
+		
+	#test if new save
+	if groupid is None and request.method == 'POST':
+		authors = authors_from_page(form)
+		group_name = form.get('group_name')
+		group_info = models.doi_author_group(
+			name=group_name,
+			userid=current_user.get_id()
+		)
+		valid, message = validate_authors(authors)
+		if not valid:
+			flash(message)
+			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=True)
+		if group_name is None or group_name == "":
+			flash("Group Name is required")
+			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=True)
+
+		db.session.add(group_info)
+		db.session.flush()
+		
+		for a in authors:
+			a.author_groupid = group_info.id
+			db.session.add(a)
+
+		db.session.commit()
+
+		return redirect('/manage_user')
+		
+	return render_template('doi_author_group.html', create=True)
 
 @app.route('/logout')
 def logout():

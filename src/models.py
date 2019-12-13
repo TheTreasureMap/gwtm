@@ -609,3 +609,19 @@ class gw_galaxy_score(db.Model):
     gw_galaxyID = db.Column(db.Integer)
     score_type = db.Column(db.Enum(gw_galaxy_score_type))
     score = db.Column(db.Float)
+
+
+class doi_author_group(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    userid = db.Column(db.Integer)
+    name = db.Column(db.String)
+
+
+class doi_author(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    affiliation = db.Column(db.String)
+    orcid = db.Column(db.String)
+    gnd = db.Column(db.String)
+    pos_order = db.Column(db.Integer)
+    author_groupid = db.Column(db.Integer)
