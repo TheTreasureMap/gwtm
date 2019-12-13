@@ -1958,8 +1958,10 @@ def api_request_doi():
 		for c in creators:
 			if 'name' not in c.keys() or 'affiliation' not in c.keys():
 				return jsonify('name and affiliation are required for DOI creators json list')
-	#elif 'creator_group_id' in args:
-	#	pass
+	elif 'doi_group_id' in rd:
+		valid, creators = construct_creators(rd['doi_group_id'], userid)
+		if not valid:
+			return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
 	else:
 		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 

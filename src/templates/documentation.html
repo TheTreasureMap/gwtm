@@ -100,6 +100,7 @@
                         <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
                         <li><i>request_doi</i> - [default=false] to request a Digital Object Identifier. <b>This is only valid for posting completed pointing observations</b></li>
                         <li><i>creators</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
+                        <li><i>doi_group_id</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
                     </ul>
 
                     <h3>Valid <b>pointing</b> class parameters</h3>
@@ -513,6 +514,8 @@
                     <ul><li>this will ensure only your completed pointings are queried</li></ul>
                     <li><i>creators=json list of creator objects</i></li>
                     <ul><li>json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li><li>also accepts <i>orcid</i> and <i>gnd</i> for each creator</li></ul>
+                    <li><i>doi_group_id=groupid1</i></li>
+                    <ul><li>if you have created a doi author list through the website, you just reference its name or id here to link to the list</li></ul>
                     <li><i>ids=[id1, id2, id3....]</i></li>
                     <ul><li>List of INTs</li></ul>
                 </ul>
