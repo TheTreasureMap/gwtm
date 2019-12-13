@@ -63,7 +63,10 @@
                     <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
                     <li>You send this list of pointings using the pointings POST method (see below), with a status of <em><b>planned</b></em>.</li>
                     <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em><b>completed</b></em>.</li>
-                    <ul><li>For validation of your efforts you can request a <a href="https://www.doi.org">DOI</a> for your completed pointings as you post them in bulk, or after the fact through the api endpoint for a list of pointing IDs</li></ul>
+                    <ul>
+                        <li>For validation of your efforts you can request a <a href="https://www.doi.org">DOI</a> for your completed pointings as you post them in bulk, or after the fact through the api endpoint for a list of pointing IDs</li>
+                        <li>To create an author list for your DOI, please visit your <a href="/manage_user">Profile</a> page and follow the links to do so. Use the ID of your group in requesting the DOI. Otherwise you can still submit a json object via the API (described below). Authors do <b>not</b> have to be GWTM users</li>
+                    </ul>
                     <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
                 </ul>
                 <p></p>
