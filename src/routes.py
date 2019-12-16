@@ -1236,7 +1236,7 @@ def construct_alertform(form, args):
 			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
 		
 		form.depth_unit=[]
-		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed and x.instrumentid != 49])):
+		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed and x.instrumentid != 49 and x.depth_unit != None])):
 			form.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 		#filter and query the relevant instrument footprints
