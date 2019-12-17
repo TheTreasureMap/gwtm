@@ -481,6 +481,7 @@ def submit_pointing():
 			print(completed_time)
 			if completed_time is None:
 				flash('Completed time is required')
+				flash('Completed time must be in the format of \'%Y-%m-%dT%H:%M:%S.%f\'')
 				return render_template('submit_pointings.html', form=form)
 			if pos_angle is None:
 				flash('Position Angle is required')
@@ -499,6 +500,7 @@ def submit_pointing():
 			#validation
 			if planned_time is None:
 				flash('Planned time is required')
+				flash('Planned time must be in the format of \'%Y-%m-%dT%H:%M:%S.%f\'')
 				return render_template('submit_pointings.html', form=form)
 		
 			#inserting
@@ -706,6 +708,10 @@ def doi_author_group():
 	#test to load page
 	if groupid and request.method != 'POST':
 		doi_author_group = db.session.query(models.doi_author_group).filter(models.doi_author_group.id == groupid).first()
+		if doi_author_group.userid != current_user.get_id():
+			flash("Invalid Author Group. You may only view your own")
+			return redirect('/manage_user')
+
 		authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid).order_by(models.doi_author.id).all()
 		return render_template('doi_author_group.html', group_info=doi_author_group, authors=authors)
 	
@@ -927,7 +933,7 @@ def plot_prob_coverage():
 			elapsed = elapsed.total_seconds()/3600
 			times.append(elapsed)
 			probs.append(prob)
-			
+
 	fig=go.Figure(data=go.Scatter(x=times,y=[prob*100 for prob in probs],mode='lines'))
 	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Percent of GW localization covered')
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
@@ -1024,9 +1030,7 @@ def get_pointing_fromID():
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
-	
-	#fixshitlogic
-
+	print("test")
 	return 'success'
 
 
