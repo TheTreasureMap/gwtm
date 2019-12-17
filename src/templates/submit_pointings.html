@@ -14,7 +14,7 @@
         {{ form.ra.label }} {{ form.ra }} {{ form.dec.label }} {{ form.dec }}
     </p>
     <p>
-        {{ form.instruments.label}} {{ form.instruments }} <a class="photometric box1">{{ form.obs_bandpass.label }} {{ form.obs_bandpass }} </a>
+        {{ form.instruments.label}} {{ form.instruments }} {{ form.obs_bandpass.label }} {{ form.obs_bandpass }}
     </p>
     <p>
       {{ form.depth.label }} {{ form.depth }} {{ form.depth_err.label }} {{ form.depth_err }} {{ form.depth_unit.label }} {{ form.depth_unit }}
@@ -31,9 +31,9 @@
       <p>
         {{ form.pos_angle.label }} {{ form.pos_angle }}
       </p>
+      <p>{{ form.request_doi.label }} {{ form.request_doi }} {{ form.doi_creator_groups.label }} {{ form.doi_creator_groups }}</p>
+      <p style="font-size: small;">Don't have a DOI Author group? You can create one <a href="/manage_user">here</a></p>
     </div>
-    <p>{{ form.request_doi.label }} {{ form.request_doi }} {{ form.doi_creator_groups.label }} {{ form.doi_creator_groups }}</p>
-    <p style="font-size: small;">Don't have a DOI Author group? You can create one <a href="/manage_user">here</a></p>
     <p>{{ form.submit() }}</p>
     </form>
   </div>
