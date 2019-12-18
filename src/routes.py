@@ -708,7 +708,7 @@ def doi_author_group():
 	#test to load page
 	if groupid and request.method != 'POST':
 		doi_author_group = db.session.query(models.doi_author_group).filter(models.doi_author_group.id == groupid).first()
-		print(type(doi_author_group.userid), type(current_user.get_id()))
+
 		if doi_author_group.userid != int(current_user.get_id()):
 			flash("Invalid Author Group. You may only view your own")
 			return redirect('/manage_user')
