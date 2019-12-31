@@ -309,7 +309,6 @@
         var DEThtml = '<form id="DetectionSelector">';
         for (var k=0 ; k<detection_overlays.length; k++) {
             var cat = detection_overlays[k];
-            DEThtml += '<fieldset><span class="indicator right-triangle"></span><label for="' + cat.name + '">';
             DEThtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
             DEThtml += '</fieldset>';
         }
