@@ -3,9 +3,14 @@ import numpy as np
 import ephem
 from shapely.geometry import Polygon
 from shapely.geometry import Point
+import urllib
 from urllib.request import urlopen
+import astropy.io.fits as astro_fits
+import datetime
 import math
 from bs4 import BeautifulSoup
+import tempfile
+import os
 
 
 def readconfig(directory,_file):
@@ -322,3 +327,80 @@ def makeEarthContour(ra,dec,radius):
     contour = np.c_[ras,decs]
     Earthcont = project_footprint(contour, ra, dec, 0)
     return Earthcont
+
+def makeLATFoV(ra,dec,radius=65):
+    thetas = np.linspace(0, -2*np.pi, 200)
+    ras = radius * np.cos(thetas)
+    decs = radius * np.sin(thetas)
+    contour = np.c_[ras,decs]
+    LATfov = project_footprint(contour, ra, dec, 0)
+    return LATfov
+
+def getFermiFT2file(timestamp):
+    
+    weekly_file_start = datetime.datetime(2008,8,7)
+    base_week = 10
+    day_diff = (timestamp - weekly_file_start).days
+    week_diff = day_diff//7
+    week = week_diff + base_week
+
+    doy = timestamp.timetuple().tm_yday
+
+    resp = urlopen("https://fermi.gsfc.nasa.gov/ssc/observations/timeline/ft2/files/")
+    soup = BeautifulSoup(resp, from_encoding=resp.info().get_param('charset'), features="lxml")
+    for link in soup.find_all('a', href=True):
+        if not 'FERMI' in link['href'] or 'PRELIM' in link['href']:
+            continue
+        if int(link['href'].strip('FERMI_POINTING_FINAL').strip('_00.fits').split('_')[0]) == week:
+            filename = (link['href'])
+            
+    url_base = 'https://fermi.gsfc.nasa.gov/ssc/observations/timeline/ft2/files/'
+    pointing_file_url = url_base + filename
+    
+    try:
+        resp = urlopen(pointing_file_url)
+        exists = True
+    except urllib.error.HTTPError:
+        exists = False
+        
+    if not exists:
+        raise ValueError('No Fermi FINAL pointing file found.')
+    
+    temp_dir = tempfile.mkdtemp()
+    destination = os.path.join(temp_dir, filename)
+    urllib.request.urlretrieve(pointing_file_url, destination)
+
+    # return the location of the downloaded file
+    return destination
+
+def datetime2MET(timestamp):
+    mettime=(timestamp-datetime.datetime(2001,1,1)).total_seconds()
+    return mettime
+
+def getFermiPointing(timestamp, theta_max=65, verbose=True):
+    ft2file= getFermiFT2file(timestamp)
+
+    # Open the FT2 file
+    hdulist = astro_fits.open(ft2file)
+    data = hdulist[1].data
+    # Extract the spacecraft time
+    tstart = data.field('start')
+    tstop = data.field('stop')
+    time = tstart + (tstop - tstart)/2.0
+
+    trigger_met = datetime2MET(timestamp)
+
+    if trigger_met is None:
+        trigger_met = time[0]
+
+    # Determine the index for the time closest to the triggertime
+    index_closest = (np.abs(time - trigger_met)).argmin()   
+
+    # Get the LAT pointing at the trigger time
+    ra_lat_pointing = data.field('RA_SCZ')[index_closest]
+    dec_lat_pointing = data.field('DEC_SCZ')[index_closest]
+
+    if verbose == True:
+        print("\nLAT Pointing @ %s (dt = %s seconds):\nRA = %s, Dec = %s\n" % (time[index_closest], time[index_closest]-trigger_met, ra_lat_pointing, dec_lat_pointing))
+
+    return ra_lat_pointing, dec_lat_pointing
