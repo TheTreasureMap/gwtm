@@ -244,7 +244,8 @@
         var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd", showReticle: false};
         var aladin = A.aladin('#aladin-lite-div', aladinParams)
 
-        var overlays = JSON.parse('{{ overlays | tojson }}');
+        var detection_overlays = JSON.parse('{{ detection_overlays | tojson }}');
+        var inst_overlays = JSON.parse('{{ inst_overlays | tojson }}');
         var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
 
         $('input[name=survey]').change(function() {
@@ -262,6 +263,20 @@
         aladin.addCatalog(cat);
         cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
 
+        detectionoverlaylist=[];
+        for (i = 0; i < detection_overlays.length; i++) {
+          var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
+          aladin.addOverlay(contour);
+          var overlay_contours = detection_overlays[i].contours
+          for (j = 0; j < overlay_contours.length; j++){
+            contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+          }
+          detectionoverlaylist[i] = []
+          detectionoverlaylist[i][0] = contour;
+          detectionoverlaylist[i][1] = true //toshow
+          detectionoverlaylist[i][2] = detection_overlays[i].color //tocolor
+        }
+
         GRBoverlaylist=[];
         for (i = 0; i < GRBoverlays.length; i++) {
           var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
@@ -272,26 +287,40 @@
         }
 
         overlaylist = [];
-        for (i = 0; i < overlays.length; i++) {
-          var contour = A.graphicOverlay({id: i, color:overlays[i].color, lineWidth: 2, name:overlays[i].name});
+        for (i = 0; i < inst_overlays.length; i++) {
+          var contour = A.graphicOverlay({id: i, color:inst_overlays[i].color, lineWidth: 2, name:inst_overlays[i].name});
           aladin.addOverlay(contour);
-          var overlay_contours = overlays[i].contours
+          var overlay_contours = inst_overlays[i].contours
           for (j = 0; j < overlay_contours.length; j++){
             contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
           }
           overlaylist[i] = []
           overlaylist[i][0] = contour;
           overlaylist[i][1] = true //toshow
-          overlaylist[i][2] = overlays[i].color //tocolor
+          overlaylist[i][2] = inst_overlays[i].color //tocolor
         }
         
+        var detectionlayersControl = aladin.box({title: 'Detections', position: 'left', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+
         var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var GRBlayersControl = aladin.box({title: 'GRB Instruments', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
+        var html = '<form id="DetectionSelector">';
+        for (var k=0 ; k<detection_overlays.length; k++) {
+            var cat = detection_overlays[k];
+            html += '<fieldset><span class="indicator right-triangle"></span><label for="' + cat.name + '">';
+            html += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
+            html += '<div class="cat-options" style="display: none;"><table><tr><td>Color</td><td><input type="color"></input></td></tr></select></td></tr></table></div>';
+            html += '</fieldset>';
+        }
+        html += '</form>';
+        detectionlayersControl.setContent(html);
+        detectionlayersControl.show();
+
         var html = '<form id="InstrumentSelector">';
-        for (var k=0 ; k<overlays.length; k++) {
-            var cat = overlays[k];
+        for (var k=0 ; k<inst_overlays.length; k++) {
+            var cat = inst_overlays[k];
             html += '<fieldset><span class="indicator right-triangle"></span><label for="' + cat.name + '">';
             html += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
             html += '<div class="cat-options" style="display: none;"><table><tr><td>Color</td><td><input type="color"></input></td></tr></select></td></tr></table></div>';
@@ -316,6 +345,25 @@
         GRBhtml += '</form>';
         GRBlayersControl.setContent(GRBhtml);
         GRBlayersControl.show();
+
+        $('#DetectionSelector :checkbox').change(function() {
+            var iter = 0
+            for(var k=0; k<detectionoverlaylist.length; k++)
+            {
+              if (this.value == detectionoverlaylist[k][0].name) {
+                iter = k
+              }
+            }
+            if (this.checked) {
+                detectionoverlaylist[iter][0].show()
+                detectionoverlaylist[iter][1] = true
+            }
+            else {
+                detectionoverlaylist[iter][0].hide()
+                detectionoverlaylist[iter][1] = false
+            }
+        });
+
 
         $('#InstrumentSelector :checkbox').change(function() {
             var iter = 0
@@ -422,20 +470,20 @@
 
                 var mint = new Number(ui.values[0])
                 var maxt = new Number(ui.values[1])
-                for (i = 0; i < overlays.length; i++) {
+                for (i = 0; i < inst_overlays.length; i++) {
                     var toshow = false
                     var tocolor = ''
                     var iter = 0
 
                     for (j = 0; j < overlaylist.length; j++) {
-                      if (overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]; iter = j}
+                      if (inst_overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]; iter = j}
                     }
                     
-                    var contour = A.graphicOverlay({id: i, color:tocolor, lineWidth: 2, name:overlays[i].name});
+                    var contour = A.graphicOverlay({id: i, color:tocolor, lineWidth: 2, name:inst_overlays[i].name});
                     aladin.addOverlay(contour);
-                    var overlay_contours = overlays[i].contours
+                    var overlay_contours = inst_overlays[i].contours
                     for (j = 0; j < overlay_contours.length; j++){
-                      if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || overlays[i].name == 'GW Contour'){
+                      if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || inst_overlays[i].name == 'GW Contour'){
                         contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
                       }
                       if (!toshow) { contour.hide() }
