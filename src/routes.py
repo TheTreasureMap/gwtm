@@ -1318,7 +1318,7 @@ def construct_alertform(form, args):
 					#Do GBM stuff
 					GBMpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
 					if os.path.exists(GBMpathinfo):
-						with open(fermipathinfo) as json_data:
+						with open(GBMpathinfo) as json_data:
 							contours_data = json.load(json_data)
 						GRBoverlays.append({
 							'name':'Fermi/GBM',
@@ -1326,9 +1326,10 @@ def construct_alertform(form, args):
 							'json':contours_data
 						})
 					#Do LAT stuff
-					latpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
-					if os.path.exists(latpathinfo):
-						with open(latpathinfo) as json_data:
+					LATpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
+					print(LATpathinfo)
+					if os.path.exists(LATpathinfo):
+						with open(LATpathinfo) as json_data:
 							contours_data = json.load(json_data)
 						GRBoverlays.append({
 							'name':'Fermi/LAT',
