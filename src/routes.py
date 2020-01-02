@@ -1314,32 +1314,32 @@ def construct_alertform(form, args):
 			#do Fermi stuff
 			if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
 				earth_ra, earth_dec, earth_rad = function.getearthsatpos(form.selected_alert_info.time_of_signal)
-				fermipathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
-				if os.path.exists(fermipathinfo) and earth_ra != False:
-					with open(fermipathinfo) as json_data:
-						contours_data = json.load(json_data)
-					GRBoverlays.append({
-						'name':'Fermi/GBM',
-						'color':'magenta',
-						'json':contours_data
-					})
-				elif earth_ra == False:
+				if earth_ra != False:
+					#Do GBM stuff
+					GBMpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
+					if os.path.exists(GBMpathinfo):
+						with open(GBMpathinfo) as json_data:
+							contours_data = json.load(json_data)
+						GRBoverlays.append({
+							'name':'Fermi/GBM',
+							'color':'magenta',
+							'json':contours_data
+						})
+					#Do LAT stuff
+					LATpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
+					print(LATpathinfo)
+					if os.path.exists(LATpathinfo):
+						with open(LATpathinfo) as json_data:
+							contours_data = json.load(json_data)
+						GRBoverlays.append({
+							'name':'Fermi/LAT',
+							'color':'red',
+							'json':contours_data
+						})
+				else:
 					GRBoverlays.append({
 						'name': 'Fermi in South Atlantic Anomaly'
 						})
-
-			#do LAT stuff
-			if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
-				latpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
-				print(latpathinfo)
-				if os.path.exists(latpathinfo):
-					with open(latpathinfo) as json_data:
-						contours_data = json.load(json_data)
-					GRBoverlays.append({
-						'name':'Fermi/LAT',
-						'color':'red',
-						'json':contours_data
-					})
 
 			#grab the precomputed localization contour region
 			if len(form.alert_type.split()) > 1:
