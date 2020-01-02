@@ -1603,7 +1603,20 @@ def get_footprints():
 	else:
 		return jsonify("api_token is required")
 
-	footprints= db.session.query(models.footprint_ccd).all()
+	filter = []
+	if "id" in args:
+		if function.isInt(args['id']):
+			inst_id = int(args['id'])
+			filter.append(models.footprint_ccd.instrumentid == inst_id)
+	if "name" in args:
+		filter.append(models.footprint_ccd.instrumentid == models.instrument.id)
+		name = args.get('name')
+		ors = []
+		ors.append(models.instrument.instrument_name.contains(name.strip()))
+		ors.append(models.instrument.nickname.contains(name.strip()))
+		filter.append(fsq.sqlalchemy.or_(*ors))
+
+	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
 	footprints = [x.json for x in footprints]
 
 	return jsonify(footprints)
