@@ -1325,6 +1325,18 @@ def construct_alertform(form, args):
 						'name': 'Fermi in South Atlantic Anomaly'
 						})
 
+			#do LAT stuff
+			if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
+				latpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
+				print(latpathinfo)
+				if os.path.exists(latpathinfo):
+					with open(latpathinfo) as json_data:
+						contours_data = json.load(json_data)
+					GRBoverlays.append({
+						'name':'Fermi/LAT',
+						'color':'red',
+						'json':contours_data
+					})
 
 			#grab the precomputed localization contour region
 			if len(form.alert_type.split()) > 1:
