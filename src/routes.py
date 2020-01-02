@@ -121,9 +121,9 @@ def home():
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype} 
 	form = forms.AlertsForm
-	form, overlays, GRBoverlays = construct_alertform(form, args)
+	form, detection_overlays, inst_overlays, GRBoverlays = construct_alertform(form, args)
 	form.page = 'index'
-	return render_template("index.html", form=form, inst_table=inst_info, overlays=overlays, GRBoverlays=GRBoverlays)
+	return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays)
 
 class overlay():
 	def __init__(self, name, color, contours):
@@ -203,9 +203,9 @@ def alerts():
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
 	form.page = 'alerts'
-	form, overlays, GRBoverlays = construct_alertform(form, args)
+	form, detection_overlays, inst_overlays, GRBoverlays = construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
-		return render_template("alerts.html", form=form, overlays=overlays, GRBoverlays=GRBoverlays)
+		return render_template("alerts.html", form=form, detection_overlays= detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays)
 		
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
@@ -708,7 +708,8 @@ def doi_author_group():
 	#test to load page
 	if groupid and request.method != 'POST':
 		doi_author_group = db.session.query(models.doi_author_group).filter(models.doi_author_group.id == groupid).first()
-		if doi_author_group.userid != current_user.get_id():
+
+		if doi_author_group.userid != int(current_user.get_id()):
 			flash("Invalid Author Group. You may only view your own")
 			return redirect('/manage_user')
 
@@ -1078,7 +1079,8 @@ def construct_alertform(form, args):
 	status = args['pointing_status']
 	alerttype = args['alert_type']
 
-	overlays = None
+	detection_overlays = None
+	inst_overlays = None
 	GRBoverlays = None
 	form.viz = False
 	form.avgra = "90"
@@ -1252,7 +1254,8 @@ def construct_alertform(form, args):
 			models.footprint_ccd.instrumentid.in_(instrumentids)
 		).all()
 
-		overlays = []
+		detection_overlays = []
+		inst_overlays = []
 		GRBoverlays = []
 
 		if form.selected_alert_info.time_of_signal:
@@ -1286,7 +1289,7 @@ def construct_alertform(form, args):
 						pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 						pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
 				
-				overlays.append({
+				inst_overlays.append({
 					"display":True,
 					"name":name,
 					"color":color,
@@ -1367,16 +1370,16 @@ def construct_alertform(form, args):
 				for contour in contours_data['features']:
 					contour_geometry.extend(contour['geometry']['coordinates'])
 
-				overlays.append({
+				detection_overlays.append({
 					"display":True,
 					"name":"GW Contour",
 					"color": '#e6194B',
 					"contours":function.polygons2footprints(contour_geometry, 0)
 				})
 
-			if len(overlays):
+			if len(inst_overlays):
 				times = []
-				for o in overlays:
+				for o in inst_overlays:
 					for c in o['contours']:
 						times.append(c['time'])
 						
@@ -1384,7 +1387,7 @@ def construct_alertform(form, args):
 				form.maxtime = max(times)
 				form.step = (form.maxtime*100 - form.mintime*100)/100000
 
-	return form, overlays, GRBoverlays
+	return form, detection_overlays, inst_overlays, GRBoverlays
 
 def extract_polygon(p, scale):
 	vertices = []
