@@ -466,6 +466,15 @@
                   aladin.addMOC(GRBoverlaylist[i]);
                 }
 
+                for (i = 0; i < detection_overlays.length; i++) {
+                  var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
+                  aladin.addOverlay(contour);
+                  var overlay_contours = detection_overlays[i].contours
+                  for (j = 0; j < overlay_contours.length; j++){
+                    contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+                  }
+                }
+
                 var mint = new Number(ui.values[0])
                 var maxt = new Number(ui.values[1])
                 for (i = 0; i < inst_overlays.length; i++) {
