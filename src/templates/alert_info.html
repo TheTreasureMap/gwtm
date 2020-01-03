@@ -300,21 +300,21 @@
           overlaylist[i][2] = inst_overlays[i].color //tocolor
         }
         
-        var detectionlayersControl = aladin.box({title: 'Detections', position: 'left', css: {top: '75%', 'overflow-y': 'scroll', 'max-height': '50%'}});
+        // var detectionlayersControl = aladin.box({title: 'Detections', position: 'top', css: {left: '75%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
         var GRBlayersControl = aladin.box({title: 'GRB Instruments', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
 
-        var DEThtml = '<form id="DetectionSelector">';
-        for (var k=0 ; k<detection_overlays.length; k++) {
-            var cat = detection_overlays[k];
-            DEThtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
-            DEThtml += '</fieldset>';
-        }
-        DEThtml += '</form>';
-        detectionlayersControl.setContent(DEThtml);
-        detectionlayersControl.show();
+        // var DEThtml = '<form id="DetectionSelector">';
+        // for (var k=0 ; k<detection_overlays.length; k++) {
+        //     var cat = detection_overlays[k];
+        //     DEThtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
+        //     DEThtml += '</fieldset>';
+        // }
+        // DEThtml += '</form>';
+        // detectionlayersControl.setContent(DEThtml);
+        // detectionlayersControl.show();
 
         var html = '<form id="InstrumentSelector">';
         for (var k=0 ; k<inst_overlays.length; k++) {
