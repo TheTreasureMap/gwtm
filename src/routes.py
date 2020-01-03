@@ -220,6 +220,12 @@ def fairuse():
 def documentation():
 	return render_template('documentation.html')
 
+
+@app.route("/jupyter_tutorial", methods=['GET'])
+def jupyter():
+	return render_template('jupyter_tutorial.html')
+
+
 @app.route("/development_blog", methods=['GET'])
 def devblog():
 	return render_template('development_blog.html')
