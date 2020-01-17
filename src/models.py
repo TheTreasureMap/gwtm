@@ -582,7 +582,7 @@ class gw_alert(db.Model):
     def getClassification(self):
 
         if self.group == 'Burst':
-            return 'None (detected by IMBH pipeline as burst)'
+            return 'None (detected as burst)'
 
         probs = [
             {'prob':self.prob_bns, 'class':'BNS'},
