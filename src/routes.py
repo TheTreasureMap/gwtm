@@ -1037,7 +1037,7 @@ def get_pointing_fromID():
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
-	print("test")
+
 	return 'success'
 
 

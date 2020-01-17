@@ -580,6 +580,10 @@ class gw_alert(db.Model):
     duration = db.Column(db.Float)
 
     def getClassification(self):
+
+        if self.group == 'Burst':
+            return 'None (detected by IMBH pipeline as burst)'
+
         probs = [
             {'prob':self.prob_bns, 'class':'BNS'},
             {'prob':self.prob_nsbh, 'class':'NSBH'},
