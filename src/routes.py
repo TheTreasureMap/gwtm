@@ -651,6 +651,8 @@ def instrument_info():
 			showlegend=False,
 			xaxis_title = 'degrees',
 			yaxis_title = 'degrees',
+			width=500,
+			height=500,
 			yaxis=dict(
 				matches='x',
 				scaleanchor="x",
