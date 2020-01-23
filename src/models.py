@@ -100,7 +100,13 @@ class bandpass(IntEnum):
     XRT = 17
     clear = 18
     open = 19
-    other = 20
+    UHF = 20
+    VHF = 21
+    L = 22
+    S = 23
+    C = 24
+    X = 25
+    other = 26
 
 
 class gw_galaxy_score_type(IntEnum):
