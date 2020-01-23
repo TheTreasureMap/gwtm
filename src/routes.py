@@ -74,7 +74,11 @@ def internal_error(error):
 def home():
 	#get latest alert. Construct the form alertsform
 
-	fermi_events = len([x for x in os.listdir('/var/www/gwtm/src/static') if 'Fermi' in x])
+	#fix this by ingesting LAT pointings in the pointings DB
+	if os.path.exists('/var/www/gwtm/src/static'):
+		fermi_events = len([x for x in os.listdir('/var/www/gwtm/src/static') if 'Fermi' in x])
+	else:
+		fermi_events = 0
 
 	inst_info = db.session.query(
 		models.pointing,
@@ -91,7 +95,8 @@ def home():
 		func.count(models.pointing.id).desc()
 	).values(
 		func.count(models.pointing.id).label('count'),
-		models.instrument.instrument_name
+		models.instrument.instrument_name,
+		models.instrument.id
 	)
 
 	inst_info = [list(inst_info), fermi_events]
@@ -329,7 +334,6 @@ def reset_password_request():
 @app.route('/manage_user', methods=['GET', 'POST'])
 @login_required
 def manage_user():
-
 	userid = current_user.id
 	user = models.users.query.filter_by(id=userid).first()
 	groupfilter = []

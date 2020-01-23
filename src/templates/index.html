@@ -56,7 +56,7 @@ td, th {
     </tr>
       {% for inst in inst_table[0] %}
         <tr>
-          <td>{{ inst.instrument_name }}</td>
+          <td><a href="{{ url_for('instrument_info', id=inst.id) }}">{{inst.instrument_name}}</a></td>
           <td>{{ inst.count }} </td>
         </tr>
 	  {% endfor %}
