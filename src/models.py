@@ -584,6 +584,8 @@ class gw_alert(db.Model):
     group = db.Column(db.String)
     centralfreq = db.Column(db.Float)
     duration = db.Column(db.Float)
+    avgra = db.Column(db.Float)
+    avgdec = db.Column(db.Float)
 
     def getClassification(self):
 

@@ -1043,7 +1043,7 @@ def get_pointing_fromID():
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
-
+	
 	return 'success'
 
 
@@ -1095,8 +1095,6 @@ def construct_alertform(form, args):
 	inst_overlays = None
 	GRBoverlays = None
 	form.viz = False
-	form.avgra = "90"
-	form.avgdec = "-30"
 
 	statuses = [
 		{'name':'All', 'value':'all'},
@@ -1363,15 +1361,8 @@ def construct_alertform(form, args):
 
 			mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
 
-			form.mappathinfo = mappathinfo
-			if os.path.exists(mappathinfo):
-				try:
-					GWmap = hp.read_map(mappathinfo)
-					bestpixel = np.argmax(GWmap)
-					nside = hp.npix2nside(len(GWmap))
-					form.avgra, form.avgdec = hp.pix2ang(nside, bestpixel,lonlat=True)
-				except:
-					pass
+			form.avgra = form.selected_alert_info.avgra
+			form.avgdec = form.selected_alert_info.avgdec
 
 			contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
 			
