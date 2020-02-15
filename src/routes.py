@@ -1365,7 +1365,7 @@ def construct_alertform(form, args):
 			form.avgdec = form.selected_alert_info.avgdec
 
 			contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-			
+			form.mappathinfo = mappathinfo
 			#if it exists, add it to the overlay list
 			if os.path.exists(contourpath):
 				contours_data=pd.read_json(contourpath)
