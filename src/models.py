@@ -531,6 +531,10 @@ class pointing_event(db.Model):
     pointingid = db.Column(db.Integer)
     graceid = db.Column(db.String)
 
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
 class glade_2p3(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pgc_number = db.Column(db.Integer)
@@ -607,6 +611,10 @@ class gw_alert(db.Model):
             classification += p['class'] + ': ('+str(round(100*p['prob'], 1))+'%) '
 
         return classification
+    
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
 
 
 class gw_galaxy(db.Model):
@@ -615,6 +623,10 @@ class gw_galaxy(db.Model):
     galaxy_catalog = db.Column(db.Integer)
     galaxy_catalogID = db.Column(db.Integer)
 
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
 
 class gw_galaxy_score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -622,11 +634,19 @@ class gw_galaxy_score(db.Model):
     score_type = db.Column(db.Enum(gw_galaxy_score_type))
     score = db.Column(db.Float)
 
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
 
 class doi_author_group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
     name = db.Column(db.String)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
 
 
 class doi_author(db.Model):
@@ -637,3 +657,77 @@ class doi_author(db.Model):
     gnd = db.Column(db.String)
     pos_order = db.Column(db.Integer)
     author_groupid = db.Column(db.Integer)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+class gw_galaxy_list(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    graceid = db.Column(db.String)
+    groupname = db.Column(db.String)
+    submitterid = db.Column(db.Integer)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+class gw_galaxy_entry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    listid = db.Column(db.Integer)
+    name = db.Column(db.String)
+    score = db.Column(db.Float)
+    position = db.Column(Geography('POINT', srid=4326))
+    info = db.Column(db.JSON)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+    def from_json(self, p): #dbusers):
+        v = valid_mapping()
+
+        if 'position' in p:
+            pos = p['position']
+            if "POINT" in pos:
+                self.position = p['position']
+            else:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+        else:
+            if 'ra' in p or 'RA' in p:
+                ra = p['ra'] if 'ra' in p else p['RA']
+                if not isFloat(ra):
+                    ra = None
+            else:
+                ra = None
+
+            if 'dec' in p or 'DEC' in p:
+                dec = p['dec'] if 'dec' in p else p['DEC']
+                if not isFloat(dec):
+                    dec = None
+            else:
+                dec = None
+
+            if ra == None or dec == None:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+            else:
+                self.position = "POINT("+str(ra)+" "+str(dec)+")"
+
+        if 'score' in p:
+            if isFloat(p['score']):
+                self.score = p['score']
+            else:
+                v.errors.append('Invalid score. Must be decimal')
+        else:
+            v.errors.append("\'score\' is required")
+
+        if 'name' in p:
+            self.name = p['name']
+        else:
+            v.errors.append("\'name\' is required for each galaxy in list")
+
+        if 'info' in p:
+            self.info = p['info']
+            
+        v.valid = len(v.errors) == 0
+        return v

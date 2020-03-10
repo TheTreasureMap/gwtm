@@ -577,6 +577,68 @@
         </pre>
             </div>
         </div>
+        <button class="collapsible">Uploading Convolved Galaxy Information</button>
+        <div class="column">
+            <h2>REST API METHOD: POST Instructions</h2>
+            <p>Posting a list of galaxies that are within the GW Event contour</p>
+                <p><b>Usage</b></p>
+                <p><i>/api/v0/event_galaxies</i></p>
+        
+                <p><b>Notes</b></p>
+                <p>This endpoint will ideally be utilized as an <i>end of the night</i> routine as you are uploading your completed pointings as they are taken in real time</p>
+                <p>You will request your DOI Url from a list of completed pointings, or just a GW Event GraceID for completed pointings that do not have a DOI yet.</p>
+                <p>This endpoint will validate:</p>
+                <ul>
+                    <li>whether the pointings have a status completed</li>
+                    <li>whether the pointings were submitted by the user associated with the api_token</li>
+                    <li>whether the pointings were taken for the same GW event. They must be associated with the same graceid</li>
+                </ul>
+                <p>JSON Parameters</p>
+                <ul>
+                    <li><i>api_token=api_token1</i></li>
+                    <li><i>graceid=graceid1</i></li>
+                    <li><i>groupname=groupname1</i></li>
+                    <ul><li>this can be the name of the group that did the calculation, or will default to the username associated with the api_token</li></ul>
+                    <li><i>galaxies=galaxielist</i></li>
+                    <ul><li>json list of [<i>name</i>, <i>position</i>, <i>score</i> (decimal), and <i>info</i> (json list parameters)</li></ul>
+                </ul>
+        </div>
+        <div class="column" style="background-color:#bbb;">
+            <h2>POST Examples</h2>
+            <p>Post a list of convolved galaxies</p>
+            <pre>
+                    <code class="language-json" data-lang="json">
+    import requests
+
+    BASE = 'http://treasuremap.space/api/v0/'
+    TARGET = 'event_galaxies'
+
+    json_data = {
+        "api_token":"abcdefghijkl",
+        "graceid":"graceid1",
+        "groupname":groupname1
+        "galaxies":[
+            {
+                "position":"POINT(24.0 41.0)",
+                "score":"19.5",
+                "name":"test galaxy",
+                "info":{
+                    "param1":"value1",
+                    "param2":"value2",
+                    "param3":"value3",
+                    "param4":"value4"
+                }
+            },
+        ]
+    }
+
+    r = requests.post(url = BASE+TARGET, json = json_data)
+
+    print(r.text)
+        </code>
+        </pre>
+    </pre>
+        </div>
         <!--<button class="collapsible">Glade Catalog</button>
         <div class="content">
             <div class="column">

@@ -135,6 +135,17 @@ def sanatize_footprint_ccds(ccds):
 	return footprint_ccds
 
 
+def sanatize_gal_info(ra, dec, score, g):
+    ret = "<p>"
+    ret = "<b>Score: </b>"+str(score)+"<br>"
+    ret += "<b> RA, DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br></p><b>Other Information:</b><br><p>"
+    for key in g.keys():
+        print(key,g[key])
+        ret += "<b>"+str(key)+":</b> "+str(g[key].split('\n')[0])+"<br>"
+    ret += "</p>"
+    return ret
+
+
 def sanatize_pointing(p):
     ra = float(p.split('(')[1].split(')')[0].split()[0])
     dec = float(p.split('(')[1].split(')')[0].split()[1])

@@ -247,6 +247,7 @@
         var detection_overlays = JSON.parse('{{ detection_overlays | tojson }}');
         var inst_overlays = JSON.parse('{{ inst_overlays | tojson }}');
         var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+        var galaxy_cats = JSON.parse('{{ galaxy_cats | tojson }}');
 
         $('input[name=survey]').change(function() {
         aladin.setImageSurvey($(this).val());});
@@ -298,6 +299,17 @@
           overlaylist[i][0] = contour;
           overlaylist[i][1] = true //toshow
           overlaylist[i][2] = inst_overlays[i].color //tocolor
+        }
+
+        for (i = 0; i < galaxy_cats.length; i++) {
+          var gal_markers = galaxy_cats[i].markers
+          var markerlayer = A.catalog({name:galaxy_cats[i].name})
+          for (j = 0; j < gal_markers.length; j++) {
+            var marker = A.marker(gal_markers[j].ra, gal_markers[j].dec, {popupTitle: gal_markers[j].name+"_gal", popupDesc: gal_markers[j].info})
+            markerlayer.addSources([marker])
+          }
+          markerlayer.hide
+          aladin.addCatalog(markerlayer)
         }
         
         // var detectionlayersControl = aladin.box({title: 'Detections', position: 'top', css: {left: '75%', 'overflow-y': 'scroll', 'max-height': '50%'}});
@@ -473,6 +485,17 @@
                   for (j = 0; j < overlay_contours.length; j++){
                     contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
                   }
+                }
+
+                for (i = 0; i < galaxy_cats.length; i++) {
+                  var gal_markers = galaxy_cats[i].markers
+                  var markerlayer = A.catalog({name:galaxy_cats[i].name})
+                  for (j = 0; j < gal_markers.length; j++) {
+                    var marker = A.marker(gal_markers[j].ra, gal_markers[j].dec, {popupTitle: gal_markers[j].name, popupDesc: gal_markers[j].info})
+                    markerlayer.addSources([marker])
+                  }
+                  markerlayer.hide
+                  aladin.addCatalog(markerlayer)
                 }
 
                 var mint = new Number(ui.values[0])

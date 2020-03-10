@@ -126,9 +126,9 @@ def home():
 	alerttype = request.args.get('alert_type')
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype} 
 	form = forms.AlertsForm
-	form, detection_overlays, inst_overlays, GRBoverlays = construct_alertform(form, args)
+	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	form.page = 'index'
-	return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays)
+	return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
 
 class overlay():
 	def __init__(self, name, color, contours):
@@ -208,9 +208,9 @@ def alerts():
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
 	form.page = 'alerts'
-	form, detection_overlays, inst_overlays, GRBoverlays = construct_alertform(form, args)
+	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
-		return render_template("alerts.html", form=form, detection_overlays= detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays)
+		return render_template("alerts.html", form=form, detection_overlays= detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
 		
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
@@ -1390,7 +1390,39 @@ def construct_alertform(form, args):
 				form.maxtime = max(times)
 				form.step = (form.maxtime*100 - form.mintime*100)/100000
 
-	return form, detection_overlays, inst_overlays, GRBoverlays
+			galLists = db.session.query(models.gw_galaxy_list).filter(
+				models.gw_galaxy_list.graceid == graceid
+			).all()
+			galList_ids = list(set([x.id for x in galLists]))
+
+			galEntries = db.session.query(
+				models.gw_galaxy_entry.name,
+				func.ST_AsText(models.gw_galaxy_entry.position).label('position'),
+				models.gw_galaxy_entry.score,
+				models.gw_galaxy_entry.info,
+				models.gw_galaxy_entry.listid,
+			).filter(
+				models.gw_galaxy_entry.listid.in_(galList_ids)
+			).all()
+
+			galaxy_cats = []
+			for glist in galLists:
+				markers = []
+				entries = [x for x in galEntries if x.listid == glist.id]
+				for e in entries:
+					ra, dec = function.sanatize_pointing(e.position)
+					markers.append({
+						"name":e.name,
+						"ra": ra,
+						"dec": dec,
+						"info":function.sanatize_gal_info(ra, dec, e.score, e.info)
+					})
+				galaxy_cats.append({
+					"name":glist.groupname,
+					"markers":markers
+				})
+
+	return form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats
 
 def extract_polygon(p, scale):
 	vertices = []
@@ -1624,13 +1656,91 @@ def get_footprints():
 
 	return jsonify(footprints)
 
+@app.route('/api/v0/remove_event_galaxies', methods=['Post'])
+def remove_event_galaxies():
+	pass
 
+@app.route('/api/v0/event_galaxies', methods=['GET'])
+def get_event_galaxies():
+	pass
+
+@app.route('/api/v0/event_galaxies', methods=['POST'])
+def post_event_galaxies():
+
+	try:
+		args = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
+
+	#How do we want to really do this.
+	#I think having separate galaxy catalogs ingested isn't the best idea
+	#Why don't we just ingest:
+	#	EventGalaxyList
+	#		Name,RA,DEC,KWARGS (10000 characters long)
+
+
+	warnings = []
+	errors = []
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
+	if "graceid" in args:
+		graceid = args['graceid']
+	else:
+		return jsonify('graceid is required')
+
+	if "groupname" in args:
+		groupname = args['groupname']
+	else:
+		groupname = user.username
+		warnings.append("no groupname given. Defaulting to api_token username")
+	
+	#maybe include the possibility for a different delimiter for alert types as well. Not only graceids
+	gw_galist = models.gw_galaxy_list(
+		submitterid = user.id,
+		graceid = graceid,
+		groupname = groupname
+	)
+	db.session.add(gw_galist)
+	db.session.flush()
+
+	valid_galaxies = []
+
+	if "galaxies" in args:
+		galaxies = args['galaxies']
+		for g in galaxies:
+			gw_galentry = models.gw_galaxy_entry()
+			v = gw_galentry.from_json(g)
+			if v.valid:
+				gw_galentry.listid = gw_galist.id
+				db.session.add(gw_galentry)
+				valid_galaxies.append(gw_galentry)
+				if len(v.warnings) > 0:
+					warnings.append(["Object: " + json.dumps(g), v.warnings])
+			
+			else:
+				errors.append(["Object: "+json.dumps(g), v.errors])
+
+	else:
+		return jsonify("a list of galaxies is required")
+	
+	db.session.flush()
+	db.session.commit()
+
+	return jsonify({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+". List ID":str(gw_galist.id), "ERRORS":errors, "WARNINGS":warnings})
+	
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
-	args = request.argsrd
+	args = request.args
 
-	if "api_token" in rd:
+	if "api_token" in args:
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
