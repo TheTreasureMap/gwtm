@@ -585,14 +585,7 @@
                 <p><i>/api/v0/event_galaxies</i></p>
         
                 <p><b>Notes</b></p>
-                <p>This endpoint will ideally be utilized as an <i>end of the night</i> routine as you are uploading your completed pointings as they are taken in real time</p>
-                <p>You will request your DOI Url from a list of completed pointings, or just a GW Event GraceID for completed pointings that do not have a DOI yet.</p>
-                <p>This endpoint will validate:</p>
-                <ul>
-                    <li>whether the pointings have a status completed</li>
-                    <li>whether the pointings were submitted by the user associated with the api_token</li>
-                    <li>whether the pointings were taken for the same GW event. They must be associated with the same graceid</li>
-                </ul>
+                <p>This endpoint is for posting a list of galaxies the lie within the GW contour. For each galaxy, it accepts position, score and name. You may also append a json list of parameters about the galaxy or your calculation.</p>
                 <p>JSON Parameters</p>
                 <ul>
                     <li><i>api_token=api_token1</i></li>
