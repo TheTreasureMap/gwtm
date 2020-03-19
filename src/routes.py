@@ -220,6 +220,10 @@ def alerts():
 def fairuse():
 	return render_template('fairuse.html')
 
+@app.route("/status", methods=['GET'])
+def status():
+	return render_template('status.html')
+
 
 @app.route("/documentation", methods=['GET'])
 def documentation():
