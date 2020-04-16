@@ -1271,6 +1271,7 @@ def construct_alertform(form, args):
 		detection_overlays = []
 		inst_overlays = []
 		GRBoverlays = []
+		galaxy_cats = []
 
 		if form.selected_alert_info.time_of_signal:
 			tos = form.selected_alert_info.time_of_signal
@@ -1409,7 +1410,6 @@ def construct_alertform(form, args):
 				models.gw_galaxy_entry.listid.in_(galList_ids)
 			).all()
 
-			galaxy_cats = []
 			for glist in galLists:
 				markers = []
 				entries = [x for x in galEntries if x.listid == glist.id]
