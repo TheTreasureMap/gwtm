@@ -1937,6 +1937,12 @@ def get_pointings():
 		graceid = args.get('graceid')
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
+	elif 'graceids' in args:
+		gids_s = args.get('graceids')
+		gids = gids_s.split('[')[1].split(']')[0].split(',')
+		print(gids, type(gids))
+		filter.append(models.pointing_event.graceid.in_(gids))
+		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
 	if "id" in args:
 		_id = args.get('id')
