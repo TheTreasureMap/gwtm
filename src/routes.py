@@ -18,7 +18,7 @@ import healpy as hp
 import astropy
 from astropy import coordinates
 from astropy.time import Time
-from mocpy import MOC, WCS
+#from mocpy import MOC, WCS
 from astropy.coordinates import Angle, SkyCoord
 import astropy.units as u
 import time
@@ -87,7 +87,7 @@ def home():
 		models.pointing.instrumentid,
 		models.instrument
 	).filter(
-		models.pointing.status == models.pointing_status.completed,	
+		models.pointing.status == models.pointing_status.completed,
 		models.instrument.id == models.pointing.instrumentid,
 		models.pointing_event.pointingid == models.pointing.id,
 		models.pointing_event.graceid != 'TEST_EVENT'
@@ -124,7 +124,7 @@ def home():
 	status = status if status is not None else 'completed'
 
 	alerttype = request.args.get('alert_type')
-	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype} 
+	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype}
 	form = forms.AlertsForm
 	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	form.page = 'index'
@@ -159,9 +159,9 @@ def alert_select():
 	)
 
 	p_event_counts = list(p_event_counts)
-	
+
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
-	
+
 	non_retracted_alerts = []
 	all_alerts = {}
 
@@ -179,7 +179,7 @@ def alert_select():
 			all_alerts[g] = {
 				'class':'Retracted',
 				'distance':'',
-				'pcounts':pointing_counts 
+				'pcounts':pointing_counts
 			}
 
 		else:
@@ -211,7 +211,7 @@ def alerts():
 	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
 		return render_template("alerts.html", form=form, detection_overlays= detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
-		
+
 	form.graceid = 'None'
 	return render_template("alerts.html", form=form)
 
@@ -247,7 +247,7 @@ def register():
 	form = forms.RegistrationForm()
 	if form.validate_on_submit():
 		user = models.users(
-			username=form.username.data, 
+			username=form.username.data,
 			email=form.email.data,
 			firstname=form.firstname.data,
 			lastname=form.lastname.data,
@@ -260,7 +260,7 @@ def register():
 		db.session.flush()
 		db.session.commit()
 		send_account_validation_email(user)
-		
+
 		flash("An email has been sent to "+user.email+". Please follow further instructions to activate this account")
 		return redirect('/index')
 	return render_template('register.html', form=form)
@@ -425,7 +425,7 @@ def submit_pointing():
 	form.populate_instruments()
 	form.populate_creator_groups(current_user.get_id())
 	print(form.doi_creator_groups.choices)
-	
+
 	if request.method == 'POST':
 
 		#pointing object
@@ -454,7 +454,7 @@ def submit_pointing():
 		if not function.isFloat(ra) or not function.isFloat(dec):
 			flash("RA and DEC must be decimal")
 			return render_template('submit_pointings.html', form=form)
-			
+
 		if instrument == 'None':
 			flash('Instrument is required')
 			return render_template('submit_pointings.html', form=form)
@@ -468,7 +468,7 @@ def submit_pointing():
 		if depth is None:
 			flash('Depth is required')
 			return render_template('submit_pointings.html', form=form)
-			
+
 		if depth_unit == 'None':
 			flash('Depth Unit is required')
 			return render_template('submit_pointings.html', form=form)
@@ -516,7 +516,7 @@ def submit_pointing():
 				flash('Planned time is required')
 				flash('Planned time must be in the format of \'%Y-%m-%dT%H:%M:%S.%f\'')
 				return render_template('submit_pointings.html', form=form)
-		
+
 			#inserting
 			pointing.time = planned_time
 
@@ -600,7 +600,7 @@ def submit_instrument():
 				footprint = f
 			)
 			db.session.add(fccd)
-		
+
 		db.session.commit()
 
 		flash("Successful submission of Instrument. Your instrument ID is "+str(instrument.id))
@@ -701,7 +701,7 @@ def authors_from_page(form):
 					orcid=orc,
 					gnd=gnd
 				)
-			)	
+			)
 	return authors
 
 def validate_authors(authors):
@@ -731,7 +731,7 @@ def doi_author_group():
 
 		authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid).order_by(models.doi_author.id).all()
 		return render_template('doi_author_group.html', group_info=doi_author_group, authors=authors)
-	
+
 	#test to save
 	if groupid and request.method == 'POST':
 		authors = authors_from_page(form)
@@ -747,9 +747,9 @@ def doi_author_group():
 		if group_name is None or group_name == "":
 			flash("Group Name is required")
 			return render_template('doi_author_group.html', group_info=group_info, authors=authors, create=False)
-		
+
 		prev_authors = db.session.query(models.doi_author).filter(models.doi_author.author_groupid == groupid)
-		
+
 		curr_ids = [x.id for x in authors]
 		for pre_auth in prev_authors:
 			if pre_auth.id not in curr_ids:
@@ -766,12 +766,12 @@ def doi_author_group():
 				prev.orcid = a.orcid
 				prev.gnd = a.gnd
 				prev.pos_order = a.pos_order
-				
+
 		db.session.flush()
 		db.session.commit()
 
 		return redirect('/manage_user')
-		
+
 	#test if new save
 	if groupid is None and request.method == 'POST':
 		authors = authors_from_page(form)
@@ -790,7 +790,7 @@ def doi_author_group():
 
 		db.session.add(group_info)
 		db.session.flush()
-		
+
 		for a in authors:
 			a.author_groupid = group_info.id
 			db.session.add(a)
@@ -798,7 +798,7 @@ def doi_author_group():
 		db.session.commit()
 
 		return redirect('/manage_user')
-		
+
 	return render_template('doi_author_group.html', create=True)
 
 @app.route('/logout')
@@ -823,7 +823,7 @@ def ajax_request_doi():
 			models.pointing.id.in_(ids),
 			models.pointing_event.graceid == graceid
 		).all()
-		
+
 		user = db.session.query(models.users).filter(models.users.id == current_user.get_id()).first()
 
 		if 'doi_group_id' in args:
@@ -842,11 +842,11 @@ def ajax_request_doi():
 		for p in points:
 			p.doi_url = doi_url
 			p.doi_id = doi_id
-		
+
 		db.session.commit()
 
 		return jsonify(doi_url)
-	
+
 	return jsonify('')
 
 @app.route("/coverage", methods=['GET','POST'])
@@ -890,7 +890,7 @@ def plot_prob_coverage():
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
 			return "You must specify a unit if you want to cut on depth."
-	
+
 	pointings_sorted = db.session.query(
 		models.pointing.instrumentid,
 		models.pointing.pos_angle,
@@ -907,7 +907,7 @@ def plot_prob_coverage():
 	instrumentids = [x.instrumentid for x in pointings_sorted]
 	#filter and query the relevant instrument footprints
 	footprintinfo = db.session.query(
-		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
 		models.footprint_ccd.instrumentid
 	).filter(
 		models.footprint_ccd.instrumentid.in_(instrumentids)
@@ -960,7 +960,7 @@ def plot_prob_coverage():
 @app.route('/preview_footprint', methods=['GET'])
 def preview_footprint():
 	args = request.args
-	
+
 	form = forms.SubmitInstrumentForm(
 		instrument_name = args.get('instrument_name'),
 		instrument_type = args.get('instrument_type'),
@@ -1023,13 +1023,13 @@ def get_pointing_fromID():
 
 		if len(pointings) > 0:
 			pointing = pointings[str(id)]
-			
+
 			pointing_json = {}
 
 			position = pointing.position
 			ra = position.split('POINT(')[1].split(' ')[0]
 			dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
-			
+
 			pointing_json['ra'] = ra
 			pointing_json['dec'] = dec
 			pointing_json['graceid'] = pointing.graceid
@@ -1037,7 +1037,7 @@ def get_pointing_fromID():
 			pointing_json['band'] = pointing.band.name
 			pointing_json['depth'] = pointing.depth
 			pointing_json['depth_err'] = pointing.depth_err
-			
+
 			return jsonify(pointing_json)
 		#except Exception as e:
 		#	print(e)
@@ -1047,7 +1047,7 @@ def get_pointing_fromID():
 #FIX DATA
 @app.route('/fixshit', methods=['POST'])
 def fixshit():
-	
+
 	return 'success'
 
 
@@ -1108,7 +1108,7 @@ def construct_alertform(form, args):
 		statuses.append({'name':m.name, 'value':m.name})
 	form.pointing_status = statuses
 	form.status = 'all'
-	
+
 	#grab all observation alerts
 	gwalerts = models.gw_alert.query.filter_by(role='observation').order_by(models.gw_alert.time_of_signal).all()
 	gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
@@ -1171,7 +1171,7 @@ def construct_alertform(form, args):
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
 			form.alert_type = alerttype
 		#user did not select an alert type, so get the most recent one
-		else: 
+		else:
 			pre_alert = alert_info[len(alert_info)-1]
 			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
 			form.selected_alert_info = pre_alert
@@ -1255,14 +1255,14 @@ def construct_alertform(form, args):
 		form.inst_cov = []
 		for inst in [x for x in instrumentinfo if x.id != 49]:
 			form.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
-		
+
 		form.depth_unit=[]
 		for dp in list(set([x.depth_unit for x in pointing_info if x.status == models.pointing_status.completed and x.instrumentid != 49 and x.depth_unit != None])):
 			form.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 		#filter and query the relevant instrument footprints
 		footprintinfo = db.session.query(
-			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'), 
+			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
 			models.footprint_ccd.instrumentid
 		).filter(
 			models.footprint_ccd.instrumentid.in_(instrumentids)
@@ -1303,7 +1303,7 @@ def construct_alertform(form, args):
 					for ccd in sanatized_ccds:
 						pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 						pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
-				
+
 				inst_overlays.append({
 					"display":True,
 					"name":name,
@@ -1390,7 +1390,7 @@ def construct_alertform(form, args):
 				for o in inst_overlays:
 					for c in o['contours']:
 						times.append(c['time'])
-						
+
 				form.mintime = min(times)
 				form.maxtime = max(times)
 				form.step = (form.maxtime*100 - form.mintime*100)/100000
@@ -1444,7 +1444,7 @@ def extract_polygon(p, scale):
 		errors.append("For line "+str(itera+1)+": "+line)
 		errors.append("Please check the example for correct format")
 		return [vertices, errors]
-	
+
 	if len(vertices) < 3:
 		errors.append('Invalid Polygon. Must have more than 2 vertices')
 		return [vertices, errors]
@@ -1518,7 +1518,7 @@ def pointings_from_IDS(ids, filter=[]):
 								   models.instrument.instrument_type,
 								   models.pointing_event.graceid
 								   ).filter(*filter).all()
-	
+
 	print(pointings)
 	pointing_returns = {}
 	for p in pointings:
@@ -1581,7 +1581,7 @@ def send_password_reset_email(user):
 	)
 
 def create_doi(points, graceid, creators, insts):
-	
+
 	ACCESS_TOKEN = app.config['ZENODO_ACCESS_KEY']
 	points_json = []
 
@@ -1598,7 +1598,7 @@ def create_doi(points, graceid, creators, insts):
 				inst_str +=  " and " + i
 			else:
 				inst_str += " " + i + ","
-			
+
 		inst_str += " instruments."
 	else:
 		inst_str = "These observations were taken on the " + insts[0] + " instrument."
@@ -1616,7 +1616,7 @@ def create_doi(points, graceid, creators, insts):
 		data_file = { 'name':'completed_pointings_'+graceid+'.json' }
 		files = { 'file':io.StringIO(json.dumps(points_json)) }
 		headers = { "Content-Type": "application/json" }
-		
+
 		r = requests.post('https://zenodo.org/api/deposit/depositions', params={'access_token': ACCESS_TOKEN}, json={}, headers=headers)
 		d_id = r.json()['id']
 		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id, params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
@@ -1624,7 +1624,7 @@ def create_doi(points, graceid, creators, insts):
 		r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
 		return_json = r.json()
 		return int(d_id), return_json['doi_url']
-	
+
 	return None, None
 
 #API Endpoints
@@ -1704,7 +1704,7 @@ def post_event_galaxies():
 	else:
 		groupname = user.username
 		warnings.append("no groupname given. Defaulting to api_token username")
-	
+
 	#maybe include the possibility for a different delimiter for alert types as well. Not only graceids
 	gw_galist = models.gw_galaxy_list(
 		submitterid = user.id,
@@ -1727,18 +1727,18 @@ def post_event_galaxies():
 				valid_galaxies.append(gw_galentry)
 				if len(v.warnings) > 0:
 					warnings.append(["Object: " + json.dumps(g), v.warnings])
-			
+
 			else:
 				errors.append(["Object: "+json.dumps(g), v.errors])
 
 	else:
 		return jsonify("a list of galaxies is required")
-	
+
 	db.session.flush()
 	db.session.commit()
 
 	return jsonify({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+". List ID":str(gw_galist.id), "ERRORS":errors, "WARNINGS":warnings})
-	
+
 #Get Galaxies From glade_2p3
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
@@ -1774,7 +1774,7 @@ def get_galaxies():
 		ors.append(models.glade_2p3.hyperleda_name.contains(name.strip()))
 		ors.append(models.glade_2p3.sdssdr12_name.contains(name.strip()))
 		filter.append(fsq.sqlalchemy.or_(*ors))
-	
+
 	galaxies = trim.filter(*filter).order_by(*orderby).limit(15).all()
 
 	galaxies = [x.json for x in galaxies]
@@ -1785,7 +1785,7 @@ def get_galaxies():
 #Post Pointing/s
 #Parameters: List of Pointing JSON objects
 #Returns: List of assigned IDs
-#Comments: Check if instrument configuration already exists to avoid duplication. 
+#Comments: Check if instrument configuration already exists to avoid duplication.
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
 
 @app.route("/api/v0/pointings", methods=["POST"])
@@ -1795,7 +1795,7 @@ def add_pointings():
 		rd = request.get_json()
 	except:
 		return("Whoaaaa that JSON is a little wonky")
-			 
+
 	valid_gid = False
 	post_doi = False
 
@@ -1862,7 +1862,7 @@ def add_pointings():
 			db.session.add(mp)
 		else:
 			errors.append(["Object: "+json.dumps(p), v.errors])
-			
+
 	elif "pointings" in rd:
 		pointings = rd['pointings']
 		planned_ids = []
@@ -1882,7 +1882,7 @@ def add_pointings():
 					warnings.append(["Object: " + json.dumps(p), v.warnings])
 			else:
 				errors.append(["Object: "+json.dumps(p), v.errors])
-	else: 
+	else:
 		return jsonify("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: treasuremap.space/documentation.com")
 
 	db.session.flush()
@@ -1893,7 +1893,7 @@ def add_pointings():
 				pointingid = p.id,
 				graceid = gid)
 			db.session.add(pe)
-	
+
 	db.session.flush()
 	db.session.commit()
 
@@ -1910,13 +1910,13 @@ def add_pointings():
 			db.session.commit()
 
 			return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings, "DOI":doi_url})
-			
+
 
 	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
 
 
 #Get Pointing/s
-#Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed). 
+#Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed).
 #Returns: List of PlannedPointing JSON objects
 @app.route("/api/v0/pointings", methods=["GET"])
 def get_pointings():
@@ -2055,7 +2055,7 @@ def get_pointings():
 			filter.append(models.pointing.submitterid.in_(users))
 		except:
 			users = args.get('users')
-			users = users.split('[')[1].split(']')[0].split(',') 
+			users = users.split('[')[1].split(']')[0].split(',')
 			ors = []
 			for u in users:
 				ors.append(models.users.username.contains(u.strip()))
@@ -2063,7 +2063,7 @@ def get_pointings():
 				ors.append(models.users.lastname.contains(u.strip()))
 			filter.append(fsq.sqlalchemy.or_(*ors))
 			filter.append(models.users.id == models.pointing.submitterid)
-	
+
 	if "instrument" in args:
 		inst = args.get('instrument')
 		if inst.isdigit():
@@ -2078,7 +2078,7 @@ def get_pointings():
 			filter.append(models.pointing.instrumentid.in_(insts))
 		except:
 			insts = args.get('instruments')
-			insts = insts.split('[')[1].split(']')[0].split(',') 
+			insts = insts.split('[')[1].split(']')[0].split(',')
 			ors = []
 			for i in insts:
 				ors.append(models.instrument.instrument_name.contains(i.strip()))
@@ -2092,7 +2092,7 @@ def get_pointings():
 
 @app.route("/api/v0/request_doi", methods=['POST'])
 def api_request_doi():
-	
+
 	try:
 		args = request.get_json()
 	except:
@@ -2107,13 +2107,13 @@ def api_request_doi():
 			userid = user.id
 	else:
 		return jsonify("api_token is required")
-	
+
 	if 'creators' in args:
 		creators = args['creators']
 		for c in creators:
 			if 'name' not in c.keys() or 'affiliation' not in c.keys():
 				return jsonify('name and affiliation are required for DOI creators json list')
-	elif 'doi_group_id' in rd:
+	elif 'doi_group_id' in args:
 		valid, creators = construct_creators(rd['doi_group_id'], userid)
 		if not valid:
 			return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
@@ -2175,9 +2175,9 @@ def api_request_doi():
 
 		db.session.flush()
 		db.session.commit()
-	
+
 	return jsonify({"DOI URL":doi_url, "WARNINGS":warnings})
-	
+
 
 @app.route("/api/v0/cancel_all", methods=["POST"])
 def cancel_all():
@@ -2203,7 +2203,7 @@ def cancel_all():
 		filter1.append(models.pointing.id == models.pointing_event.pointingid)
 	else:
 		return jsonify("graceid is required")
-	
+
 	if "instrumentid" in args:
 		instid = args['instrumentid']
 		if function.isInt(instid):
@@ -2241,7 +2241,7 @@ def del_pointings():
 		status = args['status']
 		if status not in ['cancelled']:
 			return jsonify('planned status can only be updated to \'cancelled\'')
-	else: 
+	else:
 		status = 'cancelled'
 
 	filter1 = []
@@ -2303,7 +2303,7 @@ def get_instruments():
 		filter.append(models.instrument.instrument_name.contains(name))
 	if "names" in args:
 		insts = args.get('instruments')
-		insts = insts.split('[')[1].split(']')[0].split(',') 
+		insts = insts.split('[')[1].split(']')[0].split(',')
 		ors = []
 		for i in insts:
 			ors.append(models.instrument.instrument_name.contains(i.strip()))
