@@ -2135,7 +2135,7 @@ def api_request_doi():
 			return jsonify("Invalid ID")
 	elif "ids" in args:
 		try:
-			ids = json.loads(args.get('ids'))
+			ids = args.get('ids')
 			filter.append(models.pointing.id.in_(ids))
 		except:
 			return jsonify('Invalid list format of IDs')
