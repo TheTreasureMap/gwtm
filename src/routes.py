@@ -124,7 +124,7 @@ def home():
 	status = status if status is not None else 'completed'
 
 	alerttype = request.args.get('alert_type')
-	args = {'graceid':graceid, 'pointing_status':status, 'alert_type':alerttype}
+	args = {'graceid':'S190425z', 'pointing_status':status, 'alert_type':alerttype}
 	form = forms.AlertsForm
 	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	form.page = 'index'
