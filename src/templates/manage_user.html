@@ -5,6 +5,7 @@
 	<div style="padding-left:16px">
 	<form></form>
 	<h2>User: {{ user.username }}</h2>
+	<p><b>email:</b> {{ user.email }}</p>
 	{% if user.api_token%}
 		<p>Your API Token: <b>{{ user.api_token }}</b></p>
 	{% else%}
