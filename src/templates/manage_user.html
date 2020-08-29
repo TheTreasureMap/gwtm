@@ -5,10 +5,10 @@
 	<div style="padding-left:16px">
 	<form></form>
 	<h2>User: {{ user.username }}</h2>
-	{% if not user.verfied %}
+	{% if user.verfied == False%}
 		<p style="color: red;">Your account has not been verified</p> 
 		<a id='ajax_resend_verification' class="btn btn-primary">Resend Verification Email</a>
-	{% else %}
+	{% else%}
 		<p>Your API Token: <b>{{ user.api_token }}</b></p>
 	{% endif %}
 	<h3>DOI Author Groups </h3>
