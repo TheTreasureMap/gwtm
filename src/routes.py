@@ -293,7 +293,7 @@ def login():
 			user.verified = True
 			user.set_apitoken()
 			db.session.commit()
-			flash("Your account has been verified, go to manage account to access your api_token")
+			flash("Your account has been verified, go to Profile to access your api_token")
 
 		next_page = request.args.get('next')
 		if not next_page or url_parse(next_page).netloc != '':
@@ -346,8 +346,7 @@ def manage_user():
 	groups = db.session.query(models.groups.name, models.usergroups.role).filter(*groupfilter).all()
 
 	doi_groups = db.session.query(models.doi_author_group).filter(models.doi_author_group.userid == userid)
-	#form = froms.ManageUserForm():
-	#if form.validate_on_submit():
+	
 
 	if userid == 2 or userid == 5:
 		all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
@@ -810,6 +809,13 @@ def logout():
 
 
 #AJAX FUNCTIONS
+
+@app.route('/ajax_resend_verification_email')
+def ajax_resend_verification_email():
+	userid = current_user.id
+	user = models.users.query.filter_by(id=userid).first()
+	send_account_validation_email(user, notify=False)
+	return jsonify('')
 
 @app.route('/ajax_request_doi')
 def ajax_request_doi():
@@ -1541,7 +1547,7 @@ def send_email(subject, sender, recipients, text_body, html_body):
 		mail.send(msg)
 
 
-def send_account_validation_email(user):
+def send_account_validation_email(user, notify=True):
 	send_email(
 		"Treasure Map Account Verification",
 		"gwtreasuremap@gmail.com",
@@ -1552,18 +1558,19 @@ def send_account_validation_email(user):
 		Please do not reply to this email<br><br> \
 		Cheers from the Treasure Map team </p>",
 	)
-	send_email(
-		"Treasure Map Account Verification",
-		"gwtreasuremap@gmail.com",
-		['swyatt@email.arizona.edu'],
-		"",
-		"<p>Hey Sam,<br><br> \
-		 New GWTM account registration: <br> \
-		"+user.firstname+" "+user.lastname+" <br> \
-		email: "+user.email+" <br> \
-		username: "+user.username+" <br><br> \
-		Cheers you beautiful bastard</p>",
-	)
+	if notify:
+		send_email(
+			"Treasure Map Account Verification",
+			"gwtreasuremap@gmail.com",
+			['swyatt@email.arizona.edu'],
+			"",
+			"<p>Hey Sam,<br><br> \
+			New GWTM account registration: <br> \
+			"+user.firstname+" "+user.lastname+" <br> \
+			email: "+user.email+" <br> \
+			username: "+user.username+" <br><br> \
+			Cheers you beautiful bastard</p>",
+		)
 
 def send_password_reset_email(user):
 	token = user.get_reset_password_token()
@@ -1906,7 +1913,7 @@ def add_pointings():
 	if post_doi:
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
-		
+
 		if 'doi_url' in rd:
 			doi_id, doi_url = 0, rd['doi_url']
 		else:
