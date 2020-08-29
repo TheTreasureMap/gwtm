@@ -68,7 +68,8 @@ class SearchPointingsForm(FlaskForm):
         statuses.append((m.name, m.name))
     status_choices = SelectField('Status', choices=statuses)
     my_points = BooleanField('Show Only My Pointings')
-
+    doi_url = StringField('DOI URL')
+    
     submit = SubmitField('Search')
 
     def populate_creator_groups(self, current_userid):
@@ -140,6 +141,7 @@ class SubmitPointingForm(FlaskForm):
     request_doi = BooleanField('Request DOI')
 
     doi_creator_groups = SelectField('DOI Author Groups')
+    doi_url = StringField('DOI URL')
     submit = SubmitField('Submit')
 
     def populate_graceids(self):

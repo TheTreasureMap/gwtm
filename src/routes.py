@@ -362,10 +362,9 @@ def search_pointings():
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
 	form.populate_creator_groups(current_user.get_id())
-	print(form.doi_creator_groups.choices)
-
-
-	if form.validate_on_submit():
+	print("here")
+	if request.method == 'POST':
+		print("here")
 		filter = []
 		filter.append(models.pointing_event.graceid.contains(form.graceids.data))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
@@ -559,7 +558,10 @@ def submit_pointing():
 			insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 			inst_set = list(set([x.instrument_name for x in insts]))
 
-			pointing.doi_id, pointing.doi_url = create_doi(points, graceid, creators, inst_set)
+			if form.doi_url.data:
+				pointing.doi_id, pointing.doi_url = 0, form.doi_url.data
+			else:
+				pointing.doi_id, pointing.doi_url = create_doi(points, graceid, creators, inst_set)
 			db.session.commit()
 			flash("Your DOI url is: "+pointing.doi_url)
 
@@ -837,7 +839,11 @@ def ajax_request_doi():
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
 
-		doi_id, doi_url = create_doi(points, graceid, creators, inst_set)
+		doi_url = args.get('doi_url')
+		if doi_url:
+			doi_id, doi_url = 0, doi_url
+		else:
+			doi_id, doi_url = create_doi(points, graceid, creators, inst_set)
 
 		for p in points:
 			p.doi_url = doi_url
@@ -1900,7 +1906,12 @@ def add_pointings():
 	if post_doi:
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
-		doi_id, doi_url = create_doi(points, gid, creators, inst_set)
+		
+		if 'doi_url' in rd:
+			doi_id, doi_url = 0, rd['doi_url']
+		else:
+			doi_id, doi_url = create_doi(points, gid, creators, inst_set)
+
 		if doi_id is not None:
 			for p in points:
 				p.doi_url = doi_url
@@ -2165,8 +2176,10 @@ def api_request_doi():
 
 	gid = gids[0]
 
-	print(len(points), gid, creators)
-	doi_id, doi_url = create_doi(points, gid, creators, inst_set)
+	if 'doi_url' in args:
+		doi_id, doi_url = 0, args.get('doi_url')
+	else:
+		doi_id, doi_url = create_doi(points, gid, creators, inst_set)
 
 	if doi_id is not None:
 		for p in doi_points:
