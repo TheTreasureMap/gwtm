@@ -5,11 +5,11 @@
 	<div style="padding-left:16px">
 	<form></form>
 	<h2>User: {{ user.username }}</h2>
-	{% if user.verfied == False%}
+	{% if user.api_token%}
+		<p>Your API Token: <b>{{ user.api_token }}</b></p>
+	{% else%}
 		<p style="color: red;">Your account has not been verified</p> 
 		<a id='ajax_resend_verification' class="btn btn-primary">Resend Verification Email</a>
-	{% else%}
-		<p>Your API Token: <b>{{ user.api_token }}</b></p>
 	{% endif %}
 	<h3>DOI Author Groups </h3>
 	<a class="btn btn-primary" href="{{ url_for('doi_author_group') }}">Create New DOI Author Group</a>
