@@ -887,7 +887,6 @@ def plot_prob_coverage():
 	pointing_filter.append(models.pointing.instrumentid != 49)
 
 	if inst_cov != '':
-		print(inst_cov)
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
 	if band_cov != '':
@@ -1679,7 +1678,47 @@ def remove_event_galaxies():
 
 @app.route('/api/v0/event_galaxies', methods=['GET'])
 def get_event_galaxies():
-	pass
+	try:
+		args = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
+
+	if args is None:
+		args = request.args
+	
+	if args is None:
+		return("Invalid Arguments.")
+	
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+	
+	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
+
+	if 'graceid' in args:
+		filter.append(models.gw_galaxy_list.graceid == args['graceid'])
+	else:
+		return("\'graceid\' is required")
+	if 'groupname' in args:
+		filter.append(models.gw_galaxy_list.groupname == args['groupname'])
+	if 'score_gt' in args:
+		if function.isFloat(args['score_gt']):
+			sgt = float(args['score_gt'])
+			filter.append(models.gw_galaxy_entry.score >= sgt)
+	if 'score_lt' in args:
+		if function.isFloat(args['score_lt']):
+			slt = float(args['score_lt'])
+			filter.append(models.gw_galaxy_entry.score <= slt)
+
+	gal_entries = db.session.query(models.gw_galaxy_entry).filter(*filter).all()
+	gal_entries = [x.json for x in gal_entries]
+
+	return jsonify(gal_entries)
+
 
 @app.route('/api/v0/event_galaxies', methods=['POST'])
 def post_event_galaxies():

@@ -26,16 +26,20 @@ def to_json(inst, cls):
     Jsonify the sql alchemy query result.
     """
     convert = dict()
+    json_cols = [gw_galaxy_entry.info]
     # add your coversions for things like datetime's 
     # and what-not that aren't serializable.
     d = dict()
     for c in cls.__table__.columns:
         v = getattr(inst, c.name)
+        
         if c.type in convert.keys() and v is not None:
             try:
                 d[c.name] = convert[c.type](v)
             except:
                 d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
+        elif c in json_cols:
+            d[c.name] = v
         elif v is None:
             d[c.name] = str()
         elif "instrument_type" in str(v):
