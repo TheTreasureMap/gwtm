@@ -3,8 +3,15 @@
 
 {% block content %}
 	<div style="padding-left:16px">
-    <h2>User: {{ user.username }}</h2>
-    <p>Your API Token: <b>{{ user.api_token }}</b></p>
+	<form></form>
+	<h2>User: {{ user.username }}</h2>
+	<p><b>email:</b> {{ user.email }}</p>
+	{% if user.api_token%}
+		<p>Your API Token: <b>{{ user.api_token }}</b></p>
+	{% else%}
+		<p style="color: red;">Your account has not been verified</p> 
+		<a id='ajax_resend_verification' class="btn btn-primary">Resend Verification Email</a>
+	{% endif %}
 	<h3>DOI Author Groups </h3>
 	<a class="btn btn-primary" href="{{ url_for('doi_author_group') }}">Create New DOI Author Group</a>
 	<div class=container-fluid>
@@ -53,4 +60,24 @@
 		</table>
 	{% endif %}-->
 	</div>
+	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+
+  $(document).ready( function() {
+    $('#ajax_resend_verification').click(function() {
+      $.get('/ajax_resend_verification_email').done(function () {
+      });
+    });
+  });
+  $(document).ready(function () {
+    $(document).ajaxStart(function () {
+      document.getElementById("ajax_resend_verification").innerText = "Loading";
+      $('#ajax_resend_verification').addClass('disabled');
+    }).ajaxStop(function () {
+      $('#ajax_resend_verification').removeClass('disabled');
+      document.getElementById("ajax_resend_verification").innerText = "Sent! -Send Again?-";
+    });
+  });
+</script>
 {% endblock %}

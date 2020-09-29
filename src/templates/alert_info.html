@@ -264,20 +264,6 @@
         aladin.addCatalog(cat);
         cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
 
-        detectionoverlaylist=[];
-        for (i = 0; i < detection_overlays.length; i++) {
-          var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
-          aladin.addOverlay(contour);
-          var overlay_contours = detection_overlays[i].contours
-          for (j = 0; j < overlay_contours.length; j++){
-            contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-          }
-          detectionoverlaylist[i] = []
-          detectionoverlaylist[i][0] = contour;
-          detectionoverlaylist[i][1] = true //toshow
-          detectionoverlaylist[i][2] = detection_overlays[i].color //tocolor
-        }
-
         GRBoverlaylist=[];
         for (i = 0; i < GRBoverlays.length; i++) {
           var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
@@ -310,6 +296,20 @@
           }
           markerlayer.hide
           aladin.addCatalog(markerlayer)
+        }
+
+        detectionoverlaylist=[];
+        for (i = 0; i < detection_overlays.length; i++) {
+          var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
+          aladin.addOverlay(contour);
+          var overlay_contours = detection_overlays[i].contours
+          for (j = 0; j < overlay_contours.length; j++){
+            contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+          }
+          detectionoverlaylist[i] = []
+          detectionoverlaylist[i][0] = contour;
+          detectionoverlaylist[i][1] = true //toshow
+          detectionoverlaylist[i][2] = detection_overlays[i].color //tocolor
         }
         
         // var detectionlayersControl = aladin.box({title: 'Detections', position: 'top', css: {left: '75%', 'overflow-y': 'scroll', 'max-height': '50%'}});
@@ -478,14 +478,7 @@
                   aladin.addMOC(GRBoverlaylist[i]);
                 }
 
-                for (i = 0; i < detection_overlays.length; i++) {
-                  var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
-                  aladin.addOverlay(contour);
-                  var overlay_contours = detection_overlays[i].contours
-                  for (j = 0; j < overlay_contours.length; j++){
-                    contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-                  }
-                }
+                
 
                 for (i = 0; i < galaxy_cats.length; i++) {
                   var gal_markers = galaxy_cats[i].markers
@@ -519,6 +512,15 @@
                       if (!toshow) { contour.hide() }
                     }
                     overlaylist[iter][0] = contour
+                }
+
+                for (i = 0; i < detection_overlays.length; i++) {
+                  var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
+                  aladin.addOverlay(contour);
+                  var overlay_contours = detection_overlays[i].contours
+                  for (j = 0; j < overlay_contours.length; j++){
+                    contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+                  }
                 }
             }
           });

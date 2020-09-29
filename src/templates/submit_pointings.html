@@ -31,7 +31,12 @@
       <p>
         {{ form.pos_angle.label }} {{ form.pos_angle }}
       </p>
-      <p>{{ form.request_doi.label }} {{ form.request_doi }} {{ form.doi_creator_groups.label }} {{ form.doi_creator_groups }}</p>
+      <p style="font-size: small;">{{ form.request_doi.label }} {{ form.request_doi }} {{ form.doi_creator_groups.label }} {{ form.doi_creator_groups }}
+        Will request a DOI from <a href="https://zenodo.org/">Zenodo</a>
+      </p>
+      <p style="font-size: small;">{{ form.doi_url.label }} {{ form.doi_url }} 
+        Existing DOI will be associated to this URL (I.E. published paper link) and not Zenodo
+      </p>
       <p style="font-size: small;">Don't have a DOI Author group? You can create one <a href="/manage_user">here</a></p>
     </div>
     <p>{{ form.submit() }}</p>

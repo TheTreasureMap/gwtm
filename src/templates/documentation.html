@@ -108,6 +108,7 @@
                         <li><i>api_token</i> -  authentication api token</li>
                         <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
                         <li><i>request_doi</i> - [default=false] to request a Digital Object Identifier. <b>This is only valid for posting completed pointing observations</b></li>
+                        <li><i>doi_url</i> - associate the submitted pointings to an already existing DOI (I.E. a URL to a Publication). <b>creators and doi_group_id are not needed for this</b></li>
                         <li><i>creators</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
                         <li><i>doi_group_id</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
                     </ul>
@@ -192,6 +193,8 @@
                         <li>You must pass in fields:</li>
                         <ul>
                             <li><i>request_doi=true</i></li>
+                            <li><i>doi_url=my_doi_url.com</i></li>
+                            <p>OR to request through Zenodo</p>
                             <li><i>creators=[{'name':'name1', 'affiliation':'affiliation1'}]</i></li>
                         </ul>
                     </ul>
@@ -525,6 +528,8 @@
                     <ul><li>json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li><li>also accepts <i>orcid</i> and <i>gnd</i> for each creator</li></ul>
                     <li><i>doi_group_id=groupid1</i></li>
                     <ul><li>if you have created a doi author list through the website, you just reference its name or id here to link to the list</li></ul>
+                    <li><i>doi_url=doi_url1</i></li>
+                    <ul><li>if you have an existing DOI url (I.E. publication URL) it will associate the pointings to that</li></ul>
                     <li><i>ids=[id1, id2, id3....]</i></li>
                     <ul><li>List of INTs</li></ul>
                 </ul>
@@ -553,7 +558,7 @@
         print(r.text)
             </code>
             </pre>
-            <p>Request a DOI for individual pointing IDs</p>
+            <p>Submit a DOI for individual pointing IDs</p>
             <pre>
                     <code class="language-json" data-lang="json">
         import requests
@@ -564,10 +569,7 @@
         json_data = {
             "api_token":"abcdefghijkl",
             "ids":"[id1, id2, id3, ...]",
-            "creators":[
-                    {"name":"Name1", "affiliation":"affil_1"},
-                    {"name":"Name2", "affiliation":"affil_2"}
-            ]
+            "doi_url":"my_doi_url.com"
         }
 
         r = requests.post(url = BASE+TARGET, json = json_data)
@@ -577,30 +579,34 @@
         </pre>
             </div>
         </div>
-        <button class="collapsible">Uploading Convolved Galaxy Information</button>
-        <div class="column">
-            <h2>REST API METHOD: POST Instructions</h2>
-            <p>Posting a list of galaxies that are within the GW Event contour</p>
-                <p><b>Usage</b></p>
-                <p><i>/api/v0/event_galaxies</i></p>
-        
-                <p><b>Notes</b></p>
-                <p>This endpoint is for posting a list of galaxies the lie within the GW contour. For each galaxy, it accepts position, score and name. You may also append a json list of parameters about the galaxy or your calculation.</p>
-                <p>JSON Parameters</p>
-                <ul>
-                    <li><i>api_token=api_token1</i></li>
-                    <li><i>graceid=graceid1</i></li>
-                    <li><i>groupname=groupname1</i></li>
-                    <ul><li>this can be the name of the group that did the calculation, or will default to the username associated with the api_token</li></ul>
-                    <li><i>galaxies=galaxielist</i></li>
-                    <ul><li>json list of [<i>name</i>, <i>position</i>, <i>score</i> (decimal), and <i>info</i> (json list parameters)</li></ul>
-                </ul>
-        </div>
-        <div class="column" style="background-color:#bbb;">
-            <h2>POST Examples</h2>
-            <p>Post a list of convolved galaxies</p>
-            <pre>
-                    <code class="language-json" data-lang="json">
+        <button class="collapsible">Convolved Galaxy Information</button>
+        <div class="content">
+            <p>GET and POST Convolved Galaxy Information</p>
+            <button class="collapsible">POST</button>
+            <div class="content">
+                <div class="column">
+                    <h2>REST API METHOD: POST Instructions</h2>
+                    <p>Posting a list of galaxies that are within the GW Event contour</p>
+                        <p><b>Usage</b></p>
+                        <p><i>/api/v0/event_galaxies</i></p>
+                
+                        <p><b>Notes</b></p>
+                        <p>This endpoint is for posting a list of galaxies the lie within the GW contour. For each galaxy, it accepts position, score and name. You may also append a json list of parameters about the galaxy or your calculation.</p>
+                        <p>JSON Parameters</p>
+                        <ul>
+                            <li><i>api_token=api_token1</i></li>
+                            <li><i>graceid=graceid1</i></li>
+                            <li><i>groupname=groupname1</i></li>
+                            <ul><li>this can be the name of the group that did the calculation, or will default to the username associated with the api_token</li></ul>
+                            <li><i>galaxies=galaxielist</i></li>
+                            <ul><li>json list of [<i>name</i>, <i>position</i>, <i>score</i> (decimal), and <i>info</i> (json list parameters)</li></ul>
+                        </ul>
+                </div>
+                <div class="column" style="background-color:#bbb;">
+                    <h2>POST Examples</h2>
+                    <p>Post a list of convolved galaxies</p>
+                    <pre>
+                        <code class="language-json" data-lang="json">
     import requests
 
     BASE = 'http://treasuremap.space/api/v0/'
@@ -628,10 +634,60 @@
     r = requests.post(url = BASE+TARGET, json = json_data)
 
     print(r.text)
-        </code>
-        </pre>
-    </pre>
+                        </code>
+                    </pre>
+                </div>
+            </div>
+
+            <button class="collapsible">GET</button>
+            <div class="content">
+                <div class="column">
+                    <h2>REST API METHOD: GET Instructions</h2>
+                    <p>Retrieving a list of posted galaxies that are within the GW Event contour</p>
+                        <p><b>Usage</b></p>
+                        <p><i>/api/v0/event_galaxies</i></p>
+                
+                        <p><b>Notes</b></p>
+                        <p>This endpoint is for getting a list of galaxies the lie within the GW contour.</p>
+                        <p>The parameters my be passed in via a json argument in the request or as URL querystring arguments (i.e. <i>/api/v0/event_galaxies?param1=value1...</i>)</p>
+                        <p>Parameters</p>
+                        <ul>
+                            <li><i>api_token=api_token1</i></li>
+                            <li><i>graceid=graceid1</i></li>
+                            <ul><li>This is required</li></ul>
+                            <li><i>groupname=groupname1</i></li>
+                            <li><i>score_gt=score1</i></li>
+                            <ul><li>(Greater than or equal to) If you want to filter by score >= <i>score1</i></li></ul>
+                            <li><i>score_lt=score1</i></li>
+                            <ul><li>(Less than or equal to) If you want to filter by score <= <i>score1</i></li></ul>
+                        </ul>
+                </div>
+                <div class="column" style="background-color:#bbb;">
+                    <h2>GET Examples</h2>
+                    <p>Get a list of convolved galaxies</p>
+                    <pre>
+                        <code class="language-json" data-lang="json">
+    import requests
+
+    BASE = 'http://treasuremap.space/api/v0/'
+    TARGET = 'event_galaxies'
+
+    json_data = {
+        "api_token":"abcdefghijkl",
+        "graceid":"graceid1",
+        "groupname":groupname1
+        "score_lt":0.01
+    }
+
+    r = requests.get(url = BASE+TARGET, json = json_data)
+
+    print(r.text)
+                        </code>
+                    </pre>
+                </div>
+            </div>
         </div>
+        
         <!--<button class="collapsible">Glade Catalog</button>
         <div class="content">
             <div class="column">

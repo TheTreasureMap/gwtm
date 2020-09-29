@@ -248,7 +248,12 @@ def getDataFromTLE(datetime, tleLatOffset=0, tleLonOffset=0.21):
     
     # Iterate through time; compute predicted locations
     observer_Fermi.date = ephem.date(datetime)
-    Fermi.compute(observer_Fermi)
+    
+    try:
+        Fermi.compute(observer_Fermi)
+    except:
+        return False, False, False
+
     lat.append(np.degrees(Fermi.sublat.znorm))
     lon.append(np.degrees(Fermi.sublong.norm))
     elevation.append(Fermi.elevation)
@@ -317,7 +322,11 @@ def getearthsatpos(datetime):
     tleLonOffset=0.21
     tleLatOffset = 0
 
-    lon, lat, elevation= getDataFromTLE(datetime, tleLatOffset=tleLatOffset, tleLonOffset=tleLonOffset)
+    try:
+        lon, lat, elevation= getDataFromTLE(datetime, tleLatOffset=tleLatOffset, tleLonOffset=tleLonOffset)
+    except:
+        return False, False, False
+
     if lon == False and lat == False and elevation == False:
         return False, False, False
 
