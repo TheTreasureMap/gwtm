@@ -24,6 +24,7 @@ import astropy.units as u
 import time
 import plotly
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import ephem
 import io
 import requests
@@ -346,7 +347,6 @@ def manage_user():
 	groups = db.session.query(models.groups.name, models.usergroups.role).filter(*groupfilter).all()
 
 	doi_groups = db.session.query(models.doi_author_group).filter(models.doi_author_group.userid == userid)
-	
 
 	if userid == 2 or userid == 5:
 		all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
@@ -865,6 +865,7 @@ def ajax_request_doi():
 def plot_prob_coverage():
 	graceid = request.args.get('graceid')
 	mappathinfo = request.args.get('mappathinfo')
+
 	inst_cov = request.args.get('inst_cov')
 	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
@@ -936,6 +937,9 @@ def plot_prob_coverage():
 	qps = []
 	times=[]
 	probs=[]
+	areas=[]
+	pixarea = hp.nside2pixarea(nside, degrees=True)
+
 	for p in pointings_sorted:
 		ra, dec = function.sanatize_pointing(p.position)
 
@@ -954,6 +958,8 @@ def plot_prob_coverage():
 			#deduplicate indices, so that pixels already covered are not double counted
 			deduped_indices=list(dict.fromkeys(qps))
 
+			area = pixarea * len(deduped_indices)
+
 			prob = 0
 			for ind in deduped_indices:
 				prob += GWmap[ind]
@@ -961,9 +967,19 @@ def plot_prob_coverage():
 			elapsed = elapsed.total_seconds()/3600
 			times.append(elapsed)
 			probs.append(prob)
+			areas.append(area)
+			
+	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-	fig=go.Figure(data=go.Scatter(x=times,y=[prob*100 for prob in probs],mode='lines'))
-	fig.update_layout(xaxis_title='Hours since GW T0', yaxis_title='Percent of GW localization covered')
+	fig.add_trace(go.Scatter(x=times, y=[prob*100 for prob in probs],
+						mode='lines',
+						name='Probability'), secondary_y=False)
+	fig.add_trace(go.Scatter(x=times, y=areas,
+						mode='lines',
+						name='Area'), secondary_y=True)
+	fig.update_xaxes(title_text="Hours since GW T0")
+	fig.update_yaxes(title_text="Percent of GW localization posterior covered", secondary_y=False)
+	fig.update_yaxes(title_text="Area coverage (deg<sup>2</sup>)", secondary_y=True)
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
 
 	return coverage_div
@@ -1376,7 +1392,6 @@ def construct_alertform(form, args):
 				mappath = graceid + '-' + form.alert_type.split()[0]
 
 			mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
-
 			form.avgra = form.selected_alert_info.avgra
 			form.avgdec = form.selected_alert_info.avgdec
 
