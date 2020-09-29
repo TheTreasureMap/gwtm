@@ -111,6 +111,7 @@ class bandpass(IntEnum):
     C = 24
     X = 25
     other = 26
+    TESS = 27
 
 
 class gw_galaxy_score_type(IntEnum):
