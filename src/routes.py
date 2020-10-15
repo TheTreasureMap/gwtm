@@ -877,9 +877,9 @@ def plot_prob_coverage():
 			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
 		except:
-			return 'Map error, contact administrator.'
+			return '<b> Map ERROR. Please contact the administrator. <b>'
 	else:
-		return 'Map not found.'
+		return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -935,10 +935,12 @@ def plot_prob_coverage():
 	).first()[0]
 
 	qps = []
+	qpsarea=[]
 	times=[]
 	probs=[]
 	areas=[]
-	pixarea = hp.nside2pixarea(nside, degrees=True)
+	NSIDE4area = 512 #this gives pixarea of 0.013 deg^2 per pixel
+	pixarea = hp.nside2pixarea(NSIDE4area, degrees=True)
 
 	for p in pointings_sorted:
 		ra, dec = function.sanatize_pointing(p.position)
@@ -953,12 +955,18 @@ def plot_prob_coverage():
 			decs_poly = [x[1] for x in pointing_footprint][:-1]
 			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
 			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
-
 			qps.extend(qp)
+
+
+			#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
+			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
+			qpsarea.extend(qparea)
+
 			#deduplicate indices, so that pixels already covered are not double counted
 			deduped_indices=list(dict.fromkeys(qps))
+			deduped_indices_area = list(dict.fromkeys(qpsarea))
 
-			area = pixarea * len(deduped_indices)
+			area = pixarea * len(deduped_indices_area)
 
 			prob = 0
 			for ind in deduped_indices:
