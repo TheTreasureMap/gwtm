@@ -930,9 +930,14 @@ def plot_prob_coverage():
 		models.gw_alert.time_of_signal
 	).filter(
 		models.gw_alert.graceid == graceid
+	).filter(
+		models.gw_alert.time_of_signal != None
 	).order_by(
 		models.gw_alert.datecreated.desc()
 	).first()[0]
+
+	if time_of_signal == None:
+		return '<b>ERROR: Please contact administrator.</b>'
 
 	qps = []
 	qpsarea=[]
