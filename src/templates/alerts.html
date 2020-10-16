@@ -17,7 +17,9 @@
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }} [<a href="https://gracedb.ligo.org/superevents/{{ form.graceid }}/view/">GraceDB</a>]</h3>
-      {% if form.graceid == 'TEST_EVENT' %}
+      {% if "Retraction" in form.alert_types: %}
+        <h1><span style="color: red;"> RETRACTED </span> </h1>  
+      {% elif form.graceid == 'TEST_EVENT' %}
         <h5>These pointings are automatically deleted every 12 hours (12:00 and 24:00 PST)</h5>
       {% elif form.graceid == 'S200219ac' %}
         <a class="btn btn-primary" href="/static/S200219ac_GBM_Event1_healpix.fit" download>Download GBM HEALPix FITS file</a>
