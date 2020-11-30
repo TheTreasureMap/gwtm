@@ -889,9 +889,9 @@ def plot_prob_coverage():
 			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
 		except:
-			return 'Map error, contact administrator.'
+			return '<b> Map ERROR. Please contact the administrator. <b>'
 	else:
-		return 'Map not found.'
+		return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -942,15 +942,22 @@ def plot_prob_coverage():
 		models.gw_alert.time_of_signal
 	).filter(
 		models.gw_alert.graceid == graceid
+	).filter(
+		models.gw_alert.time_of_signal != None
 	).order_by(
 		models.gw_alert.datecreated.desc()
 	).first()[0]
 
+	if time_of_signal == None:
+		return '<b>ERROR: Please contact administrator.</b>'
+
 	qps = []
+	qpsarea=[]
 	times=[]
 	probs=[]
 	areas=[]
-	pixarea = hp.nside2pixarea(nside, degrees=True)
+	NSIDE4area = 512 #this gives pixarea of 0.013 deg^2 per pixel
+	pixarea = hp.nside2pixarea(NSIDE4area, degrees=True)
 
 	for p in pointings_sorted:
 		ra, dec = function.sanatize_pointing(p.position)
@@ -965,12 +972,18 @@ def plot_prob_coverage():
 			decs_poly = [x[1] for x in pointing_footprint][:-1]
 			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
 			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
-
 			qps.extend(qp)
+
+
+			#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
+			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
+			qpsarea.extend(qparea)
+
 			#deduplicate indices, so that pixels already covered are not double counted
 			deduped_indices=list(dict.fromkeys(qps))
+			deduped_indices_area = list(dict.fromkeys(qpsarea))
 
-			area = pixarea * len(deduped_indices)
+			area = pixarea * len(deduped_indices_area)
 
 			prob = 0
 			for ind in deduped_indices:
@@ -1249,9 +1262,10 @@ def construct_alertform(form, args):
 			#print(at,itera)
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
 			form.alert_type = alerttype
-		#user did not select an alert type, so get the most recent one
+		#user did not select an alert type, so get the most recent one, except not a Retraction type!!
 		else:
-			pre_alert = alert_info[len(alert_info)-1]
+			cleaned_alert_info = [alert for alert in alert_info if alert.alert_type != 'Retraction']
+			pre_alert = cleaned_alert_info[len(cleaned_alert_info)-1]
 			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
 			form.selected_alert_info = pre_alert
 			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
@@ -1363,146 +1377,146 @@ def construct_alertform(form, args):
 		#rotate and project the footprint and then add it to the overlay list
 		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 
-		if 'Retraction' not in form.alert_type:
-			for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
-				name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
-				try:
-					color = colorlist[i]
-				except:
-					color = colors[inst.id]
-					pass
-				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
-				sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-				inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
-				pointing_geometries = []
+		#if 'Retraction' not in form.alert_type:
+		for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
+			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
+			try:
+				color = colorlist[i]
+			except:
+				color = colors[inst.id]
+				pass
+			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
+			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
+			pointing_geometries = []
 
-				for p in inst_pointings:
-					t = Time([p.time])
-					ra, dec = function.sanatize_pointing(p.position)
-					for ccd in sanatized_ccds:
-						pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
-						pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
+			for p in inst_pointings:
+				t = Time([p.time])
+				ra, dec = function.sanatize_pointing(p.position)
+				for ccd in sanatized_ccds:
+					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+					pointing_geometries.append({"polygon":pointing_footprint, "time":round(t.mjd[0]-form.tos_mjd, 2)})
 
-				inst_overlays.append({
-					"display":True,
-					"name":name,
-					"color":color,
-					"contours":pointing_geometries
+			inst_overlays.append({
+				"display":True,
+				"name":name,
+				"color":color,
+				"contours":pointing_geometries
+			})
+
+		#do BAT stuff
+		#BAT instrumentid == 49
+		# If there are any pointings with BAT. Find the file
+		# that should have been created by the BAT listener
+		if len([x for x in pointing_info if x.instrumentid == 49]):
+			batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
+			if os.path.exists(batpathinfo):
+				with open(batpathinfo) as json_data:
+					contours_data = json.load(json_data)
+				GRBoverlays.append({
+					'name':'Swift/BAT',
+					'color':'#3cb44b',
+					'json':contours_data
 				})
 
-			#do BAT stuff
-			#BAT instrumentid == 49
-			# If there are any pointings with BAT. Find the file
-			# that should have been created by the BAT listener
-			if len([x for x in pointing_info if x.instrumentid == 49]):
-				batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
-				if os.path.exists(batpathinfo):
-					with open(batpathinfo) as json_data:
-						contours_data = json.load(json_data)
-					GRBoverlays.append({
-						'name':'Swift/BAT',
-						'color':'#3cb44b',
-						'json':contours_data
-					})
-
-			#do Fermi stuff
-			if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
-				#earth_ra, earth_dec, earth_rad = function.getearthsatpos(form.selected_alert_info.time_of_signal)
-				#if earth_ra != False:
-					#Do GBM stuff
-				GBMpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
-				if os.path.exists(GBMpathinfo):
-					with open(GBMpathinfo) as json_data:
-						contours_data = json.load(json_data)
-					GRBoverlays.append({
-						'name':'Fermi/GBM',
-						'color':'magenta',
-						'json':contours_data
-					})
-				else:
-					GRBoverlays.append({
-						'name': 'Fermi in South Atlantic Anomaly'
-						})
-				#Do LAT stuff
-				LATpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
-				print(LATpathinfo)
-				if os.path.exists(LATpathinfo):
-					with open(LATpathinfo) as json_data:
-						contours_data = json.load(json_data)
-					GRBoverlays.append({
-						'name':'Fermi/LAT',
-						'color':'red',
-						'json':contours_data
-					})
-
-			#grab the precomputed localization contour region
-			if len(form.alert_type.split()) > 1:
-				path_info = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
-				mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+		#do Fermi stuff
+		if form.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
+			#earth_ra, earth_dec, earth_rad = function.getearthsatpos(form.selected_alert_info.time_of_signal)
+			#if earth_ra != False:
+				#Do GBM stuff
+			GBMpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
+			if os.path.exists(GBMpathinfo):
+				with open(GBMpathinfo) as json_data:
+					contours_data = json.load(json_data)
+				GRBoverlays.append({
+					'name':'Fermi/GBM',
+					'color':'magenta',
+					'json':contours_data
+				})
 			else:
-				path_info = graceid + '-' + form.alert_type.split()[0]
-				mappath = graceid + '-' + form.alert_type.split()[0]
-
-			mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
-			form.avgra = form.selected_alert_info.avgra
-			form.avgdec = form.selected_alert_info.avgdec
-
-			contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-			form.mappathinfo = mappathinfo
-			#if it exists, add it to the overlay list
-			if os.path.exists(contourpath):
-				contours_data=pd.read_json(contourpath)
-				contour_geometry = []
-				for contour in contours_data['features']:
-					contour_geometry.extend(contour['geometry']['coordinates'])
-
-				detection_overlays.append({
-					"display":True,
-					"name":"GW Contour",
-					"color": '#e6194B',
-					"contours":function.polygons2footprints(contour_geometry, 0)
-				})
-
-			if len(inst_overlays):
-				times = []
-				for o in inst_overlays:
-					for c in o['contours']:
-						times.append(c['time'])
-
-				form.mintime = min(times)
-				form.maxtime = max(times)
-				form.step = (form.maxtime*100 - form.mintime*100)/100000
-
-			galLists = db.session.query(models.gw_galaxy_list).filter(
-				models.gw_galaxy_list.graceid == graceid
-			).all()
-			galList_ids = list(set([x.id for x in galLists]))
-
-			galEntries = db.session.query(
-				models.gw_galaxy_entry.name,
-				func.ST_AsText(models.gw_galaxy_entry.position).label('position'),
-				models.gw_galaxy_entry.score,
-				models.gw_galaxy_entry.info,
-				models.gw_galaxy_entry.listid,
-			).filter(
-				models.gw_galaxy_entry.listid.in_(galList_ids)
-			).all()
-
-			for glist in galLists:
-				markers = []
-				entries = [x for x in galEntries if x.listid == glist.id]
-				for e in entries:
-					ra, dec = function.sanatize_pointing(e.position)
-					markers.append({
-						"name":e.name,
-						"ra": ra,
-						"dec": dec,
-						"info":function.sanatize_gal_info(ra, dec, e.score, e.info)
+				GRBoverlays.append({
+					'name': 'Fermi in South Atlantic Anomaly'
 					})
-				galaxy_cats.append({
-					"name":glist.groupname,
-					"markers":markers
+			#Do LAT stuff
+			LATpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
+			print(LATpathinfo)
+			if os.path.exists(LATpathinfo):
+				with open(LATpathinfo) as json_data:
+					contours_data = json.load(json_data)
+				GRBoverlays.append({
+					'name':'Fermi/LAT',
+					'color':'red',
+					'json':contours_data
 				})
+
+		#grab the precomputed localization contour region
+		if len(form.alert_type.split()) > 1:
+			path_info = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+			mappath = graceid + '-' + form.alert_type.split()[0] + form.alert_type.split()[1]
+		else:
+			path_info = graceid + '-' + form.alert_type.split()[0]
+			mappath = graceid + '-' + form.alert_type.split()[0]
+
+		mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+		form.avgra = form.selected_alert_info.avgra
+		form.avgdec = form.selected_alert_info.avgdec
+
+		contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
+		form.mappathinfo = mappathinfo
+		#if it exists, add it to the overlay list
+		if os.path.exists(contourpath):
+			contours_data=pd.read_json(contourpath)
+			contour_geometry = []
+			for contour in contours_data['features']:
+				contour_geometry.extend(contour['geometry']['coordinates'])
+
+			detection_overlays.append({
+				"display":True,
+				"name":"GW Contour",
+				"color": '#e6194B',
+				"contours":function.polygons2footprints(contour_geometry, 0)
+			})
+
+		if len(inst_overlays):
+			times = []
+			for o in inst_overlays:
+				for c in o['contours']:
+					times.append(c['time'])
+
+			form.mintime = min(times)
+			form.maxtime = max(times)
+			form.step = (form.maxtime*100 - form.mintime*100)/100000
+
+		galLists = db.session.query(models.gw_galaxy_list).filter(
+			models.gw_galaxy_list.graceid == graceid
+		).all()
+		galList_ids = list(set([x.id for x in galLists]))
+
+		galEntries = db.session.query(
+			models.gw_galaxy_entry.name,
+			func.ST_AsText(models.gw_galaxy_entry.position).label('position'),
+			models.gw_galaxy_entry.score,
+			models.gw_galaxy_entry.info,
+			models.gw_galaxy_entry.listid,
+		).filter(
+			models.gw_galaxy_entry.listid.in_(galList_ids)
+		).all()
+
+		for glist in galLists:
+			markers = []
+			entries = [x for x in galEntries if x.listid == glist.id]
+			for e in entries:
+				ra, dec = function.sanatize_pointing(e.position)
+				markers.append({
+					"name":e.name,
+					"ra": ra,
+					"dec": dec,
+					"info":function.sanatize_gal_info(ra, dec, e.score, e.info)
+				})
+			galaxy_cats.append({
+				"name":glist.groupname,
+				"markers":markers
+			})
 
 	return form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats
 

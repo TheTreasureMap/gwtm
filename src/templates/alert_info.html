@@ -39,7 +39,7 @@
 </head>
 <body>
   <ul class="nav nav-tabs">
-    {% for a_type in form.alert_types %}
+    {% for a_type in form.alert_types if a_type != "Retraction" %}
       {% if a_type == form.alert_type %}
         <li class="active"><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
       {% else %}
