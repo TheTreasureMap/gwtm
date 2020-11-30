@@ -571,6 +571,7 @@ class glade_2p3(db.Model):
 class gw_alert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
+    alternateid = db.Column(db.String)
     role = db.Column(db.String)
     timesent = db.Column(db.Date)
     time_of_signal = db.Column(db.Date)

@@ -125,7 +125,7 @@ def home():
 	status = status if status is not None else 'completed'
 
 	alerttype = request.args.get('alert_type')
-	args = {'graceid':'S190425z', 'pointing_status':status, 'alert_type':alerttype}
+	args = {'graceid':'GW190425z', 'pointing_status':status, 'alert_type':alerttype}
 	form = forms.AlertsForm
 	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	form.page = 'index'
@@ -171,6 +171,11 @@ def alert_select():
 		most_recent_date = list(sorted([x.datecreated for x in allerts if x.graceid == g], reverse=True))[0]
 		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
 		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
+
+		alternateids = [gwa for gwa in allerts if gwa.graceid == g and gwa.alternateid is not None]
+		print(g,alternateids)
+		if len(alternateids):
+			g = alternateids[0].alternateid
 
 		pointing_counts = 0
 		if len(pcounts):
@@ -361,11 +366,20 @@ def search_pointings():
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
 	form.populate_creator_groups(current_user.get_id())
-	print("here")
+	
 	if request.method == 'POST':
-		print("here")
+		formgraceid = form.graceids.data
+		alternateids = db.session.query(models.gw_alert).filter(
+			models.gw_alert.alternateid == formgraceid
+		).all()
+
+		if len(alternateids):
+			graceid = alternateids[0].graceid
+		else:
+			graceid = form.graceids.data
+
 		filter = []
-		filter.append(models.pointing_event.graceid.contains(form.graceids.data))
+		filter.append(models.pointing_event.graceid.contains(graceid))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
 		if form.status_choices.data != '' and form.status_choices.data != 'all':
@@ -422,7 +436,6 @@ def submit_pointing():
 	form.populate_graceids()
 	form.populate_instruments()
 	form.populate_creator_groups(current_user.get_id())
-	print(form.doi_creator_groups.choices)
 
 	if request.method == 'POST':
 
@@ -430,7 +443,7 @@ def submit_pointing():
 		pointing = models.pointing()
 
 		#default required fields
-		graceid = form.graceids.data
+		graceid = graceidfromalternate(form.graceids.data)
 		status = form.obs_status.data
 		ra = form.ra.data
 		dec = form.dec.data
@@ -863,9 +876,8 @@ def ajax_request_doi():
 
 @app.route("/coverage", methods=['GET','POST'])
 def plot_prob_coverage():
-	graceid = request.args.get('graceid')
+	graceid = graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
-
 	inst_cov = request.args.get('inst_cov')
 	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
@@ -1072,13 +1084,46 @@ def get_pointing_fromID():
 	return jsonify('')
 
 #FIX DATA
-@app.route('/fixshit', methods=['POST'])
+@app.route('/fixshit', methods=['GET'])
 def fixshit():
+
+	datatochange = db.session.query(models.gw_alert).filter(
+		models.gw_alert.graceid == 'S190425z'
+	)
+
+	for dtg in datatochange:
+		dtg.alternateid = 'GW190425z'
+
+	#db.session.commit()
 
 	return 'success'
 
 
 #Internal Functions
+def graceidfromalternate(graceid):
+	#if there is an input alternate id for this event, it will find the original graceid
+	#else it will return the input graceid
+
+	alternateids = db.session.query(models.gw_alert).filter(
+		models.gw_alert.alternateid == graceid
+	).all()
+
+	if len(alternateids):
+		graceid = alternateids[0].graceid
+		
+	return graceid
+
+def alternatefromgraceid(graceid):
+
+	alternateids = db.session.query(models.gw_alert).filter(
+		models.gw_alert.graceid == graceid
+	).all()
+
+	if len(alternateids):
+		graceid = alternateids[0].alternateid
+		
+	return graceid
+
 
 def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 
@@ -1154,7 +1199,9 @@ def construct_alertform(form, args):
 		if g != 'TEST_EVENT':
 		#get the alert types for each graceid to test for retractions
 			g_types = gid_types[g]
-
+			alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
+			if len(alternateid):
+				g = alternateid[0]
 			if 'Retraction' in g_types:
 				graceids.append({'name':g + ' -retracted-', 'value':g})
 			else:
@@ -1166,7 +1213,13 @@ def construct_alertform(form, args):
 	#if there is a selected graceid
 	if graceid != 'None' and graceid is not None:
 
+		#preserve the forms graceid
 		form.graceid = graceid
+
+		#if there has been an updated event's name: confirmed GW event
+		alertsfromalternate = [gwa for gwa in gwalerts if gwa.alternateid == graceid]
+		if len(alertsfromalternate):
+			graceid = alertsfromalternate[0].graceid
 
 		#Here we get the relevant alert type information
 
@@ -1177,7 +1230,6 @@ def construct_alertform(form, args):
 		#Also involves logic to handle multiple alert types that are the same
 		#Update, Update 1, Update 2...
 		alert_types = [x.alert_type for x in alert_info]
-		#print(alert_types)
 		form.alert_types = []
 		for at in alert_types:
 			if at in form.alert_types:
@@ -1609,6 +1661,8 @@ def send_password_reset_email(user):
 
 def create_doi(points, graceid, creators, insts):
 
+	graceid = alternatefromgraceid(graceid)
+
 	ACCESS_TOKEN = app.config['ZENODO_ACCESS_KEY']
 	points_json = []
 
@@ -1715,7 +1769,8 @@ def get_event_galaxies():
 	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
 
 	if 'graceid' in args:
-		filter.append(models.gw_galaxy_list.graceid == args['graceid'])
+		graceid = graceidfromalternate(args['graceid'])
+		filter.append(models.gw_galaxy_list.graceid == graceid)
 	else:
 		return("\'graceid\' is required")
 	if 'groupname' in args:
@@ -1763,6 +1818,7 @@ def post_event_galaxies():
 
 	if "graceid" in args:
 		graceid = args['graceid']
+		graceid = graceidfromalternate(graceid)
 	else:
 		return jsonify('graceid is required')
 
@@ -1872,6 +1928,7 @@ def add_pointings():
 
 	if "graceid" in rd:
 		gid = rd['graceid']
+		gid = graceidfromalternate(gid)
 		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
 		if len(current_gids) > 0:
 			valid_gid = True
@@ -2007,6 +2064,7 @@ def get_pointings():
 
 	if "graceid" in args:
 		graceid = args.get('graceid')
+		graceid = graceidfromalternate(graceid)
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 	elif 'graceids' in args:
@@ -2196,6 +2254,7 @@ def api_request_doi():
 
 	if "graceid" in args:
 		graceid = args.get('graceid')
+		graceid = graceidfromalternate(graceid)
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
@@ -2273,6 +2332,7 @@ def cancel_all():
 
 	if "graceid" in args:
 		graceid = args['graceid']
+		graceid = graceidfromalternate(graceid)
 		filter1.append(models.pointing_event.graceid == graceid)
 		filter1.append(models.pointing.id == models.pointing_event.pointingid)
 	else:

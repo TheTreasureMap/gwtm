@@ -80,9 +80,17 @@ class SearchPointingsForm(FlaskForm):
             
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
-        alerts.append('TEST_EVENT')
-        self.graceids.choices = [(a, a) for a in alerts]
+        sortalerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
+        listalerts = []
+        for a in sortalerts:
+            alternateid = [aid.alternateid for aid in alerts if aid.graceid == a and aid.alternateid is not None]
+            if len(alternateid):
+                a = alternateid[0]
+                listalerts.append((a, a))
+            else:
+                listalerts.append((a, a))
+        listalerts.append(('TEST_EVENT', 'TEST_EVENT'))
+        self.graceids.choices = listalerts
 
 
 class SearchInstrumentsForm(FlaskForm):
@@ -146,11 +154,19 @@ class SubmitPointingForm(FlaskForm):
 
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
-        alerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
-        alerts.append('TEST_EVENT')
+        sortalerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
+        listalerts = []
+        for a in sortalerts:
+            alternateid = [aid.alternateid for aid in alerts if aid.graceid == a and aid.alternateid is not None]
+            if len(alternateid):
+                a = alternateid[0]
+                listalerts.append((a, a))
+            else:
+                listalerts.append((a, a))
+        listalerts.append(('TEST_EVENT', 'TEST_EVENT'))
         self.graceids.choices = [(None, 'Select')]
-        for a in alerts:
-            self.graceids.choices.append((a, a))
+        for a in listalerts:
+            self.graceids.choices.append(a)
 
     def populate_instruments(self):
         query = models.instrument.query.all()
