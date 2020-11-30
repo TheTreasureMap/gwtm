@@ -125,7 +125,7 @@ def home():
 	status = status if status is not None else 'completed'
 
 	alerttype = request.args.get('alert_type')
-	args = {'graceid':'GW190425z', 'pointing_status':status, 'alert_type':alerttype}
+	args = {'graceid':'GW190425', 'pointing_status':status, 'alert_type':alerttype}
 	form = forms.AlertsForm
 	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = construct_alertform(form, args)
 	form.page = 'index'
@@ -1183,6 +1183,7 @@ def construct_alertform(form, args):
 	detection_overlays = None
 	inst_overlays = None
 	GRBoverlays = None
+	galaxy_cats = None
 	form.viz = False
 
 	statuses = [
@@ -1236,7 +1237,13 @@ def construct_alertform(form, args):
 
 		#Here we get the relevant alert type information
 
-		alert_info = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).order_by(models.gw_alert.datecreated.asc()).all()
+		alert_info = db.session.query(
+			models.gw_alert
+		).filter(
+			models.gw_alert.graceid == graceid
+		).order_by(
+			models.gw_alert.datecreated.asc()
+		).all()
 		#if there is a specificly selected usertype
 
 		#Getting the alert types do display as tabs
@@ -1259,13 +1266,15 @@ def construct_alertform(form, args):
 				itera = int(alerttype.split()[1])
 			else:
 				itera = 0
-			#print(at,itera)
 			form.selected_alert_info = [x for x in alert_info if x.alert_type == at][itera]
 			form.alert_type = alerttype
 		#user did not select an alert type, so get the most recent one, except not a Retraction type!!
 		else:
 			cleaned_alert_info = [alert for alert in alert_info if alert.alert_type != 'Retraction']
-			pre_alert = cleaned_alert_info[len(cleaned_alert_info)-1]
+			if len(cleaned_alert_info):
+				pre_alert = cleaned_alert_info[len(cleaned_alert_info)-1]
+			else:
+				pre_alert = alert_info[0]
 			num = len([x for x in alert_types if x == pre_alert.alert_type])-1
 			form.selected_alert_info = pre_alert
 			#make sure to get the correct alert attribute even if it has a number appended to it.. Update, vs Update 1, Update 2...
