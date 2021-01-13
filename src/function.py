@@ -134,13 +134,20 @@ def sanatize_footprint_ccds(ccds):
 		footprint_ccds.append(polygon)
 	return footprint_ccds
 
+def sanatize_XRT_source_info(info):
+    ret = "<p>"
+    ret += "<b> Timestamp: </b>"+str(info['alert_timestamp'])+"<br>"
+    ret += "<b> Identifier: </b>"+str(info['alert_identifier'])+"<br></p>"
+    return ret
 
-def sanatize_gal_info(ra, dec, score, g):
+def sanatize_gal_info(ra, dec, score, rank, ref, g):
     ret = "<p>"
     ret = "<b>Score: </b>"+str(score)+"<br>"
+    ret += "<b>Rank: </b>"+str(rank)+"<br>" 
+    if ref:
+        ret+= "<b>Reference: </b>"+ref+"<br>"
     ret += "<b> RA, DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br></p><b>Other Information:</b><br><p>"
     for key in g.keys():
-        print(key,g[key])
         ret += "<b>"+str(key)+":</b> "+str(g[key].split('\n')[0])+"<br>"
     ret += "</p>"
     return ret

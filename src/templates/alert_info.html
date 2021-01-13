@@ -163,6 +163,7 @@
       {% endif %}
     </div>
   </div>
+
   <script>
     $(document).ready( function() {
         $('#calculate').click(function() {
@@ -191,6 +192,13 @@
     });
 });
 </script>
+
+<!--<div class="container-fluid">
+  <center><h3>XRT sources test</h3></center>
+  <input type="button" id="scimma_xrt" value="GET Scimma XRT sources" class="btn btn-primary" style="display: block; margin: 0 auto;"/>
+  <div id ="scimmadiv"></div>
+</div>-->
+
 <div class = "container-fluid">
   <center><h3>Coverage Calculator</h3></center>
   <br>
@@ -528,10 +536,39 @@
             " - " + (new Number($( "#slider-range" ).slider( "values", 1 ))));
         });
 
+        $(document).ready( function() {
+          $('#scimma_xrt').click(function() {
+            var $btn = $(this).button('loading');
+            $.ajax(
+              {
+                  url: '/ajax_scimma_xrt',
+                  data: 'graceid={{ form.graceid }}'
+              }
+            ).done(function (scimma_xrt_sources) {
+              $('#scimmadiv').html('succss');
+              var xrt_layer = A.catalog({name:'XRT Sources'});
+              for (i = 0; i < scimma_xrt_sources.length; i++) {
+                    var marker = A.marker(scimma_xrt_sources[i].ra, scimma_xrt_sources[i].dec, {popupTitle: 'Source', popupDesc: scimma_xrt_sources[i].info})
+                    xrt_layer.addSources([marker])
+              }
+              xrt_layer.hide
+              aladin.addCatalog(xrt_layer)
+              $btn.button('reset');
+            });
+          });
+        });
+        $(document).ready(function () {
+          $(document).ajaxStart(function () {
+            $('#scimma_xrt').addClass('disabled');
+          }).ajaxStop(function () {
+            $('#scimma_xrt').removeClass('disabled');
+          });
+        });
     </script>
   </body>
 
   <body>
+
     <script type="text/javascript">
       $('#pointing_status').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
         window.location='/{{ form.page }}?graceids={{form.graceid}}&alert_type={{form.alert_type}}&pointing_status='+$(this).val()

@@ -673,6 +673,7 @@ class gw_galaxy_list(db.Model):
     graceid = db.Column(db.String)
     groupname = db.Column(db.String)
     submitterid = db.Column(db.Integer)
+    reference = db.Column(db.String)
 
     @property
     def json(self):
@@ -684,6 +685,7 @@ class gw_galaxy_entry(db.Model):
     name = db.Column(db.String)
     score = db.Column(db.Float)
     position = db.Column(Geography('POINT', srid=4326))
+    rank = db.Column(db.Integer)
     info = db.Column(db.JSON)
 
     @property
@@ -731,6 +733,14 @@ class gw_galaxy_entry(db.Model):
             self.name = p['name']
         else:
             v.errors.append("\'name\' is required for each galaxy in list")
+
+        if 'rank' in p:
+            if isInt(p['rank']):
+                self.rank = p['rank']
+            else:
+                v.errors.append('Invalid rank. Must be Integer')
+        else:
+            v.errors.append("\'rank\' is required for each galaxy in list")
 
         if 'info' in p:
             self.info = p['info']

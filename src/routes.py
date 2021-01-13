@@ -28,6 +28,7 @@ from plotly.subplots import make_subplots
 import ephem
 import io
 import requests
+import urllib.parse
 
 from . import function
 from . import models
@@ -823,6 +824,38 @@ def logout():
 
 #AJAX FUNCTIONS
 
+@app.route('/ajax_scimma_xrt')
+def ajax_scimma_xrt():
+	args = request.args
+	graceid = args['graceid']
+	keywords = {
+             'keyword':'',
+             'cone_search':'',
+             'polygon_search':'',
+             'alert_timestamp_after':'',
+             'alert_timestamp_before':'',
+             'role':'',
+             'event_trigger_number':graceid,
+             'ordering':'',
+             'page_size':1000,
+    }
+	base = 'http://skip.dev.hop.scimma.org/api/alerts/'
+	url = '{}?{}'.format(base, urllib.parse.urlencode(keywords))
+	r = requests.get(url)
+	payload = []
+	if r.status_code == 200:
+		package = json.loads(r.text)['results']
+		for p in package:
+			payload.append(
+				{
+					'ra':p['right_ascension'],
+					'dec':p['declination'],
+					'info':function.sanatize_XRT_source_info(p)
+				}
+			)
+	#print(payload)
+	return jsonify(payload)
+
 @app.route('/ajax_resend_verification_email')
 def ajax_resend_verification_email():
 	userid = current_user.id
@@ -1100,14 +1133,14 @@ def get_pointing_fromID():
 @app.route('/fixshit', methods=['GET'])
 def fixshit():
 
-	datatochange = db.session.query(models.gw_alert).filter(
-		models.gw_alert.graceid == 'S190425z'
-	)
+	datatochange = db.session.query(models.gw_galaxy_list)
 
-	for dtg in datatochange:
-		dtg.alternateid = 'GW190425z'
+	i = 1
+	for ge in datatochange:
+		ge.reference = "Phil Evans"
+		
 
-	#db.session.commit()
+	db.session.commit()
 
 	return 'success'
 
@@ -1507,6 +1540,7 @@ def construct_alertform(form, args):
 			models.gw_galaxy_entry.score,
 			models.gw_galaxy_entry.info,
 			models.gw_galaxy_entry.listid,
+			models.gw_galaxy_entry.rank,
 		).filter(
 			models.gw_galaxy_entry.listid.in_(galList_ids)
 		).all()
@@ -1520,7 +1554,7 @@ def construct_alertform(form, args):
 					"name":e.name,
 					"ra": ra,
 					"dec": dec,
-					"info":function.sanatize_gal_info(ra, dec, e.score, e.info)
+					"info":function.sanatize_gal_info(ra, dec, e.score, e.rank, glist.reference, e.info)
 				})
 			galaxy_cats.append({
 				"name":glist.groupname,
@@ -1851,11 +1885,16 @@ def post_event_galaxies():
 		groupname = user.username
 		warnings.append("no groupname given. Defaulting to api_token username")
 
+	reference = ""
+	if "reference" in args:
+		reference = args['reference']
+
 	#maybe include the possibility for a different delimiter for alert types as well. Not only graceids
 	gw_galist = models.gw_galaxy_list(
 		submitterid = user.id,
 		graceid = graceid,
-		groupname = groupname
+		groupname = groupname,
+		reference = reference,
 	)
 	db.session.add(gw_galist)
 	db.session.flush()
