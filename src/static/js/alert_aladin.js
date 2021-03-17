@@ -355,10 +355,6 @@ function aladin_drawInstHTML(
                 </fieldset>\
             </li>\
         ';
-        //overlayhtml += '<fieldset><label for="' + cat.name + '" style="display: inline-block;">';
-        //overlayhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked" style="display: inline-block;"> ';// + cat.name + ' </input>';
-        //overlayhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span> '+cat.name+'</span></input></label>';
-        //overlayhtml += '</fieldset></li>';
     }   
     overlayhtml += '</ul>';
     $('#'+div_name).html(overlayhtml)

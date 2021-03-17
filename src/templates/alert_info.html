@@ -139,7 +139,7 @@ div.constrained {
         <h4 style="display: inline-block;">Galaxies</h4> 
       </div>
       <div class="row">
-        <div class="collapse in" id='alert_gal_div'></div>
+        <div class="collapse in gal_coll" id='alert_gal_div'></div>
       </div>
       <!-- XRT sources block buttons and div -->
       <div class="row">
@@ -148,7 +148,7 @@ div.constrained {
         <h4 style="display: inline-block;">XRT Sources</h4> 
       </div>
       <div class="row">
-        <div class="collapse in" id ="alert_scimmadiv"></div>
+        <div class="collapse in xrt_coll" id ="alert_scimmadiv"></div>
       </div>
     </div>
     </div>
@@ -445,6 +445,11 @@ div.constrained {
     })
     $('#alert_gal_div').click(function(event) {
       if (event.target.id.includes('marker_group_')) {
+        var boxes = $('.gal_coll input:checkbox');
+        var checkedBoxes = $('.gal_coll input:checked');
+        var button = document.getElementById('alert_event_galaxies');
+        if (boxes.length == checkedBoxes.length) { button.innerHTML = 'Hide'}
+        if (checkedBoxes.length == 0) { button.innerHTML = 'Show'}
         aladin_markerToggleOne(set_aladin_markerlist['alert_gal'], event.target)
       }
       else if (event.target.id != '') {
@@ -453,10 +458,14 @@ div.constrained {
     })
     $('#alert_scimmadiv').click(function(event) {
       if (event.target.id.includes('marker_group_')) {
+        var boxes = $('.xrt_coll input:checkbox');
+        var checkedBoxes = $('.xrt_coll input:checked');
+        var button = document.getElementById('alert_scimma_xrt');
+        if (boxes.length == checkedBoxes.length) { button.innerHTML = 'Hide'}
+        if (checkedBoxes.length == 0) { button.innerHTML = 'Show'}
         aladin_markerToggleOne(set_aladin_markerlist['alert_xrt'], event.target)
       }
-      else 
-      if (event.target.id != '') {
+      else if (event.target.id != '') {
         aladin_animateToMarker(event.target, marker_list['alert_xrt'])
       }
     })
@@ -571,11 +580,13 @@ div.constrained {
         toShow = button.innerHTML == 'Show'
         aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], toShow)
         button.innerHTML = 'Show'
+        $('.gal_coll input:checkbox').prop('checked', toShow)
       }
       else if (button.innerHTML == 'Show') {
         toShow = button.innerHTML == 'Show'
         aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], toShow)
         button.innerHTML = 'Hide'
+        $('.gal_coll input:checkbox').prop('checked', toShow)
       }
     });
   });
@@ -609,11 +620,13 @@ div.constrained {
         toShow = button.innerHTML == 'Show'
         aladin_markerToggleAll(set_aladin_markerlist['alert_xrt'], toShow)
         button.innerHTML = 'Show'
+        $('.xrt_coll input:checkbox').prop('checked', toShow)
       }
       else if (button.innerHTML == 'Show') {
         toShow = button.innerHTML == 'Show'
         aladin_markerToggleAll(set_aladin_markerlist['alert_xrt'], toShow)
         button.innerHTML = 'Hide'
+        $('.xrt_coll input:checkbox').prop('checked', toShow)
       }
     });
   });
