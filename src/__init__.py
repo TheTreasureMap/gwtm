@@ -15,8 +15,9 @@ configPath = os.environ.get('CONFIGPATH')
 if configPath is None:
     configPath = '/var/www/gwtm'
 
-from . import function
-config = function.readconfig(configPath, '/config')
+from . import gwtmconfig
+gcfig = gwtmconfig.Config(configPath, '/config')
+config = gcfig.run()
 
 app.config["DEBUG"] = bool(config['DEBUG'])
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@'+config['host']+':'+str(config['port'])+'/'+config['db']+'?sslmode=verify-full&sslrootcert='+configPath+'/rds-ca-2019-root.pem'
@@ -39,7 +40,6 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = config['RECAPTCHA_PUBLIC_KEY']
 app.config['RECAPTCHA_PRIVATE_KEY'] = config['RECAPTCHA_PRIVATE_KEY']
 app.config['ZENODO_ACCESS_KEY'] = config['ZENODO_ACCESS_KEY']
 
-db = SQLAlchemy(app)
 mail = Mail(app)
 
 if not app.debug:
@@ -72,3 +72,5 @@ if not app.debug:
         print('Permissions have been reset. Type: sudo chmod a+rw /var/www/gwtm/logs/gwtm.log')
 
 from . import routes
+from . import ajaxrequests
+from . import api

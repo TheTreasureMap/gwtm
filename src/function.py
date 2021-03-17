@@ -1,16 +1,41 @@
-from numpy import genfromtxt
+
 import numpy as np
 import ephem
-from shapely.geometry import Polygon
-from shapely.geometry import Point
 import urllib
-from urllib.request import urlopen
 import astropy.io.fits as astro_fits
 import datetime
 import math
-from bs4 import BeautifulSoup
 import tempfile
 import os
+import geoalchemy2
+import json
+import pandas as pd
+import astropy
+import astropy.units as u
+import time
+import io
+import requests
+
+from numpy import genfromtxt
+from bs4 import BeautifulSoup
+from shapely.geometry import Polygon
+from shapely.geometry import Point
+from urllib.request import urlopen
+from flask_mail import Message
+from sqlalchemy import func
+from astropy.time import Time
+
+from src import app
+from src import mail
+from . import enums
+
+
+
+class overlay():
+	def __init__(self, name, color, contours):
+		self.name = name
+		self.color = color
+		self.contours = contours
 
 
 def readconfig(directory,_file):
@@ -134,21 +159,26 @@ def sanatize_footprint_ccds(ccds):
 		footprint_ccds.append(polygon)
 	return footprint_ccds
 
+
 def sanatize_XRT_source_info(info):
     ret = "<p>"
     ret += "<b> Timestamp: </b>"+str(info['alert_timestamp'])+"<br>"
     ret += "<b> Identifier: </b>"+str(info['alert_identifier'])+"<br></p>"
     return ret
 
-def sanatize_gal_info(ra, dec, score, rank, ref, g):
+
+def sanatize_gal_info(entry, glist):
+    ra, dec = sanatize_pointing(entry.position)
     ret = "<p>"
-    ret = "<b>Score: </b>"+str(score)+"<br>"
-    ret += "<b>Rank: </b>"+str(rank)+"<br>" 
-    if ref:
-        ret+= "<b>Reference: </b>"+ref+"<br>"
-    ret += "<b> RA, DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br></p><b>Other Information:</b><br><p>"
-    for key in g.keys():
-        ret += "<b>"+str(key)+":</b> "+str(g[key].split('\n')[0])+"<br>"
+    ret = "<b>Score: </b>"+str(entry.score)+"<br>"
+    ret += "<b>Rank: </b>"+str(entry.rank)+"<br>" 
+    if glist.reference:
+        ret+= "<b>Reference: </b>"+glist.reference+"<br>"
+    if glist.doi_url:
+        ret+= "<b>DOI: </b><a href="+glist.doi_url+">"+glist.doi_url+"</a><br>"
+    ret += "<b> RA DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br></p><b>Other Information:</b><br><p>"
+    for key in entry.info.keys():
+        ret += "<b>"+str(key)+":</b> "+str(entry.info[key]).split('\n')[0]+"<br>"
     ret += "</p>"
     return ret
 
@@ -431,3 +461,230 @@ def getFermiPointing(timestamp, theta_max=65, verbose=True):
         print("\nLAT Pointing @ %s (dt = %s seconds):\nRA = %s, Dec = %s\n" % (time[index_closest], time[index_closest]-trigger_met, ra_lat_pointing, dec_lat_pointing))
 
     return ra_lat_pointing, dec_lat_pointing
+
+
+def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
+
+	if dist_thresh is None:
+
+		filtered_pointings = [x for x in otherpointings if (
+			x.status.name == pointing.status and \
+			x.instrumentid == int(pointing.instrumentid) and \
+			x.band.name == pointing.band and \
+			x.time == pointing.time and \
+			x.pos_angle == floatNone(pointing.pos_angle)
+		)]
+
+		for p in filtered_pointings:
+			p_pos = str(geoalchemy2.shape.to_shape(p.position))
+			if sanatize_pointing(p_pos) == sanatize_pointing(pointing.position):
+				return True
+
+	else:
+
+		p_ra, p_dec = sanatize_pointing(pointing.position)
+
+		filtered_pointings = [x for x in otherpointings if (
+			x.status.name == pointing.status and \
+			x.instrumentid == int(pointing.instrumentid) and \
+			x.band.name == pointing.band
+		)]
+
+		for p in filtered_pointings:
+			ra, dec == sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
+			sep = 206264.806*(float(ephem.separation((ra, dec ), (p_ra, p_dec))))
+			if sep < dist_thresh:
+				return True
+
+	return False
+
+def extract_polygon(p, scale):
+	vertices = []
+	errors = []
+	try:
+		for itera,line in enumerate(p.split('\r\n')):
+			if line.strip() != "":
+				splitlineconfusion = line.split('(')[1].split(')')[0].split(',')
+				x = round(float(splitlineconfusion[0])*scale, 5)
+				y = round(float(splitlineconfusion[1])*scale, 5)
+				vertices.append([x, y])
+
+	except Exception as e:
+		errors.append("Error: " + str(e))
+		errors.append("For line "+str(itera+1)+": "+line)
+		errors.append("Please check the example for correct format")
+		return [vertices, errors]
+
+	if len(vertices) < 3:
+		errors.append('Invalid Polygon. Must have more than 2 vertices')
+		return [vertices, errors]
+
+	if vertices[0] != vertices[len(vertices)-1]:
+		vertices.append(vertices[0])
+
+	return [vertices, errors]
+
+
+def create_geography(vertices):
+	geom = "POLYGON(("
+	for v in vertices:
+		geom += str(v[0])+" "+str(v[1])+", "
+	geom = geom[0:len(geom)-2]
+	geom += "))"
+	return geom
+
+
+def send_email(subject, sender, recipients, text_body, html_body):
+	msg = Message(subject, sender=sender, recipients=recipients)
+	msg.body = text_body
+	msg.html = html_body
+	with app.app_context():
+		mail.send(msg)
+
+
+def send_account_validation_email(user, notify=True):
+	send_email(
+		"Treasure Map Account Verification",
+		"gwtreasuremap@gmail.com",
+		[user.email],
+		"",
+		"<p>Hello "+user.firstname+",<br><br> \
+		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=\"http://treasuremap.space/login?verification_key="+user.verification_key+"\">address</a> to verify your account. <br>\
+		Please do not reply to this email<br><br> \
+		Cheers from the Treasure Map team </p>",
+	)
+	if notify:
+		send_email(
+			"Treasure Map Account Verification",
+			"gwtreasuremap@gmail.com",
+			['swyatt@email.arizona.edu'],
+			"",
+			"<p>Hey Sam,<br><br> \
+			New GWTM account registration: <br> \
+			"+user.firstname+" "+user.lastname+" <br> \
+			email: "+user.email+" <br> \
+			username: "+user.username+" <br><br> \
+			Cheers you beautiful bastard</p>",
+		)
+
+def send_password_reset_email(user):
+	token = user.get_reset_password_token()
+	print(token, user.firstname)
+	send_email('GWTM Reset Your Password',
+			   "gwtreasuremap@gmail.com",
+			   [user.email],
+			   "",
+			   "<p>Dear "+user.username+",</p> \
+				<p>\
+				To reset your password \
+				<a href=\"http://treasuremap.space/reset_password?token="+token+"&_external=True\"> \
+				click here \
+				</a>.\
+				</p>\
+				<p>Alternatively, you can paste the following link in your browser's address bar:</p>\
+				<p>http://treasuremap.space/reset_password?token="+token+"&_external=True</p>\
+				<p>If you have not requested a password reset simply ignore this message.</p>\
+				<p>Sincerely,</p>\
+				<p>The Treasure Map Team</p>"
+	)
+
+def create_pointing_doi(points, graceid, creators, insts):
+    points_json = []
+
+    print(insts)
+    for p in points:
+        if p.status == enums.pointing_status.completed:
+            points_json.append(p.json)
+
+    if len(insts) > 1:
+        inst_str = "These observations were taken on the"
+        for i in insts:
+            if i == insts[len(insts)-1]:
+                inst_str +=  " and " + i
+            else:
+                inst_str += " " + i + ","
+
+        inst_str += " instruments."
+    else:
+        inst_str = "These observations were taken on the " + insts[0] + " instrument."
+
+    print(len(points_json), creators, inst_str)
+
+    if len(points_json):
+        payload = {
+            'data' : {
+                "metadata": {
+                    "title":"Submitted Completed pointings to the Gravitational Wave Treasure Map for event " + graceid,
+                    "upload_type":"dataset",
+                    "creators":creators,
+                    "description":"Attached in a .json file is the completed pointing information for "+str(len(points_json))+" observation(s) for the EM counterpart search associated with the gravitational wave event " + graceid +". " + inst_str
+                }
+            },
+            'data_file' : { 'name':'completed_pointings_'+graceid+'.json' },
+            'files' : { 'file':io.StringIO(json.dumps(points_json)) },
+            'headers' : { "Content-Type": "application/json" },
+        }
+
+        d_id, url = create_doi(payload)
+        return d_id, url
+
+    return None, None
+
+
+def create_galaxy_score_doi(galaxies, creators, reference, graceid, alert_type):
+
+    ref_str = '' if reference is None else "A reference to these calculations can be found here: {}".format(reference)
+
+    gal_json = []
+
+    for g in galaxies:
+        gal_json.append(g.json)
+
+    payload = {
+        'data' : {
+            "metadata": {
+                "title":"Submitted Galaxy Scores to the Gravitational Wave Treasure Map for event {} {}".format(graceid, alert_type),
+                "upload_type":"dataset",
+                "creators":creators,
+                "description":"Attached in a .json file is the ranked galaxy information within the contour region of the EM counterpart search associated with the gravitational wave event " + graceid +" "+alert_type+". "+ref_str
+            }
+        },
+        'data_file' : { 'name':'event_galaxies_'+graceid+'.json' },
+        'files' : { 'file':io.StringIO(json.dumps(gal_json)) },
+        'headers' : { "Content-Type": "application/json" },
+    }
+
+    d_id, url = create_doi(payload)
+    return d_id, url
+
+def create_doi(payload):
+
+    ACCESS_TOKEN = app.config['ZENODO_ACCESS_KEY']
+    data = payload['data']
+    data_file = payload['data_file']
+    files = payload['files']
+    headers = payload['headers']
+
+    r = requests.post('https://zenodo.org/api/deposit/depositions', params={'access_token': ACCESS_TOKEN}, json={}, headers=headers)
+    d_id = r.json()['id']
+    r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id, params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
+    r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % d_id, data=json.dumps(data), params={'access_token': ACCESS_TOKEN}, headers=headers)
+    r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id, params={'access_token': ACCESS_TOKEN})
+
+    return_json = r.json()
+    try:
+        doi_url = return_json['doi_url']
+    except:
+        doi_url = None
+    return int(d_id), doi_url
+
+
+def validate_authors(authors):
+	if len(authors) == 0:
+		return False, "At least one author is required"
+	for a in authors:
+		if a.name is None or a.name == "":
+			return False, "Author Name is required"
+		if a.affiliation is None or a.affiliation == "":
+			return False, "Affiliation is required"
+	return True, ''

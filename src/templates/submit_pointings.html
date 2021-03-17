@@ -50,7 +50,7 @@
 $(document).ready(function(){
   $("#loadid").focusout(function(){
     var optionValue = $("#loadid").val()
-    $.get('/pointingfromid?id='+optionValue, function(data, status){
+    $.get('/ajax_pointingfromid?id='+optionValue, function(data, status){
         $('#ra').val(data["ra"]);
         $("#dec").val(data["dec"]);
         $('#obs_status').val("completed");

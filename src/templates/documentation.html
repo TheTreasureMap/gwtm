@@ -596,12 +596,17 @@
                         <ul>
                             <li><i>api_token=api_token1</i></li>
                             <li><i>graceid=graceid1</i></li>
+                            <li><i>timesent_stamp=event_timesent1</i></li>
+                            <ul><li>this is the timestamp for the alertype of the given event. I.E. whether the uploaded galaxy list refers to the Initial, Preliminary, Update, etc for the GW Event. This timestamp information can be found on the given alert page</li></ul>
                             <li><i>groupname=groupname1</i></li>
                             <ul><li>this can be the name of the group that did the calculation, or will default to the username associated with the api_token</li></ul>
                             <li><i>reference=reference1</i></li>
                             <ul><li>this can be a link to a paper/DOI that describes the methods that calculates the galaxy scores. Not mandatory</li></ul>
                             <li><i>galaxies=galaxielist</i></li>
                             <ul><li>json list of [<i>name</i>, <i>position</i>, <i>score</i> (decimal), <i>rank</i> (integer), and <i>info</i> (json list parameters)</li></ul>
+                            <li><i>request_doi=True/False</i> - [default=False] to request a Digital Object Identifier for the list of galaxies</li>
+                            <li><i>creators=creatorslist1</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
+                            <li><i>doi_group_id=groupid</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
                         </ul>
                 </div>
                 <div class="column" style="background-color:#bbb;">
@@ -617,8 +622,11 @@
     json_data = {
         "api_token":"abcdefghijkl",
         "graceid":"graceid1",
+        "timesent_stamp":"2019-05-22T12:33:59",
         "groupname":groupname1,
-        "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper"
+        "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper",
+        "request_doi":True,
+        "doi_group_id":groupID
         "galaxies":[
             {
                 "position":"POINT(24.0 41.0)",
@@ -659,6 +667,8 @@
                             <li><i>api_token=api_token1</i></li>
                             <li><i>graceid=graceid1</i></li>
                             <ul><li>This is required</li></ul>
+                            <li><i>timesent_stamp=event_timesent1</i></li>
+                            <ul><li>Not required, but if sent in, it will filter the lists based on the alert type: Initial, Preliminary, Update.. etc</li></ul>
                             <li><i>groupname=groupname1</i></li>
                             <li><i>score_gt=score1</i></li>
                             <ul><li>(Greater than or equal to) If you want to filter by score >= <i>score1</i></li></ul>

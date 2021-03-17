@@ -1,23 +1,27 @@
 # -*- coding: utf-8 -*-
+import jwt
+import flask_sqlalchemy as fsq
+import geoalchemy2
+import os, json
+import datetime
+import secrets
+import math
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from time import time
-import jwt
-import flask_sqlalchemy as fsq
 from geoalchemy2 import Geometry, Geography
-import geoalchemy2
-from enum import Enum,IntEnum
-import os, json
-import datetime
+from time import time
+from sqlalchemy import func
 from flask_login import UserMixin
+
 from src.function import isInt, isFloat
 from src import app
 from src import login
-import secrets
-from . import routes
-import math
+
+from . import function
+from . import enums
 
 db = SQLAlchemy(app)
 
@@ -60,63 +64,6 @@ def to_json(inst, cls):
         else:
             d[c.name] = v
     return json.dumps(d)
-
-
-class depth_unit(IntEnum):
-    ab_mag = 1
-    vega_mag = 2
-    flux_erg = 3
-    flux_jy = 4
-
-    def __str__(self):
-        split_name = str(self.name).split('_')
-        return str.upper(split_name[0]) + ' ' + split_name[1]
-
-
-class pointing_status(IntEnum):
-    planned = 1
-    completed = 2
-    cancelled = 3
-
-
-class instrument_type(IntEnum):
-    photometric = 1
-    spectroscopic = 2
-
-
-class bandpass(IntEnum):
-    U = 1
-    B = 2
-    V = 3
-    R = 4
-    I = 5
-    J = 6
-    H = 7
-    K = 8
-    u = 9
-    g = 10
-    r = 11
-    i = 12
-    z = 13
-    UVW1 = 14
-    UVW2 = 15
-    UVM2 = 16
-    XRT = 17
-    clear = 18
-    open = 19
-    UHF = 20
-    VHF = 21
-    L = 22
-    S = 23
-    C = 24
-    X = 25
-    other = 26
-    TESS = 27
-
-
-class gw_galaxy_score_type(IntEnum):
-    default = 1
-
 
 class valid_mapping():
     def __init__(self):
@@ -211,7 +158,7 @@ class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     instrument_name = db.Column(db.String(25))
     nickname = db.Column(db.String(25))
-    instrument_type = db.Column(db.Enum(instrument_type))
+    instrument_type = db.Column(db.Enum(enums.instrument_type))
     datecreated = db.Column(db.Date)
     #footprint = db.Column(Geography('POLYGON', srid=4326))
     submitterid = db.Column(db.Integer)
@@ -261,7 +208,7 @@ class instrument(db.Model):
             vertices.append([-half_w, half_h])
 
             multi_vertices.append(vertices)
-            geom = routes.create_geography(vertices)
+            geom = function.create_geography(vertices)
             footprint.append(geom)
 
         if form.footprint_type.data == 'Circular':
@@ -293,7 +240,7 @@ class instrument(db.Model):
             vertices.append(vertices[0])
 
             multi_vertices.append(vertices)
-            geom = routes.create_geography(vertices)
+            geom = function.create_geography(vertices)
             footprint.append(geom)
 
         if form.footprint_type.data == 'Polygon':
@@ -309,7 +256,7 @@ class instrument(db.Model):
                 for poly in polygons:
                     try:
                         poly = poly.split('[')[1].split(']')[0]
-                        result = routes.extract_polygon(poly, scale)
+                        result = function.extract_polygon(poly, scale)
                         if len(result[1]) > 0:
                             for e in result[1]:
                                 v.errors.append(e)
@@ -318,14 +265,14 @@ class instrument(db.Model):
                             vertices = result[0]
 
                         multi_vertices.append(vertices)
-                        geom = routes.create_geography(vertices)
+                        geom = function.create_geography(vertices)
                         footprint.append(geom)
                     except Exception as e:
                         v.errors.append("Invalid Polygon. If error persists, contact administrator")
                         return [v]
 
             else:
-                result = routes.extract_polygon(p, scale)
+                result = function.extract_polygon(p, scale)
                 if len(result[1]) > 0:
                     for e in result[1]:
                         v.errors.append(e)
@@ -334,7 +281,7 @@ class instrument(db.Model):
                     vertices = result[0]
 
                 multi_vertices.append(vertices)
-                geom = routes.create_geography(vertices)
+                geom = function.create_geography(vertices)
                 footprint.append(geom)
 
         if len(footprint) == 0:
@@ -343,7 +290,7 @@ class instrument(db.Model):
 
         self.nickname = nickname
         self.instrument_name = instrument_name
-        self.instrument_type = instrument_type.photometric
+        self.instrument_type = enums.instrument_type.photometric
         self.submitterid = submitterid
         self.datecreated = datetime.datetime.now()
         return [v, footprint, multi_vertices]
@@ -358,28 +305,59 @@ class footprint_ccd(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+
 class pointing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Enum(pointing_status))
+    status = db.Column(db.Enum(enums.pointing_status))
     position = db.Column(Geography('POINT', srid=4326))
     galaxy_catalog = db.Column(db.Integer)
     galaxy_catalogid = db.Column(db.Integer)
     instrumentid = db.Column(db.Integer)
     depth = db.Column(db.Float)
     depth_err = db.Column(db.Float)
-    depth_unit = db.Column(db.Enum(depth_unit))
+    depth_unit = db.Column(db.Enum(enums.depth_unit))
     time = db.Column(db.Date)
     datecreated = db.Column(db.Date)
     dateupdated = db.Column(db.Date)
     submitterid = db.Column(db.Integer)
     pos_angle = db.Column(db.Float)
-    band = db.Column(db.Enum(bandpass))
+    band = db.Column(db.Enum(enums.bandpass))
     doi_url = db.Column(db.String(100))
     doi_id = db.Column(db.Integer)
 
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @staticmethod
+    def pointings_from_IDS(ids, filter=[]):
+
+        filter.append(instrument.id == pointing.instrumentid)
+        filter.append(pointing_event.pointingid.in_(ids))
+        filter.append(pointing.id.in_(ids))
+
+        pointings = db.session.query(
+            pointing.id,
+            func.ST_AsText(pointing.position).label('position'),
+            pointing.instrumentid,
+            pointing.band,
+            pointing.pos_angle,
+            pointing.depth,
+            pointing.depth_err,
+            pointing.depth_unit,
+            pointing.time,
+            pointing.status,
+            instrument.instrument_name,
+            instrument.instrument_type,
+            pointing_event.graceid
+        ).filter(*filter).all()
+
+        pointing_returns = {}
+        for p in pointings:
+            pointing_returns[str(p.id)] = p
+
+        return pointing_returns
+
 
     def from_json(self, p, dbinsts, userid, planned_pointings, otherpointings): #dbusers):
         v = valid_mapping()
@@ -390,28 +368,28 @@ class pointing(db.Model):
             pointingid = p['id']
             planned_pointing = planned_pointings[str(pointingid)]
 
-            if planned_pointing.status == pointing_status.completed or planned_pointing.status == pointing_status.cancelled:
+            if planned_pointing.status == enums.pointing_status.completed or planned_pointing.status == enums.pointing_status.cancelled:
                 v.errors.append('This pointing has already been '+planned_pointing.status.name)
 
             self.position = planned_pointing.position
             self.depth = planned_pointing.depth
             self.depth_err = planned_pointing.depth_err
             self.depth_unit = planned_pointing.depth_unit
-            self.status = pointing_status.completed
+            self.status = enums.pointing_status.completed
             self.band = planned_pointing.band
             self.instrumentid = planned_pointing.instrumentid
 
         if 'status' in p:
             userstatus = p['status']
-            validstatusints = [int(b) for b in pointing_status if b.name != 'cancelled']
-            validstatusstr = [str(b.name) for b in pointing_status if b.name != 'cancelled']
+            validstatusints = [int(b) for b in enums.pointing_status if b.name != 'cancelled']
+            validstatusstr = [str(b.name) for b in enums.pointing_status if b.name != 'cancelled']
             if userstatus in validstatusints or userstatus in validstatusstr:
                 self.status = userstatus
         elif not PLANNED:
-            self.status = pointing_status.completed
+            self.status = enums.pointing_status.completed
         else:
             v.warnings.append("No status given, or unrecognized status. Setting the status to planned")
-            self.status = pointing_status.planned
+            self.status = enums.pointing_status.planned
 
         if 'position' in p and not PLANNED:
             pos = p['position']
@@ -473,13 +451,13 @@ class pointing(db.Model):
                 self.depth = p['depth']
             else:        
                 v.errors.append('Invalid depth. Must b and not PLANNEDe decimal')
-        elif self.status == pointing_status.completed and not PLANNED:
+        elif self.status == enums.pointing_status.completed and not PLANNED:
             v.errors.append('depth is required for completed observations')
 
         if 'depth_unit' in p:
             du = p['depth_unit']
-            validdepthunit = [int(b) for b in depth_unit]
-            validdepthunitstr = [str(b.name) for b in depth_unit]
+            validdepthunit = [int(b) for b in enums.depth_unit]
+            validdepthunitstr = [str(b.name) for b in enums.depth_unit]
             if du in validdepthunit or du in validdepthunitstr:
                 self.depth_unit = du
             else:
@@ -498,7 +476,7 @@ class pointing(db.Model):
                 self.pos_angle = p['pos_angle']
             else:        
                 v.errors.append('Invalid pos_angle. Must be decimal')
-        elif self.status == pointing_status.completed:
+        elif self.status == enums.pointing_status.completed:
             v.errors.append('pos_angle is required for completed observations')
 
         if 'time' in p:
@@ -506,17 +484,17 @@ class pointing(db.Model):
                 self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
             except:
                 v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
-        elif self.status == pointing_status.planned:
+        elif self.status == enums.pointing_status.planned:
             v.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
-        elif self.status == pointing_status.completed:
+        elif self.status == enums.pointing_status.completed:
             v.errors.append('Field \"time\" is required for the observed pointing')
 
         self.submitterid = userid
         self.datecreated = datetime.datetime.now()
 
         if "band" in p and not PLANNED:
-            validbandints = [int(b) for b in bandpass]
-            validbandstr = [str(b.name) for b in bandpass]
+            validbandints = [int(b) for b in enums.bandpass]
+            validbandstr = [str(b.name) for b in enums.bandpass]
             userband = p['band']
             if userband in validbandints or userband in validbandstr:
                 self.band = userband
@@ -525,11 +503,12 @@ class pointing(db.Model):
         elif not PLANNED:
             v.errors.append("Field \"band\" is required")
 
-        if routes.pointing_crossmatch(self, otherpointings):
+        if function.pointing_crossmatch(self, otherpointings):
            v.errors.append("Pointing already submitted")
 
         v.valid = len(v.errors) == 0
         return v
+
 
 class pointing_event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -539,6 +518,7 @@ class pointing_event(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
 
 class glade_2p3(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -567,6 +547,7 @@ class glade_2p3(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
 
 class gw_alert(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -622,6 +603,32 @@ class gw_alert(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @staticmethod
+    def graceidfromalternate(graceid):
+        #if there is an input alternate id for this event, it will find the original graceid
+        #else it will return the input graceid
+
+        alternateids = db.session.query(gw_alert).filter(
+            gw_alert.alternateid == graceid
+        ).all()
+
+        if len(alternateids):
+            graceid = alternateids[0].graceid
+            
+        return graceid
+    
+    @staticmethod
+    def alternatefromgraceid(graceid):
+
+        alternateids = db.session.query(gw_alert).filter(
+            gw_alert.graceid == graceid
+        ).all()
+        if len(alternateids):
+            if alternateids[0].alternateid is not None:
+                graceid = alternateids[0].alternateid
+            
+        return graceid
+
 
 class gw_galaxy(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -637,7 +644,7 @@ class gw_galaxy(db.Model):
 class gw_galaxy_score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     gw_galaxyID = db.Column(db.Integer)
-    score_type = db.Column(db.Enum(gw_galaxy_score_type))
+    score_type = db.Column(db.Enum(enums.gw_galaxy_score_type))
     score = db.Column(db.Float)
 
     @property
@@ -668,16 +675,87 @@ class doi_author(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @staticmethod
+    def construct_creators(doi_group_id, userid):
+
+        if isInt(doi_group_id):
+            authors = db.session.query(doi_author).filter(
+                doi_author.author_groupid == int(doi_group_id),
+                doi_author.author_groupid == doi_author_group.id,
+                doi_author_group.userid == userid
+            ).order_by(
+                doi_author.id
+            ).all()
+        else:
+            authors = db.session.query(doi_author).filter(
+                doi_author.author_groupid == doi_author_group.id,
+                doi_author_group.name == doi_group_id,
+                doi_author_group.userid == userid
+            ).order_by(
+                doi_author.id
+            ).all()
+
+        if len(authors) == 0:
+            return False, []
+
+        creators = []
+        for a in authors:
+            a_dict = { "name":a.name, "affiliation":a.affiliation }
+            if a.orcid:
+                a_dict['orcid'] = a.orcid
+            if a.gnd:
+                a_dict['gnd'] = a.gnd
+            creators.append(a_dict)
+
+        return True, creators
+
+    @staticmethod
+    def authors_from_page(form):
+        authors = []
+        for aid, an, aff, orc, gnd in zip(
+                form.getlist('author_id'),
+                form.getlist('author_name'),
+                form.getlist('affiliation'),
+                form.getlist('orcid'),
+                form.getlist('gnd')
+            ):
+
+            if  str(aid) == "" or str(aid) == "None":
+                authors.append(
+                    doi_author(
+                        name=an,
+                        affiliation=aff,
+                        orcid=orc,
+                        gnd=gnd
+                    )
+                )
+            else:
+                authors.append(
+                    doi_author(
+                        id=int(aid),
+                        name=an,
+                        affiliation=aff,
+                        orcid=orc,
+                        gnd=gnd
+                    )
+                )
+        return authors
+
+
 class gw_galaxy_list(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
     groupname = db.Column(db.String)
     submitterid = db.Column(db.Integer)
     reference = db.Column(db.String)
+    alertid = db.Column(db.String)
+    doi_url = db.Column(db.String(100))
+    doi_id = db.Column(db.Integer)
 
     @property
     def json(self):
         return to_json(self, self.__class__)
+
 
 class gw_galaxy_entry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -700,7 +778,7 @@ class gw_galaxy_entry(db.Model):
             if "POINT" in pos:
                 self.position = p['position']
             else:
-                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
         else:
             if 'ra' in p or 'RA' in p:
                 ra = p['ra'] if 'ra' in p else p['RA']

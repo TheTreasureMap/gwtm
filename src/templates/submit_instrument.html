@@ -180,7 +180,7 @@ $(document).ready(function(){
 
 function preview(){
   var data = $('form').serialize();
-  $.get('/preview_footprint', data, function(returndata, status){
+  $.get('/ajax_preview_footprint', data, function(returndata, status){
     var graphs = JSON.parse(returndata);
     Plotly.newPlot('preview_graph', graphs );
   });

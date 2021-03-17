@@ -1,6 +1,7 @@
 {% block alert_viz %}
 <head>
 <style>
+
 .slidecontainer {
   width: 100%;
 }
@@ -35,33 +36,132 @@
   background: #4CAF50;
   cursor: pointer;
 }
+
+.alerttypeactive {
+  cursor: auto;
+  color: black;
+  background-color:darkgray;
+  outline: darkgray;
+  border: darkgray;
+}
+
+.alerttypeinactive {
+  cursor: pointer;
+}
+
+div.constrained {
+  overflow: auto;
+  height: 100px;
+}
+
+.scroll-section {
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.overlaycolorbox {
+  display: inline-block;
+  height: 13px;
+  width: 13px;
+  background-color: white;
+}
+
+.loadingtext {
+  font-style: italic;
+  color: darkgrey;
+}
+
+.loadingbutton {
+  font-style: italic;
+  cursor: not-allowed;
+}
+
 </style>
 </head>
+
+<link rel="stylesheet" href="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
+<link href="https://aladin.u-strasbg.fr/AladinLite/css/style.css" rel="stylesheet" />
+<script type="text/javascript" src="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
+    
 <body>
-  <ul class="nav nav-tabs">
-    {% for a_type in form.alert_types if a_type != "Retraction" %}
-      {% if a_type == form.alert_type %}
-        <li class="active"><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
+  <input type="hidden" id="hidden_alertid" value="{{ form.selected_alert_info.id }}">
+
+  <ul id='alerttypenav' class="nav nav-tabs">
+    {% for al in form.alert_type_tabs if al['type']!= "Retraction" %}
+      {% if al['type'] == form.alert_type %}
+        <!-- <li class="active"><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ al['type'] }}">{{ al['type'] }} <br> {{al['timesent']}}</a></li>-->
+        <li class="nav-item"><a class="alerttypeactive" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% else %}
-        <li><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ a_type }}">{{ a_type }}</a></li>
+        <li class="nav-item"><a class="alerttypeinactive" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% endif %}
     {% endfor %}
   </ul>
 
-  <div>
-    <div id="aladin-lite-div" style="position: relative;"></div>
+  <div class='row'>
+    <!-- The Aladin Viz -->
+    <div class='column'style="float:left; width: 75%;">
+      <div id="aladin-lite-div" style="position: relative;"></div>
+    </div>
+    <!-- Viz interaction column -->
+    <div class="column" style="float: right; width: 25%; padding-left: 2%;">
+      <div class="row">
+        <h3> Follow-Up </h3>
+      </div>
+      <!-- Instrument block buttons and div -->
+      <div class="row">
+        <button disabled id='alert_inst_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_instruments_div'></button> 
+        <button disabled id='alert_hideshow_inst' onclick='hideShowAll(this.id)' type="button" class="btn btn-primary btn-sm">Hide</button>
+        <h4 style="display: inline-block;" id='instrumentsHeader' class="loadingtext">...Loading...</h4> 
+      </div>
+      <div class="row">
+        <div class="collapse in scroll-section inst_coll" id="alert_instruments_div"></div>
+      </div>
+      <!-- GRB coverage block buttons and div -->
+      <div class="row">
+        <button id='alert_grb_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_grbcov_div'></button>
+        <button id='alert_hideshow_grb' onclick='hideShowAll(this.id)' type="button" class="btn btn-primary btn-sm">Show</button>
+        <h4 style="display: inline-block;">GRB Coverage</h4> 
+      </div>
+      <div class="row">
+        <div class="collapse in grb_coll" id="alert_grbcov_div"></div>
+      </div>
+      <div class="row">
+        <h3> Sources </h3>
+      </div>
+      <!-- Galaxies block buttons and div -->
+      <div class="row">
+        <button id='alert_gal_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_gal_div'></button> 
+        <button type="button" id="alert_event_galaxies" class="btn btn-primary btn-sm">Get</button>
+        <h4 style="display: inline-block;">Galaxies</h4> 
+      </div>
+      <div class="row">
+        <div class="collapse in" id='alert_gal_div'></div>
+      </div>
+      <!-- XRT sources block buttons and div -->
+      <div class="row">
+        <button id='alert_xrt_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_scimmadiv'></button>
+        <button type="button" id="alert_scimma_xrt" class="btn btn-primary btn-sm">Get</button>
+        <h4 style="display: inline-block;">XRT Sources</h4> 
+      </div>
+      <div class="row">
+        <div class="collapse in" id ="alert_scimmadiv"></div>
+      </div>
+    </div>
+    </div>
   </div>
+
+  <!-- pointing status selection and timeslider-->
   <div>
     <p><b>Pointing Status</b> 
-    <select class='selectpicker' name=pointing_status id=pointing_status>
-      {% for a in form.pointing_status %}
-        {% if a['value'] == form.status %}
-          <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
-        {% else %}
-          <option value={{ a['value'] }}>{{ a['name'] }}</option>
-        {% endif %}
-      {% endfor %}
-    </select>
+      <select class='selectpicker' name=pointing_status id=pointing_status>
+        {% for a in form.pointing_status %}
+          {% if a['value'] == form.status %}
+            <option selected='True' value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% else %}
+            <option value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
     </p>
 
     <p>
@@ -70,8 +170,11 @@
     </p>
      
     <div id="slider-range"></div>
+    <br>
   </div>
-    <div class="container-fluid">
+
+  <!-- GW Alert Information -->
+  <div class="container-fluid">
     <div class="row">
       <div class="col-sm-6">
         <table class="table">
@@ -86,34 +189,38 @@
             {% if form.selected_alert_info.group != 'None' and form.selected_alert_info.group != '' and form.selected_alert_info.group != None %}
             <tr class="info">
               <td>Group</td>
-              <td>{{ form.selected_alert_info.group }}</td>
+              <td id='alert_group'>{{ form.selected_alert_info.group }}</td>
             </tr>
             {% endif %}
             <tr class="info">
               <td>Detectors</td>
-              <td>{{ form.selected_alert_info.detectors }}</td>
+              <td id='alert_detectors'>{{ form.selected_alert_info.detectors }}</td>
             </tr>
             <tr class="info">
               <td>Time of Signal</td>
-              <td>{{ form.selected_alert_info.time_of_signal }} UTC</td>
+              <td id='alert_time_of_signal'>{{ form.selected_alert_info.time_of_signal }} UTC</td>
+            </tr>
+            <tr class="info">
+              <td>Time Sent</td>
+              <td id='alert_timesent'>{{ form.selected_alert_info.timesent }} UTC</td>
             </tr>
             <tr class="info">
               <td>False Alarm Rate</td>
-              <td>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
+              <td id='alert_human_far'>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
             </tr>
             {% if form.selected_alert_info.group != 'Burst' %}
             <tr class="info">
               <td>Distance</td>
-              <td>{{ form.distance }} +/- {{ form.distance_error }} Mpc</td>
+              <td id='alert_distance_plus_error'>{{ form.distance }} +/- {{ form.distance_error }} Mpc</td>
             </tr>
             {% else %}
             <tr class="info">
               <td>Central Frequency</td>
-              <td>{{form.selected_alert_info.centralfreq}} Hz</td>
+              <td id='alert_centralfreq'>{{form.selected_alert_info.centralfreq}} Hz</td>
             </tr>
             <tr class="info">
               <td>Duration</td>
-              <td>{{form.selected_alert_info.duration}} seconds</td>
+              <td id='alert_duration'>{{form.selected_alert_info.duration}} seconds</td>
             </tr>
             {% endif %}
           </tbody>
@@ -131,31 +238,31 @@
           <tbody>
             <tr class="info">
               <td>BNS</td>
-              <td>{{ form.selected_alert_info.prob_bns }}</td>
+              <td id='alert_prob_bns'>{{ form.selected_alert_info.prob_bns }}</td>
             </tr>
             <tr class="info">
               <td>NSBH</td>
-              <td>{{ form.selected_alert_info.prob_nsbh }}</td>
+              <td id='alert_prob_nsbh'>{{ form.selected_alert_info.prob_nsbh }}</td>
             </tr>
             <tr class="info">
               <td>Mass Gap</td>
-              <td>{{ form.selected_alert_info.prob_gap }}</td>
+              <td id='alert_prob_gap'>{{ form.selected_alert_info.prob_gap }}</td>
             </tr>
             <tr class="info">
               <td>BBH</td>
-              <td>{{ form.selected_alert_info.prob_bbh }}</td>
+              <td id='alert_prob_bbh'>{{ form.selected_alert_info.prob_bbh }}</td>
             </tr>
             <tr class="info">
               <td>Terrestrial</td>
-              <td>{{ form.selected_alert_info.prob_terrestrial }}</td>
+              <td id='alert_prob_terrestrial'>{{ form.selected_alert_info.prob_terrestrial }}</td>
             </tr>
             <tr class="info">
               <td>Has NS</td>
-              <td>{{ form.selected_alert_info.prob_hasns }}</td>
+              <td id='alert_prob_hasns'>{{ form.selected_alert_info.prob_hasns }}</td>
             </tr>
             <tr class="info">
               <td>Has Remnant</td>
-              <td>{{ form.selected_alert_info.prob_hasremenant }}</td>
+              <td id='alert_prob_hasremenant'>{{ form.selected_alert_info.prob_hasremenant }}</td>
             </tr>
           </tbody>
         </table>
@@ -164,51 +271,28 @@
     </div>
   </div>
 
-  <script>
-    $(document).ready( function() {
-        $('#calculate').click(function() {
-          var $btn = $(this).button('loading');
-          var inst_cov = $('#inst_cov').val()
-          var band_cov = $('#band_cov').val()
-          var depth_cov = $('#depth_cov').val()
-          var depth_unit = $('#depth_unit').val()
-           $.ajax(
-             {
-                url: '/coverage',
-                data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit
-             }
-           ).done(function (reply) {
-             $('#coveragediv').html(reply);
-             $btn.button('reset');
-           });
-        });
-    });
-    $(document).ready(function () {
-    $(document).ajaxStart(function () {
-        $('#calculate').addClass('disabled');
-    }).ajaxStop(function () {
-        $('#calculate').removeClass('disabled');
-
-    });
-});
-</script>
-
-<!--<div class="container-fluid">
-  <center><h3>XRT sources test</h3></center>
-  <input type="button" id="scimma_xrt" value="GET Scimma XRT sources" class="btn btn-primary" style="display: block; margin: 0 auto;"/>
-  <div id ="scimmadiv"></div>
-</div>-->
-
+<!-- BEGIN: coverage calculator -->
 <div class = "container-fluid">
   <center><h3>Coverage Calculator</h3></center>
+
   <br>
 
-  <i>
-  Calculate the coverage of the GW localization over time, with choices to limit the coverage calculation to particular sets of instruments, wavelengths, or depth. All fields are optional, but cuts on depths must have an associated unit. If an empty form is submitted, the total reported coverage regardless of depth or band is computed. Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability when the same field is covered multiple times. After clicking, be patient, it may take up to 20 seconds to fully compute the coverage profile.</i>
+  <i> 
+    Calculate the coverage of the GW localization over time, 
+    with choices to limit the coverage calculation to particular sets of instruments, 
+    wavelengths, or depth. All fields are optional, but cuts on depths must have an associated unit. 
+    If an empty form is submitted, the total reported coverage regardless of depth or band is computed. 
+    Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
+    when the same field is covered multiple times. After clicking, be patient, it may take up to 20 seconds 
+    to fully compute the coverage profile.
+  </i>
+
   <br>
 
+  <!-- Coverage plot placeholder -->
   <div id ="coveragediv"></div>
   
+  <!-- Coverage plot input parameters-->
   <b>Instrument</b>
   <select class="selectpicker" multiple data-live-search="true" name=inst_cov id=inst_cov>
       {% for a in form.inst_cov %}
@@ -235,344 +319,331 @@
   </select>
   <br><br>
   <input type="button" id="calculate" value="Calculate" class="btn btn-primary" style="display: block; margin: 0 auto;"/>
-  </div>
 </div>
-    <link rel="stylesheet" href="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
-    <link href="https://aladin.u-strasbg.fr/AladinLite/css/style.css" rel="stylesheet" />
-
-    <br><br>
-    <script type="text/javascript" src="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
     
-    <!-- Creation of Aladin Lite instance with initial parameters -->
-    <script>
+<!-- Creation of Aladin Lite instance with initial parameters -->
+<script type='text/javascript'>
 
-        var survey = "P/DSS2/color"
-        var fov = 180
-        var target = "{{form.avgra}} {{form.avgdec}}"
-        var aladinParams = {fov: fov, target: target, showGotoControl:true, showFullscreenControl: true, showSimbadPointerControl: true, showShareControl: true, realFullscreen: false, cooFrame:"ICRSd", showReticle: false};
-        var aladin = A.aladin('#aladin-lite-div', aladinParams)
+  var inst_overlays = {}
+  var marker_list = {}
+  var target_init = "{{ form.avgra }} {{ form.avgdec }}"
+  var detection_overlays = JSON.parse('{{ detection_overlays | tojson }}');
+  var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
+  var galaxy_cats = JSON.parse('{{ galaxy_cats | tojson }}');
 
-        var detection_overlays = JSON.parse('{{ detection_overlays | tojson }}');
-        var inst_overlays = JSON.parse('{{ inst_overlays | tojson }}');
-        var GRBoverlays = JSON.parse('{{ GRBoverlays | tojson }}');
-        var galaxy_cats = JSON.parse('{{ galaxy_cats | tojson }}');
+  var sun_ra = '{{ form.selected_alert_info.sun_ra }}';
+  var sun_dec = '{{ form.selected_alert_info.sun_dec }}';
+  var moon_ra = '{{ form.selected_alert_info.moon_ra }}';
+  var moon_dec = '{{ form.selected_alert_info.moon_dec }}';
 
-        $('input[name=survey]').change(function() {
-        aladin.setImageSurvey($(this).val());});
+  var slider_min = new Number('{{ form.mintime }}');
+  var slider_max = new Number('{{ form.maxtime }}');
+  var slider_step = new Number('{{ form.step }}');
+  var slider_vals = [(slider_min), (slider_max)];
+</script>
+<script type='text/javascript' src="{{ url_for('static',filename='js/alert_aladin.js') }}"></script>
+<script type='text/javascript'>
+  var data = {
+    detection_overlays: detection_overlays,
+    inst_overlays: inst_overlays,
+    GRBoverlays: GRBoverlays,
+    target_init: target_init,
+    sun_ra: sun_ra,
+    sun_dec: sun_dec,
+    moon_ra: moon_ra,
+    moon_dec: moon_dec,
+  }
+  var d = gwtmAladinInit(data)
+  data.aladin = d.aladin
+  var aladin = d.aladin
+  var detectionoverlaylist = d.detectionoverlaylist
+  var grboverlaylist = d.grboverlaylist
+  var instoverlaylist = {}
+  var set_aladin_markerlist = {} 
 
-        var sunImg = new Image();
-        sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
-        var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
-        aladin.addCatalog(cat);
-        cat.addSources(A.source('{{ form.selected_alert_info.sun_ra }}', '{{ form.selected_alert_info.sun_dec }}'));
+  //This asynchronously queries for the instrument footprints
+  //Page load time saver.
+  window.onload = function(){
+    $('#instrumentsHeader').text('...Loading...')
+    $.ajax(
+      {
+        url: '/ajax_alertinstruments_footprints',
+        data: 'graceid={{ form.graceid }}&tos_mjd={{ form.tos_mjd }}',
+        async: true
+      }
+    ).done( function(payload){
+      data.inst_overlays = payload
+      aladin_drawInstHTML(data.inst_overlays, 'alert_instruments_div')
+      instoverlaylist = aladin_setContours(aladin, payload)
+      aladin.view.requestRedraw();
+
+      $('#instrumentsHeader').text('Instruments')
+      $('#instrumentsHeader').removeClass('loadingtext')
+      $('#alert_inst_coll').prop('disabled', false); 
+      $('#alert_hideshow_inst').prop('disabled', false);
+    });
+  }
+</script>
+<!-- Page Interaction JS -->
+<script>
+
+  //twistyyyyy -> changes collapsible stuff
+  function changeCollapseButtonText(clicked_id){
+    var button = document.getElementById(clicked_id);
     
-        var moonImg = new Image();
-        moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
-        var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
-        aladin.addCatalog(cat);
-        cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
+    if (button.classList.contains('right-triangle')) { 
+      button.classList.replace('right-triangle', 'down-triangle')
+    }
+    else {
+      button.classList.replace('down-triangle', 'right-triangle')
+    }
+  }
 
-        GRBoverlaylist=[];
-        for (i = 0; i < GRBoverlays.length; i++) {
-          var moc = A.MOCFromJSON(GRBoverlays[i].json, {opacity: 0.25, color: GRBoverlays[i].color, lineWidth: 1, name: GRBoverlays[i].name});
-          aladin.addMOC(moc);
-          GRBoverlaylist[i] = moc;
-          //initialize unshown
-          moc.hide()
+  //Toggles the instrument and GRB overlays
+  function hideShowAll(clicked_id) {
+    var button = document.getElementById(clicked_id);
+    toShow = (button.innerHTML == 'Show')
+    if (clicked_id == 'alert_hideshow_inst') {
+      aladin_overlayToggleAll(instoverlaylist, toShow)
+      $('.inst_coll input:checkbox').prop('checked', toShow)
+    }
+    if (clicked_id == 'alert_hideshow_grb') {
+      aladin_mocToggleAll(grboverlaylist, toShow)
+      $('.grb_coll input:checkbox').prop('checked', toShow)
+    }
+    if (toShow) { button.innerHTML = 'Hide'}
+    else { button.innerHTML = 'Show' }
+  }
+
+  //Listens to clicks in the respective <div>'s
+  //  the follow-ups remove clicked overlays
+  //  the sources interactively animate the vizualization to the source
+  $(document).ready( function() {
+    $('#alert_instruments_div').click(function(event) {
+      if (event.target.id != '') { 
+        var boxes = $('.inst_coll input:checkbox');
+        var checkedBoxes = $('.inst_coll input:checked');
+        var button = document.getElementById('alert_hideshow_inst');
+        if (boxes.length == checkedBoxes.length) { button.innerHTML = 'Hide'}
+        if (checkedBoxes.length == 0) { button.innerHTML = 'Show'}
+        aladin_overlayToggleOne(event.target, instoverlaylist)
+      }
+    })
+    $('#alert_grbcov_div').click(function(event) {
+      if (event.target.id != '') { 
+        var boxes = $('.grb_coll input:checkbox');
+        var checkedBoxes = $('.grb_coll input:checked');
+        var button = document.getElementById('alert_hideshow_grb');
+        if (boxes.length == checkedBoxes.length) { button.innerHTML = 'Hide'}
+        if (checkedBoxes.length == 0) { button.innerHTML = 'Show'}
+        aladin_mocToggleOne(event.target, grboverlaylist)
+      }
+    })
+    $('#alert_gal_div').click(function(event) {
+      if (event.target.id != '') {
+        aladin_animateToMarker(event.target, marker_list['alert_gal'])
+      }
+    })
+    $('#alert_scimmadiv').click(function(event) {
+      if (event.target.id != '') {
+        aladin_animateToMarker(event.target, marker_list['alert_xrt'])
+      }
+    })
+  });
+
+  //redraw with new contour from the alert type tabs
+  $(document).ready( function() {
+    $('#alerttypenav').click(function(event) {
+
+      if (event.target.id != 'alerttypenav') {
+        var actives = document.getElementsByClassName('alerttypeactive')
+        var thisEl = document.getElementById(event.target.id)
+        for(i = 0; i<actives.length; i++){
+          actives[i].classList.replace('alerttypeactive', 'alerttypeinactive')
         }
+        thisEl.classList.add('alerttypeactive')
 
-        overlaylist = [];
-        for (i = 0; i < inst_overlays.length; i++) {
-          var contour = A.graphicOverlay({id: i, color:inst_overlays[i].color, lineWidth: 2, name:inst_overlays[i].name});
-          aladin.addOverlay(contour);
-          var overlay_contours = inst_overlays[i].contours
-          for (j = 0; j < overlay_contours.length; j++){
-            contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
+        $.ajax(
+          {
+            url: '/ajax_alerttype',
+            data: 'urlid='+thisEl.id
           }
-          overlaylist[i] = []
-          overlaylist[i][0] = contour;
-          overlaylist[i][1] = true //toshow
-          overlaylist[i][2] = inst_overlays[i].color //tocolor
-        }
+        ).done(function (payload){
+          $('#hidden_alertid').val(payload['hidden_alertid']);
+          $('#alert_group').text(payload['alert_group']);
+          $('#alert_detectors').text(payload['alert_detectors']);
+          $('#alert_time_of_signal').text(payload['alert_time_of_signal']);
+          $('#alert_timesent').text(payload['alert_timesent']);
+          $('#alert_human_far').text(payload['alert_human_far']);
+          $('#alert_distance_plus_error').text(payload['alert_distance_plus_error']);
+          $('#alert_centralfreq').text(payload['alert_centralfreq']);
+          $('#alert_duration').text(payload['alert_duration']);
+          $('#alert_prob_bns').text(payload['alert_prob_bns']);
+          $('#alert_prob_nsbh').text(payload['alert_prob_nsbh']);
+          $('#alert_prob_gap').text(payload['alert_prob_gap']);
+          $('#alert_prob_bbh').text(payload['alert_prob_bbh']);
+          $('#alert_prob_terrestrial').text(payload['alert_prob_terrestrial']);
+          $('#alert_prob_hasns').text(payload['alert_prob_hasns']);
+          $('#alert_prob_hasremenant').text(payload['alert_prob_hasremenant']);
 
-        for (i = 0; i < galaxy_cats.length; i++) {
-          var gal_markers = galaxy_cats[i].markers
-          var markerlayer = A.catalog({name:galaxy_cats[i].name})
-          for (j = 0; j < gal_markers.length; j++) {
-            var marker = A.marker(gal_markers[j].ra, gal_markers[j].dec, {popupTitle: gal_markers[j].name+"_gal", popupDesc: gal_markers[j].info})
-            markerlayer.addSources([marker])
+          aladin.removeLayers()
+          data.detection_overlays = payload.detection_overlays;
+          
+          d = gwtmAladinInit(data)
+          aladin = d.aladin
+          detectionoverlaylist = d.detectionoverlaylist
+          instoverlaylist = d.instoverlaylist
+          grboverlaylist = d.grboverlaylist
+
+          //This should be deleted once markers are encorporated into the gwtmAladinInit
+          $('#alert_gal_div').html('');
+          var button = document.getElementById('alert_event_galaxies');
+          button.innerHTML = 'Get'
+
+          $('#alert_scimmadiv').html('');
+          var button = document.getElementById('alert_scimma_xrt');
+          button.innerHTML = 'Get'
+        })
+      }
+    })
+  })
+
+  //Function that creates the Coverage plot
+  $(document).ready( function() {
+      $('#calculate').click(function() {
+        $('#calculate').prop('disabled', true)
+        var $btn = $(this).button('loading');
+        var inst_cov = $('#inst_cov').val()
+        var band_cov = $('#band_cov').val()
+        var depth_cov = $('#depth_cov').val()
+        var depth_unit = $('#depth_unit').val()
+        $.ajax(
+          {
+              url: '/ajax_coverage_calculator',
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit
           }
-          markerlayer.hide
-          aladin.addCatalog(markerlayer)
-        }
-
-        detectionoverlaylist=[];
-        for (i = 0; i < detection_overlays.length; i++) {
-          var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
-          aladin.addOverlay(contour);
-          var overlay_contours = detection_overlays[i].contours
-          for (j = 0; j < overlay_contours.length; j++){
-            contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-          }
-          detectionoverlaylist[i] = []
-          detectionoverlaylist[i][0] = contour;
-          detectionoverlaylist[i][1] = true //toshow
-          detectionoverlaylist[i][2] = detection_overlays[i].color //tocolor
-        }
-        
-        // var detectionlayersControl = aladin.box({title: 'Detections', position: 'top', css: {left: '75%', 'overflow-y': 'scroll', 'max-height': '50%'}});
-
-        var instlayersControl = aladin.box({title: 'Follow-up Instruments', position: 'right', css: {top: '55%', 'overflow-y': 'scroll', 'max-height': '50%'}});
-
-        var GRBlayersControl = aladin.box({title: 'GRB Coverage', position: 'right', css: {top: '30%', 'overflow-y': 'scroll', 'max-height': '50%'}});
-
-        // var DEThtml = '<form id="DetectionSelector">';
-        // for (var k=0 ; k<detection_overlays.length; k++) {
-        //     var cat = detection_overlays[k];
-        //     DEThtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
-        //     DEThtml += '</fieldset>';
-        // }
-        // DEThtml += '</form>';
-        // detectionlayersControl.setContent(DEThtml);
-        // detectionlayersControl.show();
-
-        var html = '<form id="InstrumentSelector">';
-        for (var k=0 ; k<inst_overlays.length; k++) {
-            var cat = inst_overlays[k];
-            html += '<fieldset><span class="indicator right-triangle"></span><label for="' + cat.name + '">';
-            html += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked"  >' + cat.name + '</input></label>';
-            html += '<div class="cat-options" style="display: none;"><table><tr><td>Color</td><td><input type="color"></input></td></tr></select></td></tr></table></div>';
-            html += '</fieldset>';
-        }
-        html += '</form>';
-        instlayersControl.setContent(html);
-        instlayersControl.show();
-
-        var GRBhtml = '<form id="GRBInstrumentSelector">';
-        for (var k=0 ; k<GRBoverlays.length; k++) {
-            var cat = GRBoverlays[k];
-            if (cat.name == 'Fermi in South Atlantic Anomaly'){
-              GRBhtml += '<fieldset><label for="' + cat.name + '">' + cat.name + '</label>';
-              GRBhtml += '</fieldset>';
-            } else {
-            GRBhtml += '<fieldset><label for="' + cat.name + '">';
-            GRBhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" >' + cat.name + '</input></label>';
-            GRBhtml += '</fieldset>';
-            }
-        }
-        GRBhtml += '</form>';
-        GRBlayersControl.setContent(GRBhtml);
-        GRBlayersControl.show();
-
-        $('#DetectionSelector :checkbox').change(function() {
-            var iter = 0
-            for(var k=0; k<detectionoverlaylist.length; k++)
-            {
-              if (this.value == detectionoverlaylist[k][0].name) {
-                iter = k
-              }
-            }
-            if (this.checked) {
-                detectionoverlaylist[iter][0].show()
-                detectionoverlaylist[iter][1] = true
-            }
-            else {
-                detectionoverlaylist[iter][0].hide()
-                detectionoverlaylist[iter][1] = false
-            }
+        ).done(function (reply) {
+          $('#calculate').prop('disabled', false)
+          $btn.button('reset')
+          $('#coveragediv').html(reply);
         });
-
-
-        $('#InstrumentSelector :checkbox').change(function() {
-            var iter = 0
-            for(var k=0; k<overlaylist.length; k++)
-            {
-              if (this.value == overlaylist[k][0].name) {
-                iter = k
-              }
-            }
-            if (this.checked) {
-                overlaylist[iter][0].show()
-                overlaylist[iter][1] = true
-            }
-            else {
-                overlaylist[iter][0].hide()
-                overlaylist[iter][1] = false
-            }
-        });
-
-        $('#GRBInstrumentSelector :checkbox').change(function() {
-            var iter = 0
-            for(var k=0; k<GRBoverlaylist.length; k++)
-            {
-              if (this.value == GRBoverlaylist[k].name) {
-                iter = k
-              }
-            }
-
-            if (this.checked) {
-                GRBoverlaylist[iter].show()
-            }
-            else {
-                GRBoverlaylist[iter].hide()
-            }
-        });
-
-        $("#InstrumentSelector input[type='color']").change(function() {
-            var contname = $(this).parents('fieldset').find("input[type='checkbox']").val();
-
-            var iter = 0
-            for(var k=0; k<overlaylist.length; k++)
-            {
-              if (contname == overlaylist[k][0].name) {
-                iter = k
-              }
-            }
-
-            overlaylist[iter][0].color=this.value;
-            overlaylist[iter][2] = this.value
-            aladin.view.requestRedraw();
-        });
-
-        $('.indicator').click(function() {
-            var $this = $(this);
-            if ($this.hasClass('right-triangle')) {
-                $this.removeClass('right-triangle');
-                $this.addClass('down-triangle');
-                $this.parent().find('.cat-options').slideDown(300);
-                var hipsId = $(this).parent().find("input[type='checkbox']").val();
-                var iter = 0
-                for(var k=0; k<overlaylist.length; k++)
-                {
-                  if (hipsId == overlaylist[k][0].name) {
-                    iter = k
-                  }
-                }
-                $this.parent().find("input[type='color']").val(overlaylist[iter][0].color);
-            }
-            else {
-                $this.removeClass('down-triangle');
-                $this.addClass('right-triangle');
-                $this.parent().find('.cat-options').slideUp(300);
-            }
-        });
-
-        
-        $(function() {
-          $( "#slider-range" ).slider({
-            range: true,
-            min: new Number('{{ form.mintime }}'),
-            max: new Number('{{ form.maxtime }}'),
-            step: new Number('{{ form.step }}'),
-            values: [ (new Number('{{ form.mintime }}')), (new Number('{{ form.maxtime }}')) ],
-
-            slide: function( event, ui ) {
-                $( "#amount" ).val((new Number(ui.values[ 0 ])).toFixed(3) + " - " + (new Number(ui.values[ 1 ])).toFixed(3));
-                aladin.removeLayers()
-
-                var sunImg = new Image();
-                sunImg.src = "{{url_for('static',filename='sun-logo-100.png')}}";
-                var cat = A.catalog({shape: sunImg, name: 'Sun at GW T0'});
-                aladin.addCatalog(cat);
-                cat.addSources(A.source('{{ form.selected_alert_info.sun_ra }}', '{{ form.selected_alert_info.sun_dec }}'));;
-
-                var moonImg = new Image();
-                moonImg.src = "{{url_for('static',filename='moon-supersmall.png')}}";
-                var cat = A.catalog({shape: moonImg, name: 'Moon at GW T0'});
-                aladin.addCatalog(cat);
-                cat.addSources(A.source('{{ form.selected_alert_info.moon_ra }}', '{{ form.selected_alert_info.moon_dec }}'));
-                
-                for (i = 0; i < GRBoverlaylist.length; i++) {
-                  aladin.addMOC(GRBoverlaylist[i]);
-                }
-
-                
-
-                for (i = 0; i < galaxy_cats.length; i++) {
-                  var gal_markers = galaxy_cats[i].markers
-                  var markerlayer = A.catalog({name:galaxy_cats[i].name})
-                  for (j = 0; j < gal_markers.length; j++) {
-                    var marker = A.marker(gal_markers[j].ra, gal_markers[j].dec, {popupTitle: gal_markers[j].name, popupDesc: gal_markers[j].info})
-                    markerlayer.addSources([marker])
-                  }
-                  markerlayer.hide
-                  aladin.addCatalog(markerlayer)
-                }
-
-                var mint = new Number(ui.values[0])
-                var maxt = new Number(ui.values[1])
-                for (i = 0; i < inst_overlays.length; i++) {
-                    var toshow = false
-                    var tocolor = ''
-                    var iter = 0
-
-                    for (j = 0; j < overlaylist.length; j++) {
-                      if (inst_overlays[i].name == overlaylist[j][0].name) {toshow = overlaylist[j][1]; tocolor = overlaylist[j][2]; iter = j}
-                    }
-                    
-                    var contour = A.graphicOverlay({id: i, color:tocolor, lineWidth: 2, name:inst_overlays[i].name});
-                    aladin.addOverlay(contour);
-                    var overlay_contours = inst_overlays[i].contours
-                    for (j = 0; j < overlay_contours.length; j++){
-                      if (overlay_contours[j].time >= mint && overlay_contours[j].time <= maxt || inst_overlays[i].name == 'GW Contour'){
-                        contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-                      }
-                      if (!toshow) { contour.hide() }
-                    }
-                    overlaylist[iter][0] = contour
-                }
-
-                for (i = 0; i < detection_overlays.length; i++) {
-                  var contour = A.graphicOverlay({id: i, color:detection_overlays[i].color, lineWidth: 2, name:detection_overlays[i].name});
-                  aladin.addOverlay(contour);
-                  var overlay_contours = detection_overlays[i].contours
-                  for (j = 0; j < overlay_contours.length; j++){
-                    contour.addFootprints([A.polygon(overlay_contours[j].polygon)])
-                  }
-                }
-            }
-          });
-          $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +
-            " - " + (new Number($( "#slider-range" ).slider( "values", 1 ))));
-        });
-
-        $(document).ready( function() {
-          $('#scimma_xrt').click(function() {
-            var $btn = $(this).button('loading');
-            $.ajax(
-              {
-                  url: '/ajax_scimma_xrt',
-                  data: 'graceid={{ form.graceid }}'
-              }
-            ).done(function (scimma_xrt_sources) {
-              $('#scimmadiv').html('succss');
-              var xrt_layer = A.catalog({name:'XRT Sources'});
-              for (i = 0; i < scimma_xrt_sources.length; i++) {
-                    var marker = A.marker(scimma_xrt_sources[i].ra, scimma_xrt_sources[i].dec, {popupTitle: 'Source', popupDesc: scimma_xrt_sources[i].info})
-                    xrt_layer.addSources([marker])
-              }
-              xrt_layer.hide
-              aladin.addCatalog(xrt_layer)
-              $btn.button('reset');
-            });
-          });
-        });
-        $(document).ready(function () {
-          $(document).ajaxStart(function () {
-            $('#scimma_xrt').addClass('disabled');
-          }).ajaxStop(function () {
-            $('#scimma_xrt').removeClass('disabled');
-          });
-        });
-    </script>
-  </body>
-
-  <body>
-
-    <script type="text/javascript">
-      $('#pointing_status').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-        window.location='/{{ form.page }}?graceids={{form.graceid}}&alert_type={{form.alert_type}}&pointing_status='+$(this).val()
       });
-    </script>
+  });
+
+  //getting the alert event galaxies
+  $(document).ready( function() {
+    $('#alert_event_galaxies').click(function() {
+      var button = document.getElementById('alert_event_galaxies');
+      var alertid = document.getElementById('hidden_alertid').value;
+      if (button.innerHTML == 'Get') {
+        $('#alert_event_galaxies').prop('disabled', true)
+        $.ajax(
+        {
+            url: '/ajax_event_galaxies',
+            data: 'alertid='+alertid
+        }
+        ).done(function (event_galaxies) {
+          $('#alert_event_galaxies').prop('disabled', false)
+          if (event_galaxies.length > 0) {
+            marker_list['alert_gal'] = event_galaxies
+            gal_markerlist = aladin_setMarkers(aladin, event_galaxies)
+            aladin_setMarkerHtml(event_galaxies, 'alert_gal_div')
+            button.innerHTML = 'Hide'
+            set_aladin_markerlist['alert_gal'] = gal_markerlist
+          } else {
+            var html = "<p>No Results</p>"
+            $('#alert_gal_div').html(html);
+          }
+        });
+      }
+      else if (button.innerHTML == 'Hide') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], toShow)
+        button.innerHTML = 'Show'
+      }
+      else if (button.innerHTML == 'Show') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], toShow)
+        button.innerHTML = 'Hide'
+      }
+    });
+  });
+
+  //Function that calls the XRT sources and populates them 
+  // on the aladin viz. Encorporates hide/show
+  $(document).ready( function() {
+    $('#alert_scimma_xrt').click(function() {
+      var button = document.getElementById('alert_scimma_xrt');
+      if (button.innerHTML == 'Get') {
+        $('#alert_scimma_xrt').prop('disabled', true)
+        $.ajax(
+        {
+            url: '/ajax_scimma_xrt',
+            data: 'graceid={{ form.graceid }}'
+        }).done(function (event_xrt_sources) {
+          $('#alert_scimma_xrt').prop('disabled', false)
+          if (event_xrt_sources.length > 0) {
+            marker_list['alert_xrt'] = event_xrt_sources
+            var xrt_markerlist = aladin_setMarkers(aladin, event_xrt_sources)
+            aladin_setMarkerHtml(event_xrt_sources, 'alert_scimmadiv')
+            button.innerHTML = 'Hide'
+            set_aladin_markerlist['alert_xrt'] = xrt_markerlist
+          } else {
+            var html = '<p>No results</p>'
+            $('#alert_scimmadiv').html(html);
+          }
+        });
+      }
+      else if (button.innerHTML == 'Hide') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_xrt'], toShow)
+        button.innerHTML = 'Show'
+      }
+      else if (button.innerHTML == 'Show') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_xrt'], toShow)
+        button.innerHTML = 'Hide'
+      }
+    });
+  });
+
+  //redraws the screen when changing pointing status dropdown
+  $('#pointing_status').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+    $('#instrumentsHeader').text('...Loading...')
+    $('#alert_instruments_div').html('');
+    $('#alert_inst_coll').prop('disabled', true); 
+    $('#alert_hideshow_inst').prop('disabled', true);
+
+    $.ajax(
+      {
+        url: '/ajax_alertinstruments_footprints',
+        data: 'graceid={{ form.graceid }}&tos_mjd={{ form.tos_mjd }}&pointing_status='+$(this).val(),
+        async: true
+      }
+    ).done( function(payload){
+      data.inst_overlays = payload
+      aladin.removeLayers()
+      d = gwtmAladinInit(data)
+      detectionoverlaylist = d.detectionoverlaylist
+      instoverlaylist = d.instoverlaylist
+      grboverlaylist = d.grboverlaylist
+      $('#instrumentsHeader').text('Instruments')
+      $('#alert_inst_coll').prop('disabled', false); 
+      $('#alert_hideshow_inst').prop('disabled', false);
+
+      var button = document.getElementById('alert_hideshow_inst')
+      button.innerHTML = 'Hide'
+
+      //This should be deleted once markers are encorporated into the gwtmAladinInit
+      $('#alert_gal_div').html('');
+      var button = document.getElementById('alert_event_galaxies');
+      button.innerHTML = 'Get'
+
+      $('#alert_scimmadiv').html('');
+      var button = document.getElementById('alert_scimma_xrt');
+      button.innerHTML = 'Get'
+    });
+  });
+</script>
   </body>
 {% endblock %}
