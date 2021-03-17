@@ -141,11 +141,13 @@ function aladin_setMarkers(
             markerlayer.addSources([marker])
         }
         aladin.addCatalog(markerlayer)
-
         set_marker_list[i] = {
             'name':groupname,
+            'toshow': true,
+            'tocolor': markerlayer.color,
             'markerlayer': markerlayer
         }
+        marker_list[i].color = markerlayer.color
     }
     return set_marker_list
 }
@@ -294,7 +296,24 @@ function aladin_mocToggleAll(
 }
 
 /*
-    Toggles all markers on the aladin viz
+    Hides or shows the markerlayer from checkbox
+*/
+function aladin_markerToggleOne(
+    marker_list,
+    target
+  ) {
+      var group_id = target.id.replace('marker_group_', '')
+      for (var i = 0; i < marker_list.length; i++) {
+        var idstr = marker_list[i].name.replace(/\s+/g, '')
+        if (group_id == idstr) {
+          if (target.checked) { marker_list[i].markerlayer.show() }
+          else { marker_list[i].markerlayer.hide() }
+        }
+      }
+  }
+
+/*
+    Toggles all markerlayers on the aladin viz
     toShow = True : show all
     toShow = False: hide all
 */
@@ -324,13 +343,22 @@ function aladin_drawInstHTML(
     var overlayhtml = '<ul style="list-style-type:none;">'
     for (var k=0 ; k<overlay_list.length; k++) {
         var cat = overlay_list[k];
-        overlayhtml += '<li><div>';
-        overlayhtml += '<fieldset><label for="' + cat.name + '" style="display: inline-block;">';
-        overlayhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked" style="display: inline-block;">';// + cat.name + ' </input>';
-        overlayhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span>'+cat.name+'</span></input></label>';
-        //overlayhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked">';
-        //overlayhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span>' + cat.name + '</span></input></label>';
-        overlayhtml += '</fieldset></div></li>';
+        overlayhtml += '\
+            <li>\
+                <fieldset>\
+                    <label for="' + cat.name + '" style="display: inline-block;">\
+                        <input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked" style="display: inline-block;"> \
+                            <div class="overlaycolorbox" style="background-color: '+cat.color+';"></div>\
+                            <span> '+cat.name+'</span>\
+                        </input>\
+                    </label>\
+                </fieldset>\
+            </li>\
+        ';
+        //overlayhtml += '<fieldset><label for="' + cat.name + '" style="display: inline-block;">';
+        //overlayhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked" style="display: inline-block;"> ';// + cat.name + ' </input>';
+        //overlayhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span> '+cat.name+'</span></input></label>';
+        //overlayhtml += '</fieldset></li>';
     }   
     overlayhtml += '</ul>';
     $('#'+div_name).html(overlayhtml)
@@ -351,12 +379,18 @@ function aladin_drawGRBHTML(
             GRBhtml += '<li><fieldset><label for="' + cat.name + '">' + cat.name + '</label>';
             GRBhtml += '</fieldset></li>';
         } else {
-            GRBhtml += '<li><div><fieldset><label for="' + cat.name + '" style="display: inline-block;">';
-            GRBhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" style="display: inline-block;">';// + cat.name + ' </input>';
-            GRBhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span>'+cat.name+'</span></input></label>';
-            //GRBhtml += '<input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" style="display: inline-block;">';
-            //GRBhtml += '<div class="overlaycolorbox" style="background-color: '+cat.color+';"></div><span>' + cat.name + '</span></input></label>'
-            GRBhtml += '</fieldset></div></li>';
+            GRBhtml += '\
+                <li>\
+                    <fieldset>\
+                        <label for="' + cat.name + '" style="display: inline-block;">\
+                            <input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" style="display: inline-block;"> \
+                                <div class="overlaycolorbox" style="background-color: '+cat.color+';"></div>\
+                                <span> '+cat.name+'</span>\
+                            </input>\
+                        </label>\
+                    </fieldset>\
+                </li>\
+            ';
         }
     }
     GRBhtml += '</ul>'
@@ -375,19 +409,36 @@ function aladin_setMarkerHtml(
     for (i = 0; i < marker_list.length; i++) {
         var groupname = marker_list[i].name
         var idstr = groupname.replace(/\s+/g, '')
-        html += '<li>'
-        html += '<button id="collbtn'+idstr+'" onclick="changeCollapseButtonText(this.id)" type="button" class="btn btn-primary btn-xs right-triangle" data-toggle="collapse" data-target="#'+idstr+'"></button>';
-        html += '<p style="display: inline-block"> '+groupname+'</p>'
-        html += '<div class="collapse scroll-section" id="'+idstr+'">'
+        html += '\
+        <li>\
+            <fieldset>\
+                <button id="collbtn'+idstr+'" onclick="changeCollapseButtonText(this.id)" type="button" class="btn btn-primary btn-xs right-triangle" data-toggle="collapse" data-target="#collapse'+idstr+'"></button> \
+                <label for="marker_group_'+idstr+'"> \
+                    <input id="marker_group_' + idstr + '" type="checkbox" checked="checked"> \
+                        <div class="markercolordot" style="background-color: '+marker_list[i].color+';"> </div> \
+                        <span style="display: inline-block; font-size:90%"> '+groupname+'</span>\
+                    </input>\
+                </label>\
+            </fieldset>\
+            <div class="collapse scroll-section" id="collapse'+idstr+'">\
+                <ul style="list-style-type:none;">';
+
         var markers = marker_list[i].markers
         for (j = 0; j < markers.length; j++) {
             markername = markers[j].name
-            html += '<fieldset ><label for="' + markername+ '">';
-            html += '<p id="' + markername+ '" type="text" value="' + markername + '" >' + markername + '</p></label>';
-            html += '</fieldset>';
+            html += '\
+                    <li>\
+                        <fieldset>\
+                            <label for="' + markername+ '">\
+                                <div class="row" id="' + markername+ '" type="text" value="' + markername + '" style="font-size:80%">   ' + markername + '</div>\
+                            </label>\
+                        </fieldset>\
+                    </li>';
         } 
-        html += '</div>'
-        html += '</li>'
+        html += '\
+                </ul>\
+            </div>\
+        </li>';
     }
     html += '</ul>'
     $('#'+marker_div).html(html);

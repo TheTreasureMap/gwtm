@@ -242,6 +242,7 @@ def ajax_event_galaxies():
 			})
 		event_galaxies.append({
 			"name":glist.groupname,
+			"color":"",
 			"markers":markers
 		})
 
@@ -290,6 +291,7 @@ def ajax_scimma_xrt():
 	if len(markers):
 		payload.append({
 			'name':'SCIMMA XRT Sources',
+			'color':'',
 			'markers':markers
 		})
 

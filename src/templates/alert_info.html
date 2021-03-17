@@ -66,14 +66,18 @@ div.constrained {
   background-color: white;
 }
 
+.markercolordot {
+  height: 13px;
+  width: 13px;
+  background-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  margin-bottom: -2px;
+}
+
 .loadingtext {
   font-style: italic;
   color: darkgrey;
-}
-
-.loadingbutton {
-  font-style: italic;
-  cursor: not-allowed;
 }
 
 </style>
@@ -99,11 +103,11 @@ div.constrained {
 
   <div class='row'>
     <!-- The Aladin Viz -->
-    <div class='column'style="float:left; width: 75%;">
+    <div class='column'style="float:left; width: 70%;">
       <div id="aladin-lite-div" style="position: relative;"></div>
     </div>
     <!-- Viz interaction column -->
-    <div class="column" style="float: right; width: 25%; padding-left: 2%;">
+    <div class="column" style="float: right; width: 30%; padding-left: 2%;">
       <div class="row">
         <h3> Follow-Up </h3>
       </div>
@@ -440,11 +444,18 @@ div.constrained {
       }
     })
     $('#alert_gal_div').click(function(event) {
-      if (event.target.id != '') {
+      if (event.target.id.includes('marker_group_')) {
+        aladin_markerToggleOne(set_aladin_markerlist['alert_gal'], event.target)
+      }
+      else if (event.target.id != '') {
         aladin_animateToMarker(event.target, marker_list['alert_gal'])
       }
     })
     $('#alert_scimmadiv').click(function(event) {
+      if (event.target.id.includes('marker_group_')) {
+        aladin_markerToggleOne(set_aladin_markerlist['alert_xrt'], event.target)
+      }
+      else 
       if (event.target.id != '') {
         aladin_animateToMarker(event.target, marker_list['alert_xrt'])
       }
