@@ -170,13 +170,14 @@ def sanatize_XRT_source_info(info):
 def sanatize_gal_info(entry, glist):
     ra, dec = sanatize_pointing(entry.position)
     ret = "<p>"
-    ret = "<b>Score: </b>"+str(entry.score)+"<br>"
+    ret = "<b> RA DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br>"
+    ret += "<b>Score: </b>"+str(entry.score)+"<br>"
     ret += "<b>Rank: </b>"+str(entry.rank)+"<br>" 
     if glist.reference:
-        ret+= "<b>Reference: </b>"+glist.reference+"<br>"
+        ret+= f"<a href={glist.reference}>Reference</a> <br>"
     if glist.doi_url:
-        ret+= "<b>DOI: </b><a href="+glist.doi_url+">"+glist.doi_url+"</a><br>"
-    ret += "<b> RA DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br></p><b>Other Information:</b><br><p>"
+        ret+= f"<a href={glist.doi_url}>DOI</a> <br>"
+    ret+="</p><b>Other Information:</b><br><p>"
     for key in entry.info.keys():
         ret += "<b>"+str(key)+":</b> "+str(entry.info[key]).split('\n')[0]+"<br>"
     ret += "</p>"
