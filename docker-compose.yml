@@ -16,3 +16,7 @@ services:
             - RECAPTCHA_PUBLIC_KEY
             - RECAPTCHA_PRIVATE_KEY
             - ZENODO_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+            - AWS_BUCKET

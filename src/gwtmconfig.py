@@ -20,8 +20,14 @@ class Config(object):
     RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
     RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
     ZENODO_ACCESS_KEY = os.environ.get('ZENODO_ACCESS_KEY', '')
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY= os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    AWS_DEFAULT_REGION = os.environ.get('AWS_DEFAULT_REGION', 'us-east-2')
+    AWS_BUCKET = os.environ.get('AWS_BUCKET', 'gwtreasuremap')
+
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):
         return f'postgresql://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
 
+config = Config()

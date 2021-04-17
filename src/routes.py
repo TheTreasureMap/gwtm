@@ -6,6 +6,7 @@ import numpy as np
 import time
 import plotly
 import plotly.graph_objects as go
+import boto3
 
 from flask import Flask, request, jsonify, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
@@ -21,6 +22,7 @@ from . import forms
 from . import enums
 
 from src import app
+from src.gwtmconfig import config
 
 db = models.db
 
@@ -61,10 +63,15 @@ def home():
 	#get latest alert. Construct the form alertsform
 
 	#fix this by ingesting LAT pointings in the pointings DB
-	if os.path.exists('/var/www/gwtm/src/static'):
-		fermi_events = len([x for x in os.listdir('/var/www/gwtm/src/static') if 'Fermi' in x])
-	else:
+	# TODO: Fermi count should be cached
+	s3 = boto3.client('s3')
+	response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
+	if response['IsTruncated']:
+		print('WARNING: More than 1000 objects in bucket. Implement pagination.')
+	if len(response['Contents']) < 1:
 		fermi_events = 0
+	else:
+		fermi_events = len([x for x in response['Contents'] if 'Fermi' in x['Key']])
 
 	inst_info = db.session.query(
 		models.pointing,
@@ -153,7 +160,7 @@ def alert_select():
 		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
 
 		alternateids = [gwa for gwa in allerts if gwa.graceid == g and gwa.alternateid is not None]
-		
+
 		if len(alternateids):
 			g = alternateids[0].alternateid
 
@@ -346,7 +353,7 @@ def search_pointings():
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
 	form.populate_creator_groups(current_user.get_id())
-	
+
 	if request.method == 'POST':
 		formgraceid = form.graceids.data
 		alternateids = db.session.query(models.gw_alert).filter(
