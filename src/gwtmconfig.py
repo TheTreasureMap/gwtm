@@ -24,6 +24,7 @@ class Config(object):
     AWS_SECRET_ACCESS_KEY= os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     AWS_DEFAULT_REGION = os.environ.get('AWS_DEFAULT_REGION', 'us-east-2')
     AWS_BUCKET = os.environ.get('AWS_BUCKET', 'gwtreasuremap')
+    SECRET_KEY = os.urandom(16)
 
 
     @property
