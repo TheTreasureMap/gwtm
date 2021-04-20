@@ -1,6 +1,9 @@
 import astropy
+import boto3
+from botocore.exceptions import ClientError
 import pandas as pd
 import os
+import io
 import json
 import time
 
@@ -14,6 +17,7 @@ from sqlalchemy import func
 from . import function
 from . import models
 from . import enums
+from src.gwtmconfig import config
 
 db = models.db
 
@@ -79,7 +83,7 @@ class SearchPointingsForm(FlaskForm):
     status_choices = SelectField('Status', choices=statuses)
     my_points = BooleanField('Show Only My Pointings')
     doi_url = StringField('DOI URL')
-    
+
     submit = SubmitField('Search')
 
     def populate_creator_groups(self, current_userid):
@@ -87,7 +91,7 @@ class SearchPointingsForm(FlaskForm):
         self.doi_creator_groups.choices = [('None', 'None')]
         for a in dag:
             self.doi_creator_groups.choices.append((a.id, a.name))
-            
+
     def populate_graceids(self):
         alerts = models.gw_alert.query.filter_by(role='observation').all()
         sortalerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
@@ -183,7 +187,7 @@ class SubmitPointingForm(FlaskForm):
         self.instruments.choices = [(None, 'Select')]
         for a in query:
             self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
-        
+
     def populate_creator_groups(self, current_userid):
         dag = models.doi_author_group.query.filter_by(userid=current_userid).all()
         self.doi_creator_groups.choices = [('None', 'None')]
@@ -207,6 +211,7 @@ class AlertsForm(FlaskForm):
 
     def construct_alertform(self, args):
 
+        s3 = boto3.client('s3')
         graceid = args['graceid']
 
         detection_overlays = None
@@ -403,50 +408,61 @@ class AlertsForm(FlaskForm):
 
             #iterate over each instrument and grab their pointings
             #rotate and project the footprint and then add it to the overlay list
-            
+
             #do BAT stuff
             #BAT instrumentid == 49
             # If there are any pointings with BAT. Find the file
             # that should have been created by the BAT listener
             if len([x for x in pointing_info if x.instrumentid == 49]):
-                batpathinfo = '/var/www/gwtm/src/static/'+graceid+'-BAT.json'
-                if os.path.exists(batpathinfo):
-                    with open(batpathinfo) as json_data:
-                        contours_data = json.load(json_data)
-                    GRBoverlays.append({
-                        'name':'Swift/BAT',
-                        'color':'#3cb44b',
-                        'json':contours_data
-                    })
+                batpathinfo = 'fit/'+graceid+'-BAT.json'
+                try:
+                    with io.BytesIO() as f:
+                        s3.download_fileobj(config.AWS_BUCKET, batpathinfo, f)
+                        f.seek(0)
+                        contours_data = json.loads(f.read().decode('utf-8'))
+                        GRBoverlays.append({
+                            'name':'Swift/BAT',
+                            'color':'#3cb44b',
+                            'json':contours_data
+                        })
+                except ClientError:
+                    print('Key does not exist')
+                    pass
 
             #do Fermi stuff
             if self.selected_alert_info.time_of_signal and graceid != 'TEST_EVENT' and graceid != 'GW170817':
                 #earth_ra, earth_dec, earth_rad = getearthsatpos(form.selected_alert_info.time_of_signal)
                 #if earth_ra != False:
                     #Do GBM stuff
-                GBMpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-Fermi.json'
-                if os.path.exists(GBMpathinfo):
-                    with open(GBMpathinfo) as json_data:
-                        contours_data = json.load(json_data)
-                    GRBoverlays.append({
-                        'name':'Fermi/GBM',
-                        'color':'magenta',
-                        'json':contours_data
-                    })
-                else:
+                GBMpathinfo = 'fit/'+graceid+ '-Fermi.json'
+                try:
+                    with io.BytesIO() as f:
+                        s3.download_fileobj(config.AWS_BUCKET, GBMpathinfo, f)
+                        f.seek(0)
+                        contours_data = json.loads(f.read().decode('utf-8'))
+                        GRBoverlays.append({
+                            'name':'Fermi/GBM',
+                            'color':'magenta',
+                            'json':contours_data
+                        })
+                except ClientError:
                     GRBoverlays.append({
                         'name': 'Fermi in South Atlantic Anomaly'
                         })
                 #Do LAT stuff
-                LATpathinfo = '/var/www/gwtm/src/static/'+graceid+ '-LAT.json'
-                if os.path.exists(LATpathinfo):
-                    with open(LATpathinfo) as json_data:
-                        contours_data = json.load(json_data)
-                    GRBoverlays.append({
-                        'name':'Fermi/LAT',
-                        'color':'red',
-                        'json':contours_data
-                    })
+                LATpathinfo = 'fit/'+graceid+ '-LAT.json'
+                try:
+                    with io.BytesIO() as f:
+                        s3.download_fileobj(config.AWS_BUCKET, LATpathinfo, f)
+                        f.seek(0)
+                        contours_data = json.loads(f.read().decode('utf-8'))
+                        GRBoverlays.append({
+                            'name':'Fermi/LAT',
+                            'color':'red',
+                            'json':contours_data
+                        })
+                except ClientError:
+                    print('No key')
 
             #grab the precomputed localization contour region
             if len(self.alert_type.split()) > 1:
@@ -456,25 +472,30 @@ class AlertsForm(FlaskForm):
                 path_info = graceid + '-' + self.alert_type.split()[0]
                 mappath = graceid + '-' + self.alert_type.split()[0]
 
-            mappathinfo = '/var/www/gwtm/src/static/'+mappath+'.fits.gz'
+            mappathinfo = 'fit/'+mappath+'.fits.gz'
             self.avgra = self.selected_alert_info.avgra
             self.avgdec = self.selected_alert_info.avgdec
 
-            contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
+            contourpath = 'fit/'+path_info+'-contours-smooth.json'
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
-            if os.path.exists(contourpath):
-                contours_data=pd.read_json(contourpath)
-                contour_geometry = []
-                for contour in contours_data['features']:
-                    contour_geometry.extend(contour['geometry']['coordinates'])
+            try:
+                with io.BytesIO() as f:
+                    s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
+                    f.seek(0)
+                    contours_data=pd.read_json(f.read().decode('utf-8'))
+                    contour_geometry = []
+                    for contour in contours_data['features']:
+                        contour_geometry.extend(contour['geometry']['coordinates'])
 
-                detection_overlays.append({
-                    "display":True,
-                    "name":"GW Contour",
-                    "color": '#e6194B',
-                    "contours":function.polygons2footprints(contour_geometry, 0)
-                })
+                    detection_overlays.append({
+                        "display":True,
+                        "name":"GW Contour",
+                        "color": '#e6194B',
+                        "contours":function.polygons2footprints(contour_geometry, 0)
+                    })
+            except ClientError:
+                print('No Key')
 
 
             #galLists = db.session.query(models.gw_galaxy_list).filter(
@@ -510,5 +531,5 @@ class AlertsForm(FlaskForm):
             #        "markers":markers
             #    })
             t_stop = time.time()
-            print("Time loading page: ", t_stop-t_start) 
+            print("Time loading page: ", t_stop-t_start)
         return self, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats

@@ -6,39 +6,15 @@ from flask_login import LoginManager
 from flask_mail import Mail
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
+from werkzeug.utils import import_string
 
 app = Flask(__name__)
 login = LoginManager(app)
 login.login_view = 'login'
 
-configPath = os.environ.get('CONFIGPATH')
-if configPath is None:
-    configPath = '/var/www/gwtm'
-
-from . import gwtmconfig
-gcfig = gwtmconfig.Config(configPath, '/config')
-config = gcfig.run()
-
-app.config["DEBUG"] = bool(config['DEBUG'])
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+config['user']+':'+config['pwd']+'@'+config['host']+':'+str(config['port'])+'/'+config['db']+'?sslmode=verify-full&sslrootcert='+configPath+'/rds-ca-2019-root.pem'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_POOL_TIMEOUT'] = 300
-app.config['CSRF_ENABLED'] = True
-
-#Mail Settings
-#Load from config later
-app.config['MAIL_USERNAME'] = config['MAIL_USERNAME']
-app.config['MAIL_DEFAULT_SENDER'] = config['MAIL_DEFAULT_SENDER']
-app.config['ADMINS'] = [config['ADMINS']]
-app.config['MAIL_PASSWORD'] = config['MAIL_PASSWORD']
-app.config['MAIL_SERVER'] = config['MAIL_SERVER']
-app.config['MAIL_PORT'] = int(config['MAIL_PORT']) 
-app.config['MAIL_USE_TLS'] = bool(config['MAIL_USE_TLS'])
-
-#RECAPTCHA
-app.config['RECAPTCHA_PUBLIC_KEY'] = config['RECAPTCHA_PUBLIC_KEY']
-app.config['RECAPTCHA_PRIVATE_KEY'] = config['RECAPTCHA_PRIVATE_KEY']
-app.config['ZENODO_ACCESS_KEY'] = config['ZENODO_ACCESS_KEY']
+configModule = os.environ.get('CONFIGMODULE', 'src.gwtmconfig.Config')
+cfg = import_string(configModule)()
+app.config.from_object(cfg)
 
 mail = Mail(app)
 

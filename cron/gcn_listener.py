@@ -1,4 +1,3 @@
-
 import gcn
 import healpy as hp
 import sys
@@ -8,7 +7,10 @@ import os
 import sys
 import requests
 from astropy.io import fits
+import boto3
+import io
 
+from src.gwtmconfig import config
 
 sys.path.insert(0, '/var/www/gwtm/')
 from src.models import db, gw_alert
@@ -68,24 +70,26 @@ def handler(payload, root):
             #hkeys = header.keys()
 
             print("downloading skymap_fits")
-            #if error here `chmod a+rw /var/www/gwtm/src/static/`
-
-            downloadpath = '/var/www/gwtm/src/static/'+gwa.graceid+'.fits.gz'
+            s3 = boto3.client('s3')
+            downloadpath = 'fit/' + gwa.graceid + '.fits.gz'
             r = requests.get(params['skymap_fits'])
-            with open(downloadpath, 'wb') as f:
+            with io.BytesIO() as f:
                 f.write(r.content)
+                f.seek(0)
+                s3.upload_fileobj(f, Bucket=config.AWS_BUCKET, Key=downloadpath)
 
-            print("download finished")
+                print("download finished")
 
-            hdu = fits.open(downloadpath)
+                f.seek(0)
+                hdu = fits.open(f)
 
-            header = hdu[0].header
-            hkeys = header.keys()
+                header = hdu[0].header
+                hkeys = header.keys()
 
-            gwa.time_of_signal = header['DATE-OBS'] if 'DATE-OBS' in hkeys else '1991-12-23T19:15:00'
-            gwa.distance = header['DISTMEAN'] if 'DISTMEAN' in hkeys else "-999.9"
-            gwa.distance_error = header['DISTSTD'] if 'DISTSTD' in hkeys else "-999.9"
-            gwa.timesent = header['DATE'] if 'DATE' in hkeys else '1991-12-23T19:15:00'            
+                gwa.time_of_signal = header['DATE-OBS'] if 'DATE-OBS' in hkeys else '1991-12-23T19:15:00'
+                gwa.distance = header['DISTMEAN'] if 'DISTMEAN' in hkeys else "-999.9"
+                gwa.distance_error = header['DISTSTD'] if 'DISTSTD' in hkeys else "-999.9"
+                gwa.timesent = header['DATE'] if 'DATE' in hkeys else '1991-12-23T19:15:00'
 
 
         db.session.add(gwa)

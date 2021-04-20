@@ -11,6 +11,10 @@ import requests
 import urllib.parse
 import pandas as pd
 import flask_sqlalchemy as fsq
+import boto3
+from botocore.exceptions import ClientError
+import io
+import tempfile
 
 from flask import Flask, request, jsonify
 from flask_login import current_user
@@ -24,6 +28,7 @@ from . import forms
 from . import enums
 from src import app
 from src import mail
+from src.gwtmconfig import config
 
 db = models.db
 
@@ -95,11 +100,11 @@ def ajax_alertinstruments_footprints():
 		for p in inst_pointings:
 			t = astropy.time.Time([p.time])
 			ra, dec = function.sanatize_pointing(p.position)
-			
+
 			for ccd in sanatized_ccds:
 				pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 				pointing_geometries.append({
-					"polygon":pointing_footprint, 
+					"polygon":pointing_footprint,
 					"time":round(t.mjd[0]-tos_mjd, 3)
 				})
 
@@ -121,7 +126,7 @@ def ajax_get_eventcontour():
 	alertype= urlid[1]
 	if len(urlid) > 2:
 		alertype += urlid[2]
-	
+
 	alert = db.session.query(
 		models.gw_alert
 	).filter(
@@ -168,20 +173,27 @@ def ajax_get_eventcontour():
 
 	detection_overlays = []
 	path_info = alert.graceid + '-' + alertype
-	contourpath = '/var/www/gwtm/src/static/'+path_info+'-contours-smooth.json'
-	print(contourpath)
-	if os.path.exists(contourpath):
-		contours_data=pd.read_json(contourpath)
-		contour_geometry = []
-		for contour in contours_data['features']:
-			contour_geometry.extend(contour['geometry']['coordinates'])
+	s3 = boto3.client('s3')
+	contourpath = 'fit/'+path_info+'-contours-smooth.json'
+	try:
+		print(contourpath)
+		with io.BytesIO() as f:
+			s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
+			f.seek(0)
+			contours_data=pd.read_json(f.read().decode('utf-8'))
+			contour_geometry = []
+			for contour in contours_data['features']:
+				contour_geometry.extend(contour['geometry']['coordinates'])
 
-		detection_overlays.append({
-			"display":True,
-			"name":"GW Contour",
-			"color": '#e6194B',
-			"contours":function.polygons2footprints(contour_geometry, 0)
-		})
+			detection_overlays.append({
+				"display":True,
+				"name":"GW Contour",
+				"color": '#e6194B',
+				"contours":function.polygons2footprints(contour_geometry, 0)
+			})
+	except ClientError:
+		print('No Key')
+		pass
 
 	print(distanceperror)
 	payload = {
@@ -323,7 +335,7 @@ def ajax_request_doi():
 
 		user = db.session.query(models.users).filter(models.users.id == current_user.get_id()).first()
 
-		if 'doi_group_id' in args: 
+		if 'doi_group_id' in args:
 			valid, creators = models.doi_author.construct_creators(args['doi_group_id'], current_user.get_id())
 			if not valid:
 				creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
@@ -361,15 +373,20 @@ def plot_prob_coverage():
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 
-	if os.path.exists(mappathinfo):
-		try:
-			GWmap = hp.read_map(mappathinfo)
+	s3 = boto3.client('s3')
+	try:
+		with tempfile.NamedTemporaryFile() as f:
+			# this HP module does not appear to be able to read files from memory
+			# so we use a temporary file here which deletes itself as soon as the
+			# context manager is exited.
+			s3.download_fileobj(config.AWS_BUCKET, mappathinfo, f)
+			GWmap = hp.read_map(f.name)
 			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
-		except:
-			return '<b> Map ERROR. Please contact the administrator. <b>'
-	else:
+	except ClientError:
 		return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
+	except:
+		return '<b> Map ERROR. Please contact the administrator. </b>'
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -471,7 +488,7 @@ def plot_prob_coverage():
 			times.append(elapsed)
 			probs.append(prob)
 			areas.append(area)
-			
+
 	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
 	fig.add_trace(go.Scatter(x=times, y=[prob*100 for prob in probs],
