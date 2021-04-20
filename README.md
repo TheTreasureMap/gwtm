@@ -71,8 +71,8 @@ Finally, push the image:
 
 `docker push 929887798640.dkr.ecr.us-east-2.amazonaws.com/gwtreasuremap:latest`
 
-Now, log into the Amazon dashboard and navigate to the ECS (Elastic Container Service). Select
-the default cluster. Find the Tasks Definitions section and create a new revision of gwtm_web. Leave
+Now, log into the Amazon dashboard and navigate to the ECS (Elastic Container Service).
+Find the Tasks Definitions section and create a new revision of gwtm_web. Leave
 all the values as they are, unless there is something specific about the deployment that you want to change.
 
 Once the new task is created, go the gwtmweb (service definition)[https://us-east-2.console.aws.amazon.com/ecs/v2/clusters/default/services/gwtmweb/edit?region=us-east-2]
