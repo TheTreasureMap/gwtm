@@ -10,12 +10,14 @@ from astropy.io import fits
 import boto3
 import io
 import ligo.skymap
+import ligo.skymap.io
 from ligo.skymap.postprocess import contour
 from ligo.skymap.healpix_tree import interpolate_nested
 import numpy as np
 import json
 from astropy.coordinates import SkyCoord
 from mocpy import MOC
+from astropy.utils.data import download_file
 
 #dirty relative import
 sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('/cron')[0])
@@ -56,10 +58,23 @@ def handler(payload, root):
     if int(params['Packet_Type']) in notices:
 
         #lag for 5 minutes
+        ingesttime_low = datetime.datetime.now()
         time.sleep(60*5)
-        #query for the same graceid and alerttype
+        ingesttime_high = datetime.datetime.now()
+        #query for the same graceid and alerttype made within the last 5 minutes
         #if it exists: return 0
         #   if it doesn't, download procedure alpha go
+        filter = [
+                gw_alert.graceid == gwa.graceid,
+                gw_alert.alert_type == gwa.alert_type,
+                gw_alert.datecreated > ingesttime_low,
+                gw_alert.datecreated < ingesttime_high
+                ]
+        already_ingested = db.session.query(gw_alert).filter(*filter).all()
+
+        if len(already_ingested):
+            print('This has already been ingested. Backup is working')
+            return
 
         gwa = gw_alert(
                 graceid = params['GraceID'] if 'GraceID' in keys else 'ERROR',
@@ -211,7 +226,5 @@ def handler(payload, root):
     else:
         print("\nNot Ligo, Don't Care\n")
 
-def main():
-    print('LISTENING')
-    gcn.listen(host='45.58.43.186', port=8099, handler=handler)
-main()
+print('LISTENING')
+gcn.listen(host='45.58.43.186', port=8099, handler=handler)

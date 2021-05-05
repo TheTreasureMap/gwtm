@@ -206,7 +206,6 @@ def handler(payload, root):
     else:
         print("\nNot Ligo, Don't Care\n")
 
-def main():
-    print('LISTENING')
-    gcn.listen(handler=handler)
-main()
+
+print('Listening!')
+gcn.listen(handler=handler)
