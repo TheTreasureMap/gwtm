@@ -497,39 +497,6 @@ class AlertsForm(FlaskForm):
             except ClientError:
                 print('No Key')
 
-
-            #galLists = db.session.query(models.gw_galaxy_list).filter(
-            #    models.gw_galaxy_list.graceid == graceid,
-            #    models.gw_galaxy_list.alertid == self.selected_alert_info.id,
-            #).all()
-            #galList_ids = list(set([x.id for x in galLists]))
-
-            #galEntries = db.session.query(
-            #    models.gw_galaxy_entry.name,
-            #    func.ST_AsText(models.gw_galaxy_entry.position).label('position'),
-            #    models.gw_galaxy_entry.score,
-            #    models.gw_galaxy_entry.info,
-            #    models.gw_galaxy_entry.listid,
-            #    models.gw_galaxy_entry.rank,
-            #).filter(
-            #    models.gw_galaxy_entry.listid.in_(galList_ids)
-            #).all()
-
-            #for glist in galLists:
-            #    markers = []
-            #    entries = [x for x in galEntries if x.listid == glist.id]
-            #    for e in entries:
-            #        ra, dec = function.sanatize_pointing(e.position)
-            #        markers.append({
-            #            "name":e.name,
-            #            "ra": ra,
-            #            "dec": dec,
-            #            "info":function.sanatize_gal_info(e, glist)
-            #        })
-            #    galaxy_cats.append({
-            #        "name":glist.groupname,
-            #        "markers":markers
-            #    })
             t_stop = time.time()
             print("Time loading page: ", t_stop-t_start)
         return self, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats

@@ -10,14 +10,12 @@ from astropy.io import fits
 import boto3
 import io
 import ligo.skymap
-import ligo.skymap.io
 from ligo.skymap.postprocess import contour
 from ligo.skymap.healpix_tree import interpolate_nested
 import numpy as np
 import json
 from astropy.coordinates import SkyCoord
 from mocpy import MOC
-from astropy.utils.data import download_file
 
 #dirty relative import
 sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('/cron')[0])
@@ -41,7 +39,7 @@ def handler(payload, root):
         s3path = 'test'
     else:
         s3path = 'fit'
-
+    
     role = root.attrib['role']
 
     print("ROLE is ", role)
@@ -56,6 +54,13 @@ def handler(payload, root):
     notices = [150, 151, 152, 153, 164]
 
     if int(params['Packet_Type']) in notices:
+
+        #lag for 5 minutes
+        time.sleep(60*5)
+        #query for the same graceid and alerttype
+        #if it exists: return 0
+        #   if it doesn't, download procedure alpha go
+
         gwa = gw_alert(
                 graceid = params['GraceID'] if 'GraceID' in keys else 'ERROR',
                 packet_type = params['Packet_Type'] if 'Packet_Type' in keys else 0,
@@ -146,7 +151,7 @@ def handler(payload, root):
             print('Creating Fermi and LAT MOC files')
             ####################
             tos = datetime.datetime.strptime(gwa.time_of_signal, "%Y-%m-%dT%H:%M:%S.%f")
-            #upload_GRB_MOC_toS3(s3, tos, gwa.graceid, s3path)
+            
             fermi_moc_upload_path = '{}/{}-Fermi.json'.format(s3path, gwa.graceid)
             try:
                 s3.head_object(Bucket=config.AWS_BUCKET, Key=fermi_moc_upload_path)
@@ -208,5 +213,5 @@ def handler(payload, root):
 
 def main():
     print('LISTENING')
-    gcn.listen(handler=handler)
+    gcn.listen(host='45.58.43.186', port=8099, handler=handler)
 main()

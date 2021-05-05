@@ -35,12 +35,14 @@ from src import function
 # Define your custom handler here.
 def handler(payload, root):
 
-    run_test = False
+    run_test = True
 
     if run_test:
         s3path = 'test'
     else:
         s3path = 'fit'
+    
+    role = ''
 
     role = root.attrib['role']
 
@@ -206,7 +208,4 @@ def handler(payload, root):
     else:
         print("\nNot Ligo, Don't Care\n")
 
-def main():
-    print('LISTENING')
-    gcn.listen(handler=handler)
-main()
+gcn.listen(host='127.0.0.1', port=8099, handler=handler)
