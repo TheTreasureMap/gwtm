@@ -44,7 +44,7 @@ Shapely==1.7.1
 six==1.15.0
 soupsieve==2.0.1
 SQLAlchemy==1.4.5
-urllib3==1.25.10
+urllib3==1.26.5
 validators==0.18.1
 Werkzeug==1.0.1
 WTForms==2.3.3
