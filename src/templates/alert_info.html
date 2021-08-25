@@ -542,12 +542,20 @@ div.constrained {
               url: '/ajax_coverage_calculator',
               data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit
           }
-        ).done(function (reply) {
-          $('#calculate').prop('disabled', false)
-          $btn.button('reset')
-          $('#coveragediv').html(reply);
-        });
-      });
+        ).done(function (reply) 
+          {
+            $('#calculate').prop('disabled', false)
+            $btn.button('reset')
+            $('#coveragediv').html(reply);
+          }
+        ).fail(function(jqXHR, textStatus)
+          {
+            $('#calculate').prop('disabled', false)
+            $('#coveragediv').html("<i><font color='red'>Error in Coverage Calculator</font></i>")
+            $btn.button('reset')
+          }
+      );
+    });
   });
 
   //getting the alert event galaxies

@@ -3,7 +3,7 @@ version: '3.8'
 services:
     web:
         build: .
-        command: gunicorn --bind=0.0.0.0:8080 src.api:app
+        command: gunicorn --bind=0.0.0.0:8080 src.api:app --timeout=1000
         ports:
             - 8080:8080
         environment:
