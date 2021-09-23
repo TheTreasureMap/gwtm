@@ -29,6 +29,7 @@ from . import forms
 from . import enums
 from src import app
 from src import mail
+from src import cache
 from src.gwtmconfig import config
 
 db = models.db
@@ -272,16 +273,16 @@ def ajax_scimma_xrt():
 		graceid = 'S190426'
 
 	keywords = {
-             'keyword':'',
-             'cone_search':'',
-             'polygon_search':'',
-             'alert_timestamp_after':'',
-             'alert_timestamp_before':'',
-             'role':'',
-             'event_trigger_number':graceid,
-             'ordering':'',
-             'page_size':1000,
-    }
+			 'keyword':'',
+			 'cone_search':'',
+			 'polygon_search':'',
+			 'alert_timestamp_after':'',
+			 'alert_timestamp_before':'',
+			 'role':'',
+			 'event_trigger_number':graceid,
+			 'ordering':'',
+			 'page_size':1000,
+	}
 	base = 'http://skip.dev.hop.scimma.org/api/alerts/'
 	url = '{}?{}'.format(base, urllib.parse.urlencode(keywords))
 	r = requests.get(url)
@@ -384,134 +385,146 @@ def plot_prob_coverage():
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
+	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}'
+	if not approx_cov:
+		times = cache.get(f'{cache_key}_times') or []
+		probs = cache.get(f'{cache_key}_probs') or []
+		areas = cache.get(f'{cache_key}_areas') or []
+	else:
+		times = []
+		probs = []
+		areas = []
 
-	s3 = boto3.client('s3')
-	try:
-		with tempfile.NamedTemporaryFile() as f:
-			# this HP module does not appear to be able to read files from memory
-			# so we use a temporary file here which deletes itself as soon as the
-			# context manager is exited.
-			s3.download_fileobj(config.AWS_BUCKET, mappathinfo, f)
-			GWmap = hp.read_map(f.name)
-			#bestpixel = np.argmax(GWmap)
-			nside = hp.npix2nside(len(GWmap))
-	except ClientError:
-		return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
-	except:
-		return '<b> Map ERROR. Please contact the administrator. </b>'
+	if not all([times, probs, areas]):
+		s3 = boto3.client('s3')
+		try:
+			with tempfile.NamedTemporaryFile() as f:
+				# this HP module does not appear to be able to read files from memory
+				# so we use a temporary file here which deletes itself as soon as the
+				# context manager is exited.
+				s3.download_fileobj(config.AWS_BUCKET, mappathinfo, f)
+				GWmap = hp.read_map(f.name)
+				#bestpixel = np.argmax(GWmap)
+				nside = hp.npix2nside(len(GWmap))
+		except ClientError:
+			return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
+		except:
+			return '<b> Map ERROR. Please contact the administrator. </b>'
 
-	pointing_filter = []
-	pointing_filter.append(models.pointing_event.graceid == graceid)
-	pointing_filter.append(models.pointing.status == 'completed')
-	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
-	pointing_filter.append(models.pointing.instrumentid != 49)
+		pointing_filter = []
+		pointing_filter.append(models.pointing_event.graceid == graceid)
+		pointing_filter.append(models.pointing.status == 'completed')
+		pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+		pointing_filter.append(models.pointing.instrumentid != 49)
 
-	if inst_cov != '':
-		insts_cov = [int(x) for x in inst_cov.split(',')]
-		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	if band_cov != '':
-		bands_cov = [x for x in band_cov.split(',')]
-		pointing_filter.append(models.pointing.band.in_(bands_cov))
-	if depth_unit != 'None' and depth_unit != '':
-		pointing_filter.append(models.pointing.depth_unit == depth_unit)
-	if depth != None and function.isFloat(depth):
-		if 'mag' in depth_unit:
-			pointing_filter.append(models.pointing.depth >= float(depth))
-		elif 'flux' in depth_unit:
-			pointing_filter.append(models.pointing.depth <= float(depth))
-		else:
-			return "You must specify a unit if you want to cut on depth."
+		if inst_cov != '':
+			insts_cov = [int(x) for x in inst_cov.split(',')]
+			pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
+		if band_cov != '':
+			bands_cov = [x for x in band_cov.split(',')]
+			pointing_filter.append(models.pointing.band.in_(bands_cov))
+		if depth_unit != 'None' and depth_unit != '':
+			pointing_filter.append(models.pointing.depth_unit == depth_unit)
+		if depth != None and function.isFloat(depth):
+			if 'mag' in depth_unit:
+				pointing_filter.append(models.pointing.depth >= float(depth))
+			elif 'flux' in depth_unit:
+				pointing_filter.append(models.pointing.depth <= float(depth))
+			else:
+				return "You must specify a unit if you want to cut on depth."
 
-	pointings_sorted = db.session.query(
-		models.pointing.instrumentid,
-		models.pointing.pos_angle,
-		func.ST_AsText(models.pointing.position).label('position'),
-		models.pointing.band,
-		models.pointing.depth,
-		models.pointing.time
-	).filter(
-		*pointing_filter
-	).order_by(
-		models.pointing.time.asc()
-	).all()
+		pointings_sorted = db.session.query(
+			models.pointing.instrumentid,
+			models.pointing.pos_angle,
+			func.ST_AsText(models.pointing.position).label('position'),
+			models.pointing.band,
+			models.pointing.depth,
+			models.pointing.time
+		).filter(
+			*pointing_filter
+		).order_by(
+			models.pointing.time.asc()
+		).all()
 
-	instrumentids = [x.instrumentid for x in pointings_sorted]
+		instrumentids = [x.instrumentid for x in pointings_sorted]
 
-	for apid in approx_dict.keys():
-		if apid in instrumentids:
-			instrumentids.append(approx_dict[apid])
+		for apid in approx_dict.keys():
+			if apid in instrumentids:
+				instrumentids.append(approx_dict[apid])
 
-	#filter and query the relevant instrument footprints
-	footprintinfo = db.session.query(
-		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
-		models.footprint_ccd.instrumentid
-	).filter(
-		models.footprint_ccd.instrumentid.in_(instrumentids)
-	).all()
+		#filter and query the relevant instrument footprints
+		footprintinfo = db.session.query(
+			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
+			models.footprint_ccd.instrumentid
+		).filter(
+			models.footprint_ccd.instrumentid.in_(instrumentids)
+		).all()
 
-	#get GW T0 time
-	time_of_signal = db.session.query(
-		models.gw_alert.time_of_signal
-	).filter(
-		models.gw_alert.graceid == graceid
-	).filter(
-		models.gw_alert.time_of_signal != None
-	).order_by(
-		models.gw_alert.datecreated.desc()
-	).first()[0]
+		#get GW T0 time
+		time_of_signal = db.session.query(
+			models.gw_alert.time_of_signal
+		).filter(
+			models.gw_alert.graceid == graceid
+		).filter(
+			models.gw_alert.time_of_signal != None
+		).order_by(
+			models.gw_alert.datecreated.desc()
+		).first()[0]
 
-	if time_of_signal == None:
-		return "<i><font color='red'>ERROR: Please contact administrator</font></i>"
+		if time_of_signal == None:
+			return "<i><font color='red'>ERROR: Please contact administrator</font></i>"
 
-	qps = []
-	qpsarea=[]
-	times=[]
-	probs=[]
-	areas=[]
-	NSIDE4area = 512 #this gives pixarea of 0.013 deg^2 per pixel
-	pixarea = hp.nside2pixarea(NSIDE4area, degrees=True)
+		qps = []
+		qpsarea=[]
 
-	for p in pointings_sorted:
-		ra, dec = function.sanatize_pointing(p.position)
+		NSIDE4area = 512 #this gives pixarea of 0.013 deg^2 per pixel
+		pixarea = hp.nside2pixarea(NSIDE4area, degrees=True)
 
-		if approx_cov:
-			if p.instrumentid in approx_dict.keys():
-				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == approx_dict[p.instrumentid]]
+		for p in pointings_sorted:
+			ra, dec = function.sanatize_pointing(p.position)
+
+			if approx_cov:
+				if p.instrumentid in approx_dict.keys():
+					footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == approx_dict[p.instrumentid]]
+				else:
+					footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
 			else:
 				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
-		else:
-			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
 
-		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
 
-		for ccd in sanatized_ccds:
-			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+			for ccd in sanatized_ccds:
+				pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 
 
-			ras_poly = [x[0] for x in pointing_footprint][:-1]
-			decs_poly = [x[1] for x in pointing_footprint][:-1]
-			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
-			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
-			qps.extend(qp)
+				ras_poly = [x[0] for x in pointing_footprint][:-1]
+				decs_poly = [x[1] for x in pointing_footprint][:-1]
+				xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
+				qp = hp.query_polygon(nside,np.array(xyzpoly).T)
+				qps.extend(qp)
 
-			#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
-			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
-			qpsarea.extend(qparea)
+				#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
+				qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
+				qpsarea.extend(qparea)
 
-			#deduplicate indices, so that pixels already covered are not double counted
-			deduped_indices=list(dict.fromkeys(qps))
-			deduped_indices_area = list(dict.fromkeys(qpsarea))
+				#deduplicate indices, so that pixels already covered are not double counted
+				deduped_indices=list(dict.fromkeys(qps))
+				deduped_indices_area = list(dict.fromkeys(qpsarea))
 
-			area = pixarea * len(deduped_indices_area)
+				area = pixarea * len(deduped_indices_area)
 
-			prob = 0
-			for ind in deduped_indices:
-				prob += GWmap[ind]
-			elapsed = p.time - time_of_signal
-			elapsed = elapsed.total_seconds()/3600
-			times.append(elapsed)
-			probs.append(prob)
-			areas.append(area)
+				prob = 0
+				for ind in deduped_indices:
+					prob += GWmap[ind]
+				elapsed = p.time - time_of_signal
+				elapsed = elapsed.total_seconds()/3600
+				times.append(elapsed)
+				probs.append(prob)
+				areas.append(area)
+		if not approx_cov:
+			cache.set(f'{cache_key}_times', times)
+			cache.set(f'{cache_key}_probs', probs)
+			cache.set(f'{cache_key}_areas', areas)
 
 	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
