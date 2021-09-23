@@ -37,10 +37,10 @@
             {% endfor %}
         </p>
         <p>
-            {% for error in form.recaptcha.errors %}
-                {{ error }}
-            {% endfor %}
             {{ form.recaptcha }}
+            {% for error in form.recaptcha.errors %}
+                <span style="color: red;">{{ error }}</span>
+            {% endfor %}
         </p>
         <p>{{ form.fairuse() }} <span style="font-size: small">By clicking here you agree to the following: "<a href=http://Treasuremap.space>Treasuremap.space</a> relies on the goodwill of the community.  If you use it for visualization or for downloading information, you are expected to upload any telescope pointings or other information you may have<a href="/fairuse" target="_blank">.</a></span>"</p>
         <p>{{ form.submit() }}</p>

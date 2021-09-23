@@ -2,13 +2,17 @@
 
 from flask import request, jsonify
 from sqlalchemy import func
+from botocore.exceptions import ClientError
 import flask_sqlalchemy as fsq
 import os, json, datetime
 import random, math
 import numpy as np
 import time
+import boto3
+import io
 
 from src import app
+from src.gwtmconfig import config
 from . import function
 from . import models
 from . import forms
@@ -939,9 +943,85 @@ def get_instruments():
 
 	return jsonify(insts)
 
+
+@app.route('/api/v0/grb_moc_file', methods=['GET'])
+def get_grbmoc():
+	'''
+	inputs:
+		graceid: Can take GW... or S notation
+		instruments: [gbm, lat, bat]
+	'''
+
+	try:
+		args = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
+
+	if args is None:
+		args = request.args
+	
+	if args is None:
+		return("Invalid Arguments.")
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
+	
+	if "graceid" in args:
+		gid = args.get('graceid')
+		gid = models.gw_alert.graceidfromalternate(gid)
+	else:
+		return jsonify('graceid is required')
+	
+	if "instrument" in args:
+		inst = args.get("instrument").lower()
+		if inst not in ['gbm', 'lat', 'bat']:
+			return jsonify('Valid instruments are in [\'gbm\', \'lat\', \'bat\']')
+	else:
+		return jsonify('Instrument is required. Valid instruments are in [\'gbm\', \'lat\', \'bat\']')
+
+	s3 = boto3.client('s3')
+	instrument_dictionary = {'gbm':'Fermi', 'lat':'LAT', 'bat':'BAT'}
+	
+	moc_filepath = '{}/{}-{}.json'.format('fit', gid, instrument_dictionary[inst])
+
+	try:
+		with io.BytesIO() as f:
+			s3.download_fileobj(config.AWS_BUCKET, moc_filepath, f)
+			f.seek(0)
+			return f.read().decode('utf-8')
+	except ClientError:
+		return jsonify('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst))
+
+
 #FIX DATA
 @app.route('/fixdata', methods=['GET'])
 def fixdata():
+
+	alerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == 'S190930t')
+	for a in alerts:
+		a.alternateid = None
+	graceids = [x.graceid for x in alerts]
+
+	print(os.getcwd())
+	fname = '{}/src/gwnames.txt'.format(os.getcwd())
+	ffile = open(fname, 'r').readlines()
+	eventnames = []
+	data_test = {}
+	#for f in ffile:
+	#	new_name = f.split()[0]
+	#	eventname = new_name.split('GW')[1].split('_')[0]
+	#	hits = [[eventname in x.graceid, x.id, x.graceid] for x in alerts]
+	#	if any([x[0] for x in hits]):
+	#		for h in hits:
+	#			if h[0]:
+	#				alerttochange = [x for x in alerts if x.id == h[1]][0]
+	#				alerttochange.alternateid = new_name
 
 	#ids = [20815,20816,20817]
 	#datatochange = db.session.query(models.pointing).filter(models.pointing.id.in_(ids))
@@ -950,7 +1030,7 @@ def fixdata():
 	#for ge in datatochange:
 	#	ge.depth = 6.69E-12
 		
-	#db.session.commit()
+	db.session.commit()
 
 	return 'success'
 
