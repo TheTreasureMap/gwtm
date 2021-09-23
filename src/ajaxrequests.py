@@ -12,15 +12,16 @@ import urllib.parse
 import pandas as pd
 import flask_sqlalchemy as fsq
 import boto3
-from botocore.exceptions import ClientError
 import io
 import tempfile
+import time
 
 from flask import Flask, request, jsonify
 from flask_login import current_user
 from sqlalchemy import func
 from plotly.subplots import make_subplots
 from plotly.tools import FigureFactory as FF
+from botocore.exceptions import ClientError
 
 from . import function
 from . import models
@@ -309,6 +310,7 @@ def ajax_scimma_xrt():
 
 	return jsonify(payload)
 
+
 @app.route('/ajax_resend_verification_email')
 def ajax_resend_verification_email():
 	userid = current_user.id
@@ -366,12 +368,22 @@ def ajax_request_doi():
 
 @app.route("/ajax_coverage_calculator", methods=['GET','POST'])
 def plot_prob_coverage():
+	ztfid = 47; ztf_approx_id = 76
+	decamid = 38; decam_approx_id = 77
+
+	approx_dict = {
+		ztfid: ztf_approx_id,
+		decamid: decam_approx_id
+	}
+
+	start = time.time()
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
 	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
+	approx_cov = int(request.args.get('approx_cov')) == 1
 
 	s3 = boto3.client('s3')
 	try:
@@ -424,6 +436,11 @@ def plot_prob_coverage():
 	).all()
 
 	instrumentids = [x.instrumentid for x in pointings_sorted]
+
+	for apid in approx_dict.keys():
+		if apid in instrumentids:
+			instrumentids.append(approx_dict[apid])
+
 	#filter and query the relevant instrument footprints
 	footprintinfo = db.session.query(
 		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
@@ -444,7 +461,7 @@ def plot_prob_coverage():
 	).first()[0]
 
 	if time_of_signal == None:
-		return '<b>ERROR: Please contact administrator.</b>'
+		return "<i><font color='red'>ERROR: Please contact administrator</font></i>"
 
 	qps = []
 	qpsarea=[]
@@ -457,8 +474,16 @@ def plot_prob_coverage():
 	for p in pointings_sorted:
 		ra, dec = function.sanatize_pointing(p.position)
 
-		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
+		if approx_cov:
+			if p.instrumentid in approx_dict.keys():
+				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == approx_dict[p.instrumentid]]
+			else:
+				footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
+		else:
+			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
+
 		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+		
 		for ccd in sanatized_ccds:
 			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 
@@ -468,7 +493,6 @@ def plot_prob_coverage():
 			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
 			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
 			qps.extend(qp)
-
 
 			#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
 			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
@@ -501,6 +525,13 @@ def plot_prob_coverage():
 	fig.update_yaxes(title_text="Percent of GW localization posterior covered", secondary_y=False)
 	fig.update_yaxes(title_text="Area coverage (deg<sup>2</sup>)", secondary_y=True)
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
+
+	end = time.time()
+
+	total = end-start
+	print('total time doing coverage calculator: {}'.format(total))
+	print('total area: {}'.format(areas[-1]))
+	print('total probability: {}'.format(probs[-1]))
 
 	return coverage_div
 
