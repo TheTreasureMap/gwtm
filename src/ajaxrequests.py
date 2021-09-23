@@ -483,7 +483,7 @@ def plot_prob_coverage():
 			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
 
 		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-		
+
 		for ccd in sanatized_ccds:
 			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 

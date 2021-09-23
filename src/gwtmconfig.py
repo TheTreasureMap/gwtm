@@ -21,10 +21,15 @@ class Config(object):
     RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
     ZENODO_ACCESS_KEY = os.environ.get('ZENODO_ACCESS_KEY', '')
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-    AWS_SECRET_ACCESS_KEY= os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
     AWS_DEFAULT_REGION = os.environ.get('AWS_DEFAULT_REGION', 'us-east-2')
     AWS_BUCKET = os.environ.get('AWS_BUCKET', 'gwtreasuremap')
     SECRET_KEY = os.urandom(16)
+    CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    CACHE_TYPE = 'RedisCache'
+    CACHE_KEY_PREFIX = 'cache_'
+    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 
 
     @property
