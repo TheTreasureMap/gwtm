@@ -573,6 +573,29 @@ text.info:hover span{ /*the span will display just on :hover state*/
     })
   })
 
+  function poll_for_result(result_id){
+    var btn = $('#calculate');
+    btn.prop('value', 'Waiting.')
+    var cnt = 0
+    var poll = setInterval(function(){
+      console.log('looking for result')
+      $.ajax({
+        url: '/prob_calc_results/' + result_id,
+      }).done(function(reply){
+        if(reply != 'false'){
+          $('#coveragediv').html(reply);
+          clearInterval(poll)
+          console.log('clearing')
+          btn.prop('value', 'Calculate')
+        }else{
+          console.log('still waiting')
+          btn.prop('value', 'Waiting.' + '.'.repeat(cnt))
+        }
+        cnt++
+      })
+    }, 3000)
+
+  }
   //Function that creates the Coverage plot
   $(document).ready( function() {
       $('#calculate').click(function() {
@@ -590,9 +613,15 @@ text.info:hover span{ /*the span will display just on :hover state*/
           }
         ).done(function (reply) 
           {
+            console.log(reply)
             $('#calculate').prop('disabled', false)
+            if(reply.result_id){
+              poll_for_result(reply.result_id)
+            } else {
+              $('#coveragediv').html(reply);
+            }
+
             $btn.button('reset')
-            $('#coveragediv').html(reply);
           }
         ).fail(function(jqXHR, textStatus)
           {

@@ -16,6 +16,7 @@ import io
 import tempfile
 import time
 from werkzeug.exceptions import HTTPException
+from celery.result import AsyncResult
 
 from flask import Flask, request, jsonify
 from flask_login import current_user
@@ -371,6 +372,7 @@ def ajax_request_doi():
 
 @celery.task()
 def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov):
+	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
 	ztfid = 47
 	ztf_approx_id = 76
 	decamid = 38
@@ -418,7 +420,8 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 		elif 'flux' in depth_unit:
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
-			raise HTTPException('Uknown depth unit.')
+			print(depth_unit)
+			raise HTTPException('Unknown depth unit.')
 
 	pointings_sorted = db.session.query(
 		models.pointing.instrumentid,
@@ -509,8 +512,28 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 			probs.append(prob)
 			areas.append(area)
 
-	return times, probs, areas
+	cache.set(f'{cache_key}_times', times)
+	cache.set(f'{cache_key}_probs', probs)
+	cache.set(f'{cache_key}_areas', areas)
 
+	return cache_key
+
+
+def generate_prob_plot(times, probs, areas):
+	fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+	fig.add_trace(go.Scatter(x=times, y=[prob*100 for prob in probs],
+						mode='lines',
+						name='Probability'), secondary_y=False)
+	fig.add_trace(go.Scatter(x=times, y=areas,
+						mode='lines',
+						name='Area'), secondary_y=True)
+	fig.update_xaxes(title_text="Hours since GW T0")
+	fig.update_yaxes(title_text="Percent of GW localization posterior covered", secondary_y=False)
+	fig.update_yaxes(title_text="Area coverage (deg<sup>2</sup>)", secondary_y=True)
+	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
+
+	return coverage_div
 
 @app.route("/ajax_coverage_calculator", methods=['GET', 'POST'])
 def plot_prob_coverage():
@@ -534,26 +557,16 @@ def plot_prob_coverage():
 
 	if not all([times, probs, areas]):
 		if approx_cov:
-			times, probs, areas = calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
-			cache.set(f'{cache_key}_times', times)
-			cache.set(f'{cache_key}_probs', probs)
-			cache.set(f'{cache_key}_areas', areas)
+			cache_key = calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
+			times = cache.get(f'{cache_key}_times')
+			probs = cache.get(f'{cache_key}_probs')
+			areas = cache.get(f'{cache_key}_areas')
 		else:
 			result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
-			return result.id
+			return jsonify({'result_id': result.id})
 
-	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-	fig.add_trace(go.Scatter(x=times, y=[prob*100 for prob in probs],
-						mode='lines',
-						name='Probability'), secondary_y=False)
-	fig.add_trace(go.Scatter(x=times, y=areas,
-						mode='lines',
-						name='Area'), secondary_y=True)
-	fig.update_xaxes(title_text="Hours since GW T0")
-	fig.update_yaxes(title_text="Percent of GW localization posterior covered", secondary_y=False)
-	fig.update_yaxes(title_text="Area coverage (deg<sup>2</sup>)", secondary_y=True)
-	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
+	coverage_div = generate_prob_plot(times, probs, areas)
 
 	end = time.time()
 
@@ -563,6 +576,18 @@ def plot_prob_coverage():
 	print('total probability: {}'.format(probs[-1]))
 
 	return coverage_div
+
+@app.route('/prob_calc_results/<result_id>', methods=['GET'])
+def get_calc_result(result_id):
+	result = AsyncResult(result_id, app=celery)
+	if result.ready():
+		cache_key = result.get()
+		times = cache.get(f'{cache_key}_times')
+		probs = cache.get(f'{cache_key}_probs')
+		areas = cache.get(f'{cache_key}_areas')
+		return generate_prob_plot(times, probs, areas)
+	else:
+		return 'false'
 
 
 @app.route('/ajax_preview_footprint', methods=['GET'])
