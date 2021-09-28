@@ -30,6 +30,7 @@ class Config(object):
     CACHE_TYPE = 'RedisCache'
     CACHE_KEY_PREFIX = 'cache_'
     CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    CACHE_DEFAULT_TIMEOUT = 60 * 60 * 24
 
 
     @property
