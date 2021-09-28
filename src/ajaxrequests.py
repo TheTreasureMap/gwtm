@@ -538,7 +538,6 @@ def generate_prob_plot(times, probs, areas):
 @app.route("/ajax_coverage_calculator", methods=['GET', 'POST'])
 def plot_prob_coverage():
 	start = time.time()
-	print(start)
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
@@ -556,14 +555,8 @@ def plot_prob_coverage():
 
 
 	if not all([times, probs, areas]):
-		if approx_cov:
-			cache_key = calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
-			times = cache.get(f'{cache_key}_times')
-			probs = cache.get(f'{cache_key}_probs')
-			areas = cache.get(f'{cache_key}_areas')
-		else:
-			result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
-			return jsonify({'result_id': result.id})
+		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
+		return jsonify({'result_id': result.id})
 
 
 	coverage_div = generate_prob_plot(times, probs, areas)
