@@ -420,7 +420,6 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 		elif 'flux' in depth_unit:
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
-			print(depth_unit)
 			raise HTTPException('Unknown depth unit.')
 
 	pointings_sorted = db.session.query(
@@ -546,8 +545,6 @@ def plot_prob_coverage():
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
 	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
-	if depth_unit not in ['flux', 'ab_mag']:
-		return "You must specify a unit if you want to cut on depth."
 
 	times = cache.get(f'{cache_key}_times')
 	probs = cache.get(f'{cache_key}_probs')
