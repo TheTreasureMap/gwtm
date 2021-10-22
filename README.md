@@ -35,6 +35,7 @@ present:
     ZENODO_ACCESS_KEY
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
+    REDIS_URL
 
 See [gwtmconfig.py](src/gwtmconfig.py) for other configration options and defaults for other values.
 
@@ -45,6 +46,33 @@ export MAIL_PASSWORD=ASecretPassword
 export RECAPTCHA_PUBLIC_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).
+
+### Running Redis
+
+Redis is a fast in memory key/value store. It is used in this project for both caching
+and as a message broker for the Celery task worker (next section).
+
+Running redis with Docker is easy:
+
+```bash
+docker run --name redis -p6379:6379 -d redis
+```
+
+This will start a server listening on localhost:6379, which is the default value Treasuremap will
+look for, so no other configuration should be necessary.
+
+### Running the Celery worker
+
+In order to run certain code off the main HTTP thread we use celery to be able to run tasks in the background.
+This requires Redis to be running (previous section).
+
+Once redis is up, we can start a worker:
+
+```bash
+celery -A src.tasks.celery worker
+```
+
+You can test this is working but using the probability calculator for an event.
 
 
 ### Docker
