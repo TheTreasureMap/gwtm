@@ -15,6 +15,8 @@ import boto3
 import io
 import tempfile
 import time
+import hashlib
+
 from werkzeug.exceptions import HTTPException
 from celery.result import AsyncResult
 
@@ -371,16 +373,16 @@ def ajax_request_doi():
 
 
 @celery.task()
-def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov):
-	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
-	ztfid = 47
-	ztf_approx_id = 76
-	decamid = 38
-	decam_approx_id = 77
+def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key):
+
+	ztfid = 47; ztf_approx_id = 76
+	decamid = 38; decam_approx_id = 77
+	
 	approx_dict = {
 		ztfid: ztf_approx_id,
 		decamid: decam_approx_id
 	}
+
 	areas = []
 	times = []
 	probs = []
@@ -423,6 +425,7 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 			raise HTTPException('Unknown depth unit.')
 
 	pointings_sorted = db.session.query(
+		models.pointing.id,
 		models.pointing.instrumentid,
 		models.pointing.pos_angle,
 		func.ST_AsText(models.pointing.position).label('position'),
@@ -544,17 +547,50 @@ def plot_prob_coverage():
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
-	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
+	
+	pointing_filter = []
+	pointing_filter.append(models.pointing_event.graceid == graceid)
+	pointing_filter.append(models.pointing.status == 'completed')
+	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+	pointing_filter.append(models.pointing.instrumentid != 49)
+
+	if inst_cov != '':
+		insts_cov = [int(x) for x in inst_cov.split(',')]
+		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
+	if band_cov != '':
+		bands_cov = [x for x in band_cov.split(',')]
+		pointing_filter.append(models.pointing.band.in_(bands_cov))
+	if depth_unit != 'None' and depth_unit != '':
+		pointing_filter.append(models.pointing.depth_unit == depth_unit)
+	if depth != None and function.isFloat(depth):
+		if 'mag' in depth_unit:
+			pointing_filter.append(models.pointing.depth >= float(depth))
+		elif 'flux' in depth_unit:
+			pointing_filter.append(models.pointing.depth <= float(depth))
+		else:
+			raise HTTPException('Unknown depth unit.')
+
+	pointings_sorted = db.session.query(
+		models.pointing.id
+	).filter(
+		*pointing_filter
+	).order_by(
+		models.pointing.time.asc()
+	).all()
+
+	pointingids = [x.id for x in pointings_sorted]
+	pointingids = sorted(pointingids)
+	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
+
+	cache_key = f'prob_{graceid}_{mappathinfo}_{approx_cov}_{hashpointingids}'
 
 	times = cache.get(f'{cache_key}_times')
 	probs = cache.get(f'{cache_key}_probs')
 	areas = cache.get(f'{cache_key}_areas')
 
-
 	if not all([times, probs, areas]):
-		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
+		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key)
 		return jsonify({'result_id': result.id})
-
 
 	coverage_div = generate_prob_plot(times, probs, areas)
 
