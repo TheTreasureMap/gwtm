@@ -15,6 +15,8 @@ import boto3
 import io
 import tempfile
 import time
+from werkzeug.exceptions import HTTPException
+from celery.result import AsyncResult
 
 from flask import Flask, request, jsonify
 from flask_login import current_user
@@ -29,7 +31,9 @@ from . import forms
 from . import enums
 from src import app
 from src import mail
+from src import cache
 from src.gwtmconfig import config
+from .tasks import celery
 
 db = models.db
 
@@ -272,16 +276,16 @@ def ajax_scimma_xrt():
 		graceid = 'S190426'
 
 	keywords = {
-             'keyword':'',
-             'cone_search':'',
-             'polygon_search':'',
-             'alert_timestamp_after':'',
-             'alert_timestamp_before':'',
-             'role':'',
-             'event_trigger_number':graceid,
-             'ordering':'',
-             'page_size':1000,
-    }
+			 'keyword':'',
+			 'cone_search':'',
+			 'polygon_search':'',
+			 'alert_timestamp_after':'',
+			 'alert_timestamp_before':'',
+			 'role':'',
+			 'event_trigger_number':graceid,
+			 'ordering':'',
+			 'page_size':1000,
+	}
 	base = 'http://skip.dev.hop.scimma.org/api/alerts/'
 	url = '{}?{}'.format(base, urllib.parse.urlencode(keywords))
 	r = requests.get(url)
@@ -366,24 +370,20 @@ def ajax_request_doi():
 	return jsonify('')
 
 
-@app.route("/ajax_coverage_calculator", methods=['GET','POST'])
-def plot_prob_coverage():
-	ztfid = 47; ztf_approx_id = 76
-	decamid = 38; decam_approx_id = 77
-
+@celery.task()
+def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov):
+	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
+	ztfid = 47
+	ztf_approx_id = 76
+	decamid = 38
+	decam_approx_id = 77
 	approx_dict = {
 		ztfid: ztf_approx_id,
 		decamid: decam_approx_id
 	}
-
-	start = time.time()
-	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
-	mappathinfo = request.args.get('mappathinfo')
-	inst_cov = request.args.get('inst_cov')
-	band_cov = request.args.get('band_cov')
-	depth = request.args.get('depth_cov')
-	depth_unit = request.args.get('depth_unit')
-	approx_cov = int(request.args.get('approx_cov')) == 1
+	areas = []
+	times = []
+	probs = []
 
 	s3 = boto3.client('s3')
 	try:
@@ -396,9 +396,9 @@ def plot_prob_coverage():
 			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
 	except ClientError:
-		return '<b>Calculator ERROR: Map not found. Please contact the administrator.</b>'
-	except:
-		return '<b> Map ERROR. Please contact the administrator. </b>'
+		raise HTTPException('<b>Calculator ERROR: Map not found. Please contact the administrator.</b>')
+	except Exception:
+		raise HTTPException('<b> Map ERROR. Please contact the administrator. </b>')
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -420,7 +420,7 @@ def plot_prob_coverage():
 		elif 'flux' in depth_unit:
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
-			return "You must specify a unit if you want to cut on depth."
+			raise HTTPException('Unknown depth unit.')
 
 	pointings_sorted = db.session.query(
 		models.pointing.instrumentid,
@@ -461,13 +461,11 @@ def plot_prob_coverage():
 	).first()[0]
 
 	if time_of_signal == None:
-		return "<i><font color='red'>ERROR: Please contact administrator</font></i>"
+		raise HTTPException("<i><font color='red'>ERROR: Please contact administrator</font></i>")
 
 	qps = []
 	qpsarea=[]
-	times=[]
-	probs=[]
-	areas=[]
+
 	NSIDE4area = 512 #this gives pixarea of 0.013 deg^2 per pixel
 	pixarea = hp.nside2pixarea(NSIDE4area, degrees=True)
 
@@ -483,7 +481,7 @@ def plot_prob_coverage():
 			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid ==  p.instrumentid]
 
 		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-		
+
 		for ccd in sanatized_ccds:
 			pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
 
@@ -513,6 +511,14 @@ def plot_prob_coverage():
 			probs.append(prob)
 			areas.append(area)
 
+	cache.set(f'{cache_key}_times', times)
+	cache.set(f'{cache_key}_probs', probs)
+	cache.set(f'{cache_key}_areas', areas)
+
+	return cache_key
+
+
+def generate_prob_plot(times, probs, areas):
 	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
 	fig.add_trace(go.Scatter(x=times, y=[prob*100 for prob in probs],
@@ -526,6 +532,32 @@ def plot_prob_coverage():
 	fig.update_yaxes(title_text="Area coverage (deg<sup>2</sup>)", secondary_y=True)
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
 
+	return coverage_div
+
+@app.route("/ajax_coverage_calculator", methods=['GET', 'POST'])
+def plot_prob_coverage():
+	start = time.time()
+	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
+	mappathinfo = request.args.get('mappathinfo')
+	inst_cov = request.args.get('inst_cov')
+	band_cov = request.args.get('band_cov')
+	depth = request.args.get('depth_cov')
+	depth_unit = request.args.get('depth_unit')
+	approx_cov = int(request.args.get('approx_cov')) == 1
+	cache_key = f'prob_{graceid}_{mappathinfo}_{inst_cov}_{band_cov}_{depth}_{depth_unit}_{approx_cov}'
+
+	times = cache.get(f'{cache_key}_times')
+	probs = cache.get(f'{cache_key}_probs')
+	areas = cache.get(f'{cache_key}_areas')
+
+
+	if not all([times, probs, areas]):
+		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov)
+		return jsonify({'result_id': result.id})
+
+
+	coverage_div = generate_prob_plot(times, probs, areas)
+
 	end = time.time()
 
 	total = end-start
@@ -534,6 +566,18 @@ def plot_prob_coverage():
 	print('total probability: {}'.format(probs[-1]))
 
 	return coverage_div
+
+@app.route('/prob_calc_results/<result_id>', methods=['GET'])
+def get_calc_result(result_id):
+	result = AsyncResult(result_id, app=celery)
+	if result.ready():
+		cache_key = result.get()
+		times = cache.get(f'{cache_key}_times')
+		probs = cache.get(f'{cache_key}_probs')
+		areas = cache.get(f'{cache_key}_areas')
+		return generate_prob_plot(times, probs, areas)
+	else:
+		return 'false'
 
 
 @app.route('/ajax_preview_footprint', methods=['GET'])

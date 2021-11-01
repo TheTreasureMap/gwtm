@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_caching import Cache
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 from werkzeug.utils import import_string
@@ -17,6 +18,8 @@ cfg = import_string(configModule)()
 app.config.from_object(cfg)
 
 mail = Mail(app)
+cache = Cache(app)
+
 
 if not app.debug:
     if app.config['MAIL_SERVER']:
