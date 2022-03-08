@@ -11,10 +11,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify
 from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.ext.hybrid import hybrid_method
 from geoalchemy2 import Geometry, Geography
 from time import time
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from flask_login import UserMixin
+from enum import IntEnum
 
 from src.function import isInt, isFloat
 from src import app
@@ -70,6 +72,281 @@ class valid_mapping():
         self.valid = False
         self.errors = []
         self.warnings = []
+
+
+class SpectralRangeHandler:
+    '''
+        Values for the central wave and bandwidth were taken from:
+            http://svo2.cab.inta-csic.es/theory/fps/index.php?mode=browse
+            notated by the 'source' field in the following dictionary
+            for central_wavelength I used the lam_cen
+            for bandwidth I used the FWHM
+
+        Our base for the central wavelengths and bandwidths will be stored in 
+            Angstroms
+
+        There are following static methods to convert the Angstrom values into ranges for
+            frequency in Hz
+            energy in eV
+    '''
+
+    '''
+        spectral type enum
+    '''
+    class spectralrangetype(IntEnum):
+        angstroms = 1
+        energy = 2
+        frequency = 3
+    
+
+    '''
+        older bandpass dictionary
+    '''
+    bandpass_wavelength_dictionary = {
+        enums.bandpass.U : {
+            'source': 'CTIO/SOI.bessel_U',
+            'central_wave' : 3614.82,
+            'bandwidth' : 617.24
+        },
+        enums.bandpass.B : {
+            'source': 'CTIO/SOI.bessel_B',
+            'central_wave' : 4317.0,
+            'bandwidth' : 991.48
+        },
+        enums.bandpass.V : {
+            'source': 'CTIO/SOI.bessel_V',
+            'central_wave' : 5338.65,
+            'bandwidth' : 810.65
+        },
+        enums.bandpass.R : {
+            'source': 'CTIO/SOI.bessel_R',
+            'central_wave' : 6311.86,
+            'bandwidth' : 1220.89
+        },
+        enums.bandpass.I : {
+            'source': 'CTIO/SOI.bessel_I',
+            'central_wave' : 8748.91,
+            'bandwidth' : 2940.57
+        },
+        enums.bandpass.J : {
+            'source': 'CTIO/ANDICAM/J',
+            'central_wave' : 12457.00,
+            'bandwidth' : 1608.86
+        },
+        enums.bandpass.H : {
+            'source': 'CTIO/ANDICAM/H',
+            'central_wave' : 16333.11,
+            'bandwidth' : 2969.21
+        },
+        enums.bandpass.K : {
+            'source': 'CTIO/ANDICAM/K',
+            'central_wave' : 21401.72,
+            'bandwidth' : 2894.54
+        },
+        enums.bandpass.u : {
+            'source' : 'CTIO/DECam.u_filter',
+            'central_wave' : 3552.98,
+            'bandwidth' : 885.05
+        },
+        enums.bandpass.g : {
+            'source' : 'CTIO/DECam.g_filter',
+            'central_wave' : 4730.50,
+            'bandwidth' : 1503.06
+        },
+        enums.bandpass.r : {
+            'source' : 'CTIO/DECam.r_filter',
+            'central_wave' : 6415.40,
+            'bandwidth' : 1487.58
+        },
+        enums.bandpass.i : {
+            'source' : 'CTIO/DECam.i_filter',
+            'central_wave' : 7836.21,
+            'bandwidth' : 1468.29
+        },
+        enums.bandpass.z : {
+            'source' : 'CTIO/DECam.z_filter',
+            'central_wave' : 9258.37,
+            'bandwidth' : 1521.09
+        },
+        enums.bandpass.UVW1 : {
+            'source' : 'Swift/UVOT.UVW1',
+            'central_wave' : 2629.35,
+            'bandwidth' : 656.60
+        },
+        enums.bandpass.UVW2 : {
+            'source' : 'Swift/UVOT.UVW2',
+            'central_wave' : 1967.37,
+            'bandwidth' : 584.89
+        },
+        enums.bandpass.UVM2 : {
+            'source' : 'Swift/UVOT.UVM2',
+            'central_wave' : 2259.84,
+            'bandwidth' : 527.13
+        },
+        enums.bandpass.XRT : {
+            'source' : 'Manual calculation from 0.3-10keV',
+            'central_wave' : 21.2839,
+            'bandwidth' : 20.0441
+        },
+        enums.bandpass.clear : {
+            'source' : 'WHT/ULTRACAM.clear',
+            'central_wave' : 6977.45,
+            'bandwidth' : 2757.0
+        },
+        enums.bandpass.open : {
+            'source' : 'Coverage from 4000A-10000A',
+            'central_wave' : 7000,
+            'bandwidth' : 3000
+        },
+        enums.bandpass.UHF : {
+            'source' : 'manual conversion from 0.03-0.3GHz',
+            'central_wave' : 54961950633.331505,
+            'bandwidth' : 44968868699.998505
+        },
+        enums.bandpass.VHF : {
+            'source' : 'manual conversion from 0.3-1.0GHz',
+            'central_wave' : 6495503256.6665,
+            'bandwidth' : 3497578676.6665
+        },
+        enums.bandpass.L : {
+            'source' : 'manual conversion from 1-2GHz', 
+            'central_wave' : 2248443435.0,
+            'bandwidth' : 749481145.0 
+        },
+        enums.bandpass.S : {
+            'source' : 'manual conversion from 2-4GHz', 
+            'central_wave' : 1124221715.25,
+            'bandwidth' : 374740574.75
+        },
+        enums.bandpass.C : {
+            'source' : 'manual conversion from 4-8GHz', 
+            'central_wave' : 936851431.25,
+            'bandwidth' : 562110858.75
+        },
+        enums.bandpass.X : {
+            'source' : 'manual conversion from 8-12GHz', 
+            'central_wave' : 312283810.41665,
+            'bandwidth' : 62456762.08335
+        },
+        enums.bandpass.TESS : {
+            'source' : 'TESS/TESS.Red',
+            'central_wave' : 7917.84,
+            'bandwidth' : 4010.94
+        },
+        #enums.bandpass.other: {
+        #    'source' : None,
+        #    'central_wave' : None,
+        #    'bandwidth' : None
+        #},
+        enums.bandpass.BAT: {
+            'source' : 'manual conversion from 15-350keV',
+            'central_wave' : 0.431,
+            'bandwidth' : 0.3956
+        },
+        enums.bandpass.HESS: {
+            'source' : 'manual conversion from 10geV-50TeV',
+            'central_wave' : 6.200239850000001e-06,
+            'bandwidth' : 6.197760150000001e-06
+        },
+        enums.bandpass.WISEL: {
+            'source' : 'Iair figure he sent me in slack ~ 3700-7000A',
+            'central_wave' : 5350,
+            'bandwidth' : 1650
+        }
+    }
+
+
+    '''
+        method that returns the most likely bandpass name from central_wave and bandwidth 
+    '''
+    @staticmethod
+    def bandEnumFromCentralWaveBandwidth(central_wave, bandwidth):
+        mindict = {}
+        for band in SpectralRangeHandler.bandpass_wavelength_dictionary:
+            mindict[band] = {
+                'cw_diff' : abs(central_wave-SpectralRangeHandler.bandpass_wavelength_dictionary[band]['central_wave']),
+                'bw_diff' : abs(bandwidth-SpectralRangeHandler.bandpass_wavelength_dictionary[band]['bandwidth'])
+            }
+
+        min_cw_diff = min(x['cw_diff'] for x in mindict.values())
+
+        bandname = [x for x,y in mindict.items() if y['cw_diff'] == min_cw_diff][0]
+        return bandname
+
+
+    '''
+        method that returns the corresponding wave range to frequency in Hz
+    '''
+    @staticmethod
+    def wavetoFrequency(central_wave=None, bandwidth=None, bandpass=None):
+        wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass)
+
+        freq_min = 2997924580000000000.0/wave_max 
+        freq_max = 2997924580000000000.0/wave_min 
+
+        return freq_min, freq_max
+
+
+    '''
+        method that returns the corresponding wave range to energy in eV
+    '''
+    @staticmethod    
+    def wavetoEnergy(central_wave=None, bandwidth=None, bandpass=None):
+        wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass)
+
+        ev_max = 12398/wave_min
+        ev_min = 12398/wave_max
+
+        return ev_min, ev_max
+
+
+    '''
+        method that returns the wavelength range from the central_wave and bandwidth, or bandpass 
+    '''
+    @staticmethod    
+    def wavetoWaveRange(central_wave=None, bandwidth=None, bandpass=None):
+        if central_wave is None and bandwidth is None and bandpass is not None:
+            bp = SpectralRangeHandler.bandpass_wavelength_dictionary[bandpass]
+            central_wave = bp['central_wave']
+            bandwidth = bp['bandwidth']
+
+        wave_min = central_wave - (bandwidth/2.0)
+        wave_max = central_wave + (bandwidth/2.0)
+
+        return wave_min, wave_max
+
+
+    ''' 
+        method that returns the central_wave and bandwidth from a given energy range (must be eV)
+            higher energy corresponds to lower wavelength
+            lower energy corresponds to higher wavelength
+    '''
+    @staticmethod 
+    def wavefromEnergyRange(min_energy, max_energy):
+        
+        wave_min = 12398/max_energy
+        wave_max = 12398/max_energy
+
+        bandwidth = 0.5*(wave_max-wave_min)
+        central_wave = wave_min + bandwidth
+
+        return central_wave, bandwidth
+
+
+    '''
+        method that returns the central_wave and bandwidth from a given frequency range (must be Hz)
+            higher frequency corresponds to lower wavelength
+            lower frequency corresponds to higher wavelength
+    '''
+    @staticmethod 
+    def wavefromFrequencyRange(min_freq, max_freq):
+        wave_min = 2997924580000000000.0/max_freq
+        wave_max = 2997924580000000000/min_freq
+
+        bandwidth = 0.5*(wave_max-wave_min)
+        central_wave = wave_min + bandwidth
+
+        return central_wave, bandwidth
 
 
 @login.user_loader
@@ -324,10 +601,64 @@ class pointing(db.Model):
     band = db.Column(db.Enum(enums.bandpass))
     doi_url = db.Column(db.String(100))
     doi_id = db.Column(db.Integer)
+    central_wave = db.Column(db.Float)
+    bandwidth = db.Column(db.Float)
 
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @hybrid_method
+    def inSpectralRange(self, spectral_min, spectral_max, spectral_type):
+        '''
+        function to determine if a pointing is within a given range for spectral types:
+            wavelength (Angstroms)
+            energy (eV)
+            frequency (Hz)
+
+        it inputs the range of the spectral type (minimum and maximum values for given type) and 
+            determines if the pointing's observation is in that range. The boolean logic is all 
+            encompassing; whether the endpoints are confined entirely within the provided range
+        '''
+
+        if spectral_type == SpectralRangeHandler.spectralrangetype.angstroms:
+            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(self.central_wave, self.bandwidth)
+        if spectral_type == SpectralRangeHandler.spectralrangetype.energy:
+            thismin, thismax = SpectralRangeHandler.wavetoEnergy(self.central_wave, self.bandwidth)
+        if spectral_type == SpectralRangeHandler.spectralrangetype.frequency:
+            thismin, thismax = SpectralRangeHandler.wavetoFrequency(self.central_wave, self.bandwidth)
+
+        if thismin >= spectral_min and thismax <= spectral_max:
+            return True
+
+        return False
+
+    @inSpectralRange.expression
+    def inSpectralRange(cls, spectral_min, spectral_max, spectral_type):
+        '''
+        function to determine if a pointing is within a given range for spectral types:
+            wavelength (Angstroms)
+            energy (eV)
+            frequency (Hz)
+
+        it inputs the range of the spectral type (minimum and maximum values for given type) and 
+            determines if the pointing's observation is in that range. The boolean logic is all 
+            encompassing; whether the endpoints are confined entirely within the provided range
+        '''
+
+        if spectral_type == SpectralRangeHandler.spectralrangetype.angstroms:
+            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(cls.central_wave, cls.bandwidth)
+        if spectral_type == SpectralRangeHandler.spectralrangetype.energy:
+            thismin, thismax = SpectralRangeHandler.wavetoEnergy(cls.central_wave, cls.bandwidth)
+        if spectral_type == SpectralRangeHandler.spectralrangetype.frequency:
+            thismin, thismax = SpectralRangeHandler.wavetoFrequency(cls.central_wave, cls.bandwidth)
+
+        return and_(thismin >= spectral_min, thismax <= spectral_max)
+        #if thismin >= spectral_min and thismax <= spectral_max:
+        #    return True
+
+        #return False
+
 
     @staticmethod
     def pointings_from_IDS(ids, filter=[]):
@@ -347,6 +678,8 @@ class pointing(db.Model):
             pointing.depth_unit,
             pointing.time,
             pointing.status,
+            pointing.central_wave,
+            pointing.bandwidth,
             instrument.instrument_name,
             instrument.instrument_type,
             pointing_event.graceid
@@ -377,6 +710,8 @@ class pointing(db.Model):
             self.depth_unit = planned_pointing.depth_unit
             self.status = enums.pointing_status.completed
             self.band = planned_pointing.band
+            self.central_wave = planned_pointing.central_wave
+            self.bandwidth = planned_pointing.bandwidth
             self.instrumentid = planned_pointing.instrumentid
 
         if 'status' in p:
@@ -384,7 +719,8 @@ class pointing(db.Model):
             validstatusints = [int(b) for b in enums.pointing_status if b.name != 'cancelled']
             validstatusstr = [str(b.name) for b in enums.pointing_status if b.name != 'cancelled']
             if userstatus in validstatusints or userstatus in validstatusstr:
-                self.status = userstatus
+                statusenum = [ps for ps in enums.pointing_status if userstatus == int(ps) or userstatus == str(ps.name)][0] 
+                self.status = statusenum
         elif not PLANNED:
             self.status = enums.pointing_status.completed
         else:
@@ -459,7 +795,8 @@ class pointing(db.Model):
             validdepthunit = [int(b) for b in enums.depth_unit]
             validdepthunitstr = [str(b.name) for b in enums.depth_unit]
             if du in validdepthunit or du in validdepthunitstr:
-                self.depth_unit = du
+                duenum = [d for d in enums.depth_unit if int(d) == du or str(d.name) == du][0]
+                self.depth_unit = duenum
             else:
                 v.errors.append('Invalid depth_unit. Must be ab_mag, vega_mag, flux_erg, or flux_jy')
         else:
@@ -492,20 +829,118 @@ class pointing(db.Model):
         self.submitterid = userid
         self.datecreated = datetime.datetime.now()
 
+        if "wavelength_regime" in p and "wavelength_unit" in p and not PLANNED:
+
+            try:
+                regime = str(p['wavelength_regime']).split('[')[1].split(']')[0].split(',')
+                wave_min, wave_max = float(regime[0]), float(regime[1])
+
+                validwavelengthunits_ints = [int(b) for b in enums.wavelength_units]
+                validwavelengthunits_str = [str(b.name) for b in enums.wavelength_units]
+                user_unit = p['wavelength_unit']
+
+                if user_unit in validwavelengthunits_ints or user_unit in validwavelengthunits_str:
+                    wuenum = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.wavelength_units.get_scale(wuenum)
+                    wave_min = wave_min*scale
+                    wave_max = wave_max*scale
+
+                    self.bandwidth = 0.5*(wave_max-wave_min)
+                    self.central_wave = wave_min + self.bandwidth
+                    self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['band'] = self.band
+                else:
+                    v.errors.append('Wavelength Unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
+            except:
+                v.errors.append('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
+
+        if "frequency_regime" in p and "frequency_unit" in p and not PLANNED:
+
+            #try:
+            regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
+            min_freq, max_freq = float(regime[0]), float(regime[1])
+
+            validfrequnits_ints = [int(b) for b in enums.frequency_units]
+            validfrequnits_str = [str(b.name) for b in enums.frequency_units]
+            user_unit = p['frequency_unit']
+
+            if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
+                fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                scale = enums.frequency_units.get_scale(fuenum)
+                min_freq = min_freq*scale
+                max_freq = max_freq*scale
+
+                self.central_wave, self.bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
+                self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                p['band'] = self.band
+            else:
+                v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+            #except:
+            #    v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
+            
+
+        if "energy_regime" in p and "energy_unit" in p and not PLANNED:
+            try:
+                regime = str(p['energy_regime']).split('[')[1].split(']')[0].split(',')
+                min_energy, max_energy = float(regime[0]), float(regime[1])
+
+                validenergyunits_ints = [int(b) for b in enums.energy_units]
+                validenergyunits_str = [str(b.name) for b in enums.energy_units]
+                user_unit = p['energy_unit']
+
+                if user_unit in validenergyunits_ints or user_unit in validenergyunits_str:
+                    euenum = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.energy_units.get_scale(euenum)
+                    min_energy = min_energy*scale
+                    max_energy = max_energy*scale
+
+                    self.central_wave, self.bandwidth = SpectralRangeHandler.wavefromEnergyRange(min_energy, max_energy)
+                    self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['band'] = self.band
+                else:
+                    v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
+            except:
+                v.errors.apend('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
+            pass
+
+        if 'central_wave' in p and not PLANNED:
+            central_wave = p['central_wave']
+            if isFloat(central_wave):
+                self.central_wave = central_wave
+            else:
+                v.errors.append('Error parsing \'central_wave\'. required format is decimal')
+
+        if 'bandwidth' in p and not PLANNED:
+            bandwidth = p['bandwidth']
+            if isFloat(bandwidth):
+                self.bandwidth = bandwidth
+            else:
+                v.errors.append('Error parsing \'bandwidth\'. required format is decimal')
+
+
         if "band" in p and not PLANNED:
             validbandints = [int(b) for b in enums.bandpass]
             validbandstr = [str(b.name) for b in enums.bandpass]
             userband = p['band']
             if userband in validbandints or userband in validbandstr:
+                bandenum = [b for b in enums.bandpass if userband == int(b) or userband == str(b.name)][0] 
                 self.band = userband
+                if self.central_wave is None and self.bandwidth is None:
+                    bandinfo = SpectralRangeHandler.bandpass_wavelength_dictionary[bandenum]
+                    self.central_wave = bandinfo['central_wave']
+                    self.bandwidth = bandinfo['bandwidth']
             else:
-                v.errors.append("Field \"band\" is invalid")
-        elif not PLANNED:
-            v.errors.append("Field \"band\" is required")
+                v.errors.append("Field \"band\" is invalid, or manually state the wavelength, frequency, or energy regime of your observation")
+
+        if self.bandwidth is None or self.central_wave is None:
+            v.errors.append('Error Parsing Bandpass/Energy/Frequency information. Please refer to http://treasuremap.space/documentation for further assistance')
+        elif self.band is None:
+            self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
 
         if function.pointing_crossmatch(self, otherpointings):
            v.errors.append("Pointing already submitted")
 
+        #valid if no errors
         v.valid = len(v.errors) == 0
         return v
 

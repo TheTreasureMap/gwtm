@@ -51,6 +51,66 @@ class bandpass(IntEnum):
     X = 25
     other = 26
     TESS = 27
+    BAT = 28
+    HESS = 29
+    WISEL = 30
+
+
+class wavelength_units(IntEnum):
+    nanometer = 1
+    angstrom = 2
+    micron = 3
+
+    @staticmethod
+    def get_scale(unit):
+        if unit == wavelength_units.nanometer:
+            return 10.0
+        if unit == wavelength_units.angstrom:
+            return 1.0
+        if unit == wavelength_units.micron:
+            return 10000.0
+
+
+class energy_units(IntEnum):
+    eV = 1
+    keV = 2
+    MeV = 3
+    GeV = 4
+    TeV = 5
+
+    @staticmethod
+    def get_scale(unit):
+        if unit == energy_units.eV:
+            return 1.0
+        if unit == energy_units.keV:
+            return 1000.0
+        if unit == energy_units.MeV:
+            return 1000000.0
+        if unit == energy_units.GeV:
+            return 1000000000.0
+        if unit == energy_units.TeV:
+            return 1000000000000.0
+
+
+class frequency_units(IntEnum):
+    Hz = 1
+    kHz = 2
+    GHz = 3
+    MHz = 4
+    THz = 5
+
+    @staticmethod
+    def get_scale(unit):
+        if unit == frequency_units.Hz:
+            return 1.0
+        if unit == frequency_units.kHz:
+            return 1000.0
+        if unit == frequency_units.MHz:
+            return 1000000.0
+        if unit == frequency_units.GHz:
+            return 1000000000.0
+        if unit == frequency_units.THz:
+            return 1000000000000.0
 
 
 class gw_galaxy_score_type(IntEnum):

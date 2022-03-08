@@ -410,7 +410,7 @@ def add_pointings():
 		models.pointing.id == models.pointing_event.pointingid,
 		models.pointing_event.graceid == gid
 	).all()
-
+	
 	if "pointing" in rd:
 		p = rd['pointing']
 		mp = models.pointing()
@@ -460,10 +460,12 @@ def add_pointings():
 	db.session.flush()
 	db.session.commit()
 
-	if post_doi:
+	for px in points:
+		print(px.json)
+
+	if post_doi and len(points):
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
-		print(inst_set)
 
 		if 'doi_url' in rd:
 			doi_id, doi_url = 0, rd['doi_url']
@@ -519,8 +521,7 @@ def get_pointings():
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 	elif 'graceids' in args:
 		gids_s = args.get('graceids')
-		gids = gids_s.split('[')[1].split(']')[0].split(',')
-		print(gids, type(gids))
+		gids = str(gids_s).split('[')[1].split(']')[0].split(',')
 		filter.append(models.pointing_event.graceid.in_(gids))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
@@ -609,7 +610,7 @@ def get_pointings():
 			filter.append(models.usergroups.groupid.in_(groups))
 		except:
 			groups = args.get('groups')
-			groups = groups.split('[')[1].split(']')[0].split(',')
+			groups = str(groups).split('[')[1].split(']')[0].split(',')
 			ors = []
 			print(groups)
 			for g in groups:
@@ -635,7 +636,7 @@ def get_pointings():
 			filter.append(models.pointing.submitterid.in_(users))
 		except:
 			users = args.get('users')
-			users = users.split('[')[1].split(']')[0].split(',')
+			users = str(users).split('[')[1].split(']')[0].split(',')
 			ors = []
 			for u in users:
 				ors.append(models.users.username.contains(u.strip()))
@@ -658,12 +659,64 @@ def get_pointings():
 			filter.append(models.pointing.instrumentid.in_(insts))
 		except:
 			insts = args.get('instruments')
-			insts = insts.split('[')[1].split(']')[0].split(',')
+			insts = str(insts).split('[')[1].split(']')[0].split(',')
 			ors = []
 			for i in insts:
 				ors.append(models.instrument.instrument_name.contains(i.strip()))
 			filter.append(fsq.sqlalchemy.or_(*ors))
 			filter.append(models.instrument.id == models.pointing.instrumentid)
+
+	if 'wavelength_regime' in args and 'wavelength_unit' in args:
+		try:
+			spectral_range = str(args['wavelength_regime']).split('[')[1].split(']')[0].split(',')
+			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+		except:
+			return jsonify('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
+		try:
+			user_unit = args['wavelength_unit']
+			spectral_unit = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
+		except:
+			return jsonify('wavelength_unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
+		scale = enums.wavelength_units.get_scale(spectral_unit)
+		specmin = specmin*scale
+		specmax = specmax*scale
+
+		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.angstroms))
+	
+	if 'frequency_regime' in args and 'frequency_unit' in args:
+		try:
+			spectral_range = str(args['frequency_regime']).split('[')[1].split(']')[0].split(',')
+			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+		except:
+			return jsonify('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
+		try:
+			user_unit = args['frequency_unit']
+			spectral_unit = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
+		except:
+			return jsonify('frequency_unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+		scale = enums.frequency_units.get_scale(spectral_unit)
+		specmin = specmin*scale
+		specmax = specmax*scale
+
+		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.frequency))
+	
+
+	if 'energy_regime' in args and 'energy_unit' in args:
+		try:
+			spectral_range = str(args['energy_regime']).split('[')[1].split(']')[0].split(',')
+			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+		except:
+			return jsonify('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
+		try:
+			user_unit = args['energy_unit']
+			spectral_unit = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
+		except:
+			return jsonify('energy_unit is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
+		scale = enums.energy_units.get_scale(spectral_unit)
+		specmin = specmin*scale
+		specmax = specmax*scale
+
+		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.energy))
 
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.json for x in pointings]
@@ -926,7 +979,7 @@ def get_instruments():
 		filter.append(models.instrument.instrument_name.contains(name))
 	if "names" in args:
 		insts = args.get('instruments')
-		insts = insts.split('[')[1].split(']')[0].split(',')
+		insts = str(insts).split('[')[1].split(']')[0].split(',')
 		ors = []
 		for i in insts:
 			ors.append(models.instrument.instrument_name.contains(i.strip()))
@@ -1003,16 +1056,67 @@ def get_grbmoc():
 @app.route('/fixdata', methods=['GET'])
 def fixdata():
 
-	alerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == 'S190930t')
-	for a in alerts:
-		a.alternateid = None
-	graceids = [x.graceid for x in alerts]
+	test1 = models.SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(5000, 1000)
 
-	print(os.getcwd())
-	fname = '{}/src/gwnames.txt'.format(os.getcwd())
-	ffile = open(fname, 'r').readlines()
-	eventnames = []
-	data_test = {}
+	print(test1)
+
+	pointings = db.session.query(models.pointing).filter(
+		models.pointing.band == enums.bandpass.other
+	).all()
+
+	#for p in pointings:
+	#	print(p.instrumentid, p.submitterid)
+
+	test1 = {
+		'type': models.SpectralRangeHandler.spectralrangetype.angstroms,
+		'min':0,
+		'max':5000,
+	}
+
+	test2 = {
+		'type': models.SpectralRangeHandler.spectralrangetype.energy,
+		'min':200,
+		'max':15000,
+	}
+
+	test3 = {
+		'type': models.SpectralRangeHandler.spectralrangetype.frequency,
+		'min':1E9,
+		'max':5E9,
+	}
+
+	test = test2
+
+
+
+	for p in pointings:
+		if p.instrumentid == 55:
+			bband = enums.bandpass.HESS
+		if p.instrumentid == 57:
+			bband = enums.bandpass.WISEL
+		if p.instrumentid == 58:
+			bband = enums.bandpass.clear
+
+		wave_info = models.SpectralRangeHandler.bandpass_wavelength_dictionary[bband]
+
+		p.central_wave = wave_info['central_wave']
+		p.bandwidth = wave_info['bandwidth']
+		p.band = enums.bandpass.BAT
+
+
+		#print(p.band, wave_info)
+		#print(p.inSpectralRange(test['min'], test['max'], test['type']))
+
+
+	#db.session.commit()
+
+	return 'return success'
+
+	#print(os.getcwd())
+	#fname = '{}/src/gwnames.txt'.format(os.getcwd())
+	#ffile = open(fname, 'r').readlines()
+	#eventnames = []
+	#data_test = {}
 	#for f in ffile:
 	#	new_name = f.split()[0]
 	#	eventname = new_name.split('GW')[1].split('_')[0]
@@ -1030,9 +1134,9 @@ def fixdata():
 	#for ge in datatochange:
 	#	ge.depth = 6.69E-12
 		
-	db.session.commit()
+	#db.session.commit()
 
-	return 'success'
+	#return 'success'
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
