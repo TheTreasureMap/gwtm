@@ -615,7 +615,7 @@ def plot_prob_coverage():
 	areas = cache.get(f'{cache_key}_areas')
 
 	if not all([times, probs, areas]):
-		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, spectype)
+		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 		return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
