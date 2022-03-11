@@ -554,6 +554,8 @@ def plot_prob_coverage():
 	spec_range_unit = request.args.get('spec_range_unit')
 	spec_range_low = request.args.get('spec_range_low')
 	spec_range_high = request.args.get('spec_range_high')
+	slow, shigh = None, None
+	specenum = None
 	
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -576,7 +578,7 @@ def plot_prob_coverage():
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
 			raise HTTPException('Unknown depth unit.')
-
+		
 	if spec_range_low not in ['', None] and spec_range_high not in ['', None]:
 		if spec_range_type == 'wavelength':
 			unit = [x for x in enums.wavelength_units if spec_range_unit == x.name][0]
