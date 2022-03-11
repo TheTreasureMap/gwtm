@@ -208,8 +208,16 @@ class AlertsForm(FlaskForm):
     distance = None
     distance_error = None
     avgra, avgdec = '', ''
+    spectral_type_units = None
+
 
     def construct_alertform(self, args):
+
+        self.spectral_type_units = {
+            'wavelength': [x.name for x in enums.wavelength_units],
+            'energy': [x.name for x in enums.energy_units],
+            'frequency': [x.name for x in enums.frequency_units]
+        }
 
         s3 = boto3.client('s3')
         graceid = args['graceid']

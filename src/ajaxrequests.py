@@ -373,7 +373,7 @@ def ajax_request_doi():
 
 
 @celery.task()
-def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key):
+def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	ztfid = 47; ztf_approx_id = 76
 	decamid = 38; decam_approx_id = 77
@@ -411,9 +411,9 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	if band_cov != '':
-		bands_cov = [x for x in band_cov.split(',')]
-		pointing_filter.append(models.pointing.band.in_(bands_cov))
+	#if band_cov != '':
+	#	bands_cov = [x for x in band_cov.split(',')]
+	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth != None and function.isFloat(depth):
@@ -423,6 +423,9 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 			pointing_filter.append(models.pointing.depth <= float(depth))
 		else:
 			raise HTTPException('Unknown depth unit.')
+
+	if slow is not None and shigh is not None:
+		pointing_filter.append(models.pointing.inSpectralRange(slow, shigh, stype))
 
 	pointings_sorted = db.session.query(
 		models.pointing.id,
@@ -547,6 +550,10 @@ def plot_prob_coverage():
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
+	spec_range_type = request.args.get('spec_range_type')
+	spec_range_unit = request.args.get('spec_range_unit')
+	spec_range_low = request.args.get('spec_range_low')
+	spec_range_high = request.args.get('spec_range_high')
 	
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -557,9 +564,9 @@ def plot_prob_coverage():
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	if band_cov != '':
-		bands_cov = [x for x in band_cov.split(',')]
-		pointing_filter.append(models.pointing.band.in_(bands_cov))
+	#if band_cov != '':
+	#	bands_cov = [x for x in band_cov.split(',')]
+	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth != None and function.isFloat(depth):
@@ -570,6 +577,23 @@ def plot_prob_coverage():
 		else:
 			raise HTTPException('Unknown depth unit.')
 
+	if spec_range_low not in ['', None] and spec_range_high not in ['', None]:
+		if spec_range_type == 'wavelength':
+			unit = [x for x in enums.wavelength_units if spec_range_unit == x.name][0]
+			scale = enums.wavelength_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+		if spec_range_type == 'energy':
+			unit = [x for x in enums.energy_units if spec_range_unit == x.name][0]
+			scale = enums.energy_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+		if spec_range_type == 'frequency':
+			unit = [x for x in enums.frequency_units if spec_range_unit == x.name][0]
+			scale = enums.frequency_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+			
+		specenum = [x for x in models.SpectralRangeHandler.spectralrangetype if spec_range_type == x.name][0]
+		pointing_filter.append(models.pointing.inSpectralRange(slow, shigh, specenum))
+
 	pointings_sorted = db.session.query(
 		models.pointing.id
 	).filter(
@@ -577,6 +601,8 @@ def plot_prob_coverage():
 	).order_by(
 		models.pointing.time.asc()
 	).all()
+
+	#return jsonify('pointing results: {}'.format(len(pointings_sorted)))
 
 	pointingids = [x.id for x in pointings_sorted]
 	pointingids = sorted(pointingids)
@@ -589,7 +615,7 @@ def plot_prob_coverage():
 	areas = cache.get(f'{cache_key}_areas')
 
 	if not all([times, probs, areas]):
-		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key)
+		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, spectype)
 		return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
@@ -703,3 +729,49 @@ def get_pointing_fromID():
 		#	pass
 	return jsonify('')
 
+@app.route('/ajax_update_spectral_range_from_selected_bands')
+def spectral_range_from_selected_bands():
+	args = request.args
+	band_cov = args.get('band_cov')
+	spectral_type = args.get('spectral_type')
+	spectral_unit = args.get('spectral_unit')
+	spec_low = args.get('spec_range_low')
+	spec_high = args.get('spec_range_high')
+
+	print(spec_high, spec_low)
+	if band_cov:
+		bands = band_cov.split(',')
+		
+		mins, maxs = [], []
+		for b in bands:
+			bandname = [x for x in enums.bandpass if b == x.name][0]
+			band_min, band_max = None, None
+			if spectral_type == 'wavelength':
+				band_min, band_max = models.SpectralRangeHandler.wavetoWaveRange(bandpass=bandname)
+				unit = [x for x in enums.wavelength_units if spectral_unit == x.name][0]
+				scale = enums.wavelength_units.get_scale(unit)
+			if spectral_type == 'energy':
+				band_min, band_max = models.SpectralRangeHandler.wavetoEnergy(bandpass=bandname)
+				unit = [x for x in enums.energy_units if spectral_unit == x.name][0]
+				scale = enums.energy_units.get_scale(unit)
+			if spectral_type == 'frequency':
+				band_min, band_max = models.SpectralRangeHandler.wavetoFrequency(bandpass=bandname)
+				unit = [x for x in enums.frequency_units if spectral_unit == x.name][0]
+				scale = enums.frequency_units.get_scale(unit)
+
+			if band_min and band_max:
+				mins.append(band_min/scale)
+				maxs.append(band_max/scale)
+		
+		if len(mins):
+			ret = {
+				'total_min':min(mins),
+				'total_max':max(maxs)
+			}	
+			return ret
+
+	else:
+		return {
+			'total_min':'',
+			'total_max':''
+		}

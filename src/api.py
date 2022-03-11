@@ -681,7 +681,7 @@ def get_pointings():
 		specmin = specmin*scale
 		specmax = specmax*scale
 
-		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.angstroms))
+		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.wavelength))
 	
 	if 'frequency_regime' in args and 'frequency_unit' in args:
 		try:
@@ -1056,19 +1056,16 @@ def get_grbmoc():
 @app.route('/fixdata', methods=['GET'])
 def fixdata():
 
-	test1 = models.SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(5000, 1000)
-
-	print(test1)
-
 	pointings = db.session.query(models.pointing).filter(
-		models.pointing.band == enums.bandpass.other
+		models.pointing.band == enums.bandpass.BAT,
+		models.pointing.instrumentid.in_([55, 57, 58])
 	).all()
 
 	#for p in pointings:
 	#	print(p.instrumentid, p.submitterid)
 
 	test1 = {
-		'type': models.SpectralRangeHandler.spectralrangetype.angstroms,
+		'type': models.SpectralRangeHandler.spectralrangetype.wavelength,
 		'min':0,
 		'max':5000,
 	}
@@ -1090,25 +1087,26 @@ def fixdata():
 
 
 	for p in pointings:
+		bband = None
 		if p.instrumentid == 55:
 			bband = enums.bandpass.HESS
 		if p.instrumentid == 57:
 			bband = enums.bandpass.WISEL
 		if p.instrumentid == 58:
 			bband = enums.bandpass.clear
+		if bband is not None:
+			wave_info = models.SpectralRangeHandler.bandpass_wavelength_dictionary[bband]
 
-		wave_info = models.SpectralRangeHandler.bandpass_wavelength_dictionary[bband]
-
-		p.central_wave = wave_info['central_wave']
-		p.bandwidth = wave_info['bandwidth']
-		p.band = enums.bandpass.BAT
+			p.central_wave = wave_info['central_wave']
+			p.bandwidth = wave_info['bandwidth']
+			p.band = bband
 
 
 		#print(p.band, wave_info)
 		#print(p.inSpectralRange(test['min'], test['max'], test['type']))
 
 
-	#db.session.commit()
+	db.session.commit()
 
 	return 'return success'
 

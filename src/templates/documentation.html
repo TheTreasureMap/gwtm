@@ -143,10 +143,33 @@
                         <ul>
                             <li>units for depth. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
                         </ul>
-                        <li><i>band</i></li>
+                        <br>
+                        <li><b>Bandpass Information:</b> is required can be passed in by stating the band, or the range of wavelengths, energies, or frequencies the pointing covers. If your pointing is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
                         <ul>
-                            <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other</li>
-                        </ul>
+                            <li><b>Method 1:</b> Bandpass List</li>
+                            <ul>
+                                <li><i>band</i></li>
+                                <ul>
+                                    <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+                                </ul>
+                            </ul>
+                            <li><b>Method 2</b>: Central Wavelength and Bandwidth</li>
+                            <ul>
+                                <li><i>central_wave</i></li>
+                                <li><i>bandwidth</i></li>
+                                <ul><li>both must be floats</li></ul>
+                            </ul>
+                            <li><b>Method 3</b>: Spectrum Regimes<i> There are 3 ways to submit a spectrum regime for your associated pointing. By stating the wavelength, energy, or frequency regimes along with their associated units</i>
+                            <ul>
+                                <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
+                                <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
+                                <br>
+                                <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                                <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
+                                <br>
+                                <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                                <li><i>frequency_unit:</i> cvalid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
+                            </ul>
                     </ul>
 
                     <p><b>NOT REQUIRED</b></p>
@@ -226,8 +249,20 @@
             },
             {
                 "position":"POINT(42 42)",
-                "band":"U",
+                "central_wave":6500,
+                "bandwidth":1200,
+                "wavelength_unit":"angstrom",
                 "instrumentid":"instrumentname1",
+                "depth":"5e-12",
+                "depth_unit":"flux_erg"
+                "time":"2019-05-22T12:30:59",
+                "status":"planned"	
+            },
+            {
+                "position":"POINT(42 42)",
+                "energy_regime":[0.39,1.1],
+                "energy_unit":"keV",
+                "instrumentid":"Swift/XRT",
                 "depth":"19.5",
                 "depth_unit":"ab_mag"
                 "time":"2019-05-22T12:30:59",
@@ -326,11 +361,26 @@
 
                             <li>Can be a list user <b>ids</b>, list of <b>usernames</b>, or a list of user's <b>'firstname lastname'</b></li>
                         </ul>
-                        <li><i>band=band1</i></li>
-                        <li><i>bands=[band1, band2, band3...]</i></li>
+                        <li><b>Bandpass:</b> pointings can be queried and filtered in the same manner they are posted to the database.</li>
                         <ul>
-                            <li>Valid bands are in [U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other]</li>
-                        </ul>
+                            <li><b>Method 1:</b> Bandpass List</li>
+                            <ul>
+                                <li><i>band</i></li>
+                                <ul>
+                                    <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+                                </ul>
+                            </ul>
+                            <li><b>Method 2</b>: Spectrum Regimes<i> There are 3 ways to filter a pointing based off of spectrum regime: stating the wavelength, energy, or frequency regimes along with their associated units</i>
+                            <ul>
+                                <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
+                                <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
+                                <br>
+                                <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                                <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
+                                <br>
+                                <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                                <li><i>frequency_unit:</i> valid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
+                            </ul>
                         <li><i>instrument=inst1</i></li>
                         <li><i>instruments=[inst1, inst2, inst3...]</i></li>
                         <ul>

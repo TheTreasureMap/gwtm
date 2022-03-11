@@ -94,7 +94,7 @@ class SpectralRangeHandler:
         spectral type enum
     '''
     class spectralrangetype(IntEnum):
-        angstroms = 1
+        wavelength = 1
         energy = 2
         frequency = 3
     
@@ -281,8 +281,8 @@ class SpectralRangeHandler:
     def wavetoFrequency(central_wave=None, bandwidth=None, bandpass=None):
         wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass)
 
-        freq_min = 2997924580000000000.0/wave_max 
         freq_max = 2997924580000000000.0/wave_min 
+        freq_min = 2997924580000000000.0/wave_max 
 
         return freq_min, freq_max
 
@@ -621,7 +621,7 @@ class pointing(db.Model):
             encompassing; whether the endpoints are confined entirely within the provided range
         '''
 
-        if spectral_type == SpectralRangeHandler.spectralrangetype.angstroms:
+        if spectral_type == SpectralRangeHandler.spectralrangetype.wavelength:
             thismin, thismax = SpectralRangeHandler.wavetoWaveRange(self.central_wave, self.bandwidth)
         if spectral_type == SpectralRangeHandler.spectralrangetype.energy:
             thismin, thismax = SpectralRangeHandler.wavetoEnergy(self.central_wave, self.bandwidth)
@@ -646,7 +646,7 @@ class pointing(db.Model):
             encompassing; whether the endpoints are confined entirely within the provided range
         '''
 
-        if spectral_type == SpectralRangeHandler.spectralrangetype.angstroms:
+        if spectral_type == SpectralRangeHandler.spectralrangetype.wavelength:
             thismin, thismax = SpectralRangeHandler.wavetoWaveRange(cls.central_wave, cls.bandwidth)
         if spectral_type == SpectralRangeHandler.spectralrangetype.energy:
             thismin, thismax = SpectralRangeHandler.wavetoEnergy(cls.central_wave, cls.bandwidth)
