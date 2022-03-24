@@ -210,7 +210,6 @@ class AlertsForm(FlaskForm):
     avgra, avgdec = '', ''
     spectral_type_units = None
 
-
     def construct_alertform(self, args):
 
         self.spectral_type_units = {

@@ -373,7 +373,7 @@ def ajax_request_doi():
 
 
 @celery.task()
-def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
+def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	ztfid = 47; ztf_approx_id = 76
 	decamid = 38; decam_approx_id = 77
@@ -517,6 +517,9 @@ def calc_prob_coverage(graceid, mappathinfo, inst_cov, band_cov, depth, depth_un
 			probs.append(prob)
 			areas.append(area)
 
+	if debug:
+		return times, probs, areas
+
 	cache.set(f'{cache_key}_times', times)
 	cache.set(f'{cache_key}_probs', probs)
 	cache.set(f'{cache_key}_areas', areas)
@@ -543,6 +546,8 @@ def generate_prob_plot(times, probs, areas):
 @app.route("/ajax_coverage_calculator", methods=['GET', 'POST'])
 def plot_prob_coverage():
 	start = time.time()
+
+	debug = app.debug
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
@@ -604,20 +609,23 @@ def plot_prob_coverage():
 		models.pointing.time.asc()
 	).all()
 
-	#return jsonify('pointing results: {}'.format(len(pointings_sorted)))
-
 	pointingids = [x.id for x in pointings_sorted]
 	pointingids = sorted(pointingids)
 	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 
 	cache_key = f'prob_{graceid}_{mappathinfo}_{approx_cov}_{hashpointingids}'
 
-	times = cache.get(f'{cache_key}_times')
-	probs = cache.get(f'{cache_key}_probs')
-	areas = cache.get(f'{cache_key}_areas')
+	if debug:
+		print('debug calculator mode')
+		times, probs, areas = calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+
+	else:
+		times = cache.get(f'{cache_key}_times')
+		probs = cache.get(f'{cache_key}_probs')
+		areas = cache.get(f'{cache_key}_areas')
 
 	if not all([times, probs, areas]):
-		result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+		result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 		return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
