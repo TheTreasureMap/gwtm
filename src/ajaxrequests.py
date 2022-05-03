@@ -62,6 +62,7 @@ def ajax_alertinstruments_footprints():
 		pointing_filter.append(models.pointing.status == pointing_status)
 
 	pointing_info = db.session.query(
+		models.pointing.id,
 		models.pointing.instrumentid,
 		models.pointing.pos_angle,
 		models.pointing.time,
@@ -72,56 +73,72 @@ def ajax_alertinstruments_footprints():
 		models.pointing.status
 	).filter(*pointing_filter).all()
 
-	instrumentids = [x.instrumentid for x in pointing_info]
+	haskeyids = [x.id for x in pointing_info]
+	hashpointingids =  hashlib.sha1(json.dumps(haskeyids).encode()).hexdigest()
 
-	instrumentinfo = db.session.query(
-		models.instrument.instrument_name,
-		models.instrument.nickname,
-		models.instrument.id
-	).filter(
-		models.instrument.id.in_(instrumentids)
-	).all()
+	cache_key = f'footprint_{graceid}_{pointing_status}_{hashpointingids}'
 
-	footprintinfo = db.session.query(
-		func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
-		models.footprint_ccd.instrumentid
-	).filter(
-		models.footprint_ccd.instrumentid.in_(instrumentids)
-	).all()
+	temp_overlays = cache.get(cache_key)
 
-	inst_overlays = []
-	colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
+	print('chedcking overlays')
+	if  temp_overlays:
+		print('they exist')
+		inst_overlays = temp_overlays
 
-	for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
-		name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
-		try:
-			color = colorlist[i]
-		except:
-			color = colors[inst.id]
-			pass
-		footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
-		sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
-		inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
-		pointing_geometries = []
+	else:
+		print('do not exist')
+		instrumentids = [x.instrumentid for x in pointing_info]
 
-		for p in inst_pointings:
-			t = astropy.time.Time([p.time])
-			ra, dec = function.sanatize_pointing(p.position)
+		instrumentinfo = db.session.query(
+			models.instrument.instrument_name,
+			models.instrument.nickname,
+			models.instrument.id
+		).filter(
+			models.instrument.id.in_(instrumentids)
+		).all()
 
-			for ccd in sanatized_ccds:
-				pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
-				pointing_geometries.append({
-					"polygon":pointing_footprint,
-					"time":round(t.mjd[0]-tos_mjd, 3)
-				})
+		footprintinfo = db.session.query(
+			func.ST_AsText(models.footprint_ccd.footprint).label('footprint'),
+			models.footprint_ccd.instrumentid
+		).filter(
+			models.footprint_ccd.instrumentid.in_(instrumentids)
+		).all()
 
-		inst_overlays.append({
-			"display":True,
-			"name":name,
-			"color":color,
-			"contours":pointing_geometries
-		})
+		inst_overlays = []
+		colorlist=['#ffe119', '#4363d8', '#f58231', '#42d4f4', '#f032e6', '#fabebe', '#469990', '#e6beff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#000075', '#a9a9a9']
 
+		for i,inst in enumerate([x for x in instrumentinfo if x.id != 49]):
+			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
+			try:
+				color = colorlist[i]
+			except:
+				color = colors[inst.id]
+				pass
+			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
+			sanatized_ccds = function.sanatize_footprint_ccds(footprint_ccds)
+			inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
+			pointing_geometries = []
+
+			for p in inst_pointings:
+				t = astropy.time.Time([p.time])
+				ra, dec = function.sanatize_pointing(p.position)
+
+				for ccd in sanatized_ccds:
+					pointing_footprint = function.project_footprint(ccd, ra, dec, p.pos_angle)
+					pointing_geometries.append({
+						"polygon":pointing_footprint,
+						"time":round(t.mjd[0]-tos_mjd, 3)
+					})
+
+			inst_overlays.append({
+				"display":True,
+				"name":name,
+				"color":color,
+				"contours":pointing_geometries
+			})
+
+		cache.set(cache_key, inst_overlays)
+		
 	return jsonify(inst_overlays)
 
 @app.route('/ajax_alerttype')
