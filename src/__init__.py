@@ -8,6 +8,7 @@ from flask_caching import Cache
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 from werkzeug.utils import import_string
+from . import app_mail
 
 app = Flask(__name__)
 login = LoginManager(app)
@@ -17,7 +18,8 @@ configModule = os.environ.get('CONFIGMODULE', 'src.gwtmconfig.Config')
 cfg = import_string(configModule)()
 app.config.from_object(cfg)
 
-mail = Mail(app)
+#mail = Mail(app)
+mail = app_mail.Mail(app.config, read_aws_s3=True)
 cache = Cache(app)
 
 

@@ -535,20 +535,21 @@ def create_geography(vertices):
 	return geom
 
 
-def send_email(subject, sender, recipients, text_body, html_body):
-	msg = Message(subject, sender=sender, recipients=recipients)
-	msg.body = text_body
-	msg.html = html_body
-	with app.app_context():
-		mail.send(msg)
+def send_email(subject, recipients, html_body, attachments=[]):
+	#msg = Message(subject, sender=sender, recipients=recipients)
+	#msg.body = text_body
+	#msg.html = html_body
+	#with app.app_context():
+	#	mail.send(msg)
+    #mail.send_message("swyatt@email.arizona.edu", "This is a subject", 
+    #        "app_mail working")
+    mail.send_message(recipients, subject, html_body, attachments)
 
 
 def send_account_validation_email(user, notify=True):
 	send_email(
 		"Treasure Map Account Verification",
-		"gwtreasuremap@gmail.com",
 		[user.email],
-		"",
 		"<p>Hello "+user.firstname+",<br><br> \
 		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=\"http://treasuremap.space/login?verification_key="+user.verification_key+"\">address</a> to verify your account. <br>\
 		Please do not reply to this email<br><br> \
@@ -557,9 +558,7 @@ def send_account_validation_email(user, notify=True):
 	if notify:
 		send_email(
 			"Treasure Map Account Verification",
-			"gwtreasuremap@gmail.com",
 			['swyatt@email.arizona.edu'],
-			"",
 			"<p>Hey Sam,<br><br> \
 			New GWTM account registration: <br> \
 			"+user.firstname+" "+user.lastname+" <br> \
@@ -570,11 +569,8 @@ def send_account_validation_email(user, notify=True):
 
 def send_password_reset_email(user):
 	token = user.get_reset_password_token()
-	print(token, user.firstname)
 	send_email('GWTM Reset Your Password',
-			   "gwtreasuremap@gmail.com",
 			   [user.email],
-			   "",
 			   "<p>Dear "+user.username+",</p> \
 				<p>\
 				To reset your password \

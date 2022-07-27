@@ -13,10 +13,13 @@ class Config(object):
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'gwtreasuremap@gmail.com')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'gwtreasuremap@gmail.com')
     ADMINS = os.environ.get('ADMINS', 'gwtreasuremap@gmail.com')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')
-    MAIL_PORT = os.environ.get('MAIL_PORT', '587')
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
+    #MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    #MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')
+    #MAIL_PORT = os.environ.get('MAIL_PORT', '587')
+    #MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    GOOGLE_PROJECT_ID = os.environ.get('GOOGLE_PROJECT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
     RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
     RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
     ZENODO_ACCESS_KEY = os.environ.get('ZENODO_ACCESS_KEY', '')
