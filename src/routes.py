@@ -253,7 +253,7 @@ def register():
 		db.session.commit()
 		function.send_account_validation_email(user)
 
-		flash("An email has been sent to "+user.email+". Please follow further instructions to activate this account")
+		flash("An email has been sent to "+user.email+". Please follow further instructions to activate this account (Mail might be sent to Spam folder)")
 		return redirect('/index')
 	return render_template('register.html', form=form)
 
@@ -321,7 +321,7 @@ def reset_password_request():
 		user = models.users.query.filter_by(email=form.email.data).first()
 		if user:
 			function.send_password_reset_email(user)
-			flash('Check your email for the instructions to reset your password')
+			flash('Check your email for the instructions to reset your password (Mail might be sent to Spam folder)')
 			return redirect(url_for('login'))
 		else:
 			flash('Cannot find a user with that email')
