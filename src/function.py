@@ -56,12 +56,14 @@ def isInt(i):
 	except:
 		return False
 
+
 def isFloat(i):
 	try:
 		ret = float(i)
 		return True
 	except:
 		return False
+
 
 def floatNone(i):
     if i is not None:
@@ -71,6 +73,7 @@ def floatNone(i):
             return 0.0
     else:
         return None
+
 
 def rotate(footprint, angle):
     #footprint is a list of vertices points
@@ -95,6 +98,7 @@ def rotate(footprint, angle):
         rot_footprint.append([new_x, new_y])
 
     return rot_footprint
+
 
 def project(footprint, _ra, _dec):
         #footprint is a list of vertices points
@@ -257,6 +261,7 @@ def project_footprint(footprint, ra, dec, pos_angle):
         pt_ra, pt_dec = uvec_to_ra_dec(new_x, new_y, new_z)
         proj_footprint.append([pt_ra, pt_dec])
     return proj_footprint
+
 
 def getDataFromTLE(datetime, tleLatOffset=0, tleLonOffset=0.21):
     # Get TLE and parse
@@ -492,12 +497,13 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 		)]
 
 		for p in filtered_pointings:
-			ra, dec == sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
+			ra, dec = sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
 			sep = 206264.806*(float(ephem.separation((ra, dec ), (p_ra, p_dec))))
 			if sep < dist_thresh:
 				return True
 
 	return False
+
 
 def extract_polygon(p, scale):
 	vertices = []
@@ -567,6 +573,7 @@ def send_account_validation_email(user, notify=True):
 			Cheers you beautiful bastard</p>",
 		)
 
+
 def send_password_reset_email(user):
 	token = user.get_reset_password_token()
 	send_email('GWTM Reset Your Password',
@@ -584,6 +591,7 @@ def send_password_reset_email(user):
 				<p>Sincerely,</p>\
 				<p>The Treasure Map Team</p>"
 	)
+
 
 def create_pointing_doi(points, graceid, creators, insts):
     points_json = []
@@ -653,6 +661,7 @@ def create_galaxy_score_doi(galaxies, creators, reference, graceid, alert_type):
 
     d_id, url = create_doi(payload)
     return d_id, url
+
 
 def create_doi(payload):
 

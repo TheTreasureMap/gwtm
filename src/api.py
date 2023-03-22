@@ -62,7 +62,8 @@ def get_footprints():
 
 	return jsonify(footprints)
 
-@app.route('/api/v0/remove_event_galaxies', methods=['Post'])
+
+@app.route('/api/v0/remove_event_galaxies', methods=['POST'])
 def remove_event_galaxies():
 	try:
 		args = request.get_json()
@@ -278,7 +279,7 @@ def post_event_galaxies():
 
 	if post_doi:
 		doi_id, url = function.create_galaxy_score_doi(valid_galaxies, creators, reference, graceid, alert.alert_type)
-		if doi_url is None and doi_id is not None:
+		if url is None and doi_id is not None:
 			errors.append('There was an error with the DOI request. Please ensure that author group\'s ORIC/GND values are accurate')
 		else:
 			gw_galist.doi_id = doi_id
@@ -292,7 +293,7 @@ def post_event_galaxies():
 					"ERRORS":errors, 
 					"WARNINGS":warnings})
 
-#Get Galaxies From glade_2p3
+
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
 	try:
@@ -1050,6 +1051,75 @@ def get_grbmoc():
 			return f.read().decode('utf-8')
 	except ClientError:
 		return jsonify('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst))
+
+
+@app.route('/api/v0/post_alert', methods=['POST'])
+def post_alert():
+
+	'''
+	inputs:
+	'''
+
+	args = request.get_json()
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+		elif user.username != 'gwtm':
+			return jsonify("Only admin can access this endpoint")
+	else:
+		return jsonify("api_token is required")
+
+	alert = models.gw_alert.from_json(args)
+	db.session.add(alert)
+
+	db.session.flush()
+	db.session.commit()
+
+	return jsonify(alert.json)
+
+
+@app.route('/api/v0/query_alerts', methods=['GET'])
+def query_alerts():
+
+	'''
+	inputs:
+	'''
+
+	try:
+		args = request.get_json()
+	except:
+		return("Whoaaaa that JSON is a little wonky")
+
+	if args is None:
+		args = request.args
+
+	if args is None:
+		return("Invalid Arguments.")
+
+	if "api_token" in args:
+		apitoken = args['api_token']
+		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+		if user is None:
+			return jsonify("invalid api_token")
+	else:
+		return jsonify("api_token is required")
+
+	filter=[]
+
+	if "graceid" in args:
+		graceid = args.get('graceid')
+		filter.append(models.gw_alert.graceid == graceid)
+		
+	if "alert_type" in args:
+		alert_type = args.get('alert_type')
+		filter.append(models.gw_alert.alert_type == alert_type)
+		
+	alerts = db.session.query(models.gw_alert).filter(*filter).all()
+	alerts = [x.json for x in alerts]
+
+	return jsonify(alerts)
 
 
 #FIX DATA

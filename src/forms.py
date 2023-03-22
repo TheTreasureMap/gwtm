@@ -51,6 +51,7 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+
 class ResetPasswordRequestForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Request Password Reset')
@@ -194,6 +195,7 @@ class SubmitPointingForm(FlaskForm):
         for a in dag:
             self.doi_creator_groups.choices.append((a.id, a.name))
 
+
 class AlertsForm(FlaskForm):
     page = ''
     pointing_status = []
@@ -237,7 +239,7 @@ class AlertsForm(FlaskForm):
         self.status = 'all'
 
         #grab all observation alerts
-        gwalerts = models.gw_alert.query.filter_by(role='observation').order_by(models.gw_alert.time_of_signal).all()
+        gwalerts = models.gw_alert.query.order_by(models.gw_alert.time_of_signal).all()
         gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
 
         #link all alert types to its graceid
@@ -253,14 +255,23 @@ class AlertsForm(FlaskForm):
         for g in gwalerts_ids:
             if g != 'TEST_EVENT':
             #get the alert types for each graceid to test for retractions
-                g_types = gid_types[g]
+                gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
+                gid_roles = [x.role for x in gwalerts if x.graceid == g]
+                gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
+
                 alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
                 if len(alternateid):
                     g = alternateid[0]
-                if 'Retraction' in g_types:
-                    graceids.append({'name':g + ' -retracted-', 'value':g})
+
+                name_g = g
+                if 'test' in gid_roles:
+                    name_g = f"TEST-{g}"
+                run = gid_runs[0]
+                name_g = f"{run} - {name_g}"
+                if 'Retraction' in gid_types:
+                    graceids.append({'name':name_g + ' -retracted-', 'value':g})
                 else:
-                    graceids.append({'name':g, 'value':g})
+                    graceids.append({'name':name_g, 'value':g})
 
         graceids.append({'name':'TEST_EVENT', 'value':'TEST_EVENT'})
         self.graceids = graceids
@@ -286,6 +297,9 @@ class AlertsForm(FlaskForm):
             ).order_by(
                 models.gw_alert.datecreated.asc()
             ).all()
+
+            role = alert_info[0].role
+            s3path = 'fit' if role == 'observation' else 'test'
             #if there is a specificly selected usertype
 
             #Getting the alert types do display as tabs
@@ -310,6 +324,7 @@ class AlertsForm(FlaskForm):
                     })
 
             cleaned_alert_info = [alert for alert in alert_info if alert.alert_type != 'Retraction']
+            
             if len(cleaned_alert_info):
                 pre_alert = cleaned_alert_info[len(cleaned_alert_info)-1]
             else:
@@ -360,9 +375,7 @@ class AlertsForm(FlaskForm):
 
             pointing_info = db.session.query(
                 models.pointing.instrumentid,
-                #models.pointing.pos_angle,
                 models.pointing.time,
-                #func.ST_AsText(models.pointing.position).label('position'),
                 models.pointing.band,
                 models.pointing.depth,
                 models.pointing.depth_unit,
@@ -421,7 +434,7 @@ class AlertsForm(FlaskForm):
             # If there are any pointings with BAT. Find the file
             # that should have been created by the BAT listener
             if len([x for x in pointing_info if x.instrumentid == 49]):
-                batpathinfo = 'fit/'+graceid+'-BAT.json'
+                batpathinfo = f'{s3path}/'+graceid+'-BAT.json'
                 try:
                     with io.BytesIO() as f:
                         s3.download_fileobj(config.AWS_BUCKET, batpathinfo, f)
@@ -441,7 +454,7 @@ class AlertsForm(FlaskForm):
                 #earth_ra, earth_dec, earth_rad = getearthsatpos(form.selected_alert_info.time_of_signal)
                 #if earth_ra != False:
                     #Do GBM stuff
-                GBMpathinfo = 'fit/'+graceid+ '-Fermi.json'
+                GBMpathinfo = f'{s3path}/'+graceid+ '-Fermi.json'
                 try:
                     with io.BytesIO() as f:
                         s3.download_fileobj(config.AWS_BUCKET, GBMpathinfo, f)
@@ -457,7 +470,7 @@ class AlertsForm(FlaskForm):
                         'name': 'Fermi in South Atlantic Anomaly'
                         })
                 #Do LAT stuff
-                LATpathinfo = 'fit/'+graceid+ '-LAT.json'
+                LATpathinfo = f'{s3path}/'+graceid+ '-LAT.json'
                 try:
                     with io.BytesIO() as f:
                         s3.download_fileobj(config.AWS_BUCKET, LATpathinfo, f)
@@ -479,11 +492,11 @@ class AlertsForm(FlaskForm):
                 path_info = graceid + '-' + self.alert_type.split()[0]
                 mappath = graceid + '-' + self.alert_type.split()[0]
 
-            mappathinfo = 'fit/'+mappath+'.fits.gz'
+            mappathinfo = f'{s3path}/'+mappath+'.fits.gz'
             self.avgra = self.selected_alert_info.avgra
             self.avgdec = self.selected_alert_info.avgdec
 
-            contourpath = 'fit/'+path_info+'-contours-smooth.json'
+            contourpath = f'{s3path}/'+path_info+'-contours-smooth.json'
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:

@@ -7,7 +7,7 @@
     <h2>Gravitational Wave Events</h2>      Choose an event:
       <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Events
       <span class="caret"></span></button>
-      <ul class="dropdown-menu">
+      <ul class="dropdown-menu" style="overflow-y:auto; max-height:40vh">
           <input class="form-control" id="gidSearch" type="text" placeholder="Search..">
           {% for a in form.graceids[1:] %}
             <li><a href="/alerts?graceids={{ a['value'] }}">{{ a['name'] }}</a></li>
