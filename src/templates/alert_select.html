@@ -6,6 +6,29 @@
 
     <div class="container">
       <h2>Gravitational Wave Events</h2>
+      <p>
+        <b>Observing Run</b>
+        <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=observing_run id=observing_run onchange="reload_alert_select_table()">
+          {% for or in observing_runs.keys() %}
+            {% if or == selected_observing_run %}
+                <option value='{{ or }}' selected>{{ observing_runs[or] }}</option>
+            {% else %}
+                <option value='{{ or }}'>{{ observing_runs[or] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <b>Role</b>
+        <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=role id=role onchange="reload_alert_select_table()">
+          {% for r in roles.keys() %}
+            {% if r == selected_role %}
+                <option value='{{ r }}' selected>{{ roles[r] }}</option>
+            {% else %}
+                <option value='{{ r }}'>{{ roles[r] }}</option>
+            {% endif %}
+          {% endfor %}
+      </select>
+      </p>
+      
       <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>  
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
       <br>
@@ -41,6 +64,13 @@
         });
       });
     });
+
+    function reload_alert_select_table() {
+      var observing_run = $('#observing_run').val()
+      var role = $('#role').val()
+
+      window.location = 'alert_select?role='+role+'&observing_run='+observing_run
+    };
     </script>
     
     </body>

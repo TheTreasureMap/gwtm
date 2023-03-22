@@ -67,6 +67,7 @@ def to_json(inst, cls):
             d[c.name] = v
     return json.dumps(d)
 
+
 class valid_mapping():
     def __init__(self):
         self.valid = False
@@ -1012,6 +1013,47 @@ class gw_alert(db.Model):
     duration = db.Column(db.Float)
     avgra = db.Column(db.Float)
     avgdec = db.Column(db.Float)
+    
+    observing_run = db.Column(db.String)
+    pipeline = db.Column(db.String)
+    search = db.Column(db.String)
+
+    @staticmethod
+    def from_json(args):
+        akeys = args.keys()
+
+        alert = gw_alert(
+            graceid          = args['graceid'] if 'graceid' in akeys else 'ERROR',
+            alternateid      = args['alternateid'] if 'alternateid' in akeys else '',
+            role             = args['role'] if 'role' in akeys else 'ERROR',
+            observing_run    = args['observing_run'] if 'observing_run' in akeys else 'ERROR',
+            description      = args['description'] if 'description' in akeys else 'ERROR',
+            alert_type       = args['alert_type'] if 'alert_type' in akeys else 'ERROR',
+            datecreated      = args['datecreated'] if 'datecreated' in akeys else datetime.datetime.now(),
+            packet_type      = args['packet_type'] if 'packet_type' in akeys else 0,
+            far              = args['far'] if 'far' in akeys else 0.0,
+            group            = args['group'] if 'group' in akeys else '',
+            pipeline         = args['pipeline'] if 'pipeline' in akeys else '',
+            search           = args['search'] if 'search' in akeys else '',
+            detectors        = args['detectors'] if 'detectors' in akeys else '',
+            prob_hasns       = args['prob_hasns'] if 'prob_hasns' in akeys else 0.0,
+            prob_hasremenant = args['prob_hasremenant'] if 'prob_hasremenant' in akeys else 0.0,
+            prob_gap         = args['prob_gap'] if 'prob_gap' in akeys else 0.0,
+            prob_bns         = args['prob_bns'] if 'prob_bns' in akeys else 0.0,
+            prob_nsbh        = args['prob_nsbh'] if 'prob_nsbh' in akeys else 0.0,
+            prob_bbh         = args['prob_bbh'] if 'prob_bbh' in akeys else 0.0,
+            prob_terrestrial = args['prob_terrestrial'] if 'prob_terrestrial' in akeys else 0.0,
+            skymap_fits_url  = args['skymap_fits_url'] if 'skymap_fits_url' in akeys else '',
+            avgra            = args['avgra'] if 'avgra' in akeys else 0.0,
+            avgdec           = args['avgdec'] if 'avgdec' in akeys else 0.0,
+            time_of_signal   = args['time_of_signal'] if 'time_of_signal' in akeys else datetime.datetime(year=1991, month=12, day=23),
+            distance         = args['distance'] if 'distance' in akeys else 0.0,
+            distance_error   = args['distance_error'] if 'distance_error' in akeys else 0.0,
+            timesent         = args['timesent'] if 'timesent' in akeys else datetime.datetime(year=1991, month=12, day=23),
+            centralfreq      = args['centralfreq'] if 'centralfreq' in akeys else 0.0,
+            duration         = args['duration'] if 'duration' in akeys else 0.0,
+        )
+        return alert
 
     def getClassification(self):
 
@@ -1019,11 +1061,11 @@ class gw_alert(db.Model):
             return 'None (detected as burst)'
 
         probs = [
-            {'prob':self.prob_bns, 'class':'BNS'},
-            {'prob':self.prob_nsbh, 'class':'NSBH'},
-            {'prob':self.prob_bbh, 'class':'BBH'},
-            {'prob':self.prob_terrestrial, 'class':'Terrestrial'},
-            {'prob':self.prob_gap, 'class':'Mass Gap'}
+            {'prob':self.prob_bns if self.prob_bns else 0.0, 'class':'BNS'},
+            {'prob':self.prob_nsbh if self.prob_nsbh else 0.0, 'class':'NSBH'},
+            {'prob':self.prob_bbh if self.prob_bbh else 0.0, 'class':'BBH'},
+            {'prob':self.prob_terrestrial if self.prob_terrestrial else 0.0, 'class':'Terrestrial'},
+            {'prob':self.prob_gap if self.prob_gap else 0.0, 'class':'Mass Gap'}
         ]
 
         sorted_probs = sorted([x for x in probs if x['prob'] > 0.01], key = lambda i: i['prob'], reverse=True)

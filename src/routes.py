@@ -127,12 +127,27 @@ def home():
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
 
+	selected_observing_run = request.args.get('observing_run') 
+	selected_role = request.args.get('role')
+
+	if selected_observing_run is None:
+		selected_observing_run = "O3"
+	
+	if selected_role is None:
+		selected_role = "observation"
+
+	filter = []
+	if selected_role != 'all':
+		filter.append(models.gw_alert.role == selected_role)
+
+	if selected_observing_run != 'all':
+		filter.append(models.gw_alert.observing_run == selected_observing_run)
+
 	allerts = db.session.query(
 		models.gw_alert
-	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT',
-		models.gw_alert.graceid != 'GW170817'
-	).all()
+	).filter(*filter).all()
+
+	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	p_event_counts = db.session.query(
 		models.pointing_event
@@ -140,15 +155,14 @@ def alert_select():
 		models.pointing_event.graceid
 	).filter(
 		models.pointing.id == models.pointing_event.pointingid,
-		models.pointing.status == enums.pointing_status.completed
+		models.pointing.status == enums.pointing_status.completed,
+		models.pointing_event.graceid.in_(gids)
 	).values(
 		func.count(models.pointing_event.graceid).label('pcount'),
 		models.pointing_event.graceid
 	)
 
 	p_event_counts = list(p_event_counts)
-
-	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	non_retracted_alerts = []
 	all_alerts = {}
@@ -159,7 +173,7 @@ def alert_select():
 		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
 		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
 
-		alternateids = [gwa for gwa in allerts if gwa.graceid == g and gwa.alternateid is not None]
+		alternateids = [gwa for gwa in allerts if (gwa.graceid == g and gwa.alternateid is not None and gwa.alternateid != '')]
 
 		if len(alternateids):
 			g = alternateids[0].alternateid
@@ -183,13 +197,26 @@ def alert_select():
 				'pcounts':pointing_counts
 			}
 
-	all_alerts['TEST_EVENT'] = {
-		'class':'Test',
-		'distance':'',
-		'pcounts':''
+	#all_alerts['TEST_EVENT'] = {
+	#	'class':'Test',
+	#	'distance':'',
+	#	'pcounts':''
+	#}
+
+	observing_runs = {
+		'all' : 'All',
+		'O2':'O2',
+		'O3':'O3',
+		'O4':'O4'
 	}
 
-	return render_template("alert_select.html", alerts=all_alerts)
+	roles = {
+		'all' : 'All',
+		'test': 'Test',
+		'observation': 'Observation'
+	}
+
+	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, selected_observing_run=selected_observing_run, selected_role=selected_role)
 
 @app.route("/alerts", methods=['GET', 'POST'])
 def alerts():
@@ -560,7 +587,7 @@ def submit_pointing():
 				pointing.doi_id, pointing.doi_url = 0, form.doi_url.data
 			else:
 				graceid = models.gw_alert.alternatefromgraceid(graceid)
-				pointing.doi_id, pointing.doi_url = create_pointing_doi(points, graceid, creators, inst_set)
+				pointing.doi_id, pointing.doi_url = function.create_pointing_doi(points, graceid, creators, inst_set)
 			db.session.commit()
 			flash("Your DOI url is: "+pointing.doi_url)
 
