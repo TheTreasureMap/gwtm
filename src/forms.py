@@ -2,17 +2,14 @@ import astropy
 import boto3
 from botocore.exceptions import ClientError
 import pandas as pd
-import os
 import io
 import json
 import time
 
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import RecaptchaField
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField, widgets, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
-from wtforms_components import TimeField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
-from sqlalchemy import func
 
 from . import function
 from . import models
@@ -20,6 +17,28 @@ from . import enums
 from src.gwtmconfig import config
 
 db = models.db
+
+class ManageUserForm(FlaskForm):
+    def __init__(self):
+        self.admin = False
+        self.user = None
+        self.doi_groups = None
+        self.all_users = []
+
+    def construct_form(self, userid: int):
+        print('test', userid==2, type(userid))
+        self.user = models.users.query.filter_by(id=userid).first()
+        groupfilter = []
+        groupfilter.append(models.usergroups.groupid == models.groups.id)
+        groupfilter.append(models.usergroups.userid == userid)
+
+        self.doi_groups = db.session.query(models.doi_author_group).filter(models.doi_author_group.userid == userid)
+        if userid == 2: #gwtm admin
+            self.admin = True
+            #admin stuff?
+            #get userinformation
+            self.all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
+
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -62,10 +81,6 @@ class ResetPasswordForm(FlaskForm):
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Request Password Reset')
-
-
-class ManageUserForm(FlaskForm):
-    submit = SubmitField('Search')
 
 
 class SearchPointingsForm(FlaskForm):

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, json, datetime
-import random, math
+import json
 import numpy as np
 import healpy as hp
 import astropy
@@ -20,11 +19,10 @@ import hashlib
 from werkzeug.exceptions import HTTPException
 from celery.result import AsyncResult
 
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 from flask_login import current_user
 from sqlalchemy import func
 from plotly.subplots import make_subplots
-from plotly.tools import FigureFactory as FF
 from botocore.exceptions import ClientError
 
 from . import function
@@ -32,7 +30,6 @@ from . import models
 from . import forms
 from . import enums
 from src import app
-from src import mail
 from src import cache
 from src.gwtmconfig import config
 from .tasks import celery

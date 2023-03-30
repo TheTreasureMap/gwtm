@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import os, json, datetime
-import random, math
-import numpy as np
-import time
+import json, datetime
 import plotly
 import plotly.graph_objects as go
 import boto3
 
-from flask import Flask, request, jsonify, render_template, redirect, flash, url_for
+from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.urls import url_parse
 from sqlalchemy import func
-from plotly.subplots import make_subplots
-from plotly.tools import FigureFactory as FF
 
 from . import function
 from . import models
@@ -218,6 +212,7 @@ def alert_select():
 
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, selected_observing_run=selected_observing_run, selected_role=selected_role)
 
+
 @app.route("/alerts", methods=['GET', 'POST'])
 def alerts():
 	graceid = request.args.get('graceids')
@@ -359,20 +354,16 @@ def reset_password_request():
 @app.route('/manage_user', methods=['GET', 'POST'])
 @login_required
 def manage_user():
-	userid = current_user.id
-	user = models.users.query.filter_by(id=userid).first()
-	groupfilter = []
-	groupfilter.append(models.usergroups.groupid == models.groups.id)
-	groupfilter.append(models.usergroups.userid == userid)
-	groups = db.session.query(models.groups.name, models.usergroups.role).filter(*groupfilter).all()
+	userid = int(current_user.get_id())
 
-	doi_groups = db.session.query(models.doi_author_group).filter(models.doi_author_group.userid == userid)
+	form = forms.ManageUserForm()
+	form.construct_form(userid=userid)
 
-	if userid == 2 or userid == 5:
-		all_users = models.users.query.order_by(models.users.datecreated.asc()).all()
-		return render_template('manage_user.html', user=user, doi_groups=doi_groups, users=all_users)
-	else:
-		return render_template('manage_user.html', user=user, doi_groups=doi_groups)
+	print(form.user.username)
+	print(form.user.id)
+	print(form.admin)
+
+	return render_template('manage_user.html', form=form)
 
 
 @app.route('/search_pointings', methods=['GET', 'POST'])

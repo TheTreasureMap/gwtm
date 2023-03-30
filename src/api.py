@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from flask import request, jsonify
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from botocore.exceptions import ClientError
-import flask_sqlalchemy as fsq
-import os, json, datetime
-import random, math
-import numpy as np
-import time
+import json, datetime
 import boto3
 import io
 
@@ -15,7 +11,6 @@ from src import app
 from src.gwtmconfig import config
 from . import function
 from . import models
-from . import forms
 from . import enums
 
 db = models.db
@@ -25,10 +20,11 @@ db = models.db
 #Get instrument footprints
 @app.route("/api/v0/footprints", methods=['GET'])
 def get_footprints():
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
@@ -55,7 +51,7 @@ def get_footprints():
 		ors = []
 		ors.append(models.instrument.instrument_name.contains(name.strip()))
 		ors.append(models.instrument.nickname.contains(name.strip()))
-		filter.append(fsq.sqlalchemy.or_(*ors))
+		filter.append(or_(*ors))
 
 	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
 	footprints = [x.json for x in footprints]
@@ -65,16 +61,17 @@ def get_footprints():
 
 @app.route('/api/v0/remove_event_galaxies', methods=['POST'])
 def remove_event_galaxies():
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 	
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -108,16 +105,17 @@ def remove_event_galaxies():
 
 @app.route('/api/v0/event_galaxies', methods=['GET'])
 def get_event_galaxies():
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return jsonify("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return jsonify("Invalid Arguments.")
+		return("Invalid Arguments")
 	
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -296,16 +294,17 @@ def post_event_galaxies():
 
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -336,7 +335,7 @@ def get_galaxies():
 		ors.append(models.glade_2p3.gwgc_name.contains(name.strip()))
 		ors.append(models.glade_2p3.hyperleda_name.contains(name.strip()))
 		ors.append(models.glade_2p3.sdssdr12_name.contains(name.strip()))
-		filter.append(fsq.sqlalchemy.or_(*ors))
+		filter.append(or_(*ors))
 
 	galaxies = trim.filter(*filter).order_by(*orderby).limit(15).all()
 
@@ -357,7 +356,7 @@ def add_pointings():
 	try:
 		rd = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		return("Posting pointings requires arguments being sent as json")
 
 	valid_gid = False
 	post_doi = False
@@ -494,16 +493,17 @@ def add_pointings():
 @app.route("/api/v0/pointings", methods=["GET"])
 def get_pointings():
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -616,7 +616,7 @@ def get_pointings():
 			print(groups)
 			for g in groups:
 				ors.append(models.groups.name.contains(g.strip()))
-			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(or_(*ors))
 			filter.append(models.usergroups.groupid == models.groups.id)
 		filter.append(models.usergroups.userid == models.users.id)
 		filter.append(models.users.id == models.pointing.submitterid)
@@ -626,7 +626,7 @@ def get_pointings():
 		if user.isdigit():
 			filter.append(models.pointing.submitterid == int(user))
 		else:
-			filter.append(fsq.sqlalchemy.or_(models.users.username.contains(user),
+			filter.append(or_(models.users.username.contains(user),
 							  models.users.firstname.contains(user),
 							  models.users.lastname.contains(user)))
 			filter.append(models.users.id == models.pointing.submitterid)
@@ -643,7 +643,7 @@ def get_pointings():
 				ors.append(models.users.username.contains(u.strip()))
 				ors.append(models.users.firstname.contains(u.strip()))
 				ors.append(models.users.lastname.contains(u.strip()))
-			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(or_(*ors))
 			filter.append(models.users.id == models.pointing.submitterid)
 
 	if "instrument" in args:
@@ -664,7 +664,7 @@ def get_pointings():
 			ors = []
 			for i in insts:
 				ors.append(models.instrument.instrument_name.contains(i.strip()))
-			filter.append(fsq.sqlalchemy.or_(*ors))
+			filter.append(or_(*ors))
 			filter.append(models.instrument.id == models.pointing.instrumentid)
 
 	if 'wavelength_regime' in args and 'wavelength_unit' in args:
@@ -728,16 +728,17 @@ def get_pointings():
 @app.route("/api/v0/request_doi", methods=['POST'])
 def api_request_doi():
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -827,16 +828,17 @@ def api_request_doi():
 @app.route("/api/v0/cancel_all", methods=["POST"])
 def cancel_all():
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -882,16 +884,17 @@ def cancel_all():
 @app.route("/api/v0/update_pointings", methods=["POST"])
 def del_pointings():
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -945,16 +948,17 @@ def del_pointings():
 @app.route("/api/v0/instruments", methods=["GET"])
 def get_instruments():
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -984,7 +988,7 @@ def get_instruments():
 		ors = []
 		for i in insts:
 			ors.append(models.instrument.instrument_name.contains(i.strip()))
-		filter.append(fsq.sqlalchemy.or_(*ors))
+		filter.append(or_(*ors))
 		filter.append(models.instrument.id == models.pointing.instrumentid)
 
 	if "type" in args:
@@ -1006,16 +1010,17 @@ def get_grbmoc():
 		instruments: [gbm, lat, bat]
 	'''
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -1087,16 +1092,17 @@ def query_alerts():
 	inputs:
 	'''
 
+	args = None
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		pass
 
 	if args is None:
 		args = request.args
-
+	
 	if args is None:
-		return("Invalid Arguments.")
+		return("Invalid Arguments")
 
 	if "api_token" in args:
 		apitoken = args['api_token']
@@ -1125,86 +1131,8 @@ def query_alerts():
 #FIX DATA
 @app.route('/fixdata', methods=['GET'])
 def fixdata():
-
-	pointings = db.session.query(models.pointing).filter(
-		models.pointing.band == enums.bandpass.BAT,
-		models.pointing.instrumentid.in_([55, 57, 58])
-	).all()
-
-	#for p in pointings:
-	#	print(p.instrumentid, p.submitterid)
-
-	test1 = {
-		'type': models.SpectralRangeHandler.spectralrangetype.wavelength,
-		'min':0,
-		'max':5000,
-	}
-
-	test2 = {
-		'type': models.SpectralRangeHandler.spectralrangetype.energy,
-		'min':200,
-		'max':15000,
-	}
-
-	test3 = {
-		'type': models.SpectralRangeHandler.spectralrangetype.frequency,
-		'min':1E9,
-		'max':5E9,
-	}
-
-	test = test2
-
-
-
-	for p in pointings:
-		bband = None
-		if p.instrumentid == 55:
-			bband = enums.bandpass.HESS
-		if p.instrumentid == 57:
-			bband = enums.bandpass.WISEL
-		if p.instrumentid == 58:
-			bband = enums.bandpass.clear
-		if bband is not None:
-			wave_info = models.SpectralRangeHandler.bandpass_wavelength_dictionary[bband]
-
-			p.central_wave = wave_info['central_wave']
-			p.bandwidth = wave_info['bandwidth']
-			p.band = bband
-
-
-		#print(p.band, wave_info)
-		#print(p.inSpectralRange(test['min'], test['max'], test['type']))
-
-
-	db.session.commit()
-
-	return 'return success'
-
-	#print(os.getcwd())
-	#fname = '{}/src/gwnames.txt'.format(os.getcwd())
-	#ffile = open(fname, 'r').readlines()
-	#eventnames = []
-	#data_test = {}
-	#for f in ffile:
-	#	new_name = f.split()[0]
-	#	eventname = new_name.split('GW')[1].split('_')[0]
-	#	hits = [[eventname in x.graceid, x.id, x.graceid] for x in alerts]
-	#	if any([x[0] for x in hits]):
-	#		for h in hits:
-	#			if h[0]:
-	#				alerttochange = [x for x in alerts if x.id == h[1]][0]
-	#				alerttochange.alternateid = new_name
-
-	#ids = [20815,20816,20817]
-	#datatochange = db.session.query(models.pointing).filter(models.pointing.id.in_(ids))
-
-	#i = 1
-	#for ge in datatochange:
-	#	ge.depth = 6.69E-12
-		
-	#db.session.commit()
-
-	#return 'success'
+	pass
+	
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects

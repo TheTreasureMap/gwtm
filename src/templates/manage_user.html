@@ -1,13 +1,19 @@
 
 {% extends "base.html" %}
+<style>
+	#userTable tr {
+		display: none;
+	}
+</style>
+
 
 {% block content %}
 	<div style="padding-left:16px">
 	<form></form>
-	<h2>User: {{ user.username }}</h2>
-	<p><b>email:</b> {{ user.email }}</p>
-	{% if user.api_token%}
-		<p>Your API Token: <b>{{ user.api_token }}</b></p>
+	<h2>User: {{ form.user.username }}</h2>
+	<p><b>email:</b> {{ form.user.email }}</p>
+	{% if form.user.api_token%}
+		<p>Your API Token: <b>{{ form.user.api_token }}</b></p>
 	{% else%}
 		<p style="color: red;">Your account has not been verified</p> 
 		<a id='ajax_resend_verification' class="btn btn-primary">Resend Verification Email</a>
@@ -21,8 +27,8 @@
 				<th>Name</th>
 			</thead>
 			<tbody>
-				{% if doi_groups%}
-					{% for d in doi_groups %}
+				{% if form.doi_groups%}
+					{% for d in form.doi_groups %}
 						<tr>
 							<td>{{ d.id }}</td>
 							<td><a href="/doi_author_group?doi_group_id={{ d.id }}">{{ d.name }}</a></td>
@@ -32,37 +38,53 @@
 			</tbody>
 		</table>
 	</div>
-	<!--{% if groups %}
-		<h3> Your Groups </h3>
-		<ul>
-		{% for g in groups %}
-			<li> Group: <b> {{ g.name }}</b></li>
-			<ul>
-				<p>Role: {{ g.role }}</p>
-			</ul>
-		{% endfor %}
-		</ul>
+	{% if form.admin %}
+	<h3>Admin Functionality</h3>
+	<h4>Users</h4>
+	<div class="container-fluid">
+		<input class="form-control" id="myInput" type="text" placeholder="Search..">
+      <br>
+      <table class="table table-bordered table-striped" id="userTable">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Username</th>
+            <th>Last,first</th>
+			<th>Email</th>
+			<th>Date Created</th>
+            <th>Verified?</th>
+            <th>Resend V</th>
+          </tr>
+        </thead>
+        <tbody id="myTable">
+          {% for a in form.all_users %}
+            <tr>
+              <td>{{ a.id }}</td>
+              <td>{{ a.username }}</td>
+              <td>{{ a.lastname}},{{ a.firstname }}</td>
+			  <td>{{ a.email }}</td>
+			  <td>{{ a.datecreated }}</td>
+              <td>{{ a.verified }}</td>
+			  <td>[resend_ve]</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+	</div>
 	{% endif %}
-	{% if users %}
-		<h3> Registered Users </h3>
-		<table>
-		<tr>
-		<th>First</th><th>Last</th><th>Creation</th><th>Verified?</th>
-		</tr>
-		{% for user in users %}
-			<tr>
-			<td>{{user.firstname}}</td>
-			<td>{{user.lastname}}</td>
-			<td>{{user.datecreated.strftime('%Y-%m-%d')}}&nbsp;</td>
-			<td>{{user.verified}}</td>
-			</tr>
-		{% endfor %}
-		</table>
-	{% endif %}-->
 	</div>
 	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
+
+    $(document).ready(function(){
+      $("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#myTable tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
 
   $(document).ready( function() {
     $('#ajax_resend_verification').click(function() {

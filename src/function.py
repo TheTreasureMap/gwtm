@@ -9,10 +9,6 @@ import tempfile
 import os
 import geoalchemy2
 import json
-import pandas as pd
-import astropy
-import astropy.units as u
-import time
 import io
 import requests
 
@@ -21,9 +17,6 @@ from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
 from shapely.geometry import Point
 from urllib.request import urlopen
-from flask_mail import Message
-from sqlalchemy import func
-from astropy.time import Time
 
 from src import app
 from src import mail
