@@ -366,6 +366,9 @@ class users(UserMixin, db.Model):
     verification_key = db.Column(db.String(128))
     verified =  db.Column(db.Boolean)
 
+    def get_id(self):
+        return self.id
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -420,14 +423,38 @@ class groups(db.Model):
 class useractions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
-    modified_table = db.Column(db.String(25))
-    modified_id = db.Column(db.Integer)
-    modified_column = db.Column(db.String(25))
-    prev_value = db.Column(db.String)
-    new_value = db.Column(db.String)
-    type = db.Column(db.String(25))
+    ipaddress = db.Column(db.String(50))
+    url = db.Column(db.String())
     time = db.Column(db.Date)
+    jsonvals = db.Column(db.JSON)
+    method = db.Column(db.String(24))
 
+    def write_action(request, current_user, jsonvals = None):
+        try:
+            ipaddress = None
+            if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+                ipaddress = request.environ['REMOTE_ADDR']
+            else:
+                ipaddress = request.environ['HTTP_X_FORWARDED_FOR']
+
+            if jsonvals is None:
+                try:
+                    jsonvals = request.get_json()
+                except:
+                    jsonvals = {}
+
+            ua = useractions(
+                userid = current_user.get_id(),
+                ipaddress = ipaddress,
+                url = request.url,
+                time = datetime.datetime.now(),
+                jsonvals = jsonvals,
+                method = request.method
+            )
+            db.session.add(ua)
+            db.session.commit()
+        except:
+            print(f"error in writing user actions: request={request}")
 
 class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)

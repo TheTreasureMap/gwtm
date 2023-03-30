@@ -15,30 +15,44 @@ from . import enums
 
 db = models.db
 
-#API Endpoints
+def initial_request_parse(request, only_json=False):
 
-#Get instrument footprints
-@app.route("/api/v0/footprints", methods=['GET'])
-def get_footprints():
 	args = None
 	try:
 		args = request.get_json()
 	except:
+		if only_json:
+			return False, "Endpoint only accepts json argument parameters", args, None
 		pass
 
 	if args is None:
 		args = request.args
 	
 	if args is None:
-		return("Invalid Arguments.")
-
+		return False, "Invalid Arguments.", args, None
+	
 	if "api_token" in args:
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
-			return jsonify("invalid api_token")
+			return False, "Invalid api_token", args, None
 	else:
-		return jsonify("api_token is required")
+		return False, "api_token is required", args, None
+
+	models.useractions.write_action(request=request, current_user=user)
+
+	return True, '', args, user
+
+#API Endpoints
+
+#Get instrument footprints
+@app.route("/api/v0/footprints", methods=['GET'])
+def get_footprints():
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return jsonify(message)
 
 	filter = []
 	if "id" in args:
@@ -61,25 +75,11 @@ def get_footprints():
 
 @app.route('/api/v0/remove_event_galaxies', methods=['POST'])
 def remove_event_galaxies():
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
 
-	if args is None:
-		args = request.args
-	
-	if args is None:
-		return("Invalid Arguments")
-	
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return jsonify(message)
 
 	if "listid" in args:
 		listid = args['listid']
@@ -94,7 +94,7 @@ def remove_event_galaxies():
 					db.session.commit()
 					return(jsonify("Successfully deleted your galaxy list"))
 				else:
-					return jsonify('you can only delete information related to your api_token! shame shame')
+					return jsonify('You can only delete information related to your api_token! shame shame')
 			else:
 				return(jsonify('No galaxies with that listid'))
 		else:
@@ -105,26 +105,12 @@ def remove_event_galaxies():
 
 @app.route('/api/v0/event_galaxies', methods=['GET'])
 def get_event_galaxies():
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
-	
-	if args is None:
-		return("Invalid Arguments")
-	
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
-	
+	if not valid:
+		return jsonify(message)
+
 	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
 
 	if 'graceid' in args:
@@ -192,6 +178,8 @@ def post_event_galaxies():
 			return jsonify("invalid api_token")
 	else:
 		return jsonify("api_token is required")
+
+	models.useractions.write_action(request=request, current_user=user)
 
 	if "graceid" in args:
 		graceid = args['graceid']
@@ -294,25 +282,11 @@ def post_event_galaxies():
 
 @app.route("/api/v0/glade", methods=['GET'])
 def get_galaxies():
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
-
-	if args is None:
-		args = request.args
 	
-	if args is None:
-		return("Invalid Arguments")
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
+	if not valid:
+		return jsonify(message)
 
 	filter = []
 	filter1 = []
@@ -349,14 +323,13 @@ def get_galaxies():
 #Returns: List of assigned IDs
 #Comments: Check if instrument configuration already exists to avoid duplication.
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
-
 @app.route("/api/v0/pointings", methods=["POST"])
 def add_pointings():
 
-	try:
-		rd = request.get_json()
-	except:
-		return("Posting pointings requires arguments being sent as json")
+	valid, message, args, user = initial_request_parse(request=request, only_json=True)
+
+	if not valid:
+		return jsonify(message)
 
 	valid_gid = False
 	post_doi = False
@@ -365,8 +338,8 @@ def add_pointings():
 	errors = []
 	warnings = []
 
-	if "graceid" in rd:
-		gid = rd['graceid']
+	if "graceid" in args:
+		gid = args['graceid']
 		gid = models.gw_alert.graceidfromalternate(gid)
 		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
 		if len(current_gids) > 0:
@@ -375,26 +348,16 @@ def add_pointings():
 			return jsonify("Invalid graceid")
 	else:
 		return jsonify("graceid is required")
-
-	if "api_token" in rd:
-		apitoken = rd['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-		else:
-			userid = user.id
-	else:
-		return jsonify("api_token is required")
-
-	if 'request_doi' in rd:
-		post_doi = bool(rd['request_doi'])
-		if 'creators' in rd:
-			creators = rd['creators']
+	
+	if 'request_doi' in args:
+		post_doi = bool(args['request_doi'])
+		if 'creators' in args:
+			creators = args['creators']
 			for c in creators:
 				if 'name' not in c.keys() or 'affiliation' not in c.keys():
 					return jsonify('name and affiliation are required for DOI creators json list')
-		elif 'doi_group_id' in rd:
-				valid, creators = models.doi_author.construct_creators(rd['doi_group_id'], userid)
+		elif 'doi_group_id' in args:
+				valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 				if not valid:
 					return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
 		else:
@@ -404,20 +367,20 @@ def add_pointings():
 							   models.instrument.id).all()
 
 
-	filter = [models.pointing.submitterid == userid]
+	filter = [models.pointing.submitterid == user.id]
 
 	otherpointings = db.session.query(models.pointing).filter(
 		models.pointing.id == models.pointing_event.pointingid,
 		models.pointing_event.graceid == gid
 	).all()
 	
-	if "pointing" in rd:
-		p = rd['pointing']
+	if "pointing" in args:
+		p = args['pointing']
 		mp = models.pointing()
 		if 'id' in p:
 			if function.isInt(p['id']):
 				planned_pointings = models.pointing.pointings_from_IDS([p['id']], filter)
-		v = mp.from_json(p, dbinsts, userid, planned_pointings, otherpointings)
+		v = mp.from_json(p, dbinsts, user.id, planned_pointings, otherpointings)
 		if v.valid:
 			points.append(mp)
 			if len(v.warnings) > 0:
@@ -426,8 +389,8 @@ def add_pointings():
 		else:
 			errors.append(["Object: "+json.dumps(p), v.errors])
 
-	elif "pointings" in rd:
-		pointings = rd['pointings']
+	elif "pointings" in args:
+		pointings = args['pointings']
 		planned_ids = []
 		for p in pointings:
 			if 'id' in p:
@@ -437,7 +400,7 @@ def add_pointings():
 
 		for p in pointings:
 			mp = models.pointing()
-			v = mp.from_json(p, dbinsts, userid, planned_pointings, otherpointings)
+			v = mp.from_json(p, dbinsts, user.id, planned_pointings, otherpointings)
 			if v.valid:
 				points.append(mp)
 				db.session.add(mp)
@@ -460,15 +423,12 @@ def add_pointings():
 	db.session.flush()
 	db.session.commit()
 
-	for px in points:
-		print(px.json)
-
 	if post_doi and len(points):
 		insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in points]))
 		inst_set = list(set([x.instrument_name for x in insts]))
 
-		if 'doi_url' in rd:
-			doi_id, doi_url = 0, rd['doi_url']
+		if 'doi_url' in args:
+			doi_id, doi_url = 0, args['doi_url']
 		else:
 			gid = models.gw_alert.alternatefromgraceid(gid)
 			doi_id, doi_url = function.create_pointing_doi(points, gid, creators, inst_set)
@@ -493,26 +453,11 @@ def add_pointings():
 @app.route("/api/v0/pointings", methods=["GET"])
 def get_pointings():
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
+	if not valid:
+		return jsonify(message)
 	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
-
 	filter=[]
 
 	if "graceid" in args:
@@ -728,35 +673,18 @@ def get_pointings():
 @app.route("/api/v0/request_doi", methods=['POST'])
 def api_request_doi():
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
+	if not valid:
+		return jsonify(message)
 	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-		else:
-			userid = user.id
-	else:
-		return jsonify("api_token is required")
-
 	if 'creators' in args:
 		creators = args['creators']
 		for c in creators:
 			if 'name' not in c.keys() or 'affiliation' not in c.keys():
 				return jsonify('name and affiliation are required for DOI creators json list')
 	elif 'doi_group_id' in args:
-		valid, creators = models.doi_author.construct_creators(args['doi_group_id'], userid)
+		valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 		if not valid:
 			return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
 	else:
@@ -827,32 +755,14 @@ def api_request_doi():
 
 @app.route("/api/v0/cancel_all", methods=["POST"])
 def cancel_all():
+	valid, message, args, user = initial_request_parse(request=request)
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
-
-	if args is None:
-		args = request.args
+	if not valid:
+		return jsonify(message)
 	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-		else:
-			userid = user.id
-	else:
-		return jsonify("api_token is required")
-
 	filter1 = []
 	filter1.append(models.pointing.status == enums.pointing_status.planned)
-	filter1.append(models.pointing.submitterid == userid)
+	filter1.append(models.pointing.submitterid == user.id)
 
 	if "graceid" in args:
 		graceid = args['graceid']
@@ -879,33 +789,17 @@ def cancel_all():
 	db.session.commit()
 	return jsonify("Updated "+str(len(pointings.all()))+" Pointings successfully")
 
+
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen
 @app.route("/api/v0/update_pointings", methods=["POST"])
 def del_pointings():
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
+	if not valid:
+		return jsonify(message)
 	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-		else:
-			userid = user.id
-	else:
-		return jsonify("api_token is required")
-
 	if 'status' in args:
 		status = args['status']
 		if status not in ['cancelled']:
@@ -915,7 +809,7 @@ def del_pointings():
 
 	filter1 = []
 	filter1.append(models.pointing.status == enums.pointing_status.planned)
-	filter1.append(models.pointing.submitterid == userid)
+	filter1.append(models.pointing.submitterid == user.id)
 	try:
 		if "id" in args:
 			filter1.append(models.pointing.id == int(args.get('id')))
@@ -948,26 +842,11 @@ def del_pointings():
 @app.route("/api/v0/instruments", methods=["GET"])
 def get_instruments():
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
+	if not valid:
+		return jsonify(message)
 	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
-
 	filter=[]
 
 	if "id" in args:
@@ -1010,26 +889,10 @@ def get_grbmoc():
 		instruments: [gbm, lat, bat]
 	'''
 
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if args is None:
-		args = request.args
-	
-	if args is None:
-		return("Invalid Arguments")
-
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
-
+	if not valid:
+		return jsonify(message)
 	
 	if "graceid" in args:
 		gid = args.get('graceid')
@@ -1065,17 +928,14 @@ def post_alert():
 	inputs:
 	'''
 
-	args = request.get_json()
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-		elif user.username != 'gwtm':
-			return jsonify("Only admin can access this endpoint")
-	else:
-		return jsonify("api_token is required")
+	valid, message, args, user = initial_request_parse(request=request)
 
+	if not valid:
+		return jsonify(message)
+	
+	if user.id not in [2]:
+			return jsonify("Only admin can access this endpoint")
+	
 	alert = models.gw_alert.from_json(args)
 	db.session.add(alert)
 
@@ -1087,31 +947,12 @@ def post_alert():
 
 @app.route('/api/v0/query_alerts', methods=['GET'])
 def query_alerts():
-
-	'''
-	inputs:
-	'''
-
-	args = None
-	try:
-		args = request.get_json()
-	except:
-		pass
-
-	if args is None:
-		args = request.args
 	
-	if args is None:
-		return("Invalid Arguments")
+	valid, message, args, user = initial_request_parse(request=request)
 
-	if "api_token" in args:
-		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
-			return jsonify("invalid api_token")
-	else:
-		return jsonify("api_token is required")
-
+	if not valid:
+		return jsonify(message)
+	
 	filter=[]
 
 	if "graceid" in args:
