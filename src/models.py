@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 import jwt
-import flask_sqlalchemy as fsq
 import geoalchemy2
-import os, json
+import json
 import datetime
 import secrets
 import math
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify
-from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.hybrid import hybrid_method
-from geoalchemy2 import Geometry, Geography
+from geoalchemy2 import Geography
 from time import time
 from sqlalchemy import func, and_
 from flask_login import UserMixin
