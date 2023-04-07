@@ -1,0 +1,22 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+import json
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "grb_moc_file"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "graceid":"S200316bj",
+    "instrument":"bat"
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.get(url=url, json=json_params)
+moc_data = json.loads(r.text)
+    </code>
+</pre>

@@ -1,0 +1,46 @@
+<h2>Python Example</h2>
+<p>
+    An example of updating your already submitted planned pointings to be completed, 
+    along with requesting a DOI for the completed pointings.
+</p>
+<pre> 
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "pointings"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_data = {
+    "api_token":API_TOKEN,
+    "graceid":"GW190425",
+    "request_doi":True,
+    "creators":[
+        {"name":"Name1", "affiliation":"affil_1"},
+        {"name":"Name2", "affiliation":"affil_2"}
+    ],
+    "pointings":[
+    {
+        "id":"42"
+        "depth":"19.5",
+        "depth_err":"0.1"
+        "time":"2019-05-22T12:33:59",
+        "pos_angle":"45.0",
+        "status":"completed"
+    },
+    {
+        "id":"43"
+        "depth":"19.3",
+        "depth_err":"0.2"
+        "time":"2019-05-22T12:35:59",
+        "pos_angle":"45.0",
+        "status":"completed"	
+    }]
+}
+
+url = "{}/{}".format(BASE, target)
+r = requests.post(url=url, json=json_data)
+
+print(r.text)
+    </code>
+</pre>

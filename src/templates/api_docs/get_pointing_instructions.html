@@ -1,0 +1,57 @@
+<h2>Instructions</h2>
+<p><b>Usage</b></p>
+<p><i>/api/v0/pointings</i></p>
+
+<p><b>Parameters</b></p>
+<ul>
+    <li><i>api_token=abcdefghijkl</i></li>
+    <li><i>graceid=gid1</i></li>
+    <li><i>instrument=inst1</i></li>
+    <li><i>instruments=[inst1, inst2, inst3...]</i></li>
+    <ul>
+        <li>Can be a list of instrument <b>ids</b> or a list of instrument <b>names</b></li>
+    </ul>
+    <li><i>id=id1</i></li>
+    <li><i>ids=[id1, id2, id3...]</i></li>
+    <li><i>status=status1</i></li>
+    <li><i>statuses=[status1, status2...]</i></li>
+    <ul>
+        <li>status are <b>planned, completed,</b> and <b>cancelled</b></li>
+    </ul>
+    <li><i>completed_after=datetime1</i></li>
+    <li><i>completed_before=datetime1</i></li>
+    <li><i>planned_after=datetime1</i></li>
+    <li><i>planned_before=datetime1</i></li>
+    <ul>
+        <li>All datetimes should be in <b> %Y-%m-%dT%H:%M:%S</b>. e.g. 1991-12-23T19:15:11</li>
+    </ul>
+    <li><i>user=user1</i></li>
+    <ul>
+        <li>Can be user <b>id</b>, or <b>username</b>, or user's <b>'firstname lastname'</b></li>
+    </ul>
+    <li><i>users=[user1, user2...]</i></li>
+    <ul>Notes
+        <li>Can be a list user <b>ids</b>, list of <b>usernames</b>, or a list of user's <b>'firstname lastname'</b></li>
+    </ul>
+    <li><b>Bandpass:</b> pointings can be queried and filtered in the same manner they are posted to the database.</li>
+    <ul>
+        <li><b>Method 1:</b> Bandpass List</li>
+        <ul>
+            <li><i>band</i></li>
+            <ul>
+                <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+            </ul>
+        </ul>
+        <li><b>Method 2</b>: Spectrum Regimes<i> There are 3 ways to filter a pointing based off of spectrum regime: stating the wavelength, energy, or frequency regimes along with their associated units</i>
+        <ul>
+            <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
+            <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
+            <br>
+            <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
+            <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
+            <br>
+            <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
+            <li><i>frequency_unit:</i> valid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
+        </ul>
+    </ul>
+</ul>

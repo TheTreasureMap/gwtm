@@ -1,0 +1,21 @@
+<h2>REST API METHOD: GET MOC File</h2>
+<p><b>Usage</b></p>
+<p><i>/api/v0/grb_moc_file</i></p>
+
+<p>Returns a json object for the calculated MOC map for the given instrument and graceid</p>
+<ul>
+    <li>The Fermi/GBM moc file is calculated from taking the complement of the position of the earth at the GW Event Time of Signal.</li>
+    <li>The Fermi/LAT moc file is created from the estimated location of the instrument pointing via <a href="https://fermi.gsfc.nasa.gov/ssc/observations/timeline/ft2/files/" target="_blank">these data files</a> at the GW Event Time of Signal</li>
+    <li>The Swift/BAT moc file is created upon ingestion of a BAT pointing submission</li>
+</ul>
+<p><i>the MOC files are generated using <a href="https://cds-astro.github.io/mocpy/" target="_blank">MOCpy</a></i></p>
+
+<p><b>Parameters</b></p>
+<ul>
+    <li><i>api_token=abcdefghijkl</i></li>
+    <li><i>graceid=gid1</i></li>
+    <li><i>instrument=inst1</i></li>
+    <ul>
+        <li>Instruments are <b>gbm, lat,</b> and <b>bat</b></li>
+    </ul>
+</ul>

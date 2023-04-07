@@ -1,0 +1,25 @@
+<h2>Python Example</h2>
+<p>
+    Request a DOI for individual completed pointing IDs
+</p>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "request_doi"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "ids":"[id1, id2, id3, ...]",
+    "doi_url":"my_doi_url.com"
+}
+
+url = "{}/{}".format(BASE, TARGET)
+
+r = requests.post(url=url, json=json_params)
+
+print(r.text)
+</code>
+</pre>

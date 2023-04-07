@@ -1,0 +1,18 @@
+<h2>REST API METHOD: POST Instructions</h2>
+<p><b>USAGE</b></p>
+<p><i>/api/v0/update_pointings</i></p>
+<p><i>NOTES</i></p>
+<ul>
+    <li>Will simply cancel all planned pointings'</li>
+    <li>You can only cancel pointings associated with your API_TOKEN. You cannot cancel other peoples planned pointings</li>
+</ul>
+<p><b>Parameters</b></p>
+<ul>
+    <li>api_token=abcdefghijkl</li>
+    <li>status=status1</li>
+    <ul>
+        <li>must be updated from planned to cancelled</li>
+    </ul>
+    <li>id=id1</li>
+    <li>ids=[id1, id2, id3...]</li>
+</ul>

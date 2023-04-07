@@ -1,0 +1,25 @@
+<h2>Python Example</h2>
+<p>An example of querying for completed pointings based on their <tt>central_wave</tt> and <tt>bandwidth</tt> parameters</p>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "pointings"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "central_wave":5000,
+    "bandwidth":500,
+    "status":"completed",
+    "graceid":"GW190425"
+}
+
+url = "{}/{}".format(BASE, TARGET)
+
+r = requests.get(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

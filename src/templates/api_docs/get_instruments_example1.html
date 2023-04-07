@@ -1,0 +1,21 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "instruments"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "type":"photometric"
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.get(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

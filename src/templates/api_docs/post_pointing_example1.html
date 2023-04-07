@@ -1,0 +1,60 @@
+<h2>Python Example</h2>
+<p>
+    An example of submitting a list pointings with varying degrees of validity in:
+    <ul>
+        <li>Position: ra, dec and POINT(ra dec)</li>
+        <li>Bandpass with: <tt>band</tt>, <tt>central_wave</tt> and <tt>bandwidth</tt>, and <tt>energy_regime</tt></li>
+    </ul>
+</p>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "pointings"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_data = {
+    "api_token":API_TOKEN,
+    "graceid":"GW190425",
+    "pointings":[
+    {
+        "ra":42,
+        "dec":42.0,
+        "band":"V",
+        "instrumentid":"20",
+        "depth":"19.5",
+        "depth_unit":"ab_mag",
+        "time":"2019-05-22T12:30:59",
+        "pos_angle":"45.0",
+        "status":"completed"
+    },
+    {
+        "position":"POINT(42 42)",
+        "central_wave":6500,
+        "bandwidth":1200,
+        "wavelength_unit":"angstrom",
+        "instrumentid":"instrumentname1",
+        "depth":"5e-12",
+        "depth_unit":"flux_erg"
+        "time":"2019-05-22T12:30:59",
+        "status":"planned"	
+    },
+    {
+        "position":"POINT(42 42)",
+        "energy_regime":[0.39,1.1],
+        "energy_unit":"keV",
+        "instrumentid":"Swift/XRT",
+        "depth":"19.5",
+        "depth_unit":"ab_mag"
+        "time":"2019-05-22T12:30:59",
+        "status":"planned"	
+    }]
+}
+
+url = "{}/{}".format(BASE, target)
+r = requests.post(url=url, json=json_data)
+
+print(r.text)
+    </code>
+</pre>

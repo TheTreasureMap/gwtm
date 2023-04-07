@@ -1,0 +1,25 @@
+<h2>Python Example</h2>
+<p>
+    An example of cancelling all planned instrument pointings for a given graceid
+</p>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "cancel_all"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "graceid":"TEST_EVENT",
+    "instrumentid":1
+}
+
+url = "{}/{}".format(BASE, TARGET)
+
+r = requests.post(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>
