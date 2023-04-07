@@ -108,16 +108,18 @@ def home():
 	gids = [x for x in gids if x not in rets]
 	graceid = gids[0]
 
-	status = request.args.get('pointing_status')
-	status = status if status is not None else 'completed'
+	#status = request.args.get('pointing_status')
+	#status = status if status is not None else 'completed'
 
-	alerttype = request.args.get('alert_type')
-	args = {'graceid':'GW190425', 'pointing_status':status, 'alert_type':alerttype}
-	form = forms.AlertsForm
-	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = form.construct_alertform(form, args)
-	form.page = 'index'
-	return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
+	#alerttype = request.args.get('alert_type')
+	#args = {'graceid':'GW190425', 'pointing_status':status, 'alert_type':alerttype}
+	#form = forms.AlertsForm
+	#form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = form.construct_alertform(form, args)
+	#form.page = 'index'
 
+	#return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
+
+	return render_template("index.html")
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():

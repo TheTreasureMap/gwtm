@@ -22,11 +22,137 @@ td, th {
   text-align: left;
   padding: 8px;
 }
+.bg {
+  /* The image used */
+  background-image: url("/static/gwtm_logo.png");
+
+  /* Full height */
+  height: 100%;
+
+  /* Center and scale the image nicely */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
 </style>
+
+<main role="main" class="contain">
+	<div class="shadow-lg p-3 mb-5 bg-white rounded">
+		<h3 class="text-center alert alert-info" id="O4date"></h3>
+	</div>
+	<div class="jumbotron">
+		<div class="row">
+			<div class="col-md-8">
+				<h1>Gravitational Wave Treasure Map</h1>
+				<p class="lead">
+					Welcome! The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events. 
+					It allows observers to easily report their planned and executed observations in search of counterparts to GW events, 
+					and to query the reports of other observers, in a programatic way. 
+					The goal is to enable coordination between observatories in order to minimize unnecessary overlap in these searches,
+						and find the counterpart as quickly and as efficiently as possible.
+				</p>
+				<p class="lead"> 
+					Please <a href="/register"><b>register</b></a> for an account, so that you can programatically query the Treasure Map. 
+					For more details on how to use the Treasure Map see our  <a href="/documentation"><b>User Guide</b></a>.
+				</p>
+				<p class="my-4">
+					Please direct any general inqueries to <a href="mailto:arcavi@tauex.tau.ac.il?cc=swyatt@arizona.edu&subject=GWTM%20Inquiry" target="_top">Iair Arcavi</a>.
+					If you use the Treasure Map in your research, please cite the <a href="https://ui.adsabs.harvard.edu/abs/2020ApJ...894..127W/abstract">Treasure Map paper</a> in addition to the circulars and/or papers of the teams whose pointing information you use.
+				</p>
+			</div>
+			<div class="col-md-4">
+				<div class="card">
+					<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+						<ol class="carousel-indicators">
+						  <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+						  <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+						  <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+						  <li data-target="#carouselExampleIndicators" data-slide-to="3"></li>
+						</ol>
+						<div class="carousel-inner">
+						  <div class="carousel-item active">
+							<img src="static/GW190814_alert.png" width="200" height="300" class="d-block w-100" alt="...">
+						  </div>
+						  <div class="carousel-item">
+							<img src="static/GW190814_image.png" width="200" height="300" class="d-block w-100" alt="...">
+						  </div>
+						  <div class="carousel-item">
+							<img src="static/GW190814_followup.png" width="200" height="300" class="d-block w-100" alt="...">
+						  </div>
+						  <div class="carousel-item">
+							<img src="static/GW190814_prob.png" width="225" height="300" class="d-block w-100" alt="...">
+						  </div>
+						</div>
+						<button class="carousel-control-prev" type="button" data-target="#carouselExampleIndicators" data-slide="prev">
+						  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+						  <span class="sr-only">Previous</span>
+						</button>
+						<button class="carousel-control-next" type="button" data-target="#carouselExampleIndicators" data-slide="next">
+						  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+						  <span class="sr-only">Next</span>
+						</button>
+					  </div>
+				  <div class="card-body">
+					<h5 class="card-title">Visualization</h5>
+					<ul>
+						<li><p class="card-text">Visualize GW alert contours</p></li>
+						<li><p class="card-text">Submit your follow-up pointings</p></li>
+						<li><p class="card-text">Collaborate with the counterpart search community</p></li>
+						<li><p class="card-text">Analyze follow-up</p></li>
+					</ul>
+				  </div>
+				  <div class="card-footer">
+					<small class="text-muted">Images from <a href="/alerts?graceids=GW190814">GW190814</a></small>
+				  </div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<p class="lead" style="margin: auto">
+				Explore all GW alerts <a type="button" href="alert_select" class="btn btn-primary link">here</a>
+			</p>
+		</div>
+		
+	</div>
+
+	<div class="card-group">
+		<div class="card">
+			<img src="static/register-icon.png" width="180" height="350" class="card-img-top" style="padding: 8px" alt="...">
+			<div class="card-body">
+			  <h5 class="card-title"><a href="register">Register</a> a new account</h5>
+			  <p class="card-text">
+				Once registered and verified, you may begin interacting with the Treasure Map API and begin assisting the community's search for GW counterparts
+			</p>
+			</div>
+		</div>
+		<div class="card">
+		  <img src="static/add_telescope.jpg" width="180" height="350" class="card-img-top" style="padding: 8px" alt="...">
+		  <div class="card-body">
+			<h5 class="card-title"><a href="submit_instrument">Submit</a> your follow-up instruments</h5>
+			<p class="card-text">
+				If you are planning to follow-up gravitational wave alerts, we urge you to submit your instrument footprint to our database, 
+				so that you can let the community know about your GW follow-up efforts
+			</p>
+		  </div>
+		</div>
+		<div class="card">
+		  <img src="static/api.jpeg" width="180" height="350" class="card-img-top" style="padding: 8px"alt="...">
+		  <div class="card-body">
+			<h5 class="card-title"><a href="documentation">Integrate</a> our API</h5>
+			<p class="card-text">
+				Our API has endpoints for querying and posting telescope pointings for every GW event. 
+				The more users that <i>at least</i> submit their planned/completed observing strategies can lead to more and quicker discoveries!
+			</p>
+		  </div>
+		</div>
+	  </div>
+	  
+</main>
+<!--
 <div class="container" style="text-align: left">
 
   		<h2>Welcome to the Gravitational Wave Treasure Map</h2>
-  		<div class="column">
+	<div class="column">
 		  <p>The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events. It allows observers to easily report their planned and executed observations in search of counterparts to GW events, and to query the reports of other observers, in a programatic way. The goal is to enable coordination between observatories in order to minimize unnecessary overlap in these searches and find the counterpart as quickly and as efficiently as possible.</p>
 		  <p> Please <a href="/register"><b>register</b></a> for an account, so that you can programatically query the Treasure Map.</p>
 		  <p>For more details on how to use the Treasure Map see our  <a href="/documentation"><b>User Guide</b></a>.</p>
@@ -54,6 +180,7 @@ td, th {
     <tr>
       <th>Name</th><th>Pointings reported </th>
     </tr>
+	{#
       {% for inst in inst_table[0] %}
         <tr>
           <td><a href="{{ url_for('instrument_info', id=inst.id) }}">{{inst.instrument_name}}</a></td>
@@ -69,15 +196,47 @@ td, th {
 		  <td>{{ inst_table[1] }}</td>
 	  </tr>
   	</table>
+	#}
 	</div>
 </div>
-	<br>
-	<br>
+-->
 
-	<div style="padding-left: 16px">
+
+	  
+	<!--<div style="padding-left: 16px">
+		{#
 		<h2>An Interesting Event: {{ form.graceid }} </h3>
-		{% include "alert_info.html" %}
-	</div>
-</div>
+		#}
+	</div>-->
+<script>
+	// Set the date we're counting down to
+	var countDownDate = new Date("May 24, 2023 00:00:00").getTime();
+	
+	// Update the count down every 1 second
+	var x = setInterval(function() {
+	
+	  // Get today's date and time
+	  var now = new Date().getTime();
+	
+	  // Find the distance between now and the count down date
+	  var distance = countDownDate - now;
+	
+	  // Time calculations for days, hours, minutes and seconds
+	  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+	  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+	  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+	  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+	
+	  // Display the result in the element with id="demo"
+	  document.getElementById("O4date").innerHTML ="LIGO O4 Countdown: " + days + "d " + hours + "h "
+	  + minutes + "m " + seconds + "s ";
+	
+	  // If the count down is finished, write some text
+	  if (distance < 0) {
+		clearInterval(x);
+		document.getElementById("O4date").innerHTML = "O4 has arrived!";
+	  }
+	}, 1000);
+	</script>
 {% endblock %}}
 

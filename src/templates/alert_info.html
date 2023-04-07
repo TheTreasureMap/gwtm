@@ -111,10 +111,11 @@ text.info:hover span{ /*the span will display just on :hover state*/
 </style>
 </head>
 
-<link rel="stylesheet" href="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
+
+<!-- aladin v3... breaks it all
 <link href="https://aladin.u-strasbg.fr/AladinLite/css/style.css" rel="stylesheet" />
-<script type="text/javascript" src="http://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
-    
+<script type="text/javascript" src="https://aladin.u-strasbg.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+-->
 <body>
   <input type="hidden" id="hidden_alertid" value="{{ form.selected_alert_info.id }}">
 
@@ -122,9 +123,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
     {% for al in form.alert_type_tabs if al['type']!= "Retraction" %}
       {% if al['type'] == form.alert_type %}
         <!-- <li class="active"><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ al['type'] }}">{{ al['type'] }} <br> {{al['timesent']}}</a></li>-->
-        <li class="nav-item"><a class="alerttypeactive" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
+        <li class="nav-item"><a href="#" class="nav-link active" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% else %}
-        <li class="nav-item"><a class="alerttypeinactive" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% endif %}
     {% endfor %}
   </ul>
@@ -140,7 +141,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <h3> Follow-Up </h3>
       </div>
       <!-- Instrument block buttons and div -->
-      <div class="row">
+      <div class="btn-group">
         <button disabled id='alert_inst_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_instruments_div'></button> 
         <button disabled id='alert_hideshow_inst' onclick='hideShowAll(this.id)' type="button" class="btn btn-primary btn-sm">Hide</button>
         <h4 style="display: inline-block;" id='instrumentsHeader' class="loadingtext">...Loading...</h4> 
@@ -149,7 +150,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <div class="collapse in scroll-section inst_coll" id="alert_instruments_div"></div>
       </div>
       <!-- GRB coverage block buttons and div -->
-      <div class="row">
+      <div class="btn-group">
         <button id='alert_grb_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_grbcov_div'></button>
         <button id='alert_hideshow_grb' onclick='hideShowAll(this.id)' type="button" class="btn btn-primary btn-sm">Show</button>
         <h4 style="display: inline-block;">GRB Coverage</h4> 
@@ -161,7 +162,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <h3> Sources </h3>
       </div>
       <!-- Galaxies block buttons and div -->
-      <div class="row">
+      <div class="btn-group">
         <button id='alert_gal_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_gal_div'></button> 
         <button type="button" id="alert_event_galaxies" class="btn btn-primary btn-sm">Get</button>
         <h4 style="display: inline-block;">Galaxies</h4> 
@@ -170,7 +171,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <div class="collapse in gal_coll" id='alert_gal_div'></div>
       </div>
       <!-- XRT sources block buttons and div -->
-      <div class="row">
+      <div class="btn-group">
         <button id='alert_xrt_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle" data-toggle='collapse' data-target='#alert_scimmadiv'></button>
         <button type="button" id="alert_scimma_xrt" class="btn btn-primary btn-sm">Get</button>
         <h4 style="display: inline-block;">XRT Sources</h4> 
@@ -219,38 +220,38 @@ text.info:hover span{ /*the span will display just on :hover state*/
           <tbody>
             <tr>
             {% if form.selected_alert_info.group != 'None' and form.selected_alert_info.group != '' and form.selected_alert_info.group != None %}
-            <tr class="info">
+            <tr class="alert-info">
               <td>Group</td>
               <td id='alert_group'>{{ form.selected_alert_info.group }}</td>
             </tr>
             {% endif %}
-            <tr class="info">
+            <tr class="alert-info">
               <td>Detectors</td>
               <td id='alert_detectors'>{{ form.selected_alert_info.detectors }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Time of Signal</td>
               <td id='alert_time_of_signal'>{{ form.selected_alert_info.time_of_signal }} UTC</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Time Sent</td>
               <td id='alert_timesent'>{{ form.selected_alert_info.timesent }} UTC</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>False Alarm Rate</td>
               <td id='alert_human_far'>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
             </tr>
             {% if form.selected_alert_info.group != 'Burst' %}
-            <tr class="info">
+            <tr class="alert-info">
               <td>Distance</td>
               <td id='alert_distance_plus_error'>{{ form.distance }} +/- {{ form.distance_error }} Mpc</td>
             </tr>
             {% else %}
-            <tr class="info">
+            <tr class="alert-info">
               <td>Central Frequency</td>
               <td id='alert_centralfreq'>{{form.selected_alert_info.centralfreq}} Hz</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Duration</td>
               <td id='alert_duration'>{{form.selected_alert_info.duration}} seconds</td>
             </tr>
@@ -268,31 +269,31 @@ text.info:hover span{ /*the span will display just on :hover state*/
             </tr>
           </thead>
           <tbody>
-            <tr class="info">
+            <tr class="alert-info">
               <td>BNS</td>
               <td id='alert_prob_bns'>{{ form.selected_alert_info.prob_bns }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>NSBH</td>
               <td id='alert_prob_nsbh'>{{ form.selected_alert_info.prob_nsbh }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Mass Gap</td>
               <td id='alert_prob_gap'>{{ form.selected_alert_info.prob_gap }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>BBH</td>
               <td id='alert_prob_bbh'>{{ form.selected_alert_info.prob_bbh }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Terrestrial</td>
               <td id='alert_prob_terrestrial'>{{ form.selected_alert_info.prob_terrestrial }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Has NS</td>
               <td id='alert_prob_hasns'>{{ form.selected_alert_info.prob_hasns }}</td>
             </tr>
-            <tr class="info">
+            <tr class="alert-info">
               <td>Has Remnant</td>
               <td id='alert_prob_hasremenant'>{{ form.selected_alert_info.prob_hasremenant }}</td>
             </tr>
@@ -581,12 +582,12 @@ text.info:hover span{ /*the span will display just on :hover state*/
     $('#alerttypenav').click(function(event) {
 
       if (event.target.id != 'alerttypenav') {
-        var actives = document.getElementsByClassName('alerttypeactive')
+        var actives = document.getElementsByClassName('nav-link active')
         var thisEl = document.getElementById(event.target.id)
         for(i = 0; i<actives.length; i++){
-          actives[i].classList.replace('alerttypeactive', 'alerttypeinactive')
+          actives[i].classList.remove('active')
         }
-        thisEl.classList.add('alerttypeactive')
+        thisEl.classList.add('active')
 
         $.ajax(
           {

@@ -430,31 +430,32 @@ class useractions(db.Model):
     method = db.Column(db.String(24))
 
     def write_action(request, current_user, jsonvals = None):
-        try:
-            ipaddress = None
-            if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-                ipaddress = request.environ['REMOTE_ADDR']
-            else:
-                ipaddress = request.environ['HTTP_X_FORWARDED_FOR']
+        if not app.debug:
+            try:
+                ipaddress = None
+                if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+                    ipaddress = request.environ['REMOTE_ADDR']
+                else:
+                    ipaddress = request.environ['HTTP_X_FORWARDED_FOR']
 
-            if jsonvals is None:
-                try:
-                    jsonvals = request.get_json()
-                except:
-                    jsonvals = {}
+                if jsonvals is None:
+                    try:
+                        jsonvals = request.get_json()
+                    except:
+                        jsonvals = {}
 
-            ua = useractions(
-                userid = current_user.get_id(),
-                ipaddress = ipaddress,
-                url = request.url,
-                time = datetime.datetime.now(),
-                jsonvals = jsonvals,
-                method = request.method
-            )
-            db.session.add(ua)
-            db.session.commit()
-        except:
-            print(f"error in writing user actions: request={request}")
+                ua = useractions(
+                    userid = current_user.get_id(),
+                    ipaddress = ipaddress,
+                    url = request.url,
+                    time = datetime.datetime.now(),
+                    jsonvals = jsonvals,
+                    method = request.method
+                )
+                db.session.add(ua)
+                db.session.commit()
+            except:
+                print(f"error in writing user actions: request={request}")
 
 class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)

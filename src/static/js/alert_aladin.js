@@ -35,10 +35,23 @@ function gwtmAladinInit(data) {
     if ('aladin' in data){
         var aladin = data.aladin;
     }
+    //aladin v3 init... breaks everythin
+    /*else {
+        A.init.then(() => {
+            var aladin = A.aladin('#aladin-lite-div', aladinParams);
+        });
+    }
+    */
     else {
         var aladin = A.aladin('#aladin-lite-div', aladinParams);
     }
-    
+
+    var IMG = new Image();
+    IMG.src = 'static/sun-logo-100.png';
+    var cat = A.catalog({shape: IMG, name: 'Sun at GW T0'})
+    aladin.addCatalog(cat);
+    cat.addSources(A.source(data.sun_ra, data.sun_dec))
+
     aladin_setImage(aladin, 'static/sun-logo-100.png', 'Sun at GW T0', data.sun_ra, data.sun_dec)
     aladin_setImage(aladin, 'static/moon-supersmall.png', 'Moon at GW T0', data.moon_ra, data.moon_dec)
 
