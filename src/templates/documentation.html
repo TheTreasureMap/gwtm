@@ -1,40 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-    .collapsible {
-      background-color: #777;
-      color: white;
-      cursor: pointer;
-      padding: 18px;
-      width: 99%;
-      border: none;
-      text-align: left;
-      outline: none;
-      font-size: 15px;
-    }
-    
-    .active, .collapsible:hover {
-      background-color: #555;
-    }
-    
-    .content {
-      padding: 0 18px;
-      display:inherit;
-      overflow: hidden;
-      background-color: #f1f1f1;
-    }
-    * {
-    box-sizing: border-box;
-    }
+<style>
 
     /* Create two equal columns that floats next to each other */
     .column {
     float: left;
     width: 50%;
-    padding: 10px;
+    padding: 5px;
     }
 
     /* Clear floats after the columns */
@@ -43,808 +16,572 @@
     display: table;
     clear: both;
     }
-    </style>
-    </head>
-    <body>
+</style>
     
-    <div style="padding-left:16px">
-        <h2>Documentation</h2>
-        
-        <p>Communicating with the Treasure Map to either report or get information is best done programmatically through the API using POST and GET methods (see below). However, one can also use the pages on this website to report and get the information. Below are examples of two use cases for the API methods.</p>
+<div style="padding-left:16px">
+<h2>Documentation</h2>
 
-        You can find these API endpoints utilized in our <a href="jupyter_tutorial">Jupyter notebook tutorial</a>.<br>
+<p>Communicating with the Treasure Map to either report or get information is best done programmatically through the API using POST and GET methods (see below). However, one can also use the pages on this website to report and get the information. Below are examples of two use cases for the API methods.</p>
 
-        We also point users to a Python script produced by a Treasure Map user, Dougal Dobie, and shared in the spirit of the Treasure Map community <a href='https://github.com/ddobie/TreasureMapPy'> on Github here</a>, that manages pointing uploads to Treasure Map using the API defined below.<br>
-        <br>
+You can find these API endpoints utilized in our <a href="jupyter_tutorial">Jupyter notebook tutorial</a>.<br>
 
-        <ol>
-            <li><b>I am an observer and I would like to report my observations</b><br>
-                <p>
-                    Great! Before you can start you must register an account through this website. Then you will be issued a token that you will use to post your reports. <br>
-                    Once you have an account, also please check whether your imaging instrument is listed (either on the <a href="/search_instruments">website</a> or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
-                </p>
+We also point users to a Python script produced by a Treasure Map user, Dougal Dobie, and shared in the spirit of the Treasure Map community <a href='https://github.com/ddobie/TreasureMapPy'> on Github here</a>, that manages pointing uploads to Treasure Map using the API defined below.<br>
+<br>
 
-                    Once you and your instrument are registered, here's a typical scenario to follow: <b>(You may test your <em>POST</em> scripts using the graceid 'TEST_EVENT', and inspect the results <a href="/alerts?graceids=TEST_EVENT">here</a>.)</b><br>
-                <ul>
-                    <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
-                    <li>You send this list of pointings using the pointings POST method (see below), with a status of <em><b>planned</b></em>.</li>
-                    <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em><b>completed</b></em>.</li>
-                    <ul>
-                        <li>For validation of your efforts you can request a <a href="https://www.doi.org">DOI</a> for your completed pointings as you post them in bulk, or after the fact through the api endpoint for a list of pointing IDs</li>
-                        <li>To create an author list for your DOI, please visit your <a href="/manage_user">Profile</a> page and follow the links to do so. Use the ID of your group in requesting the DOI. Otherwise you can still submit a json object via the API (described below). Authors do <b>not</b> have to be GWTM users</li>
-                    </ul>
-                    <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
-                </ul>
-                <p></p>
-            <li>
-                <b>I would like to see what others are observing in order to plan my observations accordingly</b>
-                <p>
-                        You are required to register. Use your API token you receive upon registration along with the pointings GET method (see below) to retrieve reported planned or completed pointings for a specific GW alert, time window, instrument, and/or band.
-                </p>
-            </li>
-        </ol>
+<ol>
+    <li><b>I am an observer and I would like to report my observations</b><br>
+        <p>
+            Great! Before you can start you must register an account through this website. Then you will be issued a token that you will use to post your reports. <br>
+            Once you have an account, also please check whether your imaging instrument is listed (either on the <a href="/search_instruments">website</a> or by using the instruments GET method - see below), and make a note of its ID. If it isn't listed, please submit it. <br>
+        </p>
 
-        <h2>API Endpoints:</h2>
-        <button class="collapsible" aria-expanded="true">Pointings</button>
-        <div class="content">
-            <p>GET, POST, and UPDATE your telescope pointings</p>
-            <button class="collapsible">POST</button>
-            <div class="content">
-                <div class="column">
-                    <h2>REST API METHOD: POST Instructions</h2>
-                    <p><b>USAGE:</b></p>
-                    <p><i>/api/v0/pointings</i></p>
+            Once you and your instrument are registered, here's a typical scenario to follow: <b>(You may test your <em>POST</em> scripts using the graceid 'TEST_EVENT', and inspect the results <a href="/alerts?graceids=TEST_EVENT">here</a>.)</b><br>
+        <ul>
+            <li>A GW alert comes in, and you or your software decide on a list of pointings to observe with your telescope.</li> 
+            <li>You send this list of pointings using the pointings POST method (see below), with a status of <em><b>planned</b></em>.</li>
+            <li>As you observe your pointings you send them (either one by one as they are observed, or in bulk) with the same POST method but this time with a status of <em><b>completed</b></em>.</li>
+            <ul>
+                <li>For validation of your efforts you can request a <a href="https://www.doi.org">DOI</a> for your completed pointings as you post them in bulk, or after the fact through the api endpoint for a list of pointing IDs</li>
+                <li>To create an author list for your DOI, please visit your <a href="/manage_user">Profile</a> page and follow the links to do so. Use the ID of your group in requesting the DOI. Otherwise you can still submit a json object via the API (described below). Authors do <b>not</b> have to be GWTM users</li>
+            </ul>
+            <li>If there are pointings you had submitted as planned but then realize you will not get to, you can cancel them (so that others know that they won't be covered).</li>
+        </ul>
+        <p></p>
+    <li>
+        <b>I would like to see what others are observing in order to plan my observations accordingly</b>
+        <p>
+                You are required to register. Use your API token you receive upon registration along with the pointings GET method (see below) to retrieve reported planned or completed pointings for a specific GW alert, time window, instrument, and/or band.
+        </p>
+    </li>
+</ol>
 
-                    <p><i>Notes</i></p>
-                    <ul>
-                        <li>Upon successful entry, you will be returned a list of pointing ids</li>
-                        <li>Warnings will be successfully entered, and will notify you of the warning and json object</li>
-                        <li>Errors will not be successfully entered, and will notify you of the error and json object</li>
-                    </ul>
+<h2>API Endpoints:</h2>
 
-                    <p><b>JSON Parameters</b></p>
-                    <ul>
-                        <li><i>graceid</i> - string value of the gw_alert graceid</li>
-                        <li><i>api_token</i> -  authentication api token</li>
-                        <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
-                        <li><i>request_doi</i> - [default=false] to request a Digital Object Identifier. <b>This is only valid for posting completed pointing observations</b></li>
-                        <li><i>doi_url</i> - associate the submitted pointings to an already existing DOI (I.E. a URL to a Publication). <b>creators and doi_group_id are not needed for this</b></li>
-                        <li><i>creators</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
-                        <li><i>doi_group_id</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
-                    </ul>
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
+    <h3 class="text-center">Pointings</h3>
 
-                    <h3>Valid <b>pointing</b> class parameters</h3>
-                    <p><b>If you are posting a PLANNED pointing Observation</b></p>
-                    <p><b>REQUIRED</b></p>
-                    <ul>
-                        <li><i>position</i>: two acceptable formats</li>
-                        <ul>
-                            <li>geometry type: <b>POINT(RA DEC)</b></li>
-                            <li>simply pass two json fields that are <b>RA</b> and <b>DEC</b> which must be <b>decimal</b></li>
-                        </ul>
-                        <li><i>instrumentid</i></li>
-                        <ul>
-                            <li>Can be <b>ID</b> or <b>name</b> of valid instrument</li>
-                        </ul>
-                        <li><i>time</i></li>
-                        <ul>
-                            <li><b>Mid-point time</b> of <b>planned</b>/<b>completed</b> pointing</li>
-                            <li>Must be <b>%Y-%m-%dT%H:%M:%S</b> format; e.g. 1991-12-23T19:15:11</li>
-                        </ul>
-                        <li><i>status</i>=completed</li>
-                        <ul>
-                            <li>planned<li></li>
-                        </ul>
-                        <li><i>depth</i></li>
-                        <ul>
-                            <li>5-sigma limiting flux of exposure <b>decimal</b></li>
-                        </ul>
-                        <li><i>depth_unit</i></li>
-                        <ul>
-                            <li>units for depth. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
-                        </ul>
-                        <br>
-                        <li><b>Bandpass Information:</b> is required can be passed in by stating the band, or the range of wavelengths, energies, or frequencies the pointing covers. If your pointing is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
-                        <ul>
-                            <li><b>Method 1:</b> Bandpass List</li>
-                            <ul>
-                                <li><i>band</i></li>
-                                <ul>
-                                    <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
-                                </ul>
-                            </ul>
-                            <li><b>Method 2</b>: Central Wavelength and Bandwidth</li>
-                            <ul>
-                                <li><i>central_wave</i></li>
-                                <li><i>bandwidth</i></li>
-                                <ul><li>both must be floats</li></ul>
-                            </ul>
-                            <li><b>Method 3</b>: Spectrum Regimes<i> There are 3 ways to submit a spectrum regime for your associated pointing. By stating the wavelength, energy, or frequency regimes along with their associated units</i>
-                            <ul>
-                                <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
-                                <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
-                                <br>
-                                <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
-                                <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
-                                <br>
-                                <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
-                                <li><i>frequency_unit:</i> cvalid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
-                            </ul>
-                    </ul>
-
-                    <p><b>NOT REQUIRED</b></p>
-                    <ul>
-                        <!--<li><i>galaxy_catalog</i></li>
-                        <ul>
-                            <li>id of galaxy catalog (glade_2p3 = 1)</li>
-                        </ul>
-                        <li><i>galaxy_catalogid</i></li>
-                        <ul>
-                            <li>id of galaxy in the galaxy_catalog</li>
-                        </ul>-->
-                        <li><i>pos_angle</i></li>
-                        <ul>
-                            <li>Position angle of telescope exposure</li>
-                        </ul>
-                        <li>
-                            <i>depth_err</i>
-                        </li>
-                        <ul>
-                            <li>(decimal) error in the depth, can be a rough estimation</li>
-                        </ul>
-                    </ul>
-                    <h3>If you are posting a pointing that has already been COMPLETED</h3>
-                    <ul>
-                        <li>All of the same requirements for a planned pointing are the same EXCEPT pos_angle is now required</li>
-                    </ul>
-                    <h3>You can update an already planned pointing to be completed</h3>
-                    <ul>
-                        <li>Inside the valid <b>pointing</b> class you can pass:</li>
-                        <ul>
-                            <li><i>id</i></li>
-                            <ul><li style="font-size: small">can only be for your planned pointings</li></ul>
-                            <li><i>time</i></li>
-                            <li><i>status</i></li>
-                            <li><i>pos_angle</i></li>
-                            <li><i>depth</i> and <i>depth_err</i></li>
-                            <ul><li style="font-size: small">If those values are to be updated</li></ul>
-                        </ul>
-                    </ul>
-                    <h3>To request a DOI</h3>
-                    <h5><i>(Only for completed pointings)</i></h5>
-                    <ul>
-                        <li>You must pass in fields:</li>
-                        <ul>
-                            <li><i>request_doi=true</i></li>
-                            <li><i>doi_url=my_doi_url.com</i></li>
-                            <p>OR to request through Zenodo</p>
-                            <li><i>creators=[{'name':'name1', 'affiliation':'affiliation1'}]</i></li>
-                        </ul>
-                    </ul>
-
-                </div>
-                <div class="column" style="background-color:#bbb;">
-                    <h2>JSON example</h2>
-                    <pre>
-                    <code class="language-json" data-lang="json">
-        import requests
-
-        BASE = 'http://treasuremap.space/api/v0/'
-        TARGET = 'pointings'
-
-        json_data = {
-            "graceid":"graceid1",
-            "api_token":"abcdefghijkl",
-            "pointings":[
-            {
-                "ra":42,
-                "dec":42.0,
-                "band":"V",
-                "instrumentid":"20",
-                "depth":"19.5",
-                "depth_unit":"ab_mag",
-                "time":"2019-05-22T12:30:59",
-                "pos_angle":"45.0",
-                "status":"completed"
-            },
-            {
-                "position":"POINT(42 42)",
-                "central_wave":6500,
-                "bandwidth":1200,
-                "wavelength_unit":"angstrom",
-                "instrumentid":"instrumentname1",
-                "depth":"5e-12",
-                "depth_unit":"flux_erg"
-                "time":"2019-05-22T12:30:59",
-                "status":"planned"	
-            },
-            {
-                "position":"POINT(42 42)",
-                "energy_regime":[0.39,1.1],
-                "energy_unit":"keV",
-                "instrumentid":"Swift/XRT",
-                "depth":"19.5",
-                "depth_unit":"ab_mag"
-                "time":"2019-05-22T12:30:59",
-                "status":"planned"	
-            }]
-        }
-
-        r = requests.post(url = BASE+TARGET, json = json_data)
-
-        print(r.text)
-                    </code>
-                    </pre>
-
-                    <h3>Updating completed pointings</h3>
-                    <pre>
-                    <code class="language-json" data-lang="json">
-        import requests
-
-        BASE = 'http://treasuremap.space/api/v0/'
-        TARGET = 'pointings'
-
-        json_data = {
-            "graceid":"graceid1",
-            "api_token":"abcdefghijkl",
-            "request_doi":true,
-            "creators":[
-                {"name":"Name1", "affiliation":"affil_1"},
-                {"name":"Name2", "affiliation":"affil_2"}
-            ],
-            "pointings":[
-            {
-                "id":"42"
-                "depth":"19.5",
-                "depth_err":"0.1"
-                "time":"2019-05-22T12:33:59",
-                "pos_angle":"45.0",
-                "status":"completed"
-            },
-            {
-                "id":"43"
-                "depth":"19.3",
-                "depth_err":"0.2"
-                "time":"2019-05-22T12:35:59",
-                "pos_angle":"45.0",
-                "status":"completed"	
-            }]
-        }
-
-        r = requests.post(url = BASE+TARGET, json = json_data)
-
-        print(r.text)
-        </code>
-        </pre>
-                </div>
+    <div class="accordion" id="pointingsCollapse">
+        <div class="card">
+            <div class="card-header" id="get_pointing_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_pointingCollapse" aria-expanded="false" aria-controls="get_pointingCollapse">
+                        GET Pointing
+                    </button>
+                </h2>
             </div>
-
-            <button class="collapsible">GET</button>
-            <div class="content">
+        </div>
+        <div id="get_pointingCollapse" class="collapse" aria-labelledby="get_pointing_hdr" data-parent="#pointingsCollapse">
+            <div class="row">
                 <div class="column">
-                    <h2>REST API METHOD: GET Instructions</h2>
-                    <p><b>Usage</b></p>
-                    <p><i>/api/v0/pointings?param1=value1&amp;param2=value2…</i></p>
-            
-                    <p><b>Parameters</b></p>
-                    <ul>
-                        <li><i>api_token=abcdefghijkl</i></li>
-                        <li><i>graceid=gid1</i></li>
-                        <li><i>id=id1</i></li>
-                        <li><i>ids=[id1, id2, id3...]</i></li>
-                        <li><i>status=status1</i></li>
-                        <li><i>statuses=[status1, status2...]</i></li>
-                        <ul>
-                            <li>status are <b>planned, completed,</b> and <b>cancelled</b></li>
-                        </ul>
-                        <li><i>completed_after=datetime1</i></li>
-                        <li><i>completed_before=datetime1</i></li>
-                        <li><i>planned_after=datetime1</i></li>
-                        <li><i>planned_before=datetime1</i></li>
-                        <ul>
-                            <li>All datetimes should be in <b> %Y-%m-%dT%H:%M:%S</b>. e.g. 1991-12-23T19:15:11</li>
-                        </ul>
-                        <li><i>group=group1</i></li>
-                        <ul>
-                            <li>Can be group <b>id</b> or group <b>name</b></li>
-                        </ul>
-                        <li><i>groups=[group1, group2...]</i></li>
-                        <ul>
-                            <li>Can be a list of group ids or a list of group names</li>
-                        </ul>
-                        <li><i>user=user1</i></li>
-                        <ul>
-                            <li>Can be user <b>id</b>, or <b>username</b>, or user's <b>'firstname lastname'</b></li>
-                        </ul>
-                        <li><i>users=[user1, user2...]</i></li>
-                        <ul>Notes
-
-                            <li>Can be a list user <b>ids</b>, list of <b>usernames</b>, or a list of user's <b>'firstname lastname'</b></li>
-                        </ul>
-                        <li><b>Bandpass:</b> pointings can be queried and filtered in the same manner they are posted to the database.</li>
-                        <ul>
-                            <li><b>Method 1:</b> Bandpass List</li>
-                            <ul>
-                                <li><i>band</i></li>
-                                <ul>
-                                    <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
-                                </ul>
-                            </ul>
-                            <li><b>Method 2</b>: Spectrum Regimes<i> There are 3 ways to filter a pointing based off of spectrum regime: stating the wavelength, energy, or frequency regimes along with their associated units</i>
-                            <ul>
-                                <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
-                                <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
-                                <br>
-                                <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
-                                <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
-                                <br>
-                                <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
-                                <li><i>frequency_unit:</i> valid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
-                            </ul>
-                        <li><i>instrument=inst1</i></li>
-                        <li><i>instruments=[inst1, inst2, inst3...]</i></li>
-                        <ul>
-                            <li>Can be a list of instrument <b>ids</b> or a list of instrument <b>names</b></li>
-                        </ul>
-                    </ul>
-                </div>
-
-                <div class="column" style="background-color:#bbb;">
-                    <h2>GET Examples</h2>
-                    <p>GET all planned pointings taken in XRT for graceid gw170817:</p>
-                    <pre>
-                            <code class="language-json" data-lang="json">
-        import requests
-        import urllib.parse
-
-        BASE = 'http://treasuremap.space/api/v0'
-        TARGET = 'pointings'
-
-        params = {
-            "api_token":"abcdefghijkl",
-            "band":XRT,
-            "status":"planned",
-            "graceid":"gw170817"
-        }
-
-        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
-
-        r = requests.get(url = url)
-
-        print(r.text)
-                </code>
-                </pre>
-                </div>
-            </div>
-
-            <button class="collapsible">Update Status=<i>cancelled</i></button>
-            <div class="content">
-                <div class="column">
-                    <h2>REST API METHOD: POST Instructions</h2>
-                    <p><i>NOTES</i></p>
-                    <ul>
-                        <li>Will simply cancel all pointings' statuses</li>
-                    </ul>
-                    <p><b>USAGE</b></p>
-                    <p><i>/api/v0/update_pointings?param=value1</i></p>
-                    <p><b>Parameters</b></p>
-                    <ul>
-                        <li>api_token=abcdefghijkl</li>
-                        <li>status=status1</li>
-                        <ul>
-                            <li>must be updated from planned to cancelled</li>
-                        </ul>
-                        <li>id=id1</li>
-                        <li>ids=[id1, id2, id3...]</li>
-                    </ul>
-                </div>
-                <div class="column" style="background-color:#bbb;">
-                    <h2>UPDATE Examples</h2>
-                    <h3>Updating Planned Pointings to be cancelled</h3>
-                    <pre>
-                    <code class="language-json" data-lang="json">
-        import requests
-        import urllib.parse
-
-        BASE = 'http://treasuremap.space/api/v0'
-        TARGET = 'update_pointings'
-
-        params = {
-            "api_token":"abcdefghijkl",
-            "ids":[42,43,44,45],
-            "status":"cancelled"
-        }
-
-        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
-
-        r = requests.post(url = url)
-
-        print(r.text)
-        </code>
-        </pre>
-                </div>
-            <div class="content">
-                    <div class="column">
-                        <h2>REST API METHOD: POST Instructions</h2>
-                        <p><i>NOTES</i></p>
-                        <ul>
-                            <li>Will simply cancel all instruments' planned pointings' statuses for a given GW event</li>
-                        </ul>
-                        <p><b>USAGE</b></p>
-                        <p><i>/api/v0/cancel_all?param=value1</i></p>
-                        <p><b>Parameters</b></p>
-                        <ul>
-                            <li>api_token=abcdefghijkl</li>
-                            <li>graceid=graceid1</li>
-                            <li>instrumentid=instrumentid1</li>
-                        </ul>
-                    </div>
-                    <div class="column" style="background-color:#bbb;">
-                        <h2>UPDATE Examples</h2>
-                        <h3>Updating Planned Pointings to be cancelled</h3>
-                        <pre>
-                        <code class="language-json" data-lang="json">
-        import requests
-        import urllib.parse
-
-        BASE = 'http://treasuremap.space/api/v0'
-        TARGET = 'cancel_all'
-
-        params = {
-            "api_token":"abcdefghijkl",
-            "graceid":"TEST_EVENT",
-            "instrumentid":1
-        }
-
-        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
-
-        r = requests.post(url = url)
-
-        print(r.text)
-            </code>
-            </pre>
+                    <div class="card card-body">
+                        {% include 'api_docs/get_pointing_instructions.html' %}
                     </div>
                 </div>
-        </div>
-        </div>
-        <button class="collapsible">Instruments</button>
-        <div class="content">
-            <div class="column">
-                <h2>REST API METHOD: GET Instructions</h2>
-                <p><b>Usage</b></p>
-                <p><i>/api/v0/instruments?param1=value1&amp;param2=value2…</i></p>
-        
-                <p><b>Parameters</b></p>
-                <ul>
-                    <li><i>api_token=abcdefghijkl</i></li>
-                    <li><i>id=id1</i></li>
-                    <li><i>ids=[id1, id2, id3...]</i></li>
-                    <li><i>name=name1</i></li>
-                    <li><i>names=[name1, name2, name3...]</i></li>
-                    <li><i>type=type1</i></li>
-                    <ul>
-                        <li>Instrument types are <b>spectroscopic, photometric</b></li>
-                    </ul>
-                </ul>
-            </div>
-            <div class="column" style="background-color:#bbb;">
-                <h2>GET Examples</h2>
-                <p>GET all photometric instruments:</p>
-                <pre>
-                        <code class="language-json" data-lang="json">
-        import requests
-        import urllib.parse
-
-        BASE = 'http://treasuremap.space/api/v0'
-        TARGET = 'instruments'
-
-        params = {
-            "api_token":"abcdefghijkl",
-            "type":"photometric"
-        }
-
-        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
-
-        r = requests.get(url = url)
-
-        print(r.text)
-            </code>
-            </pre>
-            </div>
-        </div>
-        <button class="collapsible">DOI Request</button>
-        <div class="content">
-            <div class="column">
-                <h2>REST API METHOD: POST Instructions</h2>
-                <p>Requesting a Batch DOI for completed pointings</p>
-                <p><b>Usage</b></p>
-                <p><i>/api/v0/request_doi</i></p>
-        
-                <p><b>Notes</b></p>
-                <p>This endpoint will ideally be utilized as an <i>end of the night</i> routine as you are uploading your completed pointings as they are taken in real time</p>
-                <p>You will request your DOI Url from a list of completed pointings, or just a GW Event GraceID for completed pointings that do not have a DOI yet.</p>
-                <p>This endpoint will validate:</p>
-                <ul>
-                    <li>whether the pointings have a status completed</li>
-                    <li>whether the pointings were submitted by the user associated with the api_token</li>
-                    <li>whether the pointings were taken for the same GW event. They must be associated with the same graceid</li>
-                </ul>
-                <p>JSON Parameters</p>
-                <ul>
-                    <li><i>graceid=graceid1</i></li>
-                    <li><i>api_token=api_token1</i></li>
-                    <ul><li>this will ensure only your completed pointings are queried</li></ul>
-                    <li><i>creators=json list of creator objects</i></li>
-                    <ul><li>json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li><li>also accepts <i>orcid</i> and <i>gnd</i> for each creator</li></ul>
-                    <li><i>doi_group_id=groupid1</i></li>
-                    <ul><li>if you have created a doi author list through the website, you just reference its name or id here to link to the list</li></ul>
-                    <li><i>doi_url=doi_url1</i></li>
-                    <ul><li>if you have an existing DOI url (I.E. publication URL) it will associate the pointings to that</li></ul>
-                    <li><i>ids=[id1, id2, id3....]</i></li>
-                    <ul><li>List of INTs</li></ul>
-                </ul>
-            </div>
-            <div class="column" style="background-color:#bbb;">
-                <h2>POST Examples</h2>
-                <p>Request a DOI for your completed pointings for a GW Event</p>
-                <pre>
-                        <code class="language-json" data-lang="json">
-        import requests
-
-        BASE = 'http://treasuremap.space/api/v0/'
-        TARGET = 'request_doi'
-
-        json_data = {
-            "api_token":"abcdefghijkl",
-            "graceid":"graceid1",
-            "creators":[
-                {"name":"Name1", "affiliation":"affil_1"},
-                {"name":"Name2", "affiliation":"affil_2"}
-            ]
-        }
-
-        r = requests.post(url = BASE+TARGET, json = json_data)
-
-        print(r.text)
-            </code>
-            </pre>
-            <p>Submit a DOI for individual pointing IDs</p>
-            <pre>
-                    <code class="language-json" data-lang="json">
-        import requests
-
-        BASE = 'http://treasuremap.space/api/v0/'
-        TARGET = 'request_doi'
-
-        json_data = {
-            "api_token":"abcdefghijkl",
-            "ids":"[id1, id2, id3, ...]",
-            "doi_url":"my_doi_url.com"
-        }
-
-        r = requests.post(url = BASE+TARGET, json = json_data)
-
-        print(r.text)
-        </code>
-        </pre>
-            </div>
-        </div>
-        <button class="collapsible">Convolved Galaxy Information</button>
-        <div class="content">
-            <p>GET and POST Convolved Galaxy Information</p>
-            <button class="collapsible">POST</button>
-            <div class="content">
                 <div class="column">
-                    <h2>REST API METHOD: POST Instructions</h2>
-                    <p>Posting a list of galaxies that are within the GW Event contour</p>
-                        <p><b>Usage</b></p>
-                        <p><i>/api/v0/event_galaxies</i></p>
-                
-                        <p><b>Notes</b></p>
-                        <p>This endpoint is for posting a list of galaxies the lie within the GW contour. For each galaxy, it accepts position, score, rank, and name. You may also append a json list of parameters about the galaxy or your calculation.</p>
-                        <p>JSON Parameters</p>
-                        <ul>
-                            <li><i>api_token=api_token1</i></li>
-                            <li><i>graceid=graceid1</i></li>
-                            <li><i>timesent_stamp=event_timesent1</i></li>
-                            <ul><li>this is the timestamp for the alertype of the given event. I.E. whether the uploaded galaxy list refers to the Initial, Preliminary, Update, etc for the GW Event. This timestamp information can be found on the given alert page</li></ul>
-                            <li><i>groupname=groupname1</i></li>
-                            <ul><li>this can be the name of the group that did the calculation, or will default to the username associated with the api_token</li></ul>
-                            <li><i>reference=reference1</i></li>
-                            <ul><li>this can be a link to a paper/DOI that describes the methods that calculates the galaxy scores. Not mandatory</li></ul>
-                            <li><i>galaxies=galaxielist</i></li>
-                            <ul><li>json list of [<i>name</i>, <i>position</i>, <i>score</i> (decimal), <i>rank</i> (integer), and <i>info</i> (json list parameters)</li></ul>
-                            <li><i>request_doi=True/False</i> - [default=False] to request a Digital Object Identifier for the list of galaxies</li>
-                            <li><i>creators=creatorslist1</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
-                            <li><i>doi_group_id=groupid</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
-                        </ul>
-                </div>
-                <div class="column" style="background-color:#bbb;">
-                    <h2>POST Examples</h2>
-                    <p>Post a list of convolved galaxies</p>
-                    <pre>
-                        <code class="language-json" data-lang="json">
-    import requests
+                    <div class="card card-body">
+                        <div class="accordion" id="getptexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getptex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getptex1" aria-expanded="false" aria-controls="getptex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getptex1" class="collapse show" aria-labelledby="getptex1hdr" data-parent="#getptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_pointing_example1.html' %}
+                                    </div>
+                                </div>
 
-    BASE = 'http://treasuremap.space/api/v0/'
-    TARGET = 'event_galaxies'
+                                <div class="card-header" id="getptex2hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getptex2" aria-expanded="false" aria-controls="getptex2">
+                                            Example 2
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getptex2" class="collapse" aria-labelledby="getptex2hdr" data-parent="#getptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_pointing_example2.html' %}
+                                    </div>
+                                </div>
 
-    json_data = {
-        "api_token":"abcdefghijkl",
-        "graceid":"graceid1",
-        "timesent_stamp":"2019-05-22T12:33:59",
-        "groupname":groupname1,
-        "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper",
-        "request_doi":True,
-        "doi_group_id":groupID
-        "galaxies":[
-            {
-                "position":"POINT(24.0 41.0)",
-                "score":19.5,
-                "rank":1,
-                "name":"test galaxy",
-                "info":{
-                    "param1":"value1",
-                    "param2":"value2",
-                    "param3":"value3",
-                    "param4":"value4"
-                }
-            },
-        ]
-    }
-
-    r = requests.post(url = BASE+TARGET, json = json_data)
-
-    print(r.text)
-                        </code>
-                    </pre>
+                                <div class="card-header" id="getptex3hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getptex3" aria-expanded="false" aria-controls="getptex3">
+                                            Example 3
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getptex3" class="collapse" aria-labelledby="getptex3hdr" data-parent="#getptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_pointing_example3.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <button class="collapsible">GET</button>
-            <div class="content">
+        <div class="card">
+            <div class="card-header" id="post_pointing_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#post_pointingCollapse" aria-expanded="false" aria-controls="post_pointingCollapse">
+                        POST Pointing
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="post_pointingCollapse" class="collapse" aria-labelledby="post_pointing_hdr" data-parent="#pointingsCollapse" aria-expanded="false">   
+            <div class="row">
                 <div class="column">
-                    <h2>REST API METHOD: GET Instructions</h2>
-                    <p>Retrieving a list of posted galaxies that are within the GW Event contour</p>
-                        <p><b>Usage</b></p>
-                        <p><i>/api/v0/event_galaxies</i></p>
-                
-                        <p><b>Notes</b></p>
-                        <p>This endpoint is for getting a list of galaxies the lie within the GW contour.</p>
-                        <p>The parameters my be passed in via a json argument in the request or as URL querystring arguments (i.e. <i>/api/v0/event_galaxies?param1=value1...</i>)</p>
-                        <p>Parameters</p>
-                        <ul>
-                            <li><i>api_token=api_token1</i></li>
-                            <li><i>graceid=graceid1</i></li>
-                            <ul><li>This is required</li></ul>
-                            <li><i>timesent_stamp=event_timesent1</i></li>
-                            <ul><li>Not required, but if sent in, it will filter the lists based on the alert type: Initial, Preliminary, Update.. etc</li></ul>
-                            <li><i>groupname=groupname1</i></li>
-                            <li><i>score_gt=score1</i></li>
-                            <ul><li>(Greater than or equal to) If you want to filter by score >= <i>score1</i></li></ul>
-                            <li><i>score_lt=score1</i></li>
-                            <ul><li>(Less than or equal to) If you want to filter by score <= <i>score1</i></li></ul>
-                        </ul>
+                    <div class="card card-body">
+                        {% include 'api_docs/post_pointing_instructions.html' %}
+                    </div>
                 </div>
-                <div class="column" style="background-color:#bbb;">
-                    <h2>GET Examples</h2>
-                    <p>Get a list of convolved galaxies</p>
-                    <pre>
-                        <code class="language-json" data-lang="json">
-    import requests
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="postptexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="postptex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#postptex1" aria-expanded="false" aria-controls="postptex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="postptex1" class="collapse show" aria-labelledby="postptex1hdr" data-parent="#postptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/post_pointing_example1.html' %}
+                                    </div>
+                                </div>
 
-    BASE = 'http://treasuremap.space/api/v0/'
-    TARGET = 'event_galaxies'
-
-    json_data = {
-        "api_token":"abcdefghijkl",
-        "graceid":"graceid1",
-        "groupname":groupname1
-        "score_lt":0.01
-    }
-
-    r = requests.get(url = BASE+TARGET, json = json_data)
-
-    print(r.text)
-                        </code>
-                    </pre>
+                                
+                                <div class="card-header" id="postptex2hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#postptex2" aria-expanded="false" aria-controls="postptex2">
+                                            Example 2
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="postptex2" class="collapse" aria-labelledby="postptex2hdr" data-parent="#postptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/post_pointing_example2.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <button class="collapsible">GRB Multi-Order Coverage (MOC) Maps</button>
-        <div class="content">
-            <div class="column">
-                <h2>REST API METHOD: GET MOC File</h2>
-                <p>Returns a json object for the calculated MOC map for the given instrument and graceid</p>
-                <ul>
-                    <li>The Fermi/GBM moc file is calculated from taking the complement of the position of the earth at the GW Event Time of Signal.</li>
-                    <li>The Fermi/LAT moc file is created from the estimated location of the instrument pointing via <a href="https://fermi.gsfc.nasa.gov/ssc/observations/timeline/ft2/files/" target="_blank">these data files</a> at the GW Event Time of Signal</li>
-                    <li>The Swift/BAT moc file is created upon ingestion of a BAT pointing submission</li>
-                </ul>
-                <p><i>the MOC files are generated using <a href="https://cds-astro.github.io/mocpy/" target="_blank">MOCpy</a></i></p>
-                <p><b>Usage</b></p>
-                <p><i>/api/v0/grb_moc_file</i></p>
-        
-                <p><b>Parameters</b></p>
-                <ul>
-                    <li><i>api_token=abcdefghijkl</i></li>
-                    <li><i>graceid=gid1</i></li>
-                    <li><i>instrument=inst1</i></li>
-                    <ul>
-                        <li>Instruments are <b>gbm, lat,</b> and <b>bat</b></li>
-                    </ul>
-                </ul>
-            </div>
-            <div class="column" style="background-color:#bbb;">
-                <h2>GET Examples</h2>
-                <p>GET BAT coverage from GW event S200316bj:</p>
-                <pre>
-                        <code class="language-json" data-lang="json">
-        import requests
-        import urllib.parse
-        import json
 
-        BASE = 'http://treasuremap.space/api/v0'
-        TARGET = 'grb_moc_file'
-
-        params = {
-            "api_token":"abcdefghijkl",
-            "graceid":"S200316bj",
-            "instrument":"bat"
-        }
-
-        url = "{}/{}?{}".format(BASE, TARGET, urllib.parse.urlencode(params))
-
-        r = requests.get(url = url)
-        moc_data = json.loads(r.text)
-
-            </code>
-            </pre>
+        <div class="card">
+            <div class="card-header" id="doireq_pointing_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#doireq_pointingCollapse" aria-expanded="false" aria-controls="doireq_pointingCollapse">
+                        Pointing DOI Request
+                    </button>
+                </h2>
             </div>
         </div>
-        
-        <!--<button class="collapsible">Glade Catalog</button>
-        <div class="content">
-            <div class="column">
-                <h2>REST API METHOD: GET Instructions</h2>
-                <p>Does take a second when searching based off of coordinates</p>
-                <p><b>Usage</b></p>
-                <p><i>/api/v0/glade?param1=value1&amp;param2=value2…</i></p>
-        
-                <p><b>Parameters</b></p>
-                <ul>
-                    <li><i>name=name1</i></li>
-                    <li><i>ra=ra1</i></li>
-                    <ul><li>must be decimal</li></ul>
-                    <li><i>dec=dec1</i></li>
-                    <ul><li>must be decimal</li></ul>
-                </ul>
+        <div id="doireq_pointingCollapse" class="collapse" aria-labelledby="doireq_pointing_hdr" data-parent="#pointingsCollapse" aria-expanded="false">   
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/doireq_pointing_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="doireqptexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="doireqptex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#doireqptex1" aria-expanded="false" aria-controls="doireqptex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="doireqptex1" class="collapse show" aria-labelledby="doireqptex1hdr" data-parent="#doireqptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/doireq_pointing_example1.html' %}
+                                    </div>
+                                </div>
+                                <div class="card-header" id="doireqptex2hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#doireqptex2" aria-expanded="false" aria-controls="doireqptex2">
+                                            Example 2
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="doireqptex2" class="collapse" aria-labelledby="doireqptex2hdr" data-parent="#doireqptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/doireq_pointing_example2.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="column" style="background-color:#bbb;">
-                <h2>GET Examples</h2>
-                <p>GET top 15 glade catalog entries closest to coordinates:</p>
-                <ul>
-                    <li><i>/api/v0/glade?ra=-123.058502&dec=28.641853</i></li>
-                </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="update_pointing_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#update_pointingCollapse" aria-expanded="false" aria-controls="update_pointingCollapse">
+                        Update Pointing (status: planned -> cancelled)
+                    </button>
+                </h2>
             </div>
-        </div>-->
+        </div>
+        <div id="update_pointingCollapse" class="collapse" aria-labelledby="update_pointing_hdr" data-parent="#pointingsCollapse" aria-expanded="false">   
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/update_pointing_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="updateptexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="updateptex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#updateptex1" aria-expanded="false" aria-controls="updateptex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="updateptex1" class="collapse show" aria-labelledby="updateptex1hdr" data-parent="#updateptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/update_pointing_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="cancelall_pointing_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#cancelall_pointingCollapse" aria-expanded="false" aria-controls="cancelall_pointingCollapse">
+                        Cancel all planned Pointings
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="cancelall_pointingCollapse" class="collapse" aria-labelledby="cancellall_pointing_hdr" data-parent="#pointingsCollapse" aria-expanded="false">   
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/cancelall_pointing_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="cancelallptexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="cancelallptex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#cancelallptex1" aria-expanded="false" aria-controls="cancelallptex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="cancelallptex1" class="collapse show" aria-labelledby="cancelallptex1hdr" data-parent="#cancelallptexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/cancelall_pointing_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <script>
-    var coll = document.getElementsByClassName("collapsible");
-    var i;
-    
-    for (i = 0; i < coll.length; i++) {
-      coll[i].addEventListener("click", function() {
-        this.classList.toggle("active");
-        var content = this.nextElementSibling;
-        if (content.style.display === "block") {
-          content.style.display = "none";
-        } else {
-          content.style.display = "block";
-        }
-      });
-    }
+</div>
+
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
+    <h3 class="text-center">Instruments</h3>
+
+    <div class="accordion" id="instrumentsCollapse">
+        <div class="card">
+            <div class="card-header" id="get_inst_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_instCollapse" aria-expanded="false" aria-controls="get_instCollapse">
+                        GET Instrument
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="get_instCollapse" class="collapse" aria-labelledby="get_inst_hdr" data-parent="#instrumentsCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/get_instruments_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="getinstexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getinstex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getinstex1" aria-expanded="false" aria-controls="getinstex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getinstex1" class="collapse show" aria-labelledby="getinstex1hdr" data-parent="#getinstexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_instruments_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="get_foot_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_footCollapse" aria-expanded="false" aria-controls="get_footCollapse">
+                        GET Footprint
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="get_footCollapse" class="collapse" aria-labelledby="get_foot_hdr" data-parent="#instrumentsCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/get_footprints_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="getfootexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getfootex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getfootex1" aria-expanded="false" aria-controls="getfootex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getfootex1" class="collapse show" aria-labelledby="getfootex1hdr" data-parent="#getfootexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_footprints_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
+    <h3 class="text-center">Convolved Galaxies</h3>
+
+    <div class="accordion" id="convgalCollapse">
+        <div class="card">
+            <div class="card-header" id="get_convgal_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_convgalCollapse" aria-expanded="false" aria-controls="get_convgalCollapse">
+                        GET Convolved Galaxies
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="get_convgalCollapse" class="collapse" aria-labelledby="get_convgal_hdr" data-parent="#convgalCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/get_convgal_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="getconvgalexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getconvgalex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getconvgalex1" aria-expanded="false" aria-controls="getconvgalex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getconvgalex1" class="collapse show" aria-labelledby="getconvgalex1hdr" data-parent="#getconvgalexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_convgal_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="post_convgal_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#post_convgalCollapse" aria-expanded="false" aria-controls="post_convgalCollapse">
+                        POST Convolved Galaxies
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="post_convgalCollapse" class="collapse" aria-labelledby="post_convgal_hdr" data-parent="#convgalCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/post_convgal_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="postconvgalexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="postconvgalex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#postconvgalex1" aria-expanded="false" aria-controls="postconvgalex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="postconvgalex1" class="collapse show" aria-labelledby="postconvgalex1hdr" data-parent="#postconvgalexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/post_convgal_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="del_convgal_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#del_convgalCollapse" aria-expanded="false" aria-controls="del_convgalCollapse">
+                        DELETE Convolved Galaxies
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="del_convgalCollapse" class="collapse" aria-labelledby="del_convgal_hdr" data-parent="#convgalCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/del_convgal_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="delconvgalexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="delconvgalex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#delconvgalex1" aria-expanded="false" aria-controls="delconvgalex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="delconvgalex1" class="collapse show" aria-labelledby="delconvgalex1hdr" data-parent="#delconvgalexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/del_convgal_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
+    <h3 class="text-center">GRB Multi-Order Coverage (MOC) Maps</h3>
+
+    <div class="accordion" id="grbmocCollapse">
+        <div class="card">
+            <div class="card-header" id="get_grbmoc_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_grbmocCollapse" aria-expanded="false" aria-controls="get_grbmocCollapse">
+                        GET MOC File
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="get_grbmocCollapse" class="collapse" aria-labelledby="get_grbmoc_hdr" data-parent="#grbmocCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/get_grbmoc_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="getgrbmocexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getgrbmocex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getgrbmocex1" aria-expanded="false" aria-controls="getgrbmocex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getgrbmocex1" class="collapse show" aria-labelledby="getgrbmocex1hdr" data-parent="#getgrbmocexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_grbmoc_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+</div>
+
+    <script type="text/javascript">
+        window.onload = function(){
+            var code_eles = document.getElementsByClassName('python_code');
+            for (i = 0; i < code_eles.length; i++) {
+                var codeElement = code_eles[i];
+                // Add code mirror class for coloring (default is the theme)
+                codeElement.classList.add( 'cm-s-default' );
+                var code = codeElement.innerText;
+
+                codeElement.innerHTML = "";
+
+                CodeMirror.runMode(
+                    code,
+                    'python',
+                    codeElement
+                );
+            }
+            
+        };
     </script>
     
     </body>

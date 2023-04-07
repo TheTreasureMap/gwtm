@@ -1,0 +1,25 @@
+<h2>Python Example</h2>
+<p>
+    An example of cancelling a list of pointings based on their ids
+</p>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "update_pointings"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "ids":[42,43,44,45],
+    "status":"cancelled"
+}
+
+url = "{}/{}".format(BASE, TARGET)
+
+r = requests.post(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

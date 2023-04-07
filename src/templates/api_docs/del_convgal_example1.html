@@ -1,0 +1,21 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "http://treasuremap.space/api/v0"
+TARGET = "remove_event_galaxies"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "listid":"listid1"
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.post(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

@@ -54,6 +54,7 @@ def internal_error(error):
 @app.route("/index", methods=["GET"])
 @app.route("/", methods=["GET"])
 def home():
+	models.useractions.write_action(request=request, current_user=current_user)
 	#get latest alert. Construct the form alertsform
 
 	#fix this by ingesting LAT pointings in the pointings DB
@@ -107,19 +108,22 @@ def home():
 	gids = [x for x in gids if x not in rets]
 	graceid = gids[0]
 
-	status = request.args.get('pointing_status')
-	status = status if status is not None else 'completed'
+	#status = request.args.get('pointing_status')
+	#status = status if status is not None else 'completed'
 
-	alerttype = request.args.get('alert_type')
-	args = {'graceid':'GW190425', 'pointing_status':status, 'alert_type':alerttype}
-	form = forms.AlertsForm
-	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = form.construct_alertform(form, args)
-	form.page = 'index'
-	return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
+	#alerttype = request.args.get('alert_type')
+	#args = {'graceid':'GW190425', 'pointing_status':status, 'alert_type':alerttype}
+	#form = forms.AlertsForm
+	#form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = form.construct_alertform(form, args)
+	#form.page = 'index'
 
+	#return render_template("index.html", form=form, inst_table=inst_info, detection_overlays=detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
+
+	return render_template("index.html")
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
+	models.useractions.write_action(request=request, current_user=current_user)
 
 	selected_observing_run = request.args.get('observing_run') 
 	selected_role = request.args.get('role')
@@ -215,6 +219,7 @@ def alert_select():
 
 @app.route("/alerts", methods=['GET', 'POST'])
 def alerts():
+	models.useractions.write_action(request=request, current_user=current_user)
 	graceid = request.args.get('graceids')
 	status = request.args.get('pointing_status')
 	status = status if status is not None else 'completed'
@@ -232,30 +237,36 @@ def alerts():
 
 @app.route("/fairuse", methods=['GET'])
 def fairuse():
+	models.useractions.write_action(request=request, current_user=current_user)
 	return render_template('fairuse.html')
 
 @app.route("/status", methods=['GET'])
 def status():
+	models.useractions.write_action(request=request, current_user=current_user)
 	return render_template('status.html')
 
 
 @app.route("/documentation", methods=['GET'])
 def documentation():
+	models.useractions.write_action(request=request, current_user=current_user)
 	return render_template('documentation.html')
 
 
 @app.route("/jupyter_tutorial", methods=['GET'])
 def jupyter():
+	models.useractions.write_action(request=request, current_user=current_user)
 	return render_template('jupyter_tutorial.html')
 
 
 @app.route("/development_blog", methods=['GET'])
 def devblog():
+	models.useractions.write_action(request=request, current_user=current_user)
 	return render_template('development_blog.html')
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+	models.useractions.write_action(request=request, current_user=current_user)
 	if current_user.is_authenticated:
 		return redirect('/index')
 	form = forms.RegistrationForm()
@@ -282,6 +293,7 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+	models.useractions.write_action(request=request, current_user=current_user)
 	verification_key = request.args.get("verification_key")
 	form = forms.LoginForm()
 
@@ -319,6 +331,7 @@ def login():
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
+	models.useractions.write_action(request=request, current_user=current_user)
 	token = request.args.get('token')
 	if current_user.is_authenticated:
 		return redirect(url_for('index'))
@@ -336,6 +349,7 @@ def reset_password():
 
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
+	models.useractions.write_action(request=request, current_user=current_user)
 	if current_user.is_authenticated:
 		return redirect(url_for('index'))
 	form = forms.ResetPasswordRequestForm()
@@ -354,20 +368,18 @@ def reset_password_request():
 @app.route('/manage_user', methods=['GET', 'POST'])
 @login_required
 def manage_user():
+	models.useractions.write_action(request=request, current_user=current_user)
 	userid = int(current_user.get_id())
 
 	form = forms.ManageUserForm()
 	form.construct_form(userid=userid)
-
-	print(form.user.username)
-	print(form.user.id)
-	print(form.admin)
 
 	return render_template('manage_user.html', form=form)
 
 
 @app.route('/search_pointings', methods=['GET', 'POST'])
 def search_pointings():
+	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SearchPointingsForm()
 	form.populate_graceids()
 	form.populate_creator_groups(current_user.get_id())
@@ -422,6 +434,7 @@ def search_pointings():
 
 @app.route('/search_instruments', methods=['GET', 'POST'])
 def search_instruments():
+	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SearchInstrumentsForm()
 	if request.method == 'POST':
 		if form.types.data != '' and form.types.data != 'all':
@@ -436,6 +449,7 @@ def search_instruments():
 @app.route('/submit_pointings', methods=['GET', 'POST'])
 @login_required
 def submit_pointing():
+	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SubmitPointingForm()
 	form.populate_graceids()
 	form.populate_instruments()
@@ -590,6 +604,7 @@ def submit_pointing():
 @app.route('/submit_instrument', methods=['GET', 'POST'])
 @login_required
 def submit_instrument():
+	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SubmitInstrumentForm()
 
 	insts = db.session.query(
@@ -629,6 +644,7 @@ def submit_instrument():
 
 @app.route('/instrument_info')
 def instrument_info():
+	models.useractions.write_action(request=request, current_user=current_user)
 	instid = request.args.get('id')
 
 	instrument = db.session.query(
@@ -695,6 +711,7 @@ def instrument_info():
 
 @app.route('/doi_author_group', methods=['GET','POST'])
 def doi_author_group():
+	models.useractions.write_action(request=request, current_user=current_user)
 	#I want to be able to edit/and create on the same page
 	#test for the id, if there is one, then load it
 	form = request.form
@@ -782,5 +799,6 @@ def doi_author_group():
 
 @app.route('/logout')
 def logout():
+	models.useractions.write_action(request=request, current_user=current_user)
 	logout_user()
 	return redirect('/index')

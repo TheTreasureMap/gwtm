@@ -9,7 +9,6 @@ import plotly.graph_objects as go
 import requests
 import urllib.parse
 import pandas as pd
-import flask_sqlalchemy as fsq
 import boto3
 import io
 import tempfile
@@ -21,7 +20,7 @@ from celery.result import AsyncResult
 
 from flask import request, jsonify
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from plotly.subplots import make_subplots
 from botocore.exceptions import ClientError
 
@@ -74,7 +73,7 @@ def ajax_alertinstruments_footprints():
 		ors = []
 		ors.append(models.pointing.status == enums.pointing_status.completed)
 		ors.append(models.pointing.status == enums.pointing_status.planned)
-		pointing_filter.append(fsq.sqlalchemy.or_(*ors))
+		pointing_filter.append(or_(*ors))
 	elif (pointing_status is not None and pointing_status != 'all' and pointing_status != ''):
 		pointing_filter.append(models.pointing.status == pointing_status)
 
@@ -97,13 +96,10 @@ def ajax_alertinstruments_footprints():
 
 	temp_overlays = cache.get(cache_key)
 
-	print('chedcking overlays')
 	if  temp_overlays:
-		print('they exist')
 		inst_overlays = temp_overlays
 
 	else:
-		print('do not exist')
 		instrumentids = [x.instrumentid for x in pointing_info]
 
 		instrumentinfo = db.session.query(
@@ -674,6 +670,7 @@ def plot_prob_coverage():
 
 	return coverage_div
 
+
 @app.route('/prob_calc_results/<result_id>', methods=['GET'])
 def get_calc_result(result_id):
 	result = AsyncResult(result_id, app=celery)
@@ -784,7 +781,8 @@ def spectral_range_from_selected_bands():
 	spec_high = args.get('spec_range_high')
 
 	print(spec_high, spec_low)
-	if band_cov:
+	print(band_cov, type(band_cov))
+	if band_cov != '' and band_cov != 'null':
 		bands = band_cov.split(',')
 		
 		mins, maxs = [], []

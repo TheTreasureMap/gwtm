@@ -1,0 +1,28 @@
+<h2>REST API METHOD: POST Instructions</h2>
+<p>Requesting a Batch DOI for completed pointings</p>
+<p><b>Usage</b></p>
+<p><i>/api/v0/request_doi</i></p>
+
+<p><b>Notes</b></p>
+<p>This endpoint will ideally be utilized as an <i>end of the night</i> routine as you are uploading your completed pointings as they are taken in real time</p>
+<p>You will request your DOI Url from a list of completed pointings, or just a GW Event GraceID for completed pointings that do not have a DOI yet.</p>
+<p>This endpoint will validate:</p>
+<ul>
+    <li>whether the pointings have a status completed</li>
+    <li>whether the pointings were submitted by the user associated with the api_token</li>
+    <li>whether the pointings were taken for the same GW event. They must be associated with the same graceid</li>
+</ul>
+<p>JSON Parameters</p>
+<ul>
+    <li><i>graceid=graceid1</i></li>
+    <li><i>api_token=api_token1</i></li>
+    <ul><li>this will ensure only your completed pointings are queried</li></ul>
+    <li><i>creators=json list of creator objects</i></li>
+    <ul><li>json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li><li>also accepts <i>orcid</i> and <i>gnd</i> for each creator</li></ul>
+    <li><i>doi_group_id=groupid1</i></li>
+    <ul><li>if you have created a doi author list through the website, you just reference its name or id here to link to the list</li></ul>
+    <li><i>doi_url=doi_url1</i></li>
+    <ul><li>if you have an existing DOI url (I.E. publication URL) it will associate the pointings to that</li></ul>
+    <li><i>ids=[id1, id2, id3....]</i></li>
+    <ul><li>List of INTs</li></ul>
+</ul>

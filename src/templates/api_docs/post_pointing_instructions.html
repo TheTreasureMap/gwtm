@@ -1,0 +1,130 @@
+<h2>Instructions</h2>
+<p><b>USAGE:</b></p>
+<p><i>/api/v0/pointings</i></p>
+
+<p><i>Notes</i></p>
+<ul>
+    <li>Upon successful entry, you will be returned a list of pointing ids</li>
+    <li>Warnings will be successfully entered, and will notify you of the warning and json object</li>
+    <li>Errors will not be successfully entered, and will notify you of the error and json object</li>
+</ul>
+
+<p><b>JSON Parameters</b></p>
+<ul>
+    <li><i>graceid</i> - string value of the gw_alert graceid</li>
+    <li><i>api_token</i> -  authentication api token</li>
+    <li><i>pointings</i> - list of JSON objects for valid pointing class</li>
+    <li><i>request_doi</i> - [default=false] to request a Digital Object Identifier. <b>This is only valid for posting completed pointing observations</b></li>
+    <li><i>doi_url</i> - associate the submitted pointings to an already existing DOI (I.E. a URL to a Publication). <b>creators and doi_group_id are not needed for this</b></li>
+    <li><i>creators</i> - json list of names and affiliations for authors in the DOI. Not required, will default to the user's information associated with the api_token</li>
+    <li><i>doi_group_id</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
+</ul>
+
+<h3>Valid <b>pointing</b> class parameters</h3>
+<p><b>If you are posting a PLANNED pointing Observation</b></p>
+<p><b>REQUIRED</b></p>
+<ul>
+    <li><i>position</i>: two acceptable formats</li>
+    <ul>
+        <li>geometry type: <b>POINT(RA DEC)</b></li>
+        <li>simply pass two json fields that are <b>RA</b> and <b>DEC</b> which must be <b>decimal</b></li>
+    </ul>
+    <li><i>instrumentid</i></li>
+    <ul>
+        <li>Can be <b>ID</b> or <b>name</b> of valid instrument</li>
+    </ul>
+    <li><i>time</i></li>
+    <ul>
+        <li><b>Mid-point time</b> of <b>planned</b>/<b>completed</b> pointing</li>
+        <li>Must be <b>%Y-%m-%dT%H:%M:%S</b> format; e.g. 1991-12-23T19:15:11</li>
+    </ul>
+    <li><i>status</i>=completed</li>
+    <ul>
+        <li>planned<li></li>
+    </ul>
+    <li><i>depth</i></li>
+    <ul>
+        <li>5-sigma limiting flux of exposure <b>decimal</b></li>
+    </ul>
+    <li><i>depth_unit</i></li>
+    <ul>
+        <li>units for depth. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
+    </ul>
+    <br>
+    <li><b>Bandpass Information:</b> is required can be passed in by stating the band, or the range of wavelengths, energies, or frequencies the pointing covers. If your pointing is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
+    <ul>
+        <li><b>Method 1:</b> Bandpass List</li>
+        <ul>
+            <li><i>band</i></li>
+            <ul>
+                <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+            </ul>
+        </ul>
+        <li><b>Method 2</b>: Central Wavelength and Bandwidth</li>
+        <ul>
+            <li><i>central_wave</i></li>
+            <li><i>bandwidth</i></li>
+            <ul><li>both must be floats</li></ul>
+        </ul>
+        <li><b>Method 3</b>: Spectrum Regimes<i> There are 3 ways to submit a spectrum regime for your associated pointing. By stating the wavelength, energy, or frequency regimes along with their associated units</i>
+        <ul>
+            <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
+            <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
+            <br>
+            <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
+            <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
+            <br>
+            <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
+            <li><i>frequency_unit:</i> cvalid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
+        </ul>
+</ul>
+
+<p><b>NOT REQUIRED</b></p>
+<ul>
+    <!--<li><i>galaxy_catalog</i></li>
+    <ul>
+        <li>id of galaxy catalog (glade_2p3 = 1)</li>
+    </ul>
+    <li><i>galaxy_catalogid</i></li>
+    <ul>
+        <li>id of galaxy in the galaxy_catalog</li>
+    </ul>-->
+    <li><i>pos_angle</i></li>
+    <ul>
+        <li>Position angle of telescope exposure</li>
+    </ul>
+    <li>
+        <i>depth_err</i>
+    </li>
+    <ul>
+        <li>(decimal) error in the depth, can be a rough estimation</li>
+    </ul>
+</ul>
+<h3>If you are posting a pointing that has already been COMPLETED</h3>
+<ul>
+    <li>All of the same requirements for a planned pointing are the same EXCEPT pos_angle is now required</li>
+</ul>
+<h3>You can update an already planned pointing to be completed</h3>
+<ul>
+    <li>Inside the valid <b>pointing</b> class you can pass:</li>
+    <ul>
+        <li><i>id</i></li>
+        <ul><li style="font-size: small">can only be for your planned pointings</li></ul>
+        <li><i>time</i></li>
+        <li><i>status</i></li>
+        <li><i>pos_angle</i></li>
+        <li><i>depth</i> and <i>depth_err</i></li>
+        <ul><li style="font-size: small">If those values are to be updated</li></ul>
+    </ul>
+</ul>
+<h3>To request a DOI</h3>
+<h5><i>(Only for completed pointings)</i></h5>
+<ul>
+    <li>You must pass in fields:</li>
+    <ul>
+        <li><i>request_doi=true</i></li>
+        <li><i>doi_url=my_doi_url.com</i></li>
+        <p>OR to request through Zenodo</p>
+        <li><i>creators=[{'name':'name1', 'affiliation':'affiliation1'}]</i></li>
+    </ul>
+</ul>
