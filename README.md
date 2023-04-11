@@ -94,6 +94,6 @@ Now, log into the Amazon dashboard and navigate to the ECS (Elastic Container Se
 Find the Tasks Definitions section and create a new revision of gwtm_web. Leave
 all the values as they are, unless there is something specific about the deployment that you want to change.
 
-Once the new task is created, go the gwtmweb (service definition)[https://us-east-2.console.aws.amazon.com/ecs/v2/clusters/default/services/gwtmweb/edit?region=us-east-2]
+Once the new task is created, go the gwtmweb [service definition](https://us-east-2.console.aws.amazon.com/ecs/v2/clusters/default/services/gwtmweb/edit?region=us-east-2)
 and edit it, changing the revision of the task to the latest one (the one we just created).
 After clicking update, the service should pull the new image and deploy the new version of the code.
