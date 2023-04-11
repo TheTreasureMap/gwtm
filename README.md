@@ -1,4 +1,5 @@
-# GW Treasure Map
+# GW Treasure Map 
+Website environment
 
 ## Requirements
 
@@ -6,21 +7,10 @@
  * Python Version > 3.6.8
 ### Python Libraries
 (that you will probably have to `pip3 install`)
- * flask-sqlalchemy
- * flask_login
- * flask_wtf
- * flask_mail
- * pyjwt
- * ephem
- * psycopg2
- * geoalchemy2
- * shapely
- * pygcn
- * plotly
- * healpy
 
-   this should install astropy, scipy, matplotlib... etc
-   if not astropy is required
+```
+python -m pip install -r requirements.txt
+```
 
 
 
@@ -36,6 +26,7 @@ present:
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
     REDIS_URL
+    ...
 
 See [gwtmconfig.py](src/gwtmconfig.py) for other configration options and defaults for other values.
 
