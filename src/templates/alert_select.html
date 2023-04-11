@@ -47,7 +47,11 @@
             <tr>
               <td><a href="/alerts?graceids={{ a }}">{{ a }}</a></td>
               <td>{{ alerts[a]['class'] }}</td>
-              <td>{{ alerts[a]['distance'] }}</td>
+              {% if alerts[a]['distance'][0] == '-'%}
+                <td> NA </td>
+              {% else %}
+                <td>{{ alerts[a]['distance'] }}</td>
+              {% endif %}
               <td>{{ alerts[a]['pcounts'] }}</td>
             </tr>
           {% endfor %}
