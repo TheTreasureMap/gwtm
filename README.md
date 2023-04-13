@@ -1,4 +1,5 @@
-# GW Treasure Map
+# GW Treasure Map 
+Website environment
 
 ## Requirements
 
@@ -6,21 +7,10 @@
  * Python Version > 3.6.8
 ### Python Libraries
 (that you will probably have to `pip3 install`)
- * flask-sqlalchemy
- * flask_login
- * flask_wtf
- * flask_mail
- * pyjwt
- * ephem
- * psycopg2
- * geoalchemy2
- * shapely
- * pygcn
- * plotly
- * healpy
 
-   this should install astropy, scipy, matplotlib... etc
-   if not astropy is required
+```
+python -m pip install -r requirements.txt
+```
 
 
 
@@ -36,6 +26,7 @@ present:
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
     REDIS_URL
+    ...
 
 See [gwtmconfig.py](src/gwtmconfig.py) for other configration options and defaults for other values.
 
@@ -103,6 +94,6 @@ Now, log into the Amazon dashboard and navigate to the ECS (Elastic Container Se
 Find the Tasks Definitions section and create a new revision of gwtm_web. Leave
 all the values as they are, unless there is something specific about the deployment that you want to change.
 
-Once the new task is created, go the gwtmweb (service definition)[https://us-east-2.console.aws.amazon.com/ecs/v2/clusters/default/services/gwtmweb/edit?region=us-east-2]
+Once the new task is created, go the gwtmweb [service definition](https://us-east-2.console.aws.amazon.com/ecs/v2/clusters/default/services/gwtmweb/edit?region=us-east-2)
 and edit it, changing the revision of the task to the latest one (the one we just created).
 After clicking update, the service should pull the new image and deploy the new version of the code.
