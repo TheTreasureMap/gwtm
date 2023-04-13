@@ -3,7 +3,7 @@
 	<meta charset="utf-8">
 	<title>Treasure Map</title>
   <link rel="icon" type="image/x-icon" href="/static/gwtm_logo.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width">
 
   <!--Jquery UI (needs to be before bootstrap)-->
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
@@ -156,7 +156,7 @@
 -->
 
 
-<div class="container">
+<div class="container-lg">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
           {% for message in messages %}

@@ -43,6 +43,14 @@ def initial_request_parse(request, only_json=False):
 
 	return True, '', args, user
 
+
+def make_response(response_message, status_code):
+	response = app.response_class(response=response_message,
+                                  status=status_code,
+                                  mimetype='application/json')
+	return response
+
+
 #API Endpoints
 
 #Get instrument footprints
@@ -329,7 +337,7 @@ def add_pointings():
 	valid, message, args, user = initial_request_parse(request=request, only_json=True)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 
 	valid_gid = False
 	post_doi = False
@@ -345,9 +353,9 @@ def add_pointings():
 		if len(current_gids) > 0:
 			valid_gid = True
 		else:
-			return jsonify("Invalid graceid")
+			return make_response("Invalid graceid", 500)
 	else:
-		return jsonify("graceid is required")
+		return make_response("graceid is required", 500)
 	
 	if 'request_doi' in args:
 		post_doi = bool(args['request_doi'])
@@ -355,17 +363,16 @@ def add_pointings():
 			creators = args['creators']
 			for c in creators:
 				if 'name' not in c.keys() or 'affiliation' not in c.keys():
-					return jsonify('name and affiliation are required for DOI creators json list')
+					return make_response('name and affiliation are required for DOI creators json list', 500)
 		elif 'doi_group_id' in args:
 				valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 				if not valid:
-					return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
+					return make_response("Invalid doi_group_id. Make sure you are the User associated with the DOI group", 500)
 		else:
 			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
 	dbinsts = db.session.query(models.instrument.instrument_name,
 							   models.instrument.id).all()
-
 
 	filter = [models.pointing.submitterid == user.id]
 
@@ -409,7 +416,7 @@ def add_pointings():
 			else:
 				errors.append(["Object: "+json.dumps(p), v.errors])
 	else:
-		return jsonify("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: treasuremap.space/documentation.com")
+		return make_response("Invalid request: json pointing or json list of pointings are required\nYou can find API documentation here: treasuremap.space/documentation.com", 500)
 
 	db.session.flush()
 
@@ -441,10 +448,11 @@ def add_pointings():
 			db.session.flush()
 			db.session.commit()
 
-			return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings, "DOI":doi_url})
+			response_message = json.dumps({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings, "DOI":doi_url})
+			return make_response(response_message, 200)
 
-
-	return jsonify({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
+	response_message = json.dumps({"pointing_ids":[x.id for x in points], "ERRORS":errors, "WARNINGS":warnings})
+	return make_response(response_message, 200)
 
 
 #Get Pointing/s
@@ -456,7 +464,9 @@ def get_pointings():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return app.response_class(response=message,
+                                  status=500,
+                                  mimetype='application/json')
 	
 	filter=[]
 
@@ -465,50 +475,97 @@ def get_pointings():
 		graceid = models.gw_alert.graceidfromalternate(graceid)
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
-	elif 'graceids' in args:
-		gids_s = args.get('graceids')
-		gids = str(gids_s).split('[')[1].split(']')[0].split(',')
-		filter.append(models.pointing_event.graceid.in_(gids))
-		filter.append(models.pointing_event.pointingid == models.pointing.id)
+
+	if 'graceids' in args:
+		argname = "graceids"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[graceid1, graceid2...]\'', 500)
+		if isinstance(arg, list):
+			gids = []
+			for g in arg:
+				gids.append(models.gw_alert.graceidfromalternate(g))
+			filter.append(models.pointing_event.graceid.in_(gids))
+			filter.append(models.pointing_event.pointingid == models.pointing.id)
+		else:
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[graceid1, graceid2...]\'', 500)
 
 	if "id" in args:
 		_id = args.get('id')
-		filter.append(models.pointing.id == int(_id))
-	elif "ids" in args:
-		ids = json.loads(args.get('ids'))
-		filter.append(models.pointing.id.in_(ids))
+		if str(_id).isdigit():
+			filter.append(models.pointing.id == int(_id))
+	if "ids" in args:
+		argname = "ids"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
+		if isinstance(arg, list):
+			ids = []
+			for i in arg:
+				if str(i).isdigit():
+					ids.append(int(i))
+			filter.append(models.pointing.id.in_(ids))
 
 	if "band" in args:
 		band = args.get('band')
-		filter.append(models.pointing.band == band)
-	elif "bands" in args:
-		bands_sent = args.get('bands')
-		bands = []
 		for b in enums.bandpass:
-			if b.name in bands_sent:
-				bands.append(b)
-		filter.append(models.pointing.band.in_(bands))
+			if b.name == band:
+				filter.append(models.pointing.band == b)
+	elif "bands" in args:
+		argname = "bands"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[band1, band2...]\'', 500)
+		if isinstance(arg, list):
+			bands = []
+			for b in enums.bandpass:
+				if b.name in arg:
+					bands.append(b)
+			filter.append(models.pointing.band.in_(bands))
 
 	if "status" in args:
 		status = args.get('status')
-		filter.append(models.pointing.status == status)
-	elif "statuses" in args:
-		statuses = []
-		statuses_sent = args.get('statuses')
-		if "planned" in statuses_sent:
-			statuses.append(enums.pointing_status.planned)
-		if "completed" in statuses_sent:
-			statuses.append(enums.pointing_status.completed)
-		if "cancelled" in statuses_sent:
-			statuses.append(enums.pointing_status.cancelled)
-		filter.append(models.pointing.status.in_(statuses))
+		if "planned" in status:
+			filter.append(models.pointing.status == enums.pointing_status.planned)
+		elif "completed" in status:
+			filter.append(models.pointing.status == enums.pointing_status.completed)
+		elif "cancelled" in status:
+			filter.append(models.pointing.status == enums.pointing_status.cancelled)
+		else:
+			return make_response(f"Invalid status: f{status}. Only 'completed', 'planned', and 'cancelled'", 500)
+	if "statuses" in args:
+		argname = "statuses"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[status1, status2]\'', 500)
+		if isinstance(arg, list):
+			statuses = []
+			if "planned" in arg:
+				statuses.append(enums.pointing_status.planned)
+			if "completed" in arg:
+				statuses.append(enums.pointing_status.completed)
+			if "cancelled" in arg:
+				statuses.append(enums.pointing_status.cancelled)
+			filter.append(models.pointing.status.in_(statuses))
 
 	if "completed_after" in args:
 		time = args.get('completed_after')
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.completed)
 		filter.append(models.pointing.time >= time)
 
@@ -517,7 +574,7 @@ def get_pointings():
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.completed)
 		filter.append(models.pointing.time <= time)
 
@@ -526,7 +583,7 @@ def get_pointings():
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.planned)
 		filter.append(models.pointing.time >= time)
 
@@ -535,36 +592,9 @@ def get_pointings():
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.planned)
 		filter.append(models.pointing.time <= time)
-
-	if "group" in args:
-		group = args.get('group')
-		if group.isdigit():
-			filter.append(models.usergroups.groupid == group)
-		else:
-			filter.append(models.groups.name.contains(group))
-			filter.append(models.usergroups.groupid == models.groups.id)
-
-		filter.append(models.usergroups.userid == models.users.id)
-		filter.append(models.users.id == models.pointing.submitterid)
-
-	elif "groups" in args:
-		try:
-			groups = json.loads(args.get('groups'))
-			filter.append(models.usergroups.groupid.in_(groups))
-		except:
-			groups = args.get('groups')
-			groups = str(groups).split('[')[1].split(']')[0].split(',')
-			ors = []
-			print(groups)
-			for g in groups:
-				ors.append(models.groups.name.contains(g.strip()))
-			filter.append(or_(*ors))
-			filter.append(models.usergroups.groupid == models.groups.id)
-		filter.append(models.usergroups.userid == models.users.id)
-		filter.append(models.users.id == models.pointing.submitterid)
 
 	if "user" in args:
 		user = args.get('user')
@@ -577,20 +607,26 @@ def get_pointings():
 			filter.append(models.users.id == models.pointing.submitterid)
 
 	if "users" in args:
-		try:
-			users = json.loads(args.get('users'))
-			filter.append(models.pointing.submitterid.in_(users))
-		except:
-			users = args.get('users')
-			users = str(users).split('[')[1].split(']')[0].split(',')
+		argname = "users"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2..]\'', 500)
+		if isinstance(arg, list):
 			ors = []
-			for u in users:
-				ors.append(models.users.username.contains(u.strip()))
-				ors.append(models.users.firstname.contains(u.strip()))
-				ors.append(models.users.lastname.contains(u.strip()))
+			for i in arg:
+				ors.append(models.users.username.contains(str(i).strip()))
+				ors.append(models.users.firstname.contains(str(i).strip()))
+				ors.append(models.users.lastname.contains(str(i).strip()))
+				if function.isInt(i):
+					ors.append(models.pointing.submitterid  == i)
 			filter.append(or_(*ors))
 			filter.append(models.users.id == models.pointing.submitterid)
-
+		else:
+			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2, ..]\'', 500)
+		
 	if "instrument" in args:
 		inst = args.get('instrument')
 		if inst.isdigit():
@@ -600,29 +636,44 @@ def get_pointings():
 			filter.append(models.instrument.instrument_name.contains(inst))
 
 	if "instruments" in args:
-		try:
-			insts = json.loads(args.get('instruments'))
-			filter.append(models.pointing.instrumentid.in_(insts))
-		except:
-			insts = args.get('instruments')
-			insts = str(insts).split('[')[1].split(']')[0].split(',')
+		argname = "instruments"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
+		if isinstance(arg, list):
 			ors = []
-			for i in insts:
-				ors.append(models.instrument.instrument_name.contains(i.strip()))
+			for i in arg:
+				ors.append(models.instrument.instrument_name.contains(str(i).strip()))
+				ors.append(models.instrument.nickname.contains(str(i).strip()))
+				if function.isInt(i):
+					ors.append(models.pointing.instrumentid  == i)
 			filter.append(or_(*ors))
 			filter.append(models.instrument.id == models.pointing.instrumentid)
+		else:
+			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
 
 	if 'wavelength_regime' in args and 'wavelength_unit' in args:
+		argname = "wavelength_regime"
+		arg = args.get(argname)
 		try:
-			spectral_range = str(args['wavelength_regime']).split('[')[1].split(']')[0].split(',')
-			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+			if isinstance(arg, str):
+				try:
+					arg = str(arg).split('[')[1].split(']')[0].split(',')
+				except:
+					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			if isinstance(arg, list):
+				specmin, specmax = float(arg[0]), float(arg[1])
 		except:
-			return jsonify('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
+			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+		
 		try:
 			user_unit = args['wavelength_unit']
 			spectral_unit = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
 		except:
-			return jsonify('wavelength_unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
+			return make_response('wavelength_unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'', 500)
 		scale = enums.wavelength_units.get_scale(spectral_unit)
 		specmin = specmin*scale
 		specmax = specmax*scale
@@ -630,16 +681,24 @@ def get_pointings():
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.wavelength))
 	
 	if 'frequency_regime' in args and 'frequency_unit' in args:
+		argname = "frequency_regime"
+		arg = args.get(argname)
 		try:
-			spectral_range = str(args['frequency_regime']).split('[')[1].split(']')[0].split(',')
-			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+			if isinstance(arg, str):
+				try:
+					arg = str(arg).split('[')[1].split(']')[0].split(',')
+				except:
+					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			if isinstance(arg, list):
+				print(arg)
+				specmin, specmax = float(arg[0]), float(arg[1])
 		except:
-			return jsonify('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
+			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['frequency_unit']
 			spectral_unit = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
 		except:
-			return jsonify('frequency_unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+			return make_response('frequency_unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'', 500)
 		scale = enums.frequency_units.get_scale(spectral_unit)
 		specmin = specmin*scale
 		specmax = specmax*scale
@@ -648,16 +707,24 @@ def get_pointings():
 	
 
 	if 'energy_regime' in args and 'energy_unit' in args:
+		argname = "energy_regime"
+		arg = args.get(argname)
 		try:
-			spectral_range = str(args['energy_regime']).split('[')[1].split(']')[0].split(',')
-			specmin, specmax = float(spectral_range[0]), float(spectral_range[1])
+			if isinstance(arg, str):
+				try:
+					arg = str(arg).split('[')[1].split(']')[0].split(',')
+				except:
+					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			if isinstance(arg, list):
+				print(arg)
+				specmin, specmax = float(arg[0]), float(arg[1])
 		except:
-			return jsonify('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
+			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['energy_unit']
 			spectral_unit = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
 		except:
-			return jsonify('energy_unit is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
+			return make_response('energy_unit is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'', 500)
 		scale = enums.energy_units.get_scale(spectral_unit)
 		specmin = specmin*scale
 		specmax = specmax*scale
@@ -667,7 +734,7 @@ def get_pointings():
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.json for x in pointings]
 
-	return jsonify(pointings)
+	return make_response(json.dumps(pointings), 200)
 
 
 @app.route("/api/v0/request_doi", methods=['POST'])
