@@ -687,3 +687,29 @@ def validate_authors(authors):
 		if a.affiliation is None or a.affiliation == "":
 			return False, "Affiliation is required"
 	return True, ''
+
+
+def by_chunk(items, chunk_size=1000):
+    """
+    Separate iterable objects by chunks
+
+    For example:
+    >>> by_chunk([1, 2, 3, 4, 5], chunk_size=2)
+    >>> [[1, 2], [3, 4], [5]]
+
+    Parameters
+    ----------
+    chunk_size: int
+    items: Iterable
+
+    Returns
+    -------
+    List
+    """
+    bucket = []
+    for item in items:
+        if len(bucket) >= chunk_size:
+            yield bucket
+            bucket = []
+        bucket.append(item)
+    yield bucket

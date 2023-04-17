@@ -1036,6 +1036,90 @@ def query_alerts():
 	return jsonify(alerts)
 
 
+@app.route('/api/v0/del_test_alerts', methods=['POST'])
+def del_test_alerts():
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(response_message=message, status_code=500)
+	
+	if user.id not in [2]:
+		return make_response("Only admin can access this endpoint", 500)
+	
+	filter = []
+	testids = []
+	for td in [-1, 0, 1]:
+		dd = datetime.datetime.now() + datetime.timedelta(days=td)
+		yy = str(dd.year)[2:4]
+		mm = dd.month if dd.month >= 10 else f"0{dd.month}"
+		dd = dd.day if dd.day >= 10 else f"0{dd.day}"
+		graceidlike = f"MS{yy}{mm}{dd}"
+
+		testids.append(graceidlike)
+		filter.append(~models.gw_alert.graceid.contains(graceidlike))
+
+	#filter.append(or_(*ors))
+	filter.append(models.gw_alert.role == 'test')
+
+	#query for all test alerts that aren't like this one
+	gwalerts = db.session.query(models.gw_alert).filter(*filter).all()
+	gids_to_rm = [x.graceid for x in gwalerts]
+
+	#query for pointings and pointing events from graceids
+	pointing_events = db.session.query(models.pointing_event).filter(models.pointing_event.graceid.in_(gids_to_rm)).all()
+	pointing_ids = [x.pointingid for x in pointing_events]
+	pointings = db.session.query(models.pointing).filter(models.pointing.id.in_(pointing_ids)).all()
+
+	#query for galaxy lists and galaxy list entries from graceids
+	galaxylists = db.session.query(models.gw_galaxy_list).filter(models.gw_galaxy_list.graceid.in_(gids_to_rm)).all()
+	galaxylist_ids = [x.id for x in galaxylists]
+	galaxyentries = db.session.query(models.gw_galaxy_entry).filter(models.gw_galaxy_entry.listid.in_(galaxylist_ids)).all()
+
+	if len(galaxyentries) > 0:
+		print(f"deleting {len(galaxyentries)} galaxy entries")
+		for ge in galaxyentries:
+			db.session.delete(ge)
+
+	if len(galaxylists) > 0:
+		print(f"deleting {len(galaxylists)} galaxy lists")
+		for gl in galaxylists:
+			db.session.delete(gl)
+
+	if len(pointings) > 0:
+		print(f"deleting {len(pointings)} pointing")
+		for p in pointings:
+			db.session.delete(p)
+
+	if len(pointing_events) > 0:
+		print(f"deleting {len(pointing_events)} pointing events")
+		for pe in pointing_events:
+			db.session.delete(pe)
+
+	if len(gwalerts) > 0:
+		print(f"deleting {len(gwalerts)} gwalerts")
+		for ga in gwalerts:
+			db.session.delete(ga)
+
+	s3_resource = boto3.resource('s3')
+	bucket = s3_resource.Bucket(config.AWS_BUCKET)
+	objects = bucket.objects.filter(Prefix = 'test/')
+	objects_to_delete = [
+		o.key for o in objects if not any(t in o.key for t in testids) and 'alert.json' not in o.key and o.key != 'test/'
+	]
+
+	if len(objects_to_delete):
+		print(f"deleting {len(objects_to_delete)} from S3")
+		tot = 0
+		for items in function.by_chunk(objects_to_delete, 1000):
+			tot += len(items)
+			print(f"bucket chunk: {tot}/{len(objects_to_delete)}")
+			t = bucket.delete_objects(Bucket=config.AWS_BUCKET, Delete={'Objects': [{'Key': key} for key in items]})
+
+	db.session.commit()
+
+	return make_response('Sucksess', 200)
+
+
 #FIX DATA
 @app.route('/fixdata', methods=['GET'])
 def fixdata():

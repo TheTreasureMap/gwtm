@@ -457,6 +457,7 @@ class useractions(db.Model):
             except:
                 print(f"error in writing user actions: request={request}")
 
+
 class instrument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     instrument_name = db.Column(db.String(25))
@@ -739,6 +740,7 @@ class pointing(db.Model):
             self.central_wave = planned_pointing.central_wave
             self.bandwidth = planned_pointing.bandwidth
             self.instrumentid = planned_pointing.instrumentid
+            self.pos_angle = planned_pointing.pos_angle
 
         if 'status' in p:
             userstatus = p['status']
@@ -839,7 +841,7 @@ class pointing(db.Model):
                 self.pos_angle = p['pos_angle']
             else:        
                 v.errors.append('Invalid pos_angle. Must be decimal')
-        elif self.status == enums.pointing_status.completed:
+        elif self.status == enums.pointing_status.completed and self.pos_angle is not None:
             v.errors.append('pos_angle is required for completed observations')
 
         if 'time' in p:

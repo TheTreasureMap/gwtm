@@ -28,6 +28,12 @@
           {% endfor %}
       </select>
       </p>
+
+      {% if selected_role == 'test' or selected_role == 'all' %}
+        <div>
+          <p><center style="color: red">All ingested test alerts (MS...) are deleted within 48 hours</center></p>
+        </div>
+      {% endif %}
       
       <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>  
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
