@@ -268,27 +268,25 @@ class AlertsForm(FlaskForm):
         graceids = [{'name':'--Select--', 'value':None}]
 
         for g in gwalerts_ids:
-            if g != 'TEST_EVENT':
             #get the alert types for each graceid to test for retractions
-                gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
-                gid_roles = [x.role for x in gwalerts if x.graceid == g]
-                gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
+            gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
+            gid_roles = [x.role for x in gwalerts if x.graceid == g]
+            gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
 
-                alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
-                if len(alternateid):
-                    g = alternateid[0]
+            alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
+            if len(alternateid):
+                g = alternateid[0]
 
-                name_g = g
-                if 'test' in gid_roles:
-                    name_g = f"TEST-{g}"
-                run = gid_runs[0]
-                name_g = f"{run} - {name_g}"
-                if 'Retraction' in gid_types:
-                    graceids.append({'name':name_g + ' -retracted-', 'value':g})
-                else:
-                    graceids.append({'name':name_g, 'value':g})
+            name_g = g
+            if 'test' in gid_roles:
+                name_g = f"TEST-{g}"
+            run = gid_runs[0]
+            name_g = f"{run} - {name_g}"
+            if 'Retraction' in gid_types:
+                graceids.append({'name':name_g + ' -retracted-', 'value':g})
+            else:
+                graceids.append({'name':name_g, 'value':g})
 
-        graceids.append({'name':'TEST_EVENT', 'value':'TEST_EVENT'})
         self.graceids = graceids
 
         #if there is a selected graceid
@@ -304,7 +302,6 @@ class AlertsForm(FlaskForm):
                 graceid = alertsfromalternate[0].graceid
 
             #Here we get the relevant alert type information
-
             alert_info = db.session.query(
                 models.gw_alert
             ).filter(
@@ -313,6 +310,12 @@ class AlertsForm(FlaskForm):
                 models.gw_alert.datecreated.asc()
             ).all()
 
+            detection_overlays = []
+            GRBoverlays = []
+
+            if len(alert_info) == 0:
+                return self, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats
+            
             role = alert_info[0].role
             s3path = 'fit' if role == 'observation' else 'test'
             #if there is a specificly selected usertype
@@ -421,8 +424,6 @@ class AlertsForm(FlaskForm):
             for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit != None])):
                 self.depth_unit.append({'name':str(dp), 'value':dp.name})
 
-            detection_overlays = []
-            GRBoverlays = []
 
             if self.selected_alert_info.time_of_signal:
                 tos = self.selected_alert_info.time_of_signal

@@ -26,7 +26,10 @@
         <a class="btn btn-primary" href="/static/S200219ac_GBM_Event1_skymap.png" download>Download GBM Skymap png file</a>
       {% endif %}
       {% include "alert_info.html" %}
+  {% else %}
+    <center><h3>Event <i style="color: red;">{{ form.graceid }}</i> does not exist</h3></center>
   {% endif %}
+  
   </form>
 </div>
   <body>
