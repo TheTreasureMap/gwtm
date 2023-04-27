@@ -62,6 +62,7 @@ def to_json(inst, cls):
             d[c.name] = v.isoformat()
         else:
             d[c.name] = v
+    #to fix the api do : return d, and json.dumps() in api returns... 
     return json.dumps(d)
 
 
