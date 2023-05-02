@@ -25,3 +25,5 @@ __pycache__
 
 config
 scratch/
+src
+environmental_variables.sh
