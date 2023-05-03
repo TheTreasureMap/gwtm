@@ -54,4 +54,5 @@ cache = Cache(app)
 
 from . import routes
 from . import ajaxrequests
-from . import api
+from . import api_v0
+from . import api_v1
