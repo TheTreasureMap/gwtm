@@ -78,7 +78,7 @@ def get_footprints_v1():
 	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
 	footprints = [x.parse for x in footprints]
 
-	return make_response(footprints, 200)
+	return make_response(json.dumps(footprints), 200)
 
 
 @app.route('/api/v1/remove_event_galaxies', methods=['POST'])
@@ -87,7 +87,7 @@ def remove_event_galaxies_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message, 200)
+		return make_response(message, 500)
 
 	if "listid" in args:
 		listid = args['listid']
@@ -183,9 +183,9 @@ def post_event_galaxies_v1():
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
-			return make_response("invalid api_token")
+			return make_response("invalid api_token", 500)
 	else:
-		return make_response("api_token is required")
+		return make_response("api_token is required", 500)
 
 	models.useractions.write_action(request=request, current_user=user)
 
@@ -193,7 +193,7 @@ def post_event_galaxies_v1():
 		graceid = args['graceid']
 		graceid = models.gw_alert.graceidfromalternate(graceid)
 	else:
-		return make_response('graceid is required')
+		return make_response('graceid is required', 500)
 
 	if "timesent_stamp" in args:
 		timesent_stamp = args['timesent_stamp']
@@ -207,9 +207,9 @@ def post_event_galaxies_v1():
 			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
 			models.gw_alert.graceid == graceid).first()
 		if alert is None:
-			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid))
+			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
 	else:
-		return make_response('timesent_stamp is required')
+		return make_response('timesent_stamp is required', 500)
 
 	if "groupname" in args:
 		groupname = args['groupname']
@@ -227,11 +227,11 @@ def post_event_galaxies_v1():
 			creators = args['creators']
 			for c in creators:
 				if 'name' not in c.keys() or 'affiliation' not in c.keys():
-					return make_response('name and affiliation are required for DOI creators json list')
+					return make_response('name and affiliation are required for DOI creators json list', 500)
 		elif 'doi_group_id' in args:
 				valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 				if not valid:
-					return make_response("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
+					return make_response("Invalid doi_group_id. Make sure you are the User associated with the DOI group", 500)
 		else:
 			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
@@ -264,7 +264,7 @@ def post_event_galaxies_v1():
 				errors.append(["Object: "+json.dumps(g), v.errors])
 
 	else:
-		return make_response("a list of galaxies is required")
+		return make_response("a list of galaxies is required", 500)
 
 	doi_string = '. '
 
@@ -283,9 +283,9 @@ def post_event_galaxies_v1():
 			db.session.flush()
 			db.session.commit()
 
-	return make_response({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+doi_string+" List ID" :str(gw_galist.id),
+	return make_response(json.dumps({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+doi_string+" List ID" :str(gw_galist.id),
 					"ERRORS":errors,
-					"WARNINGS":warnings})
+					"WARNINGS":warnings}), 200)
 
 
 @app.route("/api/v1/glade", methods=['GET'])
@@ -323,7 +323,7 @@ def get_galaxies_v1():
 
 	galaxies = [x.parse for x in galaxies]
 
-	return make_response(galaxies)
+	return make_response(json.dumps(galaxies), 200)
 
 
 #Post Pointing/s
