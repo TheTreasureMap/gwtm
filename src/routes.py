@@ -59,54 +59,54 @@ def home():
 
 	#fix this by ingesting LAT pointings in the pointings DB
 	# TODO: Fermi count should be cached
-	s3 = boto3.client('s3')
-	response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
-	if response['IsTruncated']:
-		print('WARNING: More than 1000 objects in bucket. Implement pagination.')
-	if len(response['Contents']) < 1:
-		fermi_events = 0
-	else:
-		fermi_events = len([x for x in response['Contents'] if 'Fermi' in x['Key']])
+	#s3 = boto3.client('s3')
+	#response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
+	#if response['IsTruncated']:
+	#	print('WARNING: More than 1000 objects in bucket. Implement pagination.')
+	#if len(response['Contents']) < 1:
+	#	fermi_events = 0
+	#else:
+	#	fermi_events = len([x for x in response['Contents'] if 'Fermi' in x['Key']])
 
-	inst_info = db.session.query(
-		models.pointing,
-		models.instrument
-	).group_by(
-		models.pointing.instrumentid,
-		models.instrument
-	).filter(
-		models.pointing.status == enums.pointing_status.completed,
-		models.instrument.id == models.pointing.instrumentid,
-		models.pointing_event.pointingid == models.pointing.id,
-		models.pointing_event.graceid != 'TEST_EVENT'
-	).order_by(
-		func.count(models.pointing.id).desc()
-	).values(
-		func.count(models.pointing.id).label('count'),
-		models.instrument.instrument_name,
-		models.instrument.id
-	)
+	#inst_info = db.session.query(
+	#	models.pointing,
+	#	models.instrument
+	#).group_by(
+	#	models.pointing.instrumentid,
+	#	models.instrument
+	#).filter(
+	#	models.pointing.status == enums.pointing_status.completed,
+	#	models.instrument.id == models.pointing.instrumentid,
+	#	models.pointing_event.pointingid == models.pointing.id,
+	#	models.pointing_event.graceid != 'TEST_EVENT'
+	#).order_by(
+	#	func.count(models.pointing.id).desc()
+	#).values(
+	#	func.count(models.pointing.id).label('count'),
+	#	models.instrument.instrument_name,
+	#	models.instrument.id
+	#)
 
-	inst_info = [list(inst_info), fermi_events]
+	#inst_info = [list(inst_info), fermi_events]
 
-	graceids = db.session.query(
-		models.gw_alert.graceid,
-		models.gw_alert.alert_type,
-	).order_by(
-		models.gw_alert.time_of_signal.desc()
-	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT'
-	).all()
+	#graceids = db.session.query(
+	#	models.gw_alert.graceid,
+	#	models.gw_alert.alert_type,
+	#).order_by(
+	#	models.gw_alert.time_of_signal.desc()
+	#).filter(
+	#	models.gw_alert.graceid != 'TEST_EVENT'
+	#).all()
 
-	gids = list(sorted(set([x.graceid for x in graceids]), reverse=True))
-	rets = []
-	for g in gids:
-		gw_alerts = [x.alert_type for x in graceids if x.graceid == g]
-		if 'Retraction' in gw_alerts:
-			rets.append(g)
+	#gids = list(sorted(set([x.graceid for x in graceids]), reverse=True))
+	#rets = []
+	#for g in gids:
+	#	gw_alerts = [x.alert_type for x in graceids if x.graceid == g]
+	#	if 'Retraction' in gw_alerts:
+	#		rets.append(g)
 
-	gids = [x for x in gids if x not in rets]
-	graceid = gids[0]
+	#gids = [x for x in gids if x not in rets]
+	#graceid = gids[0]
 
 	#status = request.args.get('pointing_status')
 	#status = status if status is not None else 'completed'
@@ -334,10 +334,11 @@ def reset_password():
 	models.useractions.write_action(request=request, current_user=current_user)
 	token = request.args.get('token')
 	if current_user.is_authenticated:
-		return redirect(url_for('index'))
+		return redirect(url_for('login'))
 	user = models.users.verify_reset_password_token(token)
 	if not user:
-		return redirect(url_for('index'))
+		flash("Invalid reset token")
+		return redirect(url_for('login'))
 	form = forms.ResetPasswordForm()
 	if form.validate_on_submit():
 		user.set_password(form.password.data)
@@ -429,7 +430,6 @@ def search_pointings():
 
 		return render_template('search_pointings.html', form=form, search_result=results)
 	return render_template('search_pointings.html', form=form)
-
 
 
 @app.route('/search_instruments', methods=['GET', 'POST'])
@@ -642,6 +642,7 @@ def submit_instrument():
 
 	return render_template('submit_instrument.html', form=form, plot=None, insts=insts)
 
+
 @app.route('/instrument_info')
 def instrument_info():
 	models.useractions.write_action(request=request, current_user=current_user)
@@ -796,6 +797,7 @@ def doi_author_group():
 		return redirect('/manage_user')
 
 	return render_template('doi_author_group.html', create=True)
+
 
 @app.route('/logout')
 def logout():

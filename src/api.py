@@ -2,16 +2,14 @@
 
 from flask import request, jsonify
 from sqlalchemy import func, or_
-from botocore.exceptions import ClientError
 import json, datetime
-import boto3
-import io
 
 from src import app
 from src.gwtmconfig import config
 from . import function
 from . import models
 from . import enums
+from . import gwtm_io
 
 db = models.db
 
@@ -732,7 +730,8 @@ def get_pointings():
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.energy))
 
 	pointings = db.session.query(models.pointing).filter(*filter).all()
-	pointings = [x.json for x in pointings]
+	#pointings = [x.json for x in pointings]
+	pointings = [x.parse for x in pointings]
 
 	return make_response(json.dumps(pointings), 200)
 
@@ -912,7 +911,7 @@ def get_instruments():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 	
 	filter=[]
 
@@ -921,10 +920,18 @@ def get_instruments():
 		_id = args.get('id')
 		filter.append(models.instrument.id == int(_id))
 	if "ids" in args:
-		#validate
-		ids = json.loads(args.get('ids'))
-		print(ids)
-		filter.append(models.instrument.id.in_(ids))
+		argname = "ids"
+		arg = args.get(argname)
+		if isinstance(arg, str):
+			try:
+				arg = str(arg).split('[')[1].split(']')[0].split(',')
+			except:
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
+		if isinstance(arg, list):
+			_ids = arg
+			filter.append(models.instrument.id.in_(_ids))
+		else:
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[graceid1, graceid2...]\'', 500)
 	if "name" in args:
 		name = args.get('name')
 		filter.append(models.instrument.instrument_name.contains(name))
@@ -945,7 +952,7 @@ def get_instruments():
 	insts = db.session.query(models.instrument).filter(*filter).all()
 	insts = [x.json for x in insts]
 
-	return jsonify(insts)
+	return make_response(json.dumps(insts), 200)
 
 
 @app.route('/api/v0/grb_moc_file', methods=['GET'])
@@ -974,17 +981,14 @@ def get_grbmoc():
 	else:
 		return jsonify('Instrument is required. Valid instruments are in [\'gbm\', \'lat\', \'bat\']')
 
-	s3 = boto3.client('s3')
 	instrument_dictionary = {'gbm':'Fermi', 'lat':'LAT', 'bat':'BAT'}
 	
 	moc_filepath = '{}/{}-{}.json'.format('fit', gid, instrument_dictionary[inst])
 
 	try:
-		with io.BytesIO() as f:
-			s3.download_fileobj(config.AWS_BUCKET, moc_filepath, f)
-			f.seek(0)
-			return f.read().decode('utf-8')
-	except ClientError:
+		_file = gwtm_io.download_gwtm_file(filename=moc_filepath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+		return _file
+	except:
 		return jsonify('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst))
 
 
@@ -1100,20 +1104,18 @@ def del_test_alerts():
 		for ga in gwalerts:
 			db.session.delete(ga)
 
-	s3_resource = boto3.resource('s3')
-	bucket = s3_resource.Bucket(config.AWS_BUCKET)
-	objects = bucket.objects.filter(Prefix = 'test/')
+	objects = gwtm_io.list_gwtm_bucket("test", config.STORAGE_BUCKET_SOURCE, config)
 	objects_to_delete = [
-		o.key for o in objects if not any(t in o.key for t in testids) and 'alert.json' not in o.key and o.key != 'test/'
+		o for o in objects if not any(t in o for t in testids)
 	]
 
 	if len(objects_to_delete):
-		print(f"deleting {len(objects_to_delete)} from S3")
+		print(f"deleting {len(objects_to_delete)} from {config.STORAGE_BUCKET_SOURCE}")
 		tot = 0
 		for items in function.by_chunk(objects_to_delete, 1000):
 			tot += len(items)
 			print(f"bucket chunk: {tot}/{len(objects_to_delete)}")
-			t = bucket.delete_objects(Bucket=config.AWS_BUCKET, Delete={'Objects': [{'Key': key} for key in items]})
+			t = gwtm_io.delete_gwtm_files(items, source=config.STORAGE_BUCKET_SOURCE)
 
 	db.session.commit()
 

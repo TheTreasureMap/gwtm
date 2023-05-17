@@ -14,6 +14,7 @@ from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from . import function
 from . import models
 from . import enums
+from . import gwtm_io
 from src.gwtmconfig import config
 
 db = models.db
@@ -26,7 +27,6 @@ class ManageUserForm(FlaskForm):
         self.all_users = []
 
     def construct_form(self, userid: int):
-        print('test', userid==2, type(userid))
         self.user = models.users.query.filter_by(id=userid).first()
         groupfilter = []
         groupfilter.append(models.usergroups.groupid == models.groups.id)
@@ -235,7 +235,7 @@ class AlertsForm(FlaskForm):
             'frequency': [x.name for x in enums.frequency_units]
         }
 
-        s3 = boto3.client('s3')
+        #s3 = boto3.client('s3')
         graceid = args['graceid']
 
         detection_overlays = None
@@ -451,17 +451,19 @@ class AlertsForm(FlaskForm):
             if len([x for x in pointing_info if x.instrumentid == 49]):
                 batpathinfo = f'{s3path}/'+graceid+'-BAT.json'
                 try:
-                    with io.BytesIO() as f:
-                        s3.download_fileobj(config.AWS_BUCKET, batpathinfo, f)
-                        f.seek(0)
-                        contours_data = json.loads(f.read().decode('utf-8'))
-                        GRBoverlays.append({
-                            'name':'Swift/BAT',
-                            'color':'#3cb44b',
-                            'json':contours_data
-                        })
-                except ClientError:
-                    print('Key does not exist')
+                    #with io.BytesIO() as f:
+                    #    s3.download_fileobj(config.AWS_BUCKET, batpathinfo, f)
+                    #    f.seek(0)
+                    #    contours_data = json.loads(f.read().decode('utf-8'))
+                    f = gwtm_io.download_gwtm_file(batpathinfo, config.STORAGE_BUCKET_SOURCE, config)
+                    contours_data = json.loads(f)
+                    GRBoverlays.append({
+                        'name':'Swift/BAT',
+                        'color':'#3cb44b',
+                        'json':contours_data
+                    })
+                except:
+                    print(f"Key does not exist: {batpathinfo}")
                     pass
 
             #do Fermi stuff
@@ -471,33 +473,37 @@ class AlertsForm(FlaskForm):
                     #Do GBM stuff
                 GBMpathinfo = f'{s3path}/'+graceid+ '-Fermi.json'
                 try:
-                    with io.BytesIO() as f:
-                        s3.download_fileobj(config.AWS_BUCKET, GBMpathinfo, f)
-                        f.seek(0)
-                        contours_data = json.loads(f.read().decode('utf-8'))
-                        GRBoverlays.append({
-                            'name':'Fermi/GBM',
-                            'color':'magenta',
-                            'json':contours_data
-                        })
-                except ClientError:
+                    #with io.BytesIO() as f:
+                    #    s3.download_fileobj(config.AWS_BUCKET, GBMpathinfo, f)
+                    #    f.seek(0)
+                    #    contours_data = json.loads(f.read().decode('utf-8'))
+                    f = gwtm_io.download_gwtm_file(GBMpathinfo, config.STORAGE_BUCKET_SOURCE, config)
+                    contours_data = json.loads(f)
+                    GRBoverlays.append({
+                        'name':'Fermi/GBM',
+                        'color':'magenta',
+                        'json':contours_data
+                    })
+                except:
                     GRBoverlays.append({
                         'name': 'Fermi in South Atlantic Anomaly'
                         })
                 #Do LAT stuff
                 LATpathinfo = f'{s3path}/'+graceid+ '-LAT.json'
                 try:
-                    with io.BytesIO() as f:
-                        s3.download_fileobj(config.AWS_BUCKET, LATpathinfo, f)
-                        f.seek(0)
-                        contours_data = json.loads(f.read().decode('utf-8'))
-                        GRBoverlays.append({
-                            'name':'Fermi/LAT',
-                            'color':'red',
-                            'json':contours_data
-                        })
-                except ClientError:
-                    print('No key')
+                    #with io.BytesIO() as f:
+                    #    s3.download_fileobj(config.AWS_BUCKET, LATpathinfo, f)
+                    #    f.seek(0)
+                    #    contours_data = json.loads(f.read().decode('utf-8'))
+                    f = gwtm_io.download_gwtm_file(LATpathinfo, config.STORAGE_BUCKET_SOURCE, config)
+                    contours_data = json.loads(f)
+                    GRBoverlays.append({
+                        'name':'Fermi/LAT',
+                        'color':'red',
+                        'json':contours_data
+                    })
+                except:
+                    print(f'No key: {LATpathinfo}')
 
             #grab the precomputed localization contour region
             if len(self.alert_type.split()) > 1:
@@ -515,22 +521,24 @@ class AlertsForm(FlaskForm):
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:
-                with io.BytesIO() as f:
-                    s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
-                    f.seek(0)
-                    contours_data=pd.read_json(f.read().decode('utf-8'))
-                    contour_geometry = []
-                    for contour in contours_data['features']:
-                        contour_geometry.extend(contour['geometry']['coordinates'])
+                #with io.BytesIO() as f:
+                    #s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
+                    #f.seek(0)
+                    #contours_data=pd.read_json(f.read().decode('utf-8'))
+                f = gwtm_io.download_gwtm_file(contourpath, config.STORAGE_BUCKET_SOURCE, config)
+                contours_data = pd.read_json(f)
+                contour_geometry = []
+                for contour in contours_data['features']:
+                    contour_geometry.extend(contour['geometry']['coordinates'])
 
-                    detection_overlays.append({
-                        "display":True,
-                        "name":"GW Contour",
-                        "color": '#e6194B',
-                        "contours":function.polygons2footprints(contour_geometry, 0)
-                    })
-            except ClientError:
-                print('No Key')
+                detection_overlays.append({
+                    "display":True,
+                    "name":"GW Contour",
+                    "color": '#e6194B',
+                    "contours":function.polygons2footprints(contour_geometry, 0)
+                })
+            except:
+                print(f'No key: {contourpath}')
 
             t_stop = time.time()
             print("Time loading page: ", t_stop-t_start)
