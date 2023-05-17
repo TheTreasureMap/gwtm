@@ -9,8 +9,6 @@ import plotly.graph_objects as go
 import requests
 import urllib.parse
 import pandas as pd
-import boto3
-import io
 import tempfile
 import time
 import hashlib
@@ -22,12 +20,12 @@ from flask import request, jsonify
 from flask_login import current_user
 from sqlalchemy import func, or_
 from plotly.subplots import make_subplots
-from botocore.exceptions import ClientError
 
 from . import function
 from . import models
 from . import forms
 from . import enums
+from . import gwtm_io
 from src import app
 from src import cache
 from src.gwtmconfig import config
@@ -101,7 +99,7 @@ def ajax_alertinstruments_footprints():
 
 	else:
 		instrumentids = [x.instrumentid for x in pointing_info]
-
+		
 		instrumentinfo = db.session.query(
 			models.instrument.instrument_name,
 			models.instrument.nickname,
@@ -186,9 +184,7 @@ def ajax_get_eventcontour():
 			elif farrate > 7:
 				farrate /= 7
 				farunit = "weeks"
-		print(farrate)
 		human_far=round(farrate,2)
-		print(human_far)
 		human_far_unit = farunit
 		humanfar = "once per {} {}".format(str(round(human_far, 2)),human_far_unit)
 	else:
@@ -206,34 +202,29 @@ def ajax_get_eventcontour():
 	if alert.distance is not None and alert.distance_error is not None:
 		distanceperror = "{} +/- {}".format(round(alert.distance, 3), round(alert.distance_error, 3))
 	else:
-		print(alert.distance, alert.distance_error)
 		distanceperror = ''
 
 	detection_overlays = []
 	path_info = alert.graceid + '-' + alertype
-	s3 = boto3.client('s3')
+	
 	contourpath = f'{s3path}/'+path_info+'-contours-smooth.json'
 	try:
-		print(contourpath)
-		with io.BytesIO() as f:
-			s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
-			f.seek(0)
-			contours_data=pd.read_json(f.read().decode('utf-8'))
-			contour_geometry = []
-			for contour in contours_data['features']:
-				contour_geometry.extend(contour['geometry']['coordinates'])
+		_f = gwtm_io.download_gwtm_file(contourpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+		contours_data = pd.read_json(_f)
+		contour_geometry = []
+		for contour in contours_data['features']:
+			contour_geometry.extend(contour['geometry']['coordinates'])
 
-			detection_overlays.append({
-				"display":True,
-				"name":"GW Contour",
-				"color": '#e6194B',
-				"contours":function.polygons2footprints(contour_geometry, 0)
-			})
-	except ClientError:
-		print('No Key')
+		detection_overlays.append({
+			"display":True,
+			"name":"GW Contour",
+			"color": '#e6194B',
+			"contours":function.polygons2footprints(contour_geometry, 0)
+		})
+	except:
+		print(f'No key: {contourpath}')
 		pass
 
-	print(distanceperror)
 	payload = {
 		'hidden_alertid':alertid,
 		'detection_overlays':detection_overlays,
@@ -418,19 +409,13 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	times = []
 	probs = []
 
-	s3 = boto3.client('s3')
 	try:
 		with tempfile.NamedTemporaryFile() as f:
-			# this HP module does not appear to be able to read files from memory
-			# so we use a temporary file here which deletes itself as soon as the
-			# context manager is exited.
-			s3.download_fileobj(config.AWS_BUCKET, mappathinfo, f)
+			tmpdata = gwtm_io.download_gwtm_file(mappathinfo, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
+			f.write(tmpdata)
 			GWmap = hp.read_map(f.name)
-			#bestpixel = np.argmax(GWmap)
 			nside = hp.npix2nside(len(GWmap))
-	except ClientError:
-		raise HTTPException('<b>Calculator ERROR: Map not found. Please contact the administrator.</b>')
-	except Exception:
+	except:
 		raise HTTPException('<b> Map ERROR. Please contact the administrator. </b>')
 
 	pointing_filter = []
@@ -705,7 +690,6 @@ def preview_footprint():
 	if len(v[0].errors) == 0:
 		trace = []
 		vertices = v[2]
-		print(vertices, 'vertices')
 		for vert in vertices:
 			xs = [v[0] for v in vert]
 			ys =[v[1] for v in vert]
@@ -780,8 +764,6 @@ def spectral_range_from_selected_bands():
 	spec_low = args.get('spec_range_low')
 	spec_high = args.get('spec_range_high')
 
-	print(spec_high, spec_low)
-	print(band_cov, type(band_cov))
 	if band_cov != '' and band_cov != 'null':
 		bands = band_cov.split(',')
 		
