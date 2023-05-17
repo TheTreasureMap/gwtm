@@ -3,7 +3,6 @@
 import json, datetime
 import plotly
 import plotly.graph_objects as go
-import boto3
 
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
@@ -59,7 +58,6 @@ def home():
 
 	#fix this by ingesting LAT pointings in the pointings DB
 	# TODO: Fermi count should be cached
-	#s3 = boto3.client('s3')
 	#response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
 	#if response['IsTruncated']:
 	#	print('WARNING: More than 1000 objects in bucket. Implement pagination.')

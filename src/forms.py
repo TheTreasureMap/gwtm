@@ -235,7 +235,6 @@ class AlertsForm(FlaskForm):
             'frequency': [x.name for x in enums.frequency_units]
         }
 
-        #s3 = boto3.client('s3')
         graceid = args['graceid']
 
         detection_overlays = None
@@ -451,10 +450,6 @@ class AlertsForm(FlaskForm):
             if len([x for x in pointing_info if x.instrumentid == 49]):
                 batpathinfo = f'{s3path}/'+graceid+'-BAT.json'
                 try:
-                    #with io.BytesIO() as f:
-                    #    s3.download_fileobj(config.AWS_BUCKET, batpathinfo, f)
-                    #    f.seek(0)
-                    #    contours_data = json.loads(f.read().decode('utf-8'))
                     f = gwtm_io.download_gwtm_file(batpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
                     GRBoverlays.append({
@@ -473,10 +468,6 @@ class AlertsForm(FlaskForm):
                     #Do GBM stuff
                 GBMpathinfo = f'{s3path}/'+graceid+ '-Fermi.json'
                 try:
-                    #with io.BytesIO() as f:
-                    #    s3.download_fileobj(config.AWS_BUCKET, GBMpathinfo, f)
-                    #    f.seek(0)
-                    #    contours_data = json.loads(f.read().decode('utf-8'))
                     f = gwtm_io.download_gwtm_file(GBMpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
                     GRBoverlays.append({
@@ -491,10 +482,6 @@ class AlertsForm(FlaskForm):
                 #Do LAT stuff
                 LATpathinfo = f'{s3path}/'+graceid+ '-LAT.json'
                 try:
-                    #with io.BytesIO() as f:
-                    #    s3.download_fileobj(config.AWS_BUCKET, LATpathinfo, f)
-                    #    f.seek(0)
-                    #    contours_data = json.loads(f.read().decode('utf-8'))
                     f = gwtm_io.download_gwtm_file(LATpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
                     GRBoverlays.append({
@@ -521,10 +508,6 @@ class AlertsForm(FlaskForm):
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:
-                #with io.BytesIO() as f:
-                    #s3.download_fileobj(config.AWS_BUCKET, contourpath, f)
-                    #f.seek(0)
-                    #contours_data=pd.read_json(f.read().decode('utf-8'))
                 f = gwtm_io.download_gwtm_file(contourpath, config.STORAGE_BUCKET_SOURCE, config)
                 contours_data = pd.read_json(f)
                 contour_geometry = []
