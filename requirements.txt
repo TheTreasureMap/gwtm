@@ -36,3 +36,5 @@ redis
 Flask-Caching
 emails
 gcn-kafka
+fsspec
+adlfs
