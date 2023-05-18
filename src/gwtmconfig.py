@@ -31,7 +31,7 @@ class Config(object):
     CACHE_DEFAULT_TIMEOUT = 60 * 60 * 24
     AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', '')
     AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY', '')
-    STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 'abfs')
+    STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 's3')
 
 
     @property

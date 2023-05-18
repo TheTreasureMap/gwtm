@@ -14,7 +14,7 @@ def download_gwtm_file(filename, source='s3', config=None, decode=True):
 
     try:
         if source == 's3':
-            s3file = fsspec.open(f"s3://{config.AWS_BUCKET}/{filename}")
+            s3file = fsspec.open(f"s3://{config.AWS_BUCKET}/{filename}", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
 
         if source == 'abfs':
             s3file = fsspec.open(f"abfs://{filename}", "rb", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
