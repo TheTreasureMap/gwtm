@@ -1115,11 +1115,11 @@ def del_test_alerts():
 		for items in function.by_chunk(objects_to_delete, 1000):
 			tot += len(items)
 			print(f"bucket chunk: {tot}/{len(objects_to_delete)}")
-			t = gwtm_io.delete_gwtm_files(items, source=config.STORAGE_BUCKET_SOURCE)
+			t = gwtm_io.delete_gwtm_files(items, source=config.STORAGE_BUCKET_SOURCE, config=config)
 
 	db.session.commit()
 
-	return make_response('Sucksess', 200)
+	return make_response('Success', 200)
 
 
 #FIX DATA

@@ -3,10 +3,6 @@ import fsspec
 def _get_fs(source, config):
     try:
         if source == 's3':
-            storage_options ={
-                "account_name":config.AWS_BUCKET,
-                "account_key":config.AWS_ACCESS_KEY_ID
-            }
             return fsspec.filesystem(f"s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
         if source == 'abfs':
             return fsspec.filesystem(f"abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)

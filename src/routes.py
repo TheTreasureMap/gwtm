@@ -127,7 +127,7 @@ def alert_select():
 	selected_role = request.args.get('role')
 
 	if selected_observing_run is None:
-		selected_observing_run = "O3"
+		selected_observing_run = "O4"
 	
 	if selected_role is None:
 		selected_role = "observation"
