@@ -380,11 +380,22 @@ def manage_user():
 def search_pointings():
 	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SearchPointingsForm()
-	form.populate_graceids()
+	form.populate_selectdowns()
 	form.populate_creator_groups(current_user.get_id())
 
+	for f in form.bands:
+		print(f)
+
 	if request.method == 'POST':
-		formgraceid = form.graceids.data
+		args = request.form
+		formgraceid = args.get("graceid")
+
+		gids = form.graceids
+		for g in gids:
+			if g['value'] == formgraceid:
+				g['selected'] = True
+		form.graceids = gids
+
 		alternateids = db.session.query(models.gw_alert).filter(
 			models.gw_alert.alternateid == formgraceid
 		).all()
@@ -392,18 +403,33 @@ def search_pointings():
 		if len(alternateids):
 			graceid = alternateids[0].graceid
 		else:
-			graceid = form.graceids.data
+			graceid = formgraceid
 
 		filter = []
 		filter.append(models.pointing_event.graceid.contains(graceid))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
-		if form.status_choices.data != '' and form.status_choices.data != 'all':
-			filter.append(models.pointing.status == form.status_choices.data)
+		status_choice = args.getlist("status")
+		stats = form.statuses
+		for s in stats:
+			if s['value'] in status_choice:
+				s['selected'] = True
+		form.statuses = stats
 
-		if len(form.band_choices.data):
-			if "all" not in form.band_choices.data:
-				filter.append(models.pointing.band.in_(form.band_choices.data))
+		if len(status_choice):
+			if "all" not in status_choice:
+				filter.append(models.pointing.status.in_(status_choice))
+
+		band_choice = args.getlist("band")
+		bands = form.bands
+		for b in bands:
+			if b['value'] in band_choice:
+				b['selected'] = True
+		form.bands = bands
+
+		if len(band_choice):
+			if "all" not in band_choice:
+				filter.append(models.pointing.band.in_(band_choice))
 
 		if form.my_points.data:
 			filter.append(models.pointing.submitterid == current_user.get_id())
@@ -426,7 +452,7 @@ def search_pointings():
 								   models.pointing.submitterid
 								   ).filter(*filter).all()
 
-		return render_template('search_pointings.html', form=form, search_result=results)
+		return render_template('search_pointings.html', form=form, search_result=results, nresults=len(results))
 	return render_template('search_pointings.html', form=form)
 
 

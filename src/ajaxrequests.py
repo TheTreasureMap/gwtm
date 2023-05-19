@@ -99,7 +99,7 @@ def ajax_alertinstruments_footprints():
 
 	else:
 		instrumentids = [x.instrumentid for x in pointing_info]
-		
+
 		instrumentinfo = db.session.query(
 			models.instrument.instrument_name,
 			models.instrument.nickname,
@@ -416,7 +416,7 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 			GWmap = hp.read_map(f.name)
 			nside = hp.npix2nside(len(GWmap))
 	except:
-		raise HTTPException('<b> Map ERROR. Please contact the administrator. </b>')
+		raise HTTPException('Calculator ERROR: Map not found. Please contact the administrator.')
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)

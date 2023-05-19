@@ -85,18 +85,6 @@ class ResetPasswordForm(FlaskForm):
 
 class SearchPointingsForm(FlaskForm):
     doi_creator_groups = SelectField('DOI Author Groups')
-    graceids = SelectField('Grace ID', validators=[DataRequired()])
-
-    bands = [('all', 'All')]
-    for m in enums.bandpass:
-        bands.append((m.name, m.name))
-    #band_choices = SelectMultipleField('Bandpasses', choices=bands, option_widget=widgets.CheckboxInput(), widget=widgets.ListWidget(prefix_label=False))
-    band_choices = SelectMultipleField('Bandpasses', choices=bands)
-
-    statuses = [('all', 'All')]
-    for m in enums.pointing_status:
-        statuses.append((m.name, m.name))
-    status_choices = SelectField('Status', choices=statuses)
     my_points = BooleanField('Show Only My Pointings')
     doi_url = StringField('DOI URL')
 
@@ -108,19 +96,52 @@ class SearchPointingsForm(FlaskForm):
         for a in dag:
             self.doi_creator_groups.choices.append((a.id, a.name))
 
+    def populate_selectdowns(self):
+        self.populate_graceids()
+
+        self.bands = [{"name":"All", "value":"all", "selected":False}]
+        for m in enums.bandpass:
+            self.bands.append({"name":m.name, "value":m.name, "selected":False})
+
+        self.statuses = [{"name":"All", "value":"all", "selected":False}]
+        for m in enums.pointing_status:
+            self.statuses.append({"name":m.name, "value":m.name, "selected":False})
+
     def populate_graceids(self):
-        alerts = models.gw_alert.query.filter_by(role='observation').all()
-        sortalerts = sorted(list(set([a.graceid for a in alerts if "TEST" not in a.graceid])), reverse=True)
-        listalerts = []
-        for a in sortalerts:
-            alternateid = [aid.alternateid for aid in alerts if aid.graceid == a and aid.alternateid is not None]
+        gwalerts = models.gw_alert.query.order_by(models.gw_alert.time_of_signal).all()
+        gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
+
+        #link all alert types to its graceid
+        #we want to be able to label the retracted ones individual for the custom dropdown
+        gid_types = {}
+        for g in gwalerts_ids:
+            types = [x.alert_type for x in gwalerts if x.graceid == g]
+            gid_types[g] = types
+
+        #form the custom dropdown dictionary
+        graceids = [{'name':'--Select--', 'value':None, "selected":False}]
+
+        for g in gwalerts_ids:
+            #get the alert types for each graceid to test for retractions
+            gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
+            gid_roles = [x.role for x in gwalerts if x.graceid == g]
+            gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
+
+            alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
             if len(alternateid):
-                a = alternateid[0]
-                listalerts.append((a, a))
+                g = alternateid[0]
+
+            name_g = g
+            if 'test' in gid_roles:
+                name_g = f"TEST-{g}"
+            run = gid_runs[0]
+            name_g = f"{run} - {name_g}"
+            if 'Retraction' in gid_types:
+                graceids.append({'name':name_g + ' -retracted-', 'value':g, "selected":False})
             else:
-                listalerts.append((a, a))
-        listalerts.append(('TEST_EVENT', 'TEST_EVENT'))
-        self.graceids.choices = listalerts
+                graceids.append({'name':name_g, 'value':g, "selected":False})
+
+        self.graceids = graceids
 
 
 class SearchInstrumentsForm(FlaskForm):

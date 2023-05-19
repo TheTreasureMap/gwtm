@@ -36,7 +36,11 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
     if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:
         filename = f"{config.AWS_BUCKET}/{filename}"
 
-    open_file = fs.open(filename, "w") 
+    if type(content) == bytes:
+        open_file = fs.open(filename, "wb")
+    else: 
+        open_file = fs.open(filename, "w") 
+
     with open_file as of:
         of.write(content)
     of.close()
@@ -72,13 +76,9 @@ def delete_gwtm_files(keys, source="s3", config=None):
     return True
 
 
-def get_fname(fullname):
-    split = fullname.split('/')
-    fname = split[len(split)-1]
-    return fname
-
 class test_config(object):
     pass
+
 
 if __name__ == '__main__':
     import os
