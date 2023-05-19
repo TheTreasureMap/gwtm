@@ -730,8 +730,7 @@ def get_pointings():
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.energy))
 
 	pointings = db.session.query(models.pointing).filter(*filter).all()
-	#pointings = [x.json for x in pointings]
-	pointings = [x.parse for x in pointings]
+	pointings = [x.json for x in pointings]
 
 	return make_response(json.dumps(pointings), 200)
 
