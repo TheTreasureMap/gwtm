@@ -12,23 +12,38 @@ def _get_fs(source, config):
 
 def download_gwtm_file(filename, source='s3', config=None, decode=True):
 
-    try:
-        if source == 's3':
-            s3file = fsspec.open(f"s3://{config.AWS_BUCKET}/{filename}", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
+    fs = _get_fs(source=source, config=config)
 
-        if source == 'abfs':
-            s3file = fsspec.open(f"abfs://{filename}", "rb", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
+    if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:
+        filename = f"{config.AWS_BUCKET}/{filename}"
 
-        with s3file as _file:
-            if decode:
-                return _file.read().decode('utf-8')
-            else:
-                return _file.read()
+    s3file = fs.open(filename, 'rb')
+    
+    with s3file as _file:
+        if decode:
+            return _file.read().decode('utf-8')
+        else:
+            return _file.read()
 
-    except:
-        raise Exception(f"Error reading {source} file: {filename}")
+
+#def download_gwtm_file(filename, source='s3', config=None, decode=True):
+#
+#    try:
+#        if source == 's3':
+#            s3file = fsspec.open(f"s3://{config.AWS_BUCKET}/{filename}", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
+#
+#        if source == 'abfs':
+#            s3file = fsspec.open(f"abfs://{filename}", "rb", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
+#
+#        with s3file as _file:
+#            if decode:
+#                return _file.read().decode('utf-8')
+#            else:
+#                return _file.read()
+#
+#    except:
+#        raise Exception(f"Error reading {source} file: {filename}")
             
-
 
 def upload_gwtm_file(content, filename, source="s3", config=None):
     fs = _get_fs(source=source, config=config)
@@ -73,7 +88,6 @@ def delete_gwtm_files(keys, source="s3", config=None):
     
     fs = _get_fs(source=source, config=config)
     for k in keys:
-        print(k)
         fs.rm(k)
     return True
 
@@ -97,12 +111,15 @@ if __name__ == '__main__':
 
         content = "line1\line2"
         filename = "test/vv.text"
+        print("uploading test file", source)
         test1 = upload_gwtm_file(content, filename, source=source, config=config)
         assert test1, "error upload" 
 
-        test2 = download_gwtm_file(filename, source=source, config=config)
+        print("downloading test file", source)
+        test2 = download_gwtm_file2(filename, source=source, config=config)
         assert test2==content, "error download"
 
+        print("deleting test tile", source)
         test3 = delete_gwtm_files([filename], source=source, config=config)
         assert test3, "error delete"
 
