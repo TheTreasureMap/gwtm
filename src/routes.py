@@ -383,9 +383,6 @@ def search_pointings():
 	form.populate_selectdowns()
 	form.populate_creator_groups(current_user.get_id())
 
-	for f in form.bands:
-		print(f)
-
 	if request.method == 'POST':
 		args = request.form
 		formgraceid = args.get("graceid")

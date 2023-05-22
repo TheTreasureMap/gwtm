@@ -90,12 +90,13 @@ def ajax_alertinstruments_footprints():
 	haskeyids = [x.id for x in pointing_info]
 	hashpointingids =  hashlib.sha1(json.dumps(haskeyids).encode()).hexdigest()
 
-	cache_key = f'footprint_{graceid}_{pointing_status}_{hashpointingids}'
+	cache_key = f'cache/footprint_{graceid}_{pointing_status}_{hashpointingids}'
 
-	temp_overlays = cache.get(cache_key)
+	#temp_overlays = cache.get(cache_key)
+	temp_overlays = gwtm_io.get_cached_file(cache_key, config)
 
 	if  temp_overlays:
-		inst_overlays = temp_overlays
+		inst_overlays = json.loads(temp_overlays)
 
 	else:
 		instrumentids = [x.instrumentid for x in pointing_info]
@@ -148,7 +149,8 @@ def ajax_alertinstruments_footprints():
 				"contours":pointing_geometries
 			})
 
-		cache.set(cache_key, inst_overlays)
+		#cache.set(cache_key, inst_overlays)
+		gwtm_io.set_cached_file(cache_key, inst_overlays, config)
 		
 	return jsonify(inst_overlays)
 
@@ -533,12 +535,20 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 			probs.append(prob)
 			areas.append(area)
 
+	cache_file = {
+		'times': times,
+		'probs': probs,
+		'areas': areas,
+	}
+	print(f"setting prob cache file: {cache_key}")
+	gwtm_io.set_cached_file(cache_key, cache_file, config)
+
 	if debug:
 		return times, probs, areas
 
-	cache.set(f'{cache_key}_times', times)
-	cache.set(f'{cache_key}_probs', probs)
-	cache.set(f'{cache_key}_areas', areas)
+	#cache.set(f'{cache_key}_times', times)
+	#cache.set(f'{cache_key}_probs', probs)
+	#cache.set(f'{cache_key}_areas', areas)
 
 	return cache_key
 
@@ -558,6 +568,7 @@ def generate_prob_plot(times, probs, areas):
 	coverage_div = plotly.offline.plot(fig,output_type='div',include_plotlyjs=False, show_link=False)
 
 	return coverage_div
+
 
 @app.route("/ajax_coverage_calculator", methods=['GET', 'POST'])
 def plot_prob_coverage():
@@ -629,16 +640,21 @@ def plot_prob_coverage():
 	pointingids = sorted(pointingids)
 	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 
-	cache_key = f'prob_{graceid}_{mappathinfo}_{approx_cov}_{hashpointingids}'
-
-	if debug:
+	cache_key = f'cache/prob_{graceid}_{approx_cov}_{hashpointingids}'
+	cache_file = gwtm_io.get_cached_file(cache_key, config)
+	
+	if cache_file is None:
 		print('debug calculator mode')
 		times, probs, areas = calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 
 	else:
-		times = cache.get(f'{cache_key}_times')
-		probs = cache.get(f'{cache_key}_probs')
-		areas = cache.get(f'{cache_key}_areas')
+		cov_result = json.loads(cache_file)
+		times = cov_result['times']
+		probs = cov_result['probs']
+		areas = cov_result['areas']
+		#times = cache.get(f'{cache_key}_times')
+		#probs = cache.get(f'{cache_key}_probs')
+		#areas = cache.get(f'{cache_key}_areas')
 
 	if not all([times, probs, areas]):
 		result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
@@ -661,9 +677,13 @@ def get_calc_result(result_id):
 	result = AsyncResult(result_id, app=celery)
 	if result.ready():
 		cache_key = result.get()
-		times = cache.get(f'{cache_key}_times')
-		probs = cache.get(f'{cache_key}_probs')
-		areas = cache.get(f'{cache_key}_areas')
+		cache_file = json.loads(gwtm_io.get_cached_file(cache_key, config))
+		times = cache_file['times']
+		probs = cache_file['probs']
+		areas = cache_file['areas']
+		#times = cache.get(f'{cache_key}_times')
+		#probs = cache.get(f'{cache_key}_probs')
+		#areas = cache.get(f'{cache_key}_areas')
 		return generate_prob_plot(times, probs, areas)
 	else:
 		return 'false'

@@ -1,4 +1,5 @@
 import fsspec
+import json
 
 def _get_fs(source, config):
     try:
@@ -91,6 +92,21 @@ def delete_gwtm_files(keys, source="s3", config=None):
         fs.rm(k)
     return True
 
+def get_cached_file(key, config):
+    source = config.STORAGE_BUCKET_SOURCE
+    cached_files = list_gwtm_bucket('cache', source, config)
+    
+    if key in cached_files:
+        print(f"found cached file {key}")
+        return download_gwtm_file(key, source, config)
+    else:   
+        return None
+    
+def set_cached_file(key, contents, config):
+    source = config.STORAGE_BUCKET_SOURCE
+    
+    upload_gwtm_file(json.dumps(contents), key, source, config)
+    
 
 class test_config(object):
     pass
@@ -116,7 +132,7 @@ if __name__ == '__main__':
         assert test1, "error upload" 
 
         print("downloading test file", source)
-        test2 = download_gwtm_file2(filename, source=source, config=config)
+        test2 = download_gwtm_file(filename, source=source, config=config)
         assert test2==content, "error download"
 
         print("deleting test tile", source)
