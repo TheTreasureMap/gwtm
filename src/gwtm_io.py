@@ -72,7 +72,9 @@ def delete_gwtm_files(keys, source="s3", config=None):
             keys = f"{config.AWS_BUCKET}/{keys}"
     
     fs = _get_fs(source=source, config=config)
-    fs.rm(keys)
+    for k in keys:
+        print(k)
+        fs.rm(k)
     return True
 
 
