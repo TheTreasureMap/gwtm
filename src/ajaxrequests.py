@@ -29,7 +29,7 @@ from . import gwtm_io
 from src import app
 from src import cache
 from src.gwtmconfig import config
-from .tasks import celery
+#from .tasks import celery
 
 db = models.db
 
@@ -396,7 +396,6 @@ def ajax_request_doi():
 	return jsonify('')
 
 
-@celery.task()
 def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	ztfid = 47; ztf_approx_id = 76
@@ -411,14 +410,14 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	times = []
 	probs = []
 
-	try:
-		with tempfile.NamedTemporaryFile() as f:
-			tmpdata = gwtm_io.download_gwtm_file(mappathinfo, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
-			f.write(tmpdata)
-			GWmap = hp.read_map(f.name)
-			nside = hp.npix2nside(len(GWmap))
-	except:
-		raise HTTPException('Calculator ERROR: Map not found. Please contact the administrator.')
+	#try:
+	with tempfile.NamedTemporaryFile() as f:
+		tmpdata = gwtm_io.download_gwtm_file(mappathinfo, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
+		f.write(tmpdata)
+		GWmap = hp.read_map(f.name)
+		nside = hp.npix2nside(len(GWmap))
+	#except:
+	#	raise HTTPException('Calculator ERROR: Map not found. Please contact the administrator.')
 
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
@@ -656,9 +655,9 @@ def plot_prob_coverage():
 		#probs = cache.get(f'{cache_key}_probs')
 		#areas = cache.get(f'{cache_key}_areas')
 
-	if not all([times, probs, areas]):
-		result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
-		return jsonify({'result_id': result.id})
+	#if not all([times, probs, areas]):
+	#	result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+	#	return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
 
@@ -666,27 +665,28 @@ def plot_prob_coverage():
 
 	total = end-start
 	print('total time doing coverage calculator: {}'.format(total))
-	print('total area: {}'.format(areas[-1]))
-	print('total probability: {}'.format(probs[-1]))
+	if len(areas):
+		print('total area: {}'.format(areas[-1]))
+		print('total probability: {}'.format(probs[-1]))
 
 	return coverage_div
 
 
-@app.route('/prob_calc_results/<result_id>', methods=['GET'])
-def get_calc_result(result_id):
-	result = AsyncResult(result_id, app=celery)
-	if result.ready():
-		cache_key = result.get()
-		cache_file = json.loads(gwtm_io.get_cached_file(cache_key, config))
-		times = cache_file['times']
-		probs = cache_file['probs']
-		areas = cache_file['areas']
+#@app.route('/prob_calc_results/<result_id>', methods=['GET'])
+#def get_calc_result(result_id):
+#	result = AsyncResult(result_id, app=celery)
+#	if result.ready():
+#		cache_key = result.get()
+#		cache_file = json.loads(gwtm_io.get_cached_file(cache_key, config))
+#		times = cache_file['times']
+#		probs = cache_file['probs']
+#		areas = cache_file['areas']
 		#times = cache.get(f'{cache_key}_times')
 		#probs = cache.get(f'{cache_key}_probs')
 		#areas = cache.get(f'{cache_key}_areas')
-		return generate_prob_plot(times, probs, areas)
-	else:
-		return 'false'
+#		return generate_prob_plot(times, probs, areas)
+#	else:
+#		return 'false'
 
 
 @app.route('/ajax_preview_footprint', methods=['GET'])
