@@ -27,7 +27,7 @@ Werkzeug
 WTForms
 WTForms-Components
 gunicorn
-boto3
+boto3==1.26.90
 pygcn
 MOCpy
 ligo.skymap
@@ -36,3 +36,6 @@ redis
 Flask-Caching
 emails
 gcn-kafka
+fsspec
+adlfs
+s3fs

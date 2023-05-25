@@ -54,6 +54,7 @@ class bandpass(IntEnum):
     BAT = 28
     HESS = 29
     WISEL = 30
+    q = 31
 
 
 class wavelength_units(IntEnum):

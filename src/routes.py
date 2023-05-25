@@ -3,7 +3,6 @@
 import json, datetime
 import plotly
 import plotly.graph_objects as go
-import boto3
 
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
@@ -59,54 +58,53 @@ def home():
 
 	#fix this by ingesting LAT pointings in the pointings DB
 	# TODO: Fermi count should be cached
-	s3 = boto3.client('s3')
-	response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
-	if response['IsTruncated']:
-		print('WARNING: More than 1000 objects in bucket. Implement pagination.')
-	if len(response['Contents']) < 1:
-		fermi_events = 0
-	else:
-		fermi_events = len([x for x in response['Contents'] if 'Fermi' in x['Key']])
+	#response = s3.list_objects_v2(Bucket=config.AWS_BUCKET, Prefix='fit/')
+	#if response['IsTruncated']:
+	#	print('WARNING: More than 1000 objects in bucket. Implement pagination.')
+	#if len(response['Contents']) < 1:
+	#	fermi_events = 0
+	#else:
+	#	fermi_events = len([x for x in response['Contents'] if 'Fermi' in x['Key']])
 
-	inst_info = db.session.query(
-		models.pointing,
-		models.instrument
-	).group_by(
-		models.pointing.instrumentid,
-		models.instrument
-	).filter(
-		models.pointing.status == enums.pointing_status.completed,
-		models.instrument.id == models.pointing.instrumentid,
-		models.pointing_event.pointingid == models.pointing.id,
-		models.pointing_event.graceid != 'TEST_EVENT'
-	).order_by(
-		func.count(models.pointing.id).desc()
-	).values(
-		func.count(models.pointing.id).label('count'),
-		models.instrument.instrument_name,
-		models.instrument.id
-	)
+	#inst_info = db.session.query(
+	#	models.pointing,
+	#	models.instrument
+	#).group_by(
+	#	models.pointing.instrumentid,
+	#	models.instrument
+	#).filter(
+	#	models.pointing.status == enums.pointing_status.completed,
+	#	models.instrument.id == models.pointing.instrumentid,
+	#	models.pointing_event.pointingid == models.pointing.id,
+	#	models.pointing_event.graceid != 'TEST_EVENT'
+	#).order_by(
+	#	func.count(models.pointing.id).desc()
+	#).values(
+	#	func.count(models.pointing.id).label('count'),
+	#	models.instrument.instrument_name,
+	#	models.instrument.id
+	#)
 
-	inst_info = [list(inst_info), fermi_events]
+	#inst_info = [list(inst_info), fermi_events]
 
-	graceids = db.session.query(
-		models.gw_alert.graceid,
-		models.gw_alert.alert_type,
-	).order_by(
-		models.gw_alert.time_of_signal.desc()
-	).filter(
-		models.gw_alert.graceid != 'TEST_EVENT'
-	).all()
+	#graceids = db.session.query(
+	#	models.gw_alert.graceid,
+	#	models.gw_alert.alert_type,
+	#).order_by(
+	#	models.gw_alert.time_of_signal.desc()
+	#).filter(
+	#	models.gw_alert.graceid != 'TEST_EVENT'
+	#).all()
 
-	gids = list(sorted(set([x.graceid for x in graceids]), reverse=True))
-	rets = []
-	for g in gids:
-		gw_alerts = [x.alert_type for x in graceids if x.graceid == g]
-		if 'Retraction' in gw_alerts:
-			rets.append(g)
+	#gids = list(sorted(set([x.graceid for x in graceids]), reverse=True))
+	#rets = []
+	#for g in gids:
+	#	gw_alerts = [x.alert_type for x in graceids if x.graceid == g]
+	#	if 'Retraction' in gw_alerts:
+	#		rets.append(g)
 
-	gids = [x for x in gids if x not in rets]
-	graceid = gids[0]
+	#gids = [x for x in gids if x not in rets]
+	#graceid = gids[0]
 
 	#status = request.args.get('pointing_status')
 	#status = status if status is not None else 'completed'
@@ -129,7 +127,7 @@ def alert_select():
 	selected_role = request.args.get('role')
 
 	if selected_observing_run is None:
-		selected_observing_run = "O3"
+		selected_observing_run = "O4"
 	
 	if selected_role is None:
 		selected_role = "observation"
@@ -334,10 +332,11 @@ def reset_password():
 	models.useractions.write_action(request=request, current_user=current_user)
 	token = request.args.get('token')
 	if current_user.is_authenticated:
-		return redirect(url_for('index'))
+		return redirect(url_for('login'))
 	user = models.users.verify_reset_password_token(token)
 	if not user:
-		return redirect(url_for('index'))
+		flash("Invalid reset token")
+		return redirect(url_for('login'))
 	form = forms.ResetPasswordForm()
 	if form.validate_on_submit():
 		user.set_password(form.password.data)
@@ -381,11 +380,19 @@ def manage_user():
 def search_pointings():
 	models.useractions.write_action(request=request, current_user=current_user)
 	form = forms.SearchPointingsForm()
-	form.populate_graceids()
+	form.populate_selectdowns()
 	form.populate_creator_groups(current_user.get_id())
 
 	if request.method == 'POST':
-		formgraceid = form.graceids.data
+		args = request.form
+		formgraceid = args.get("graceid")
+
+		gids = form.graceids
+		for g in gids:
+			if g['value'] == formgraceid:
+				g['selected'] = True
+		form.graceids = gids
+
 		alternateids = db.session.query(models.gw_alert).filter(
 			models.gw_alert.alternateid == formgraceid
 		).all()
@@ -393,18 +400,33 @@ def search_pointings():
 		if len(alternateids):
 			graceid = alternateids[0].graceid
 		else:
-			graceid = form.graceids.data
+			graceid = formgraceid
 
 		filter = []
 		filter.append(models.pointing_event.graceid.contains(graceid))
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
 
-		if form.status_choices.data != '' and form.status_choices.data != 'all':
-			filter.append(models.pointing.status == form.status_choices.data)
+		status_choice = args.getlist("status")
+		stats = form.statuses
+		for s in stats:
+			if s['value'] in status_choice:
+				s['selected'] = True
+		form.statuses = stats
 
-		if len(form.band_choices.data):
-			if "all" not in form.band_choices.data:
-				filter.append(models.pointing.band.in_(form.band_choices.data))
+		if len(status_choice):
+			if "all" not in status_choice:
+				filter.append(models.pointing.status.in_(status_choice))
+
+		band_choice = args.getlist("band")
+		bands = form.bands
+		for b in bands:
+			if b['value'] in band_choice:
+				b['selected'] = True
+		form.bands = bands
+
+		if len(band_choice):
+			if "all" not in band_choice:
+				filter.append(models.pointing.band.in_(band_choice))
 
 		if form.my_points.data:
 			filter.append(models.pointing.submitterid == current_user.get_id())
@@ -427,9 +449,8 @@ def search_pointings():
 								   models.pointing.submitterid
 								   ).filter(*filter).all()
 
-		return render_template('search_pointings.html', form=form, search_result=results)
+		return render_template('search_pointings.html', form=form, search_result=results, nresults=len(results))
 	return render_template('search_pointings.html', form=form)
-
 
 
 @app.route('/search_instruments', methods=['GET', 'POST'])
@@ -642,6 +663,7 @@ def submit_instrument():
 
 	return render_template('submit_instrument.html', form=form, plot=None, insts=insts)
 
+
 @app.route('/instrument_info')
 def instrument_info():
 	models.useractions.write_action(request=request, current_user=current_user)
@@ -796,6 +818,7 @@ def doi_author_group():
 		return redirect('/manage_user')
 
 	return render_template('doi_author_group.html', create=True)
+
 
 @app.route('/logout')
 def logout():

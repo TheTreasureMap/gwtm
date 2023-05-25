@@ -682,14 +682,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
           }
         ).done(function (reply) 
           {
-            console.log(reply)
-            if(reply.result_id){
-              poll_for_result(reply.result_id)
-            } else {
-              $('#coveragediv').html(reply);
+            $('#coveragediv').html(reply);
               btn.prop('disabled', false)
               btn.button('reset')
-            }
           }
         ).fail(function(jqXHR, textStatus)
           {

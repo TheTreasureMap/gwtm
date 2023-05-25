@@ -20,19 +20,51 @@
   <form action="" method="post">
     {{ form.hidden_tag() }}
     <p>
-        {{ form.graceids.label}} {{ form.graceids }}
+      Grace ID   
+      <select class="selectpicker" data-required="true" data-live-search="true"  name=graceid id=graceid>
+        {% for a in form.graceids %}
+          {% if a['selected'] %}
+            <option selected value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% else %}
+            <option value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <text style="font-size: small;">*required</text>
     </p>
     <p>
-        {{ form.band_choices.label}} {{ form.band_choices }}
+        Bandpasses
+        <select class="selectpicker" multiple data-live-search="true" name=band id=band>
+          {% for a in form.bands %}
+            {% if a['selected'] %}
+              <option selected value={{ a['value'] }}>{{ a['name'] }}</option>
+            {% else %}
+              <option value={{ a['value'] }}>{{ a['name'] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
     </p>
     <p>
-      {{ form.status_choices.label }} {{ form.status_choices }}
+      Status
+      <select class="selectpicker" multiple data-live-search="true" name=status id=status>
+        {% for a in form.statuses %}
+          {% if a['selected'] %}
+            <option selected value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% else %}
+            <option value={{ a['value'] }}>{{ a['name'] }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
     </p>
     <p>
       {{ form.my_points.label }} {{ form.my_points }} <text style="font-size: small;">(required for DOI request)</text>
     </p>
 
-    <p>{{ form.submit() }}</p>
+    {% if search_result %}
+      <p>{{ form.submit() }} <b> :{{ nresults }} Pointing(s)</b></p>
+    {%else%}
+      <p>{{ form.submit() }} </p>
+    {% endif %}
     </form>
 
     {% if form.my_points.data %}

@@ -291,6 +291,11 @@ class SpectralRangeHandler:
             'source' : 'Iair figure he sent me in slack ~ 3700-7000A',
             'central_wave' : 5350,
             'bandwidth' : 1650
+        },
+        enums.bandpass.q: {
+            'source': 'Danielle Piertese',
+            'central_wave' : 5800,
+            'bandwidth' : 2800
         }
     }
 
