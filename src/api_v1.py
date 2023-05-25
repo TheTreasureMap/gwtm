@@ -110,7 +110,6 @@ def remove_event_galaxies_v1():
 	else:
 		return make_response('Event galaxy listid is required', 500)
 
-
 @app.route('/api/v1/event_galaxies', methods=['GET'])
 def get_event_galaxies_v1():
 
@@ -173,7 +172,7 @@ def post_event_galaxies_v1():
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		return make_response("Whoaaaa that JSON is a little wonky", 500)
 
 	post_doi = False
 	warnings = []
@@ -200,7 +199,7 @@ def post_event_galaxies_v1():
 		try:
 			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 
 		alert = db.session.query(models.gw_alert).filter(
 			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
@@ -294,7 +293,7 @@ def get_galaxies_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message)
+		return make_response(message, 500)
 
 	filter = []
 	filter1 = []
@@ -743,7 +742,7 @@ def api_request_doi_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message)
+		return make_response(message, 500)
 
 	if 'creators' in args:
 		creators = args['creators']
@@ -825,7 +824,7 @@ def cancel_all_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message)
+		return make_response(message, 500)
 
 	filter1 = []
 	filter1.append(models.pointing.status == enums.pointing_status.planned)
@@ -854,7 +853,7 @@ def cancel_all_v1():
 		setattr(p, 'dateupdated', datetime.datetime.now())
 
 	db.session.commit()
-	return make_response("Updated "+str(len(pointings.all()))+" Pointings successfully")
+	return make_response("Updated "+str(len(pointings.all()))+" Pointings successfully", 200)
 
 
 #Cancel PlannedPointing
@@ -865,7 +864,7 @@ def del_pointings_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message)
+		return make_response(message, 500)
 
 	if 'status' in args:
 		status = args['status']
@@ -965,7 +964,7 @@ def get_grbmoc_v1():
 		gid = args.get('graceid')
 		gid = models.gw_alert.graceidfromalternate(gid)
 	else:
-		return make_response('graceid is required')
+		return make_response('graceid is required', 500)
 
 	if "instrument" in args:
 		inst = args.get("instrument").lower()
@@ -998,10 +997,10 @@ def post_alert_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return make_response(message)
+		return make_response(message, 500)
 
 	if user.id not in [2]:
-			return make_response("Only admin can access this endpoint")
+			return make_response("Only admin can access this endpoint", 500)
 
 	alert = models.gw_alert.from_json(args)
 	db.session.add(alert)
@@ -1033,7 +1032,7 @@ def query_alerts_v1():
 	alerts = db.session.query(models.gw_alert).filter(*filter).all()
 	alerts = [x.parse for x in alerts]
 
-	return make_response(json.dumps(alerts), 500)
+	return make_response(json.dumps(alerts), 200)
 
 
 @app.route('/api/v1/del_test_alerts', methods=['POST'])

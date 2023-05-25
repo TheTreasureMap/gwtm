@@ -30,12 +30,12 @@ def to_json(inst, cls):
     """
     convert = dict()
     json_cols = [gw_galaxy_entry.info]
-    # add your coversions for things like datetime's 
+    # add your coversions for things like datetime's
     # and what-not that aren't serializable.
     d = dict()
     for c in cls.__table__.columns:
         v = getattr(inst, c.name)
-        
+
         if c.type in convert.keys() and v is not None:
             try:
                 d[c.name] = convert[c.type](v)
@@ -62,9 +62,49 @@ def to_json(inst, cls):
             d[c.name] = v.isoformat()
         else:
             d[c.name] = v
-    #to fix the api do : return d, and json.dumps() in api returns... 
+    #to fix the api do : return d, and json.dumps() in api returns...
     return json.dumps(d)
 
+def parse_model(inst, cls):
+    """
+    Returns a string value for the sql alchemy query result.
+    """
+    convert = dict()
+    json_cols = [gw_galaxy_entry.info]
+    # add your coversions for things like datetime's
+    # and what-not that aren't serializable.
+    d = dict()
+    for c in cls.__table__.columns:
+        v = getattr(inst, c.name)
+
+        if c.type in convert.keys() and v is not None:
+            try:
+                d[c.name] = convert[c.type](v)
+            except:
+                d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
+        elif c in json_cols:
+            d[c.name] = v
+        elif v is None:
+            d[c.name] = str()
+        elif "instrument_type" in str(v):
+            d[c.name] = v.name
+        elif "pointing_status" in str(v):
+            d[c.name] = v.name
+        elif "bandpass" in str(v):
+            d[c.name] = v.name
+        elif "depth_unit" in str(v):
+            d[c.name] = v.name
+        elif "geography" in str(c.type):
+            #try:
+            d[c.name] = str(geoalchemy2.shape.to_shape(v))
+            #except:
+            #   d[c.name] = v
+        elif isinstance(v, (datetime.date, datetime.datetime)):
+            d[c.name] = v.isoformat()
+        else:
+            d[c.name] = v
+    #to fix the api do : return d, and json.dumps() in api returns...
+    return d
 
 class valid_mapping():
     def __init__(self):
@@ -81,7 +121,7 @@ class SpectralRangeHandler:
             for central_wavelength I used the lam_cen
             for bandwidth I used the FWHM
 
-        Our base for the central wavelengths and bandwidths will be stored in 
+        Our base for the central wavelengths and bandwidths will be stored in
             Angstroms
 
         There are following static methods to convert the Angstrom values into ranges for
@@ -96,7 +136,7 @@ class SpectralRangeHandler:
         wavelength = 1
         energy = 2
         frequency = 3
-    
+
 
     '''
         older bandpass dictionary
@@ -208,22 +248,22 @@ class SpectralRangeHandler:
             'bandwidth' : 3497578676.6665
         },
         enums.bandpass.L : {
-            'source' : 'manual conversion from 1-2GHz', 
+            'source' : 'manual conversion from 1-2GHz',
             'central_wave' : 2248443435.0,
-            'bandwidth' : 749481145.0 
+            'bandwidth' : 749481145.0
         },
         enums.bandpass.S : {
-            'source' : 'manual conversion from 2-4GHz', 
+            'source' : 'manual conversion from 2-4GHz',
             'central_wave' : 1124221715.25,
             'bandwidth' : 374740574.75
         },
         enums.bandpass.C : {
-            'source' : 'manual conversion from 4-8GHz', 
+            'source' : 'manual conversion from 4-8GHz',
             'central_wave' : 936851431.25,
             'bandwidth' : 562110858.75
         },
         enums.bandpass.X : {
-            'source' : 'manual conversion from 8-12GHz', 
+            'source' : 'manual conversion from 8-12GHz',
             'central_wave' : 312283810.41665,
             'bandwidth' : 62456762.08335
         },
@@ -256,7 +296,7 @@ class SpectralRangeHandler:
 
 
     '''
-        method that returns the most likely bandpass name from central_wave and bandwidth 
+        method that returns the most likely bandpass name from central_wave and bandwidth
     '''
     @staticmethod
     def bandEnumFromCentralWaveBandwidth(central_wave, bandwidth):
@@ -280,8 +320,8 @@ class SpectralRangeHandler:
     def wavetoFrequency(central_wave=None, bandwidth=None, bandpass=None):
         wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass)
 
-        freq_max = 2997924580000000000.0/wave_min 
-        freq_min = 2997924580000000000.0/wave_max 
+        freq_max = 2997924580000000000.0/wave_min
+        freq_min = 2997924580000000000.0/wave_max
 
         return freq_min, freq_max
 
@@ -289,7 +329,7 @@ class SpectralRangeHandler:
     '''
         method that returns the corresponding wave range to energy in eV
     '''
-    @staticmethod    
+    @staticmethod
     def wavetoEnergy(central_wave=None, bandwidth=None, bandpass=None):
         wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass)
 
@@ -300,9 +340,9 @@ class SpectralRangeHandler:
 
 
     '''
-        method that returns the wavelength range from the central_wave and bandwidth, or bandpass 
+        method that returns the wavelength range from the central_wave and bandwidth, or bandpass
     '''
-    @staticmethod    
+    @staticmethod
     def wavetoWaveRange(central_wave=None, bandwidth=None, bandpass=None):
         if central_wave is None and bandwidth is None and bandpass is not None:
             bp = SpectralRangeHandler.bandpass_wavelength_dictionary[bandpass]
@@ -315,14 +355,14 @@ class SpectralRangeHandler:
         return wave_min, wave_max
 
 
-    ''' 
+    '''
         method that returns the central_wave and bandwidth from a given energy range (must be eV)
             higher energy corresponds to lower wavelength
             lower energy corresponds to higher wavelength
     '''
-    @staticmethod 
+    @staticmethod
     def wavefromEnergyRange(min_energy, max_energy):
-        
+
         wave_min = 12398/max_energy
         wave_max = 12398/max_energy
 
@@ -337,7 +377,7 @@ class SpectralRangeHandler:
             higher frequency corresponds to lower wavelength
             lower frequency corresponds to higher wavelength
     '''
-    @staticmethod 
+    @staticmethod
     def wavefromFrequencyRange(min_freq, max_freq):
         wave_min = 2997924580000000000.0/max_freq
         wave_max = 2997924580000000000/min_freq
@@ -384,7 +424,7 @@ class users(UserMixin, db.Model):
 
     def set_verification_key(self):
         self.verification_key = secrets.token_urlsafe(28)
-    
+
     def check_verification_key(self, verification_key):
         return verification_key == self.verification_key
 
@@ -472,9 +512,13 @@ class instrument(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
     def from_json(self, form, userid, preview=False):
         v = valid_mapping()
-        
+
         nickname = form.instrument_nickname.data
         submitterid = userid
         instrument_name = form.instrument_name.data
@@ -502,7 +546,7 @@ class instrument(db.Model):
             if not isFloat(h) or not isFloat(w):
                 v.errors.append('Height and Width must be decimal')
                 return [v]
-                
+
             vertices = []
             half_h = round(0.5*float(h)*scale, 4)
             half_w = round(0.5*float(w)*scale, 4)
@@ -610,6 +654,10 @@ class footprint_ccd(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
 
 class pointing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -636,6 +684,10 @@ class pointing(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
     @hybrid_method
     def inSpectralRange(self, spectral_min, spectral_max, spectral_type):
         '''
@@ -644,8 +696,8 @@ class pointing(db.Model):
             energy (eV)
             frequency (Hz)
 
-        it inputs the range of the spectral type (minimum and maximum values for given type) and 
-            determines if the pointing's observation is in that range. The boolean logic is all 
+        it inputs the range of the spectral type (minimum and maximum values for given type) and
+            determines if the pointing's observation is in that range. The boolean logic is all
             encompassing; whether the endpoints are confined entirely within the provided range
         '''
 
@@ -669,8 +721,8 @@ class pointing(db.Model):
             energy (eV)
             frequency (Hz)
 
-        it inputs the range of the spectral type (minimum and maximum values for given type) and 
-            determines if the pointing's observation is in that range. The boolean logic is all 
+        it inputs the range of the spectral type (minimum and maximum values for given type) and
+            determines if the pointing's observation is in that range. The boolean logic is all
             encompassing; whether the endpoints are confined entirely within the provided range
         '''
 
@@ -748,7 +800,7 @@ class pointing(db.Model):
             validstatusints = [int(b) for b in enums.pointing_status if b.name != 'cancelled']
             validstatusstr = [str(b.name) for b in enums.pointing_status if b.name != 'cancelled']
             if userstatus in validstatusints or userstatus in validstatusstr:
-                statusenum = [ps for ps in enums.pointing_status if userstatus == int(ps) or userstatus == str(ps.name)][0] 
+                statusenum = [ps for ps in enums.pointing_status if userstatus == int(ps) or userstatus == str(ps.name)][0]
                 self.status = statusenum
         elif not PLANNED:
             self.status = enums.pointing_status.completed
@@ -787,7 +839,7 @@ class pointing(db.Model):
         #        self.galaxy_catalog = p['galaxy_catalog']
 
         #if 'galaxy_catalogid' in p:
-        #    if isInt(p['galaxy_catalogid']):    
+        #    if isInt(p['galaxy_catalogid']):
         #        self.galaxy_catalogid = p['galaxy_catalogid']
 
         if 'instrumentid' in p and not PLANNED:
@@ -814,7 +866,7 @@ class pointing(db.Model):
         if 'depth' in p:
             if isFloat(p['depth']):
                 self.depth = p['depth']
-            else:        
+            else:
                 v.errors.append('Invalid depth. Must b and not PLANNEDe decimal')
         elif self.status == enums.pointing_status.completed and not PLANNED:
             v.errors.append('depth is required for completed observations')
@@ -840,7 +892,7 @@ class pointing(db.Model):
         if 'pos_angle' in p:
             if isFloat(p['pos_angle']):
                 self.pos_angle = p['pos_angle']
-            else:        
+            else:
                 v.errors.append('Invalid pos_angle. Must be decimal')
         elif self.status == enums.pointing_status.completed and self.pos_angle is not None:
             v.errors.append('pos_angle is required for completed observations')
@@ -906,7 +958,7 @@ class pointing(db.Model):
                 v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
             #except:
             #    v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
-            
+
 
         if "energy_regime" in p and "energy_unit" in p and not PLANNED:
             try:
@@ -952,7 +1004,7 @@ class pointing(db.Model):
             validbandstr = [str(b.name) for b in enums.bandpass]
             userband = p['band']
             if userband in validbandints or userband in validbandstr:
-                bandenum = [b for b in enums.bandpass if userband == int(b) or userband == str(b.name)][0] 
+                bandenum = [b for b in enums.bandpass if userband == int(b) or userband == str(b.name)][0]
                 self.band = userband
                 if self.central_wave is None and self.bandwidth is None:
                     bandinfo = SpectralRangeHandler.bandpass_wavelength_dictionary[bandenum]
@@ -983,6 +1035,10 @@ class pointing_event(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
 
 class glade_2p3(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1011,6 +1067,10 @@ class glade_2p3(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
 
 
 class gw_alert(db.Model):
@@ -1041,7 +1101,7 @@ class gw_alert(db.Model):
     duration = db.Column(db.Float)
     avgra = db.Column(db.Float)
     avgdec = db.Column(db.Float)
-    
+
     observing_run = db.Column(db.String)
     pipeline = db.Column(db.String)
     search = db.Column(db.String)
@@ -1097,16 +1157,20 @@ class gw_alert(db.Model):
         ]
 
         sorted_probs = sorted([x for x in probs if x['prob'] > 0.01], key = lambda i: i['prob'], reverse=True)
-        
+
         classification = ''
         for p in sorted_probs:
             classification += p['class'] + ': ('+str(round(100*p['prob'], 1))+'%) '
 
         return classification
-    
+
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
 
     @staticmethod
     def graceidfromalternate(graceid):
@@ -1119,9 +1183,9 @@ class gw_alert(db.Model):
 
         if len(alternateids):
             graceid = alternateids[0].graceid
-            
+
         return graceid
-    
+
     @staticmethod
     def alternatefromgraceid(graceid):
 
@@ -1131,7 +1195,7 @@ class gw_alert(db.Model):
         if len(alternateids):
             if alternateids[0].alternateid is not None:
                 graceid = alternateids[0].alternateid
-            
+
         return graceid
 
 
@@ -1145,6 +1209,20 @@ class gw_galaxy(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+class event_galaxy(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    graceid = db.Column(db.String)
+    galaxy_catalog = db.Column(db.Integer)
+    galaxy_catalogID = db.Column(db.Integer)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
 
 class gw_galaxy_score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1156,6 +1234,10 @@ class gw_galaxy_score(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
 
 class doi_author_group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1165,6 +1247,10 @@ class doi_author_group(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
 
 
 class doi_author(db.Model):
@@ -1179,6 +1265,10 @@ class doi_author(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
 
     @staticmethod
     def construct_creators(doi_group_id, userid):
@@ -1261,6 +1351,10 @@ class gw_galaxy_list(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+
 
 class gw_galaxy_entry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1274,6 +1368,10 @@ class gw_galaxy_entry(db.Model):
     @property
     def json(self):
         return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
 
     def from_json(self, p): #dbusers):
         v = valid_mapping()
@@ -1327,6 +1425,6 @@ class gw_galaxy_entry(db.Model):
 
         if 'info' in p:
             self.info = p['info']
-            
+
         v.valid = len(v.errors) == 0
         return v
