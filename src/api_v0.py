@@ -33,8 +33,11 @@ def initial_request_parse(request, only_json=False):
 
 	if "api_token" in args:
 		apitoken = args['api_token']
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		if user is None:
+		if apitoken is not None:
+			user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+			if user is None:
+				return False, "Invalid api_token", args, None
+		else:
 			return False, "Invalid api_token", args, None
 	else:
 		return False, "api_token is required", args, None
