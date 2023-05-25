@@ -12,14 +12,14 @@ def _get_fs(source, config):
 
 
 def download_gwtm_file(filename, source='s3', config=None, decode=True):
-
+    print(source)
     fs = _get_fs(source=source, config=config)
 
     if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:
         filename = f"{config.AWS_BUCKET}/{filename}"
 
     s3file = fs.open(filename, 'rb')
-    
+
     with s3file as _file:
         if decode:
             return _file.read().decode('utf-8')
@@ -44,7 +44,7 @@ def download_gwtm_file(filename, source='s3', config=None, decode=True):
 #
 #    except:
 #        raise Exception(f"Error reading {source} file: {filename}")
-            
+
 
 def upload_gwtm_file(content, filename, source="s3", config=None):
     fs = _get_fs(source=source, config=config)
@@ -54,8 +54,8 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
 
     if type(content) == bytes:
         open_file = fs.open(filename, "wb")
-    else: 
-        open_file = fs.open(filename, "w") 
+    else:
+        open_file = fs.open(filename, "w")
 
     with open_file as of:
         of.write(content)
@@ -73,7 +73,7 @@ def list_gwtm_bucket(container, source="s3", config=None):
             if split_b != f"{container}/":
                 ret.append(split_b)
         return sorted(ret)
-    
+
     ret = fs.ls(container)
     return sorted(ret)
 
@@ -86,7 +86,7 @@ def delete_gwtm_files(keys, source="s3", config=None):
                     keys[i] = f"{config.AWS_BUCKET}/{k}"
         if isinstance(keys, str) and f"{config.AWS_BUCKET}/" not in keys:
             keys = f"{config.AWS_BUCKET}/{keys}"
-    
+
     fs = _get_fs(source=source, config=config)
     for k in keys:
         fs.rm(k)
@@ -95,18 +95,18 @@ def delete_gwtm_files(keys, source="s3", config=None):
 def get_cached_file(key, config):
     source = config.STORAGE_BUCKET_SOURCE
     cached_files = list_gwtm_bucket('cache', source, config)
-    
+
     if key in cached_files:
         print(f"found cached file {key}")
         return download_gwtm_file(key, source, config)
-    else:   
+    else:
         return None
-    
+
 def set_cached_file(key, contents, config):
     source = config.STORAGE_BUCKET_SOURCE
-    
+
     upload_gwtm_file(json.dumps(contents), key, source, config)
-    
+
 
 class test_config(object):
     pass
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         filename = "test/vv.text"
         print("uploading test file", source)
         test1 = upload_gwtm_file(content, filename, source=source, config=config)
-        assert test1, "error upload" 
+        assert test1, "error upload"
 
         print("downloading test file", source)
         test2 = download_gwtm_file(filename, source=source, config=config)

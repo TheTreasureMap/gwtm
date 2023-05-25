@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from flask import request, jsonify
+from flask import request, make_response
 from sqlalchemy import func, or_
+from botocore.exceptions import ClientError
 import json, datetime
+import boto3
+import io
 
 from src import app
 from src.gwtmconfig import config
@@ -25,17 +28,17 @@ def initial_request_parse(request, only_json=False):
 
 	if args is None:
 		args = request.args
-	
+
 	if args is None:
 		return False, "Invalid Arguments.", args, None
-	
+
 	if "api_token" in args:
 		apitoken = args['api_token']
-		if apitoken is None:
-			return False, "Invalid api_token", args, None
-		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
-		
-		if user is None:
+		if apitoken is not None:
+			user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
+			if user is None:
+				return False, "Invalid api_token", args, None
+		else:
 			return False, "Invalid api_token", args, None
 	else:
 		return False, "api_token is required", args, None
@@ -55,13 +58,13 @@ def make_response(response_message, status_code):
 #API Endpoints
 
 #Get instrument footprints
-@app.route("/api/v0/footprints", methods=['GET'])
-def get_footprints():
+@app.route("/api/v1/footprints", methods=['GET'])
+def get_footprints_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 
 	filter = []
 	if "id" in args:
@@ -77,18 +80,18 @@ def get_footprints():
 		filter.append(or_(*ors))
 
 	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
-	footprints = [x.json for x in footprints]
+	footprints = [x.parse for x in footprints]
 
-	return jsonify(footprints)
+	return make_response(json.dumps(footprints), 200)
 
 
-@app.route('/api/v0/remove_event_galaxies', methods=['POST'])
-def remove_event_galaxies():
+@app.route('/api/v1/remove_event_galaxies', methods=['POST'])
+def remove_event_galaxies_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 
 	if "listid" in args:
 		listid = args['listid']
@@ -101,24 +104,23 @@ def remove_event_galaxies():
 					for ge in gallist_entries:
 						db.session.delete(ge)
 					db.session.commit()
-					return(jsonify("Successfully deleted your galaxy list"))
+					return(make_response(json.dumps("Successfully deleted your galaxy list")), 200)
 				else:
-					return jsonify('You can only delete information related to your api_token! shame shame')
+					return make_response('You can only delete information related to your api_token! shame shame', 500)
 			else:
-				return(jsonify('No galaxies with that listid'))
+				return(make_response('No galaxies with that listid', 500))
 		else:
-			return jsonify('Invalid listid')
+			return make_response('Invalid listid', 500)
 	else:
-		return jsonify('Event galaxy listid is required')
+		return make_response('Event galaxy listid is required', 500)
 
+@app.route('/api/v1/event_galaxies', methods=['GET'])
+def get_event_galaxies_v1():
 
-@app.route('/api/v0/event_galaxies', methods=['GET'])
-def get_event_galaxies():
-	
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 
 	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
 
@@ -126,21 +128,21 @@ def get_event_galaxies():
 		graceid = models.gw_alert.graceidfromalternate(args['graceid'])
 		filter.append(models.gw_galaxy_list.graceid == graceid)
 	else:
-		return jsonify("\'graceid\' is required")
+		return make_response("\'graceid\' is required", 500)
 
 	if "timesent_stamp" in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
 			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 
 		alert = db.session.query(models.gw_alert).filter(
-			models.gw_alert.timesent < time + datetime.timedelta(seconds=15), 
+			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
 			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
 			models.gw_alert.graceid == graceid).first()
 		if alert is None:
-			return jsonify('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid))
+			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
 		else:
 			filter.append(models.gw_galaxy_list.alertid == alert.id)
 
@@ -148,7 +150,7 @@ def get_event_galaxies():
 		if function.isInt(args['listid']):
 			filter.append(models.gw_galaxy_list.id == int(args['listid']))
 		else:
-			return jsonify('Invalid \'listid\'')
+			return make_response('Invalid \'listid\'', 500)
 
 	if 'groupname' in args:
 		filter.append(models.gw_galaxy_list.groupname == args['groupname'])
@@ -163,18 +165,18 @@ def get_event_galaxies():
 			filter.append(models.gw_galaxy_entry.score <= slt)
 
 	gal_entries = db.session.query(models.gw_galaxy_entry).filter(*filter).all()
-	gal_entries = [x.json for x in gal_entries]
+	gal_entries = [x.parse for x in gal_entries]
 
-	return jsonify(gal_entries)
+	return make_response(json.dumps(gal_entries), 200)
 
 
-@app.route('/api/v0/event_galaxies', methods=['POST'])
-def post_event_galaxies():
+@app.route('/api/v1/event_galaxies', methods=['POST'])
+def post_event_galaxies_v1():
 
 	try:
 		args = request.get_json()
 	except:
-		return("Whoaaaa that JSON is a little wonky")
+		return make_response("Whoaaaa that JSON is a little wonky", 500)
 
 	post_doi = False
 	warnings = []
@@ -184,9 +186,9 @@ def post_event_galaxies():
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
-			return jsonify("invalid api_token")
+			return make_response("invalid api_token", 500)
 	else:
-		return jsonify("api_token is required")
+		return make_response("api_token is required", 500)
 
 	models.useractions.write_action(request=request, current_user=user)
 
@@ -194,23 +196,23 @@ def post_event_galaxies():
 		graceid = args['graceid']
 		graceid = models.gw_alert.graceidfromalternate(graceid)
 	else:
-		return jsonify('graceid is required')
+		return make_response('graceid is required', 500)
 
 	if "timesent_stamp" in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
 			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
 		except:
-			return jsonify("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 
 		alert = db.session.query(models.gw_alert).filter(
-			models.gw_alert.timesent < time + datetime.timedelta(seconds=15), 
+			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
 			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
 			models.gw_alert.graceid == graceid).first()
 		if alert is None:
-			return jsonify('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid))
+			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
 	else:
-		return jsonify('timesent_stamp is required')
+		return make_response('timesent_stamp is required', 500)
 
 	if "groupname" in args:
 		groupname = args['groupname']
@@ -228,11 +230,11 @@ def post_event_galaxies():
 			creators = args['creators']
 			for c in creators:
 				if 'name' not in c.keys() or 'affiliation' not in c.keys():
-					return jsonify('name and affiliation are required for DOI creators json list')
+					return make_response('name and affiliation are required for DOI creators json list', 500)
 		elif 'doi_group_id' in args:
 				valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 				if not valid:
-					return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
+					return make_response("Invalid doi_group_id. Make sure you are the User associated with the DOI group", 500)
 		else:
 			creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
@@ -265,7 +267,7 @@ def post_event_galaxies():
 				errors.append(["Object: "+json.dumps(g), v.errors])
 
 	else:
-		return jsonify("a list of galaxies is required")
+		return make_response("a list of galaxies is required", 500)
 
 	doi_string = '. '
 
@@ -284,18 +286,18 @@ def post_event_galaxies():
 			db.session.flush()
 			db.session.commit()
 
-	return jsonify({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+doi_string+" List ID" :str(gw_galist.id), 
-					"ERRORS":errors, 
-					"WARNINGS":warnings})
+	return make_response(json.dumps({"Successful adding of "+str(len(valid_galaxies))+" galaxies for event "+graceid+doi_string+" List ID" :str(gw_galist.id),
+					"ERRORS":errors,
+					"WARNINGS":warnings}), 200)
 
 
-@app.route("/api/v0/glade", methods=['GET'])
-def get_galaxies():
-	
+@app.route("/api/v1/glade", methods=['GET'])
+def get_galaxies_v1():
+
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
+		return make_response(message, 500)
 
 	filter = []
 	filter1 = []
@@ -322,9 +324,9 @@ def get_galaxies():
 
 	galaxies = trim.filter(*filter).order_by(*orderby).limit(15).all()
 
-	galaxies = [x.json for x in galaxies]
+	galaxies = [x.parse for x in galaxies]
 
-	return jsonify(galaxies)
+	return make_response(json.dumps(galaxies), 200)
 
 
 #Post Pointing/s
@@ -332,8 +334,8 @@ def get_galaxies():
 #Returns: List of assigned IDs
 #Comments: Check if instrument configuration already exists to avoid duplication.
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
-@app.route("/api/v0/pointings", methods=["POST"])
-def add_pointings():
+@app.route("/api/v1/pointings", methods=["POST"])
+def add_pointings_v1():
 
 	valid, message, args, user = initial_request_parse(request=request, only_json=True)
 
@@ -357,7 +359,7 @@ def add_pointings():
 			return make_response("Invalid graceid", 500)
 	else:
 		return make_response("graceid is required", 500)
-	
+
 	if 'request_doi' in args:
 		post_doi = bool(args['request_doi'])
 		if 'creators' in args:
@@ -381,7 +383,7 @@ def add_pointings():
 		models.pointing.id == models.pointing_event.pointingid,
 		models.pointing_event.graceid == gid
 	).all()
-	
+
 	if "pointing" in args:
 		p = args['pointing']
 		mp = models.pointing()
@@ -459,8 +461,8 @@ def add_pointings():
 #Get Pointing/s
 #Parameters: List of ID/s, type/s, group/s, user/s, and/or time/s constraints (to be AND’ed).
 #Returns: List of PlannedPointing JSON objects
-@app.route("/api/v0/pointings", methods=["GET"])
-def get_pointings():
+@app.route("/api/v1/pointings", methods=["GET"])
+def get_pointings_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
@@ -468,7 +470,7 @@ def get_pointings():
 		return app.response_class(response=message,
                                   status=500,
                                   mimetype='application/json')
-	
+
 	filter=[]
 
 	if "graceid" in args:
@@ -627,7 +629,7 @@ def get_pointings():
 			filter.append(models.users.id == models.pointing.submitterid)
 		else:
 			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2, ..]\'', 500)
-		
+
 	if "instrument" in args:
 		inst = args.get('instrument')
 		if inst.isdigit():
@@ -669,7 +671,7 @@ def get_pointings():
 				specmin, specmax = float(arg[0]), float(arg[1])
 		except:
 			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
-		
+
 		try:
 			user_unit = args['wavelength_unit']
 			spectral_unit = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
@@ -680,7 +682,7 @@ def get_pointings():
 		specmax = specmax*scale
 
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.wavelength))
-	
+
 	if 'frequency_regime' in args and 'frequency_unit' in args:
 		argname = "frequency_regime"
 		arg = args.get(argname)
@@ -705,7 +707,7 @@ def get_pointings():
 		specmax = specmax*scale
 
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.frequency))
-	
+
 
 	if 'energy_regime' in args and 'energy_unit' in args:
 		argname = "energy_regime"
@@ -733,28 +735,28 @@ def get_pointings():
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.energy))
 
 	pointings = db.session.query(models.pointing).filter(*filter).all()
-	pointings = [x.json for x in pointings]
+	pointings = [x.parse for x in pointings]
 
 	return make_response(json.dumps(pointings), 200)
 
 
-@app.route("/api/v0/request_doi", methods=['POST'])
-def api_request_doi():
+@app.route("/api/v1/request_doi", methods=['POST'])
+def api_request_doi_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	if 'creators' in args:
 		creators = args['creators']
 		for c in creators:
 			if 'name' not in c.keys() or 'affiliation' not in c.keys():
-				return jsonify('name and affiliation are required for DOI creators json list')
+				return make_response('name and affiliation are required for DOI creators json list', 500)
 	elif 'doi_group_id' in args:
 		valid, creators = models.doi_author.construct_creators(args['doi_group_id'], user.id)
 		if not valid:
-			return jsonify("Invalid doi_group_id. Make sure you are the User associated with the DOI group")
+			return make_response("Invalid doi_group_id. Make sure you are the User associated with the DOI group", 500)
 	else:
 		creators = [{ 'name':str(user.firstname) + ' ' + str(user.lastname) }]
 
@@ -771,16 +773,16 @@ def api_request_doi():
 		if function.isInt(_id):
 			filter.append(models.pointing.id == int(_id))
 		else:
-			return jsonify("Invalid ID")
+			return make_response("Invalid ID", 500)
 	elif "ids" in args:
 		try:
 			ids = args.get('ids')
 			filter.append(models.pointing.id.in_(ids))
 		except:
-			return jsonify('Invalid list format of IDs')
+			return make_response('Invalid list format of IDs', 500)
 
 	if len(filter) == 0:
-		return jsonify("Insufficient filter parameters")
+		return make_response("Insufficient filter parameters", 500)
 
 	points = db.session.query(models.pointing).filter(*filter).all()
 
@@ -793,14 +795,14 @@ def api_request_doi():
 			warnings.append("Invalid doi request for pointing: " + str(p.id))
 
 	if len(doi_points) == 0:
-		return jsonify("No pointings to give DOI")
+		return make_response("No pointings to give DOI", 500)
 
 	insts = db.session.query(models.instrument).filter(models.instrument.id.in_([x.instrumentid for x in doi_points]))
 	inst_set = list(set([x.instrument_name for x in insts]))
 
 	gids = list(set([x.graceid for x in db.session.query(models.pointing_event).filter(models.pointing_event.pointingid.in_([x.id for x in doi_points]))]))
 	if len(gids) > 1:
-		return jsonify("Pointings must be only for a single GW event")
+		return make_response("Pointings must be only for a single GW event", 500)
 
 	gid = gids[0]
 
@@ -818,16 +820,16 @@ def api_request_doi():
 		db.session.flush()
 		db.session.commit()
 
-	return jsonify({"DOI URL":doi_url, "WARNINGS":warnings})
+	return make_response(json.dumps({"DOI URL":doi_url, "WARNINGS":warnings}), 200)
 
 
-@app.route("/api/v0/cancel_all", methods=["POST"])
-def cancel_all():
+@app.route("/api/v1/cancel_all", methods=["POST"])
+def cancel_all_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	filter1 = []
 	filter1.append(models.pointing.status == enums.pointing_status.planned)
 	filter1.append(models.pointing.submitterid == user.id)
@@ -838,16 +840,16 @@ def cancel_all():
 		filter1.append(models.pointing_event.graceid == graceid)
 		filter1.append(models.pointing.id == models.pointing_event.pointingid)
 	else:
-		return jsonify("graceid is required")
+		return make_response("graceid is required", 500)
 
 	if "instrumentid" in args:
 		instid = args['instrumentid']
 		if function.isInt(instid):
 			filter1.append(models.pointing.instrumentid == instid)
 		else:
-			return jsonify('invalid instrumentid')
+			return make_response('invalid instrumentid', 500)
 	else:
-		return jsonify('instrumentid is required')
+		return make_response('instrumentid is required', 500)
 
 	pointings = db.session.query(models.pointing).filter(*filter1)
 	for p in pointings:
@@ -855,23 +857,23 @@ def cancel_all():
 		setattr(p, 'dateupdated', datetime.datetime.now())
 
 	db.session.commit()
-	return jsonify("Updated "+str(len(pointings.all()))+" Pointings successfully")
+	return make_response("Updated "+str(len(pointings.all()))+" Pointings successfully", 200)
 
 
 #Cancel PlannedPointing
 #Parameters: List of IDs of planned pointings for which it is known that they aren’t going to happen
-@app.route("/api/v0/update_pointings", methods=["POST"])
-def del_pointings():
+@app.route("/api/v1/update_pointings", methods=["POST"])
+def del_pointings_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	if 'status' in args:
 		status = args['status']
 		if status not in ['cancelled']:
-			return jsonify('planned status can only be updated to \'cancelled\'')
+			return make_response('planned status can only be updated to \'cancelled\'', 500)
 	else:
 		status = 'cancelled'
 
@@ -884,9 +886,9 @@ def del_pointings():
 		elif "ids" in args:
 			filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
 		else:
-			return jsonify('id or ids of pointing event is required')
+			return make_response('id or ids of pointing event is required', 500)
 	except:
-		return jsonify('There was a problem reading your list of ids')
+		return make_response('There was a problem reading your list of ids', 500)
 
 	if len(filter1) > 0:
 		pointings = db.session.query(models.pointing).filter(*filter1)
@@ -898,23 +900,23 @@ def del_pointings():
 				setattr(p, 'dateupdated', datetime.datetime.now())
 		db.session.commit()
 
-		return jsonify("Updated "+str(itera)+" Pointings successfully")
+		return make_response("Updated "+str(itera)+" Pointings successfully", 200)
 
 	else:
-		return jsonify("Please Don't update the ENTIRE POINTING table")
+		return make_response("Please Don't update the ENTIRE POINTING table", 500)
 
 
 #Get Instrument/s
 #Parameters: List of ID/s, type/s (to be AND’ed).
 #Returns: List of Instrument JSON objects
-@app.route("/api/v0/instruments", methods=["GET"])
-def get_instruments():
+@app.route("/api/v1/instruments", methods=["GET"])
+def get_instruments_v1():
 
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
 		return make_response(message, 500)
-	
+
 	filter=[]
 
 	if "id" in args:
@@ -922,18 +924,10 @@ def get_instruments():
 		_id = args.get('id')
 		filter.append(models.instrument.id == int(_id))
 	if "ids" in args:
-		argname = "ids"
-		arg = args.get(argname)
-		if isinstance(arg, str):
-			try:
-				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
-				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
-		if isinstance(arg, list):
-			_ids = arg
-			filter.append(models.instrument.id.in_(_ids))
-		else:
-			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[graceid1, graceid2...]\'', 500)
+		#validate
+		ids = json.loads(args.get('ids'))
+		print(ids)
+		filter.append(models.instrument.id.in_(ids))
 	if "name" in args:
 		name = args.get('name')
 		filter.append(models.instrument.instrument_name.contains(name))
@@ -952,13 +946,14 @@ def get_instruments():
 		filter.append(models.instrument.instrument_type == _type)
 
 	insts = db.session.query(models.instrument).filter(*filter).all()
-	insts = [x.json for x in insts]
+	insts = [x.parse for x in insts]
 
 	return make_response(json.dumps(insts), 200)
 
 
-@app.route('/api/v0/grb_moc_file', methods=['GET'])
-def get_grbmoc():
+
+@app.route('/api/v1/grb_moc_file', methods=['GET'])
+def get_grbmoc_v1():
 	'''
 	inputs:
 		graceid: Can take GW... or S notation
@@ -968,34 +963,34 @@ def get_grbmoc():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	if "graceid" in args:
 		gid = args.get('graceid')
 		gid = models.gw_alert.graceidfromalternate(gid)
 	else:
-		return jsonify('graceid is required')
-	
+		return make_response('graceid is required', 500)
+
 	if "instrument" in args:
 		inst = args.get("instrument").lower()
 		if inst not in ['gbm', 'lat', 'bat']:
-			return jsonify('Valid instruments are in [\'gbm\', \'lat\', \'bat\']')
+			return make_response('Valid instruments are in [\'gbm\', \'lat\', \'bat\']', 500)
 	else:
-		return jsonify('Instrument is required. Valid instruments are in [\'gbm\', \'lat\', \'bat\']')
+		return make_response('Instrument is required. Valid instruments are in [\'gbm\', \'lat\', \'bat\']', 500)
 
 	instrument_dictionary = {'gbm':'Fermi', 'lat':'LAT', 'bat':'BAT'}
-	
+
 	moc_filepath = '{}/{}-{}.json'.format('fit', gid, instrument_dictionary[inst])
 
 	try:
 		_file = gwtm_io.download_gwtm_file(filename=moc_filepath, source=config.STORAGE_BUCKET_SOURCE, config=config)
-		return _file
+		return make_response(_file, 200)
 	except:
-		return jsonify('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst))
+		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 200)
 
 
-@app.route('/api/v0/post_alert', methods=['POST'])
-def post_alert():
+@app.route('/api/v1/post_alert', methods=['POST'])
+def post_alert_v1():
 
 	'''
 	inputs:
@@ -1004,54 +999,54 @@ def post_alert():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	if user.id not in [2]:
-			return jsonify("Only admin can access this endpoint")
-	
+			return make_response("Only admin can access this endpoint", 500)
+
 	alert = models.gw_alert.from_json(args)
 	db.session.add(alert)
 
 	db.session.flush()
 	db.session.commit()
 
-	return jsonify(alert.json)
+	return make_response(json.dumps(alert), 500)
 
 
-@app.route('/api/v0/query_alerts', methods=['GET'])
-def query_alerts():
-	
+@app.route('/api/v1/query_alerts', methods=['GET'])
+def query_alerts_v1():
+
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
-		return jsonify(message)
-	
+		return make_response(message, 500)
+
 	filter=[]
 
 	if "graceid" in args:
 		graceid = args.get('graceid')
 		filter.append(models.gw_alert.graceid == graceid)
-		
+
 	if "alert_type" in args:
 		alert_type = args.get('alert_type')
 		filter.append(models.gw_alert.alert_type == alert_type)
-		
+
 	alerts = db.session.query(models.gw_alert).filter(*filter).all()
-	alerts = [x.json for x in alerts]
+	alerts = [x.parse for x in alerts]
 
-	return jsonify(alerts)
+	return make_response(json.dumps(alerts), 200)
 
 
-@app.route('/api/v0/del_test_alerts', methods=['POST'])
-def del_test_alerts():
+@app.route('/api/v1/del_test_alerts', methods=['POST'])
+def del_test_alerts_v1():
 	valid, message, args, user = initial_request_parse(request=request)
 
 	if not valid:
 		return make_response(response_message=message, status_code=500)
-	
+
 	if user.id not in [2]:
 		return make_response("Only admin can access this endpoint", 500)
-	
+
 	filter = []
 	testids = []
 	for td in [-1, 0, 1]:
@@ -1106,29 +1101,31 @@ def del_test_alerts():
 		for ga in gwalerts:
 			db.session.delete(ga)
 
-	objects = gwtm_io.list_gwtm_bucket("test", config.STORAGE_BUCKET_SOURCE, config)
+	s3_resource = boto3.resource('s3')
+	bucket = s3_resource.Bucket(config.AWS_BUCKET)
+	objects = bucket.objects.filter(Prefix = 'test/')
 	objects_to_delete = [
-		o for o in objects if not any(t in o for t in testids)
+		o.key for o in objects if not any(t in o.key for t in testids) and 'alert.json' not in o.key and o.key != 'test/'
 	]
 
 	if len(objects_to_delete):
-		print(f"deleting {len(objects_to_delete)} from {config.STORAGE_BUCKET_SOURCE}")
+		print(f"deleting {len(objects_to_delete)} from S3")
 		tot = 0
 		for items in function.by_chunk(objects_to_delete, 1000):
 			tot += len(items)
 			print(f"bucket chunk: {tot}/{len(objects_to_delete)}")
-			t = gwtm_io.delete_gwtm_files(items, source=config.STORAGE_BUCKET_SOURCE, config=config)
+			t = bucket.delete_objects(Bucket=config.AWS_BUCKET, Delete={'Objects': [{'Key': key} for key in items]})
 
 	db.session.commit()
 
-	return make_response('Success', 200)
+	return make_response('Sucksess', 200)
 
 
 #FIX DATA
 @app.route('/fixdata', methods=['GET'])
-def fixdata():
+def fixdata_v1():
 	pass
-	
+
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
