@@ -2,7 +2,6 @@
 
 from flask import request
 from sqlalchemy import func, or_
-from botocore.exceptions import ClientError
 import json, datetime
 import boto3
 import io
