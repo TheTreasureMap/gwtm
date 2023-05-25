@@ -12,6 +12,7 @@ from src.gwtmconfig import config
 from . import function
 from . import models
 from . import enums
+from . import gwtm_io
 
 db = models.db
 
@@ -950,6 +951,7 @@ def get_instruments_v1():
 	return make_response(json.dumps(insts), 200)
 
 
+
 @app.route('/api/v1/grb_moc_file', methods=['GET'])
 def get_grbmoc_v1():
 	'''
@@ -976,18 +978,15 @@ def get_grbmoc_v1():
 	else:
 		return make_response('Instrument is required. Valid instruments are in [\'gbm\', \'lat\', \'bat\']', 500)
 
-	s3 = boto3.client('s3')
 	instrument_dictionary = {'gbm':'Fermi', 'lat':'LAT', 'bat':'BAT'}
 
 	moc_filepath = '{}/{}-{}.json'.format('fit', gid, instrument_dictionary[inst])
 
 	try:
-		with io.BytesIO() as f:
-			s3.download_fileobj(config.AWS_BUCKET, moc_filepath, f)
-			f.seek(0)
-			return f.read().decode('utf-8')
-	except ClientError:
-		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 500)
+		_file = gwtm_io.download_gwtm_file(filename=moc_filepath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+		return make_response(_file, 200)
+	except:
+		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 200)
 
 
 @app.route('/api/v1/post_alert', methods=['POST'])

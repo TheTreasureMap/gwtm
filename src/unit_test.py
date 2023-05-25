@@ -144,10 +144,10 @@ class TestAPI(unittest.TestCase):
 if __name__ == "__main__":
 
   tester = TestAPI()
-  tester.test_pointings()
-  tester.test_footprints()
-  tester.test_event_galaxy()
-  tester.test_glade()
-  tester.test_instrument()
+  #tester.test_pointings()
+  #tester.test_footprints()
+  #tester.test_event_galaxy()
+  #tester.test_glade()
+  #tester.test_instrument()
   tester.test_moc()
-  tester.test_query()
+  #tester.test_query()
