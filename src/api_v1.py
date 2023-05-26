@@ -104,11 +104,11 @@ def remove_event_galaxies_v1():
 					for ge in gallist_entries:
 						db.session.delete(ge)
 					db.session.commit()
-					return(make_response(json.dumps("Successfully deleted your galaxy list")), 200)
+					return make_response(json.dumps("Successfully deleted your galaxy list"), 200)
 				else:
 					return make_response('You can only delete information related to your api_token! shame shame', 500)
 			else:
-				return(make_response('No galaxies with that listid', 500))
+				return make_response('No galaxies with that listid', 500) 
 		else:
 			return make_response('Invalid listid', 500)
 	else:
@@ -1010,7 +1010,7 @@ def post_alert_v1():
 	db.session.flush()
 	db.session.commit()
 
-	return make_response(json.dumps(alert), 500)
+	return make_response(json.dumps(alert.parse), 500)
 
 
 @app.route('/api/v1/query_alerts', methods=['GET'])
