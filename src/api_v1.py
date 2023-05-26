@@ -1010,7 +1010,7 @@ def post_alert_v1():
 	db.session.flush()
 	db.session.commit()
 
-	return make_response(json.dumps(alert.parse), 500)
+	return make_response(json.dumps(alert.parse), 200)
 
 
 @app.route('/api/v1/query_alerts', methods=['GET'])
