@@ -14,6 +14,7 @@ from time import time
 from sqlalchemy import func, and_
 from flask_login import UserMixin
 from enum import IntEnum
+from dateutil.parser import parse as date_parse
 
 from src.function import isInt, isFloat
 from src import app
@@ -406,7 +407,7 @@ class users(UserMixin, db.Model):
     firstname = db.Column(db.String(25))
     lastname = db.Column(db.String(25))
     password_hash = db.Column(db.String(128))
-    datecreated = db.Column(db.Date)
+    datecreated = db.Column(db.DateTime)
     email = db.Column(db.String(100))
     api_token = db.Column(db.String(128))
     verification_key = db.Column(db.String(128))
@@ -463,7 +464,7 @@ class usergroups(db.Model):
 class groups(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(25))
-    datecreated = db.Column(db.Date)
+    datecreated = db.Column(db.DateTime)
 
 
 class useractions(db.Model):
@@ -471,7 +472,7 @@ class useractions(db.Model):
     userid = db.Column(db.Integer)
     ipaddress = db.Column(db.String(50))
     url = db.Column(db.String())
-    time = db.Column(db.Date)
+    time = db.Column(db.DateTime)
     jsonvals = db.Column(db.JSON)
     method = db.Column(db.String(24))
 
@@ -509,7 +510,7 @@ class instrument(db.Model):
     instrument_name = db.Column(db.String(25))
     nickname = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(enums.instrument_type))
-    datecreated = db.Column(db.Date)
+    datecreated = db.Column(db.DateTime)
     #footprint = db.Column(Geography('POLYGON', srid=4326))
     submitterid = db.Column(db.Integer)
 
@@ -674,9 +675,9 @@ class pointing(db.Model):
     depth = db.Column(db.Float)
     depth_err = db.Column(db.Float)
     depth_unit = db.Column(db.Enum(enums.depth_unit))
-    time = db.Column(db.Date)
-    datecreated = db.Column(db.Date)
-    dateupdated = db.Column(db.Date)
+    time = db.Column(db.DateTime)
+    datecreated = db.Column(db.DateTime)
+    dateupdated = db.Column(db.DateTime)
     submitterid = db.Column(db.Integer)
     pos_angle = db.Column(db.Float)
     band = db.Column(db.Enum(enums.bandpass))
@@ -904,7 +905,8 @@ class pointing(db.Model):
 
         if 'time' in p:
             try:
-                self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
+                self.time = date_parse(p['time'])
+                #self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
             except:
                 v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
         elif self.status == enums.pointing_status.planned:
@@ -1083,8 +1085,8 @@ class gw_alert(db.Model):
     graceid = db.Column(db.String)
     alternateid = db.Column(db.String)
     role = db.Column(db.String)
-    timesent = db.Column(db.Date)
-    time_of_signal = db.Column(db.Date)
+    timesent = db.Column(db.DateTime)
+    time_of_signal = db.Column(db.DateTime)
     packet_type = db.Column(db.Integer)
     alert_type = db.Column(db.String)
     detectors = db.Column(db.String)
@@ -1100,7 +1102,7 @@ class gw_alert(db.Model):
     prob_terrestrial = db.Column(db.Float)
     prob_hasns = db.Column(db.Float)
     prob_hasremenant = db.Column(db.Float)
-    datecreated = db.Column(db.Date)
+    datecreated = db.Column(db.DateTime)
     group = db.Column(db.String)
     centralfreq = db.Column(db.Float)
     duration = db.Column(db.Float)
