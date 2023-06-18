@@ -2,6 +2,12 @@
 
 {% block content %}
 <h2>Development Blog</h2>
+<p><b>May 25, 2023</b></p>
+<p>Big change: <b>/api/v1/</b> is here. I've realized that in my adolescent programming that I didn't configure GET responses correctly to return valid JSON.
+if a user was to hit an GET api endpoint it would essentially jsonify the response twice, resulting in a json list of string objects that needed to be
+deserialized again... that is the major change in /api/v1/. All /api/v1/ GET responses now return valid JSON, and do not have to be parsed twice. /api/v0/ will still exist,
+but will not be updated with the same endpoints as v1. If there are any known issues, please direct inquires to <a href="mailto:sdwyatt@uw.edu">sdwyatt@uw.edu</a></p>
+<p>A lot  has happened over the past 3 years... O4 is now here. We are finally off of AWS as of yesterday.</p>
 <p><b>December 13, 2019</b></p>
 Users can create their own list of DOI Authors through the <a href="/manage_user">Profile</a> page. Once the list is created, it can be referenced by name or ID when requesting a DOI for a batch of completed pointings through the API or web-forms (<a href="/search_pointings">Query</a> or <a href="/submit_pointings">Submit</a> Pointings pages).
 
