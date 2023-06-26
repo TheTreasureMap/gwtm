@@ -713,3 +713,21 @@ def by_chunk(items, chunk_size=1000):
             bucket = []
         bucket.append(item)
     yield bucket
+
+def get_farrate_farunit(far):
+    farrate = 1/far
+    farunit = "s"
+    if farrate > 86400:
+        farunit = "days"
+        farrate /= 86400
+        if farrate > 365:
+            farrate /= 365.25
+            farunit = "years"
+        elif farrate > 30:
+            farrate /= 30
+            farunit = "months"
+        elif farrate > 7:
+            farrate /= 7
+            farunit = "weeks"
+    
+    return farrate, farunit
