@@ -172,25 +172,28 @@ def ajax_get_eventcontour():
 	s3path = 'fit' if alert.role == 'observation' else 'test'
 
 	if alert.far != 0:
-		farrate = 1/alert.far
-		farunit = "s"
-		if farrate > 86400:
-			farunit = "days"
-			farrate /= 86400
-			if farrate > 365:
-				farrate /= 365.25
-				farunit = "years"
-			elif farrate > 30:
-				farrate /= 30
-				farunit = "months"
-			elif farrate > 7:
-				farrate /= 7
-				farunit = "weeks"
-		human_far=round(farrate,2)
-		human_far_unit = farunit
+		human_far, human_far_unit = function.get_farrate_farunit(alert.far)
+		human_far=round(human_far,2)
 		humanfar = "once per {} {}".format(str(round(human_far, 2)),human_far_unit)
 	else:
 		humanfar = ""
+
+	if alert.time_coincidence_far != 0 and alert.time_coincidence_far is not None:
+		time_coinc_farrate, time_coinc_farunit = function.get_farrate_farunit(alert.time_coincidence_far)
+		time_coinc_farrate=round(time_coinc_farrate,2)
+		human_time_coinc_far = "once per {} {}".format(str(round(time_coinc_farrate, 2)),time_coinc_farunit)
+	else:
+		human_time_coinc_far = ""
+
+	if alert.time_sky_position_coincidence_far != 0 and alert.time_sky_position_coincidence_far is not None:
+		time_skypos_coinc_farrate, time_skypos_coinc_farunit = function.get_farrate_farunit(alert.time_sky_position_coincidence_far)
+		time_skypos_coinc_farrate=round(time_skypos_coinc_farrate,2)
+		human_time_skypos_coinc_far = "once per {} {}".format(str(round(time_coinc_farrate, 2)),time_skypos_coinc_farunit)
+	else:
+		human_time_skypos_coinc_far = ""
+
+	if alert.time_difference is not None:
+		alert.time_difference = round(alert.time_difference, 3)
 
 	if alert.distance is not None:
 		alert.distance = round(alert.distance,3)
@@ -202,9 +205,29 @@ def ajax_get_eventcontour():
 		alert.distance = ""
 
 	if alert.distance is not None and alert.distance_error is not None:
-		distanceperror = "{} +/- {}".format(round(alert.distance, 3), round(alert.distance_error, 3))
+		distanceperror = "{} +/- {} Mpc".format(round(alert.distance, 3), round(alert.distance_error, 3))
 	else:
 		distanceperror = ''
+
+	if alert.area_50 is not None:
+		alert.area_50 = f"{round(alert.area_50, 3)} deg<sup>2</sup>"
+	if alert.area_90 is not None:
+		alert.area_90 = f"{round(alert.area_90, 3)} deg<sup>2</sup>"
+
+	if alert.prob_bns is not None:
+		alert.prob_bns = round(alert.prob_bns, 5)
+	if alert.prob_nsbh is not None:
+		alert.prob_nsbh = round(alert.prob_nsbh, 5)
+	if alert.prob_gap is not None:
+		alert.prob_gap = round(alert.prob_gap, 5)
+	if alert.prob_bbh is not None:
+		alert.prob_bbh = round(alert.prob_bbh, 5)
+	if alert.prob_terrestrial is not None:
+		alert.prob_terrestrial = round(alert.prob_terrestrial, 5)
+	if alert.prob_hasns is not None:
+		alert.prob_hasns = round(alert.prob_hasns, 5)
+	if alert.prob_hasremenant is not None:
+		alert.prob_hasremenant = round(alert.prob_hasremenant, 5)
 
 	detection_overlays = []
 	path_info = alert.graceid + '-' + alertype
@@ -244,7 +267,17 @@ def ajax_get_eventcontour():
 		'alert_prob_bbh':alert.prob_bbh,
 		'alert_prob_terrestrial':alert.prob_terrestrial,
 		'alert_prob_hasns':alert.prob_hasns,
-		'alert_prob_hasremenant':alert.prob_hasremenant
+		'alert_prob_hasremenant':alert.prob_hasremenant,
+		'alert_area_50' : alert.area_50,
+		'alert_area_90' : alert.area_90,
+		'alert_gcn_notice_id' : alert.gcn_notice_id,
+		'alert_ivorn' : alert.ivorn,
+		'alert_ext_coinc_observatory' : alert.ext_coinc_observatory ,
+		'alert_ext_coinc_search' : alert.ext_coinc_search ,
+		'alert_time_difference' : alert.time_difference ,
+		'alert_time_coincidence_far' : human_time_coinc_far ,
+		'alert_time_sky_position_coincidence_far' : human_time_skypos_coinc_far ,
+		'selected_alert_type':alert.alert_type
 	}
 
 	return(jsonify(payload))

@@ -12,7 +12,6 @@ def _get_fs(source, config):
 
 
 def download_gwtm_file(filename, source='s3', config=None, decode=True):
-    print(source)
     fs = _get_fs(source=source, config=config)
 
     if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:

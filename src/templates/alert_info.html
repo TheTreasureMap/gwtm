@@ -123,9 +123,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
     {% for al in form.alert_type_tabs if al['type']!= "Retraction" %}
       {% if al['type'] == form.alert_type %}
         <!-- <li class="active"><a href="/{{ form.page }}?graceids={{ form.graceid }}&pointing_status={{ form.status }}&alert_type={{ al['type'] }}">{{ al['type'] }} <br> {{al['timesent']}}</a></li>-->
-        <li class="nav-item"><a href="#" class="nav-link active" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
+        <li class="nav-item" style="cursor: pointer;"><a class="nav-link active" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% else %}
-        <li class="nav-item"><a href="#" class="nav-link" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
+        <li class="nav-item" style="cursor: pointer;"><a class="nav-link" id="{{ al['urlid']}}">{{ al['type'] }}<br>{{al['timesent']}}</a></li>
       {% endif %}
     {% endfor %}
   </ul>
@@ -240,6 +240,14 @@ text.info:hover span{ /*the span will display just on :hover state*/
               <td>False Alarm Rate</td>
               <td id='alert_human_far'>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
             </tr>
+            <tr class="alert-info">
+              <td>50% Area</td>
+              <td id='alert_area_50'>{{ form.selected_alert_info.area_50}} deg<sup>2</sup></td>
+            </tr>
+            <tr class="alert-info">
+              <td>90% Area</td>
+              <td id='alert_area_90'>{{ form.selected_alert_info.area_90}} deg<sup>2</sup></td>
+            </tr>
             {% if form.selected_alert_info.group != 'Burst' %}
             <tr class="alert-info">
               <td>Distance</td>
@@ -255,6 +263,44 @@ text.info:hover span{ /*the span will display just on :hover state*/
               <td id='alert_duration'>{{form.selected_alert_info.duration}} seconds</td>
             </tr>
             {% endif %}
+          </tbody>
+        </table>
+        <table class="table ext_coinc" hidden>
+          <thead>
+            <tr>
+              <th>External Coincidence Info</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="alert-info ext_coinc">
+              <td>GCN Notice ID</td>
+              <td id="alert_gcn_notice_id"></td>
+            </tr>
+            <!-- <tr class="alert-info ext_coinc">
+              <td>Ivorn</td>
+              <td id="alert_ivorn"></td>
+            </tr> -->
+            <tr class="alert-info ext_coinc">
+              <td>ExtCoinc Observatory</td>
+              <td id="alert_ext_coinc_observatory"></td>
+            </tr>
+            <tr class="alert-info ext_coinc">
+              <td>ExtCoinc Search</td>
+              <td id="alert_ext_coinc_search"></td>
+            </tr>
+            <tr class="alert-info ext_coinc">
+              <td>Time Difference (s)</td>
+              <td id="alert_time_difference"></td>
+            </tr>
+            <tr class="alert-info ext_coinc">
+              <td>Time Coincidence FAR</td>
+              <td id="alert_time_coincidence_far"></td>
+            </tr>
+            <tr class="alert-info ext_coinc">
+              <td>Time-Sky position Coincidence FAR</td>
+              <td id="alert_time_sky_position_coincidence_far"></td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -611,7 +657,27 @@ text.info:hover span{ /*the span will display just on :hover state*/
           $('#alert_prob_bbh').text(payload['alert_prob_bbh']);
           $('#alert_prob_terrestrial').text(payload['alert_prob_terrestrial']);
           $('#alert_prob_hasns').text(payload['alert_prob_hasns']);
-          $('#alert_prob_hasremenant').text(payload['alert_prob_hasremenant']);
+          $('#alert_area_50').html(payload['alert_area_50']);
+          $('#alert_area_90').html(payload['alert_area_90']);
+          $('#alert_gcn_notice_id').text(payload['alert_gcn_notice_id']);
+          $('#alert_ivorn').text(payload['alert_ivorn']);
+          $('#alert_ext_coinc_observatory').text(payload['alert_ext_coinc_observatory']);
+          $('#alert_ext_coinc_search').text(payload['alert_ext_coinc_search']);
+          $('#alert_time_difference').text(payload['alert_time_difference']);
+          $('#alert_time_coincidence_far').text(payload['alert_time_coincidence_far']);
+          $('#alert_time_sky_position_coincidence_far').text(payload['alert_time_sky_position_coincidence_far']);
+
+          if (payload['selected_alert_type'].includes('ExtCoinc')){
+            var extcoincs = document.getElementsByClassName('table ext_coinc')
+            for (var k=0 ; k<extcoincs.length; k++) {
+              extcoincs[k].removeAttribute("hidden")
+            };
+          } else {
+            var extcoincs = document.getElementsByClassName('table ext_coinc')
+            for (var k=0 ; k<extcoincs.length; k++) {
+              extcoincs[k].setAttribute("hidden", "")
+            };
+          }
 
           aladin.removeLayers()
           data.detection_overlays = payload.detection_overlays;

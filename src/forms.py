@@ -361,7 +361,7 @@ class AlertsForm(FlaskForm):
                         'urlid':'{}_{}'.format(at.id, at.alert_type)
                     })
 
-            cleaned_alert_info = [alert for alert in alert_info if alert.alert_type != 'Retraction']
+            cleaned_alert_info = [alert for alert in alert_info if alert.alert_type != 'Retraction' and "ExtCoinc" not in alert.alert_type]
             
             if len(cleaned_alert_info):
                 pre_alert = cleaned_alert_info[len(cleaned_alert_info)-1]
@@ -374,22 +374,14 @@ class AlertsForm(FlaskForm):
             self.alert_type = pre_alert.alert_type if num < 1 else pre_alert.alert_type + ' ' + str(num)
 
             if self.selected_alert_info.far != 0:
-                farrate = 1/self.selected_alert_info.far
-                farunit = "s"
-                if farrate > 86400:
-                    farunit = "days"
-                    farrate /= 86400
-                    if farrate > 365:
-                        farrate /= 365.25
-                        farunit = "years"
-                    elif farrate > 30:
-                        farrate /= 30
-                        farunit = "months"
-                    elif farrate > 7:
-                        farrate /= 7
-                        farunit = "weeks"
+                farrate, farunit = function.get_farrate_farunit(self.selected_alert_info.far)
                 self.selected_alert_info.human_far=round(farrate,2)
                 self.selected_alert_info.human_far_unit = farunit
+            
+            if self.selected_alert_info.area_50 is not None:
+               self.selected_alert_info.area_50 = round(self.selected_alert_info.area_50, 3)
+            if self.selected_alert_info.area_90 is not None:
+               self.selected_alert_info.area_90 = round(self.selected_alert_info.area_90, 3)
 
             if self.selected_alert_info.distance is not None:
                 self.distance = round(self.selected_alert_info.distance,3)
@@ -402,6 +394,21 @@ class AlertsForm(FlaskForm):
                 self.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
                 self.selected_alert_info.moon_ra =  astropy.coordinates.get_moon(t).ra.deg
                 self.selected_alert_info.moon_dec =  astropy.coordinates.get_moon(t).dec.deg
+            
+            if self.selected_alert_info.prob_bns is not None:
+                self.selected_alert_info.prob_bns = round(self.selected_alert_info.prob_bns, 5)
+            if self.selected_alert_info.prob_nsbh is not None:
+                self.selected_alert_info.prob_nsbh = round(self.selected_alert_info.prob_nsbh, 5)
+            if self.selected_alert_info.prob_gap is not None:
+                self.selected_alert_info.prob_gap = round(self.selected_alert_info.prob_gap, 5)
+            if self.selected_alert_info.prob_bbh is not None:
+                self.selected_alert_info.prob_bbh = round(self.selected_alert_info.prob_bbh, 5)
+            if self.selected_alert_info.prob_terrestrial is not None:
+                self.selected_alert_info.prob_terrestrial = round(self.selected_alert_info.prob_terrestrial, 5)
+            if self.selected_alert_info.prob_hasns is not None:
+                self.selected_alert_info.prob_hasns = round(self.selected_alert_info.prob_hasns, 5)
+            if self.selected_alert_info.prob_hasremenant is not None:
+                self.selected_alert_info.prob_hasremenant = round(self.selected_alert_info.prob_hasremenant, 5)
 
             self.viz = True
 
@@ -460,7 +467,11 @@ class AlertsForm(FlaskForm):
 
                 self.mintime = min(times)
                 self.maxtime = max(times)
-                self.step = (self.maxtime*100 - self.mintime*100)/100000
+                self.step = round((self.maxtime - self.mintime)/1000, 3)
+            else:
+                self.mintime = 0
+                self.maxtime = 0
+                self.step = 0
 
             #iterate over each instrument and grab their pointings
             #rotate and project the footprint and then add it to the overlay list

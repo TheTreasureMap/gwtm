@@ -1108,10 +1108,19 @@ class gw_alert(db.Model):
     duration = db.Column(db.Float)
     avgra = db.Column(db.Float)
     avgdec = db.Column(db.Float)
-
     observing_run = db.Column(db.String)
     pipeline = db.Column(db.String)
     search = db.Column(db.String)
+
+    gcn_notice_id = db.Column(db.Integer)
+    ivorn = db.Column(db.String)
+    ext_coinc_observatory = db.Column(db.String)
+    ext_coinc_search = db.Column(db.String)
+    time_difference = db.Column(db.Float)
+    time_coincidence_far = db.Column(db.Float)
+    time_sky_position_coincidence_far = db.Column(db.Float)
+    area_90 = db.Column(db.Float)
+    area_50 = db.Column(db.Float)
 
     @staticmethod
     def from_json(args):
@@ -1147,6 +1156,15 @@ class gw_alert(db.Model):
             timesent         = args['timesent'] if 'timesent' in akeys else datetime.datetime(year=1991, month=12, day=23),
             centralfreq      = args['centralfreq'] if 'centralfreq' in akeys else 0.0,
             duration         = args['duration'] if 'duration' in akeys else 0.0,
+            area_90          = args['area_90'] if 'area_90' in akeys else 0.0,
+            area_50          = args['area_50'] if 'area_50' in akeys else 0.0,
+            gcn_notice_id    = args['gcn_notice_id'] if 'gcn_notice_id' in akeys else 0,
+            ivorn            = args['ivorn'] if 'ivorn' in akeys else '',
+            ext_coinc_observatory             = args['ext_coinc_observatory'] if 'ext_coinc_observatory' in akeys else '',
+            ext_coinc_search                  = args['ext_coinc_search'] if 'ext_coinc_search' in akeys else '',
+            time_difference                   = args['time_difference'] if 'time_difference' in akeys else 0.0,
+            time_coincidence_far              = args['time_coincidence_far'] if 'time_coincidence_far' in akeys else 0.0,
+            time_sky_position_coincidence_far = args['time_sky_position_coincidence_far'] if 'time_sky_position_coincidence_far' in akeys else 0.0,
         )
         return alert
 
