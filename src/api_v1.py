@@ -1049,6 +1049,8 @@ def del_test_alerts_v1():
 
 	filter = []
 	testids = []
+	alert_to_keep = "MS181101ab"
+	filter.append(~models.gw_alert.graceid.contains(alert_to_keep))
 	for td in [-1, 0, 1]:
 		dd = datetime.datetime.now() + datetime.timedelta(days=td)
 		yy = str(dd.year)[2:4]
@@ -1059,7 +1061,8 @@ def del_test_alerts_v1():
 		testids.append(graceidlike)
 		filter.append(~models.gw_alert.graceid.contains(graceidlike))
 
-	#filter.append(or_(*ors))
+	testids.append(alert_to_keep)
+
 	filter.append(models.gw_alert.role == 'test')
 
 	#query for all test alerts that aren't like this one
@@ -1101,11 +1104,9 @@ def del_test_alerts_v1():
 		for ga in gwalerts:
 			db.session.delete(ga)
 
-	s3_resource = boto3.resource('s3')
-	bucket = s3_resource.Bucket(config.AWS_BUCKET)
-	objects = bucket.objects.filter(Prefix = 'test/')
+	objects = gwtm_io.list_gwtm_bucket(container="test", source=config.STORAGE_BUCKET_SOURCE, config=config)
 	objects_to_delete = [
-		o.key for o in objects if not any(t in o.key for t in testids) and 'alert.json' not in o.key and o.key != 'test/'
+		o for o in objects if not any(t in o for t in testids) and 'alert.json' not in o and o != 'test/'
 	]
 
 	if len(objects_to_delete):
@@ -1114,7 +1115,7 @@ def del_test_alerts_v1():
 		for items in function.by_chunk(objects_to_delete, 1000):
 			tot += len(items)
 			print(f"bucket chunk: {tot}/{len(objects_to_delete)}")
-			t = bucket.delete_objects(Bucket=config.AWS_BUCKET, Delete={'Objects': [{'Key': key} for key in items]})
+			gwtm_io.delete_gwtm_files(keys=items, source=config.STORAGE_BUCKET_SOURCE, config=config)
 
 	db.session.commit()
 
