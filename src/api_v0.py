@@ -1059,6 +1059,7 @@ def del_test_alerts():
 		testids.append(graceidlike)
 		filter.append(~models.gw_alert.graceid.contains(graceidlike))
 
+	filter.append(~models.gw_alert.graceid.contains(alert_to_keep))
 	testids.append(alert_to_keep)
 	
 	filter.append(models.gw_alert.role == 'test')
