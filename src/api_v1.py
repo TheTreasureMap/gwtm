@@ -13,6 +13,7 @@ from . import function
 from . import models
 from . import enums
 from . import gwtm_io
+import re
 
 db = models.db
 
@@ -108,7 +109,7 @@ def remove_event_galaxies_v1():
 				else:
 					return make_response('You can only delete information related to your api_token! shame shame', 500)
 			else:
-				return make_response('No galaxies with that listid', 500) 
+				return make_response('No galaxies with that listid', 500)
 		else:
 			return make_response('Invalid listid', 500)
 	else:
@@ -1122,9 +1123,46 @@ def del_test_alerts_v1():
 
 
 #FIX DATA
-@app.route('/fixdata', methods=['GET'])
+@app.route('/fixdata', methods=['GET', 'POST'])
 def fixdata_v1():
-	pass
+	# Validates if user has access to endpoint
+	valid, message, args, user = initial_request_parse(request=request)
+
+	# if not valid:
+	# 	return make_response(response_message=message, status_code=500)
+
+	# if user.id not in [2]:
+	# 	return make_response("Only admin can access this endpoint", 500)
+
+	# Get information such as duration and central frequency
+	alert_name = args.get('alert_name')
+	duration = args.get('duration')
+	central_freq = args.get('central_freq')
+
+	#alert_name
+	#graceid-Preliminary.....json - first
+	#graceid-Preliminary1...json - second
+	print(alert_name)
+	print(duration)
+	print(central_freq)
+
+	pattern_text = r'(\w+)\/(\w+)-(\w+)_alert\.json'
+	pattern = re.compile(pattern_text)
+	match = pattern.match(alert_name)
+	graceid_parsed = match.group(2)
+	alert_type_parsed = match.group(3)
+	print(graceid_parsed)
+	print(alert_type_parsed)
+
+	# Query the database and filter for gwalerts with matching graceid and filter types
+	gwalerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid_parsed, models.gw_alert.alert_type == alert_type_parsed).all()
+	print(gwalerts)
+	alert = gwalerts[0]
+
+	setattr(alert, 'duration', duration)
+	setattr(alert, 'central_freq', central_freq)
+	db.session.commit()
+	return make_response("Success", 200)
 
 
 #Post Candidate/s

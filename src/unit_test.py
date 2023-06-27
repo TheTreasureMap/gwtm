@@ -17,7 +17,7 @@ import datetime
 
 class TestAPI(unittest.TestCase):
   BASE = 'http://127.0.0.1:5000/api/v1' # Base address
-  API_TOKEN = "Tsqx2GKTa7BdFMSrpqYWIOHtrI3cnccZeC0_LQ" # API token
+  API_TOKEN = os.environ.get('api_token', '') # API token
   TARGET_POINTINGS = "pointings"
   TARGET_FOOTPRINTS = "footprints"
   TARGET_EVENT_GALAXIES = "event_galaxies"
@@ -34,6 +34,7 @@ class TestAPI(unittest.TestCase):
   TARGET_DOI = "request_doi"
   TARGET_UPDATE_POINTINGS = "update_pointings"
   TARGET_CANCEL_ALL = "cancel_all"
+  TARGET_FIX_DATA = "fixdata"
 
   ### GET Method tests
 
@@ -275,6 +276,17 @@ class TestAPI(unittest.TestCase):
     print("Test 1 post for cancelling all pointings passed")
     print(r.text)
 
+   # @JSON parameters: graceid, instrumentid, status
+  def test_fix_data(self):
+    """Fills in missing information for central frequency and duration"""
+    json_params = {
+      "api_token": self.API_TOKEN
+    }
+    url = "{}/{}".format(self.BASE, self.TARGET_FIX_DATA)
+    r = requests.post(url=url, json=json_params)
+    print("Test 1 post for fixing data")
+    print(r.text)
+
 if __name__ == "__main__":
 
   tester = TestAPI()
@@ -295,3 +307,4 @@ if __name__ == "__main__":
   tester.test_request_doi()
   tester.test_update_pointings()
   tester.test_cancel_pointings()
+  tester.test_fix_data()
