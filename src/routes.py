@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from . import function
 from . import models
@@ -123,14 +123,10 @@ def home():
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)
 
-	selected_observing_run = request.args.get('observing_run') 
-	selected_role = request.args.get('role')
-
-	if selected_observing_run is None:
-		selected_observing_run = "O4"
-	
-	if selected_role is None:
-		selected_role = "observation"
+	selected_observing_run = request.args.get('observing_run', default="O4") 
+	selected_role = request.args.get('role', default="observation")
+	selected_far = request.args.get('far', default="all")
+	selected_haspointings = request.args.get('haspointings', default="false")
 
 	filter = []
 	if selected_role != 'all':
@@ -138,6 +134,35 @@ def alert_select():
 
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
+
+	if selected_far == 'significant':
+		# ors = []
+		# ors.append(models.gw_alert.far < 3.9e-7 models.gw_alert.group != "Burst")
+		# ors.append(models.gw_alert.far < 3.2e-8 and models.gw_alert.group == "Burst")
+		ofilter1 = [
+			models.gw_alert.far < 3.9e-7,
+			models.gw_alert.group != "Burst"
+		]
+		ofilter2 = [
+			models.gw_alert.far < 3.2e-8,
+			models.gw_alert.group == "Burst"
+		]
+		filter.extend(ofilter1)
+		filter.append(or_(*ofilter2))
+
+		#filter.append(models.gw_alert.far < 3.9e-7 )
+	elif selected_far == 'subthreshold':
+		ofilter1 = [
+			models.gw_alert.far >= 3.9e-7,
+			models.gw_alert.group != "Burst", 
+		]
+		ofilter2 = [
+			models.gw_alert.far >= 3.2e-8,
+			models.gw_alert.group == "Burst"
+		]
+		filter.extend(ofilter1)
+		filter.append(or_(*ofilter2))
+		#filter.append(models.gw_alert.far >= 3.9e-7)
 
 	allerts = db.session.query(
 		models.gw_alert
@@ -160,7 +185,6 @@ def alert_select():
 
 	p_event_counts = list(p_event_counts)
 
-	non_retracted_alerts = []
 	all_alerts = {}
 
 	for g in gids:
@@ -193,6 +217,14 @@ def alert_select():
 				'pcounts':pointing_counts
 			}
 
+	if selected_haspointings == 'true':
+		alerts_keys_wpoints = [x for x in all_alerts if all_alerts[x]['pcounts'] > 0]
+		tmp_all_alerts = {}
+		for akwp in alerts_keys_wpoints:
+			tmp_all_alerts[akwp] = all_alerts[akwp]
+		all_alerts = tmp_all_alerts
+		print(all_alerts)
+
 	#all_alerts['TEST_EVENT'] = {
 	#	'class':'Test',
 	#	'distance':'',
@@ -212,7 +244,15 @@ def alert_select():
 		'observation': 'Observation'
 	}
 
-	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, selected_observing_run=selected_observing_run, selected_role=selected_role)
+	far = {
+		'all' : 'All',
+		'significant' : 'Significant',
+		'subthreshold' : 'Subthreshold'
+	}
+
+	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far, 
+			selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run, 
+			selected_role=selected_role, selected_far=selected_far)
 
 
 @app.route("/alerts", methods=['GET', 'POST'])

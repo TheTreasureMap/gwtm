@@ -6,9 +6,9 @@
 
     <div class="container">
       <h2>Gravitational Wave Events</h2>
-      <p>
-        <b>Observing Run</b>
-        <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=observing_run id=observing_run onchange="reload_alert_select_table()">
+      <div style="white-space: nowrap;">
+        <label for="observing_run"><b>Observing Run</b></label>
+        <select class="selectpicker" style="max-width: 30px;" data-live-search="false" name=observing_run id=observing_run onchange="reload_alert_select_table()">
           {% for or in observing_runs.keys() %}
             {% if or == selected_observing_run %}
                 <option value='{{ or }}' selected>{{ observing_runs[or] }}</option>
@@ -17,7 +17,7 @@
             {% endif %}
           {% endfor %}
         </select>
-        <b>Role</b>
+        <label for="role"><b>Role</b></label>
         <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=role id=role onchange="reload_alert_select_table()">
           {% for r in roles.keys() %}
             {% if r == selected_role %}
@@ -26,8 +26,28 @@
                 <option value='{{ r }}'>{{ roles[r] }}</option>
             {% endif %}
           {% endfor %}
-      </select>
-      </p>
+        </select>
+        <label for="far"><b>FAR</b></label>
+        <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=far id=far onchange="reload_alert_select_table()">
+          {% for r in far.keys() %}
+            {% if r == selected_far %}
+                <option value='{{ r }}' selected>{{ far[r] }}</option>
+            {% else %}
+                <option value='{{ r }}'>{{ far[r] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <span class="form-check">
+          {% if selected_haspointings == 'true' %}
+            <input class="form-check-input" type="checkbox" id="haspointings" checked onchange="reload_alert_select_table()">
+          {% else %}
+            <input class="form-check-input" type="checkbox" id="haspointings" onchange="reload_alert_select_table()">
+          {% endif %}
+          <label class="form-check-label" for="haspointings">
+            <b>Has Pointings</b>
+          </label>
+        </span>
+      </div>
 
       {% if selected_role == 'test' or selected_role == 'all' %}
         <div>
@@ -78,8 +98,10 @@
     function reload_alert_select_table() {
       var observing_run = $('#observing_run').val()
       var role = $('#role').val()
+      var far = $('#far').val()
+      var haspointings = $('#haspointings').is(":checked")
 
-      window.location = 'alert_select?role='+role+'&observing_run='+observing_run
+      window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings
     };
     </script>
     
