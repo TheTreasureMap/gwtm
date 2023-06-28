@@ -467,7 +467,12 @@ class AlertsForm(FlaskForm):
 
                 self.mintime = min(times)
                 self.maxtime = max(times)
-                self.step = round((self.maxtime - self.mintime)/1000, 3)
+                step = 0
+                for interval in [1000, 100, 10]:
+                    step = round((self.maxtime - self.mintime)/interval, 3)
+                    if step != 0.0:
+                        break
+                self.step = step
             else:
                 self.mintime = 0
                 self.maxtime = 0
