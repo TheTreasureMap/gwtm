@@ -203,12 +203,7 @@ def alert_select():
 				})
 
 	if selected_haspointings == 'true':
-		alerts_keys_wpoints = [x for x in all_alerts if all_alerts[x]['pcounts'] > 0]
-		tmp_all_alerts = {}
-		for akwp in alerts_keys_wpoints:
-			tmp_all_alerts[akwp] = all_alerts[akwp]
-		all_alerts = tmp_all_alerts
-		print(all_alerts)
+		all_alerts = [x for x in all_alerts if x['pcounts'] > 0]
 
 	observing_runs = {
 		'all' : 'All',
