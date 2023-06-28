@@ -681,9 +681,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
           aladin.removeLayers()
           data.detection_overlays = payload.detection_overlays;
-          
           d = gwtmAladinInit(data)
           aladin = d.aladin
+          aladin.animateToRaDec(payload.alert_avgra, payload.alert_avgdec, 2);
           detectionoverlaylist = d.detectionoverlaylist
           instoverlaylist = d.instoverlaylist
           grboverlaylist = d.grboverlaylist

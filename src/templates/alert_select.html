@@ -134,11 +134,7 @@
           } else if (subtype != null) {
             var subbadge_class = BADGE_DICT[subtype]
             subnum_ats = parsed_types.filter(x => x.includes(subtype)).length
-            if (subnum_ats > 0) {
-              at = subbadge_class[1] +(subnum_ats-1).toString() + badge_class[1]
-            } else {
-              at = subbadge_class[1] + badge_class[1]
-            }
+            at = subbadge_class[1] + badge_class[1]
             badgetype = subbadge_class[0]
           } else {
             at = badge_class[1]

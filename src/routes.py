@@ -137,7 +137,7 @@ def alert_select():
 
 	allerts = db.session.query(
 		models.gw_alert
-	).filter(*filter).all()
+	).filter(*filter).order_by(models.gw_alert.datecreated.asc()).all()
 
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
