@@ -135,35 +135,6 @@ def alert_select():
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
 
-	if selected_far == 'significant':
-		# ors = []
-		# ors.append(models.gw_alert.far < 3.9e-7 models.gw_alert.group != "Burst")
-		# ors.append(models.gw_alert.far < 3.2e-8 and models.gw_alert.group == "Burst")
-		ofilter1 = [
-			models.gw_alert.far < 3.9e-7,
-			models.gw_alert.group != "Burst"
-		]
-		ofilter2 = [
-			models.gw_alert.far < 3.2e-8,
-			models.gw_alert.group == "Burst"
-		]
-		filter.extend(ofilter1)
-		filter.append(or_(*ofilter2))
-
-		#filter.append(models.gw_alert.far < 3.9e-7 )
-	elif selected_far == 'subthreshold':
-		ofilter1 = [
-			models.gw_alert.far >= 3.9e-7,
-			models.gw_alert.group != "Burst", 
-		]
-		ofilter2 = [
-			models.gw_alert.far >= 3.2e-8,
-			models.gw_alert.group == "Burst"
-		]
-		filter.extend(ofilter1)
-		filter.append(or_(*ofilter2))
-		#filter.append(models.gw_alert.far >= 3.9e-7)
-
 	allerts = db.session.query(
 		models.gw_alert
 	).filter(*filter).all()
@@ -185,37 +156,51 @@ def alert_select():
 
 	p_event_counts = list(p_event_counts)
 
-	all_alerts = {}
+	all_alerts = []
+	cull_retracted = False
+	if selected_far == "significant":
+		allerts = [x for x in allerts if (x.far < 3.8e-7 and x.group != 'Burst') or (x.far < 3.2e-8 and x.group == 'Burst')]
+		cull_retracted = True
+	elif selected_far == "subthreshold":
+		allerts = [x for x in allerts if (x.far >= 3.8e-7 and x.group != 'Burst') or (x.far >= 3.2e-8 and x.group == 'Burst')]
+		cull_retracted = True
 
 	for g in gids:
-		alert_types = [x.alert_type for x in allerts if x.graceid == g]
-		most_recent_date = list(sorted([x.datecreated for x in allerts if x.graceid == g], reverse=True))[0]
-		most_recent_alert = [x for x in allerts if x.graceid == g and x.datecreated == most_recent_date][0]
-		pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
+		glerts = [x for x in allerts if x.graceid == g]
+		alert_types = [x.alert_type for x in glerts]
+		atypes_retract = any([(x == 'Retraction' and cull_retracted) for x in alert_types])
 
-		alternateids = [gwa for gwa in allerts if (gwa.graceid == g and gwa.alternateid is not None and gwa.alternateid != '')]
+		if len(glerts) and not atypes_retract:
+			most_recent_date = list(sorted([x.datecreated for x in glerts], reverse=True))[0]
+			most_recent_alert = [x for x in glerts if x.datecreated == most_recent_date][0]
+			pcounts = [x.pcount for x in p_event_counts if g == x.graceid]
+			alternateids = [gwa for gwa in glerts if (gwa.alternateid is not None and gwa.alternateid != '')]
 
-		if len(alternateids):
-			g = alternateids[0].alternateid
+			if len(alternateids):
+				g = alternateids[0].alternateid
 
-		pointing_counts = 0
-		if len(pcounts):
-			pointing_counts = pcounts[0]
+			pointing_counts = 0
+			if len(pcounts):
+				pointing_counts = pcounts[0]
 
-		if 'Retraction' in alert_types:
-			all_alerts[g] = {
-				'class':'Retracted',
-				'distance':'',
-				'pcounts':pointing_counts
-			}
+			if 'Retraction' in alert_types:
+				all_alerts.append({
+					"alertname" : g,
+					"class":"Retracted",
+					"alert_types":alert_types,
+					"distance":"",
+					"pcounts":pointing_counts
+				})
 
-		else:
-			classification = most_recent_alert.getClassification()
-			all_alerts[g] = {
-				'class':classification,
-				'distance':str(round(most_recent_alert.distance, 2)) + ' +/- ' + str(round(most_recent_alert.distance_error, 2)),
-				'pcounts':pointing_counts
-			}
+			else:
+				classification = most_recent_alert.getClassification()
+				all_alerts.append({
+					"alertname" : g,
+					"class":classification,
+					"alert_types":alert_types,
+					"distance":str(round(most_recent_alert.distance, 2)) + " +/- " + str(round(most_recent_alert.distance_error, 2)),
+					"pcounts":pointing_counts
+				})
 
 	if selected_haspointings == 'true':
 		alerts_keys_wpoints = [x for x in all_alerts if all_alerts[x]['pcounts'] > 0]
@@ -224,12 +209,6 @@ def alert_select():
 			tmp_all_alerts[akwp] = all_alerts[akwp]
 		all_alerts = tmp_all_alerts
 		print(all_alerts)
-
-	#all_alerts['TEST_EVENT'] = {
-	#	'class':'Test',
-	#	'distance':'',
-	#	'pcounts':''
-	#}
 
 	observing_runs = {
 		'all' : 'All',

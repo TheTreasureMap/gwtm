@@ -71,38 +71,104 @@
         <tbody id="myTable">
           {% for a in alerts %}
             <tr>
-              <td><a href="/alerts?graceids={{ a }}">{{ a }}</a></td>
-              <td>{{ alerts[a]['class'] }}</td>
-              {% if alerts[a]['distance'][0] == '-'%}
+              <td id="row_{{a['alertname']}}"><a href="/alerts?graceids={{ a['alertname'] }}">{{ a['alertname'] }}</a></td>
+              <td>{{ a['class'] }}</td>
+              {% if a['distance'][0] == '-'%}
                 <td> NA </td>
               {% else %}
-                <td>{{ alerts[a]['distance'] }}</td>
+                <td>{{ a['distance'] }}</td>
               {% endif %}
-              <td>{{ alerts[a]['pcounts'] }}</td>
+              <td>{{ a['pcounts'] }}</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     
-    <script>
-    $(document).ready(function(){
-      $("#myInput").on("keyup", function() {
-        var value = $(this).val().toLowerCase();
-        $("#myTable tr").filter(function() {
-          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    <script type='text/javascript'>
+      
+      window.onload = function() {
+        var alerts = JSON.parse('{{ alerts | tojson }}')
+
+        for (var k=0 ; k<alerts.length; k++) {
+          row_id = "row_" + alerts[k].alertname
+          
+          row_html = '<a href="/alerts?graceids='+alerts[k].alertname+'">'+alerts[k].alertname+'</a> '
+          row_html += get_alerttype_badge_span(alerts[k].alert_types)
+          $("#"+row_id).html(row_html)
+        }
+      }
+
+      function get_alerttype_badge_span(alert_types) {
+        var BADGE_DICT = {
+          "Preliminary" : ["primary", "P"],
+          "Initial"     : ["info", "I"],
+          "Update"      : ["success", "U"],
+          "Retraction"  : ["danger", "R"],
+          "EarlyWarning": ["warning", "EW"],
+          "ExtCoinc"    : ["success", "EC"]
+        }
+
+        alerttype_badge_span = ""
+        parsed_types = []
+
+        for (var a=0; a <alert_types.length; a++) {
+          atype = alert_types[a]
+          subtype = null
+          if (atype.includes("ExtCoinc")) {
+            subtype = atype.split('-')[0]
+            atype = "ExtCoinc"
+          }
+          if (atype == "Early_Warning") {
+            atype = "EarlyWarning"
+          }
+          var badge_class = BADGE_DICT[atype]
+          var num_ats = parsed_types.filter(x => x.includes(atype)).length
+
+          var at = ""
+          var badgetype = ""
+
+          if (num_ats > 0 && subtype == null) {
+            at = badge_class[1] + num_ats.toString()
+            badgetype = badge_class[0]
+          } else if (subtype != null) {
+            var subbadge_class = BADGE_DICT[subtype]
+            subnum_ats = parsed_types.filter(x => x.includes(subtype)).length
+            if (subnum_ats > 0) {
+              at = subbadge_class[1] +(subnum_ats-1).toString() + badge_class[1]
+            } else {
+              at = subbadge_class[1] + badge_class[1]
+            }
+            badgetype = subbadge_class[0]
+          } else {
+            at = badge_class[1]
+            badgetype = badge_class[0]
+          }
+
+          alerttype_badge_span += '<span class="badge badge-'+badgetype+'">'+at+'</span>'
+          parsed_types.push(atype)
+        }
+        return alerttype_badge_span
+      }
+
+      $(document).ready(function(){
+        $("#myInput").on("keyup", function() {
+          var value = $(this).val().toLowerCase();
+          $("#myTable tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+          });
         });
       });
-    });
 
-    function reload_alert_select_table() {
-      var observing_run = $('#observing_run').val()
-      var role = $('#role').val()
-      var far = $('#far').val()
-      var haspointings = $('#haspointings').is(":checked")
+      function reload_alert_select_table() {
+        var observing_run = $('#observing_run').val()
+        var role = $('#role').val()
+        var far = $('#far').val()
+        var haspointings = $('#haspointings').is(":checked")
 
-      window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings
-    };
+        window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings
+      };
+
     </script>
     
     </body>

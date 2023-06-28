@@ -1174,18 +1174,18 @@ class gw_alert(db.Model):
             return 'None (detected as burst)'
 
         probs = [
-            {'prob':self.prob_bns if self.prob_bns else 0.0, 'class':'BNS'},
-            {'prob':self.prob_nsbh if self.prob_nsbh else 0.0, 'class':'NSBH'},
-            {'prob':self.prob_bbh if self.prob_bbh else 0.0, 'class':'BBH'},
-            {'prob':self.prob_terrestrial if self.prob_terrestrial else 0.0, 'class':'Terrestrial'},
-            {'prob':self.prob_gap if self.prob_gap else 0.0, 'class':'Mass Gap'}
+            {"prob":self.prob_bns if self.prob_bns else 0.0, "class":"BNS"},
+            {"prob":self.prob_nsbh if self.prob_nsbh else 0.0, "class":"NSBH"},
+            {"prob":self.prob_bbh if self.prob_bbh else 0.0, "class":"BBH"},
+            {"prob":self.prob_terrestrial if self.prob_terrestrial else 0.0, "class":"Terrestrial"},
+            {"prob":self.prob_gap if self.prob_gap else 0.0, "class":"Mass Gap"}
         ]
 
         sorted_probs = sorted([x for x in probs if x['prob'] > 0.01], key = lambda i: i['prob'], reverse=True)
 
-        classification = ''
+        classification = ""
         for p in sorted_probs:
-            classification += p['class'] + ': ('+str(round(100*p['prob'], 1))+'%) '
+            classification += p["class"] + ": ("+str(round(100*p['prob'], 1))+"%) "
 
         return classification
 
