@@ -1,5 +1,6 @@
 import fsspec
 import json
+import requests
 
 def _get_fs(source, config):
     try:
@@ -122,22 +123,32 @@ if __name__ == '__main__':
     config.AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 
     bucket_sources = ["s3", "abfs"]
-    for source in bucket_sources:
+    # for source in bucket_sources:
 
-        content = "line1\line2"
-        filename = "test/vv.text"
-        print("uploading test file", source)
-        test1 = upload_gwtm_file(content, filename, source=source, config=config)
-        assert test1, "error upload"
+    #     content = "line1\line2"
+    #     filename = "test/vv.text"
+    #     print("uploading test file", source)
+    #     test1 = upload_gwtm_file(content, filename, source=source, config=config)
+    #     assert test1, "error upload"
 
-        print("downloading test file", source)
-        test2 = download_gwtm_file(filename, source=source, config=config)
-        assert test2==content, "error download"
+    #     print("downloading test file", source)
+    #     test2 = download_gwtm_file(filename, source=source, config=config)
+    #     assert test2==content, "error download"
 
-        print("deleting test tile", source)
-        test3 = delete_gwtm_files([filename], source=source, config=config)
-        assert test3, "error delete"
+    #     print("deleting test tile", source)
+    #     test3 = delete_gwtm_files([filename], source=source, config=config)
+    #     assert test3, "error delete"
 
-    s3_content = list_gwtm_bucket("fit", "s3", config)[0:10]
-    abfs_content = list_gwtm_bucket("fit", "abfs", config)[0:10]
-    assert s3_content==abfs_content
+    # s3_content = list_gwtm_bucket("fit", "s3", config)[0:10]
+    # abfs_content = list_gwtm_bucket("fit", "abfs", config)[0:10]
+    # assert s3_content==abfs_content
+    alerts = ['S230621ad', 'S230620z']
+    base_url = 'https://treasuremap.space'
+    abfs_content = list_gwtm_bucket("fit", "abfs", config)
+    for a in alerts:
+        filtered_content = [x for x in abfs_content if a in x and 'alert.json' in x]
+        for f in filtered_content:
+            json_file = download_gwtm_file(f, source="abfs", config=config)
+            test = json.loads(json_file)
+            print(f, test['event']['duration'], test['event']['central_frequency'])
+            requests.post(url= base_url + '/fixdata', json = {"alert_name":f, "duration":test['event']['duration'], "central_freq":test['event']['central_frequency']})
