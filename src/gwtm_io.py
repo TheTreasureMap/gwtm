@@ -143,7 +143,8 @@ if __name__ == '__main__':
     # s3_content = list_gwtm_bucket("fit", "s3", config)[0:10]
     # abfs_content = list_gwtm_bucket("fit", "abfs", config)[0:10]
     # assert s3_content==abfs_content
-    alerts = ['S230621ad', 'S230620z']
+    #alerts = ['S230621ad', 'S230620z']
+    #query the list of the burst events, if group is Burst.
     base_url = 'https://treasuremap.space'
     abfs_content = list_gwtm_bucket("fit", "abfs", config)
     for a in alerts:

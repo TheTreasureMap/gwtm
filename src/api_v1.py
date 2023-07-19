@@ -1128,42 +1128,55 @@ def fixdata_v1():
 	# Validates if user has access to endpoint
 	valid, message, args, user = initial_request_parse(request=request)
 
-	# if not valid:
-	# 	return make_response(response_message=message, status_code=500)
+	if not valid:
+		return make_response(response_message=message, status_code=500)
 
-	# if user.id not in [2]:
-	# 	return make_response("Only admin can access this endpoint", 500)
-
+	if user.id not in [2]:
+		return make_response("Only admin can access this endpoint", 500)
+	burst_alerts = db.session.query(models.gw_alert).filter(models.gw_alert.group == 'Burst').all()
+	unique_burst_alerts = list(set([x.graceid for x in burst_alerts]))
 	# Get information such as duration and central frequency
-	alert_name = args.get('alert_name')
-	duration = args.get('duration')
-	central_freq = args.get('central_freq')
+	# unique list of burst alerts
+	abfs_content = gwtm_io.list_gwtm_bucket("fit", "abfs", config)
+	print(unique_burst_alerts)
+	for a in unique_burst_alerts[:5]:
+		filtered_content = [x for x in abfs_content if a in x and 'alert.json' in x]
+		for f in filtered_content:
+			json_file = gwtm_io.download_gwtm_file(f, source="abfs", config=config)
+			test = json.loads(json_file)
+			alert_name = f
+			duration = test['event']['duration']
+			central_freq = test['event']['central_frequency']
 
-	#alert_name
-	#graceid-Preliminary.....json - first
-	#graceid-Preliminary1...json - second
-	print(alert_name)
-	print(duration)
-	print(central_freq)
+		#alert_name
+			#graceid-Preliminary.....json - first
+			#graceid-Preliminary1...json - second
+			print(alert_name)
+			print(duration)
+			print(central_freq)
 
-	pattern_text = r'(\w+)\/(\w+)-(\w+)_alert\.json'
-	pattern = re.compile(pattern_text)
-	match = pattern.match(alert_name)
-	graceid_parsed = match.group(2)
-	alert_type_parsed = match.group(3)
-	print(graceid_parsed)
-	print(alert_type_parsed)
+			pattern_text = r'(\w+)\/(\w+)-(\w+)_alert\.json'
+			pattern = re.compile(pattern_text)
+			match = pattern.match(alert_name)
+			graceid_parsed = match.group(2)
+			alert_type_parsed = match.group(3)
+			print(graceid_parsed)
+			print(alert_type_parsed)
 
-	# Query the database and filter for gwalerts with matching graceid and filter types
-	gwalerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid_parsed, models.gw_alert.alert_type == alert_type_parsed).all()
-	print(gwalerts)
-	alert = gwalerts[0]
-
-	setattr(alert, 'duration', duration)
-	setattr(alert, 'central_freq', central_freq)
-	db.session.commit()
+			# Query the database and filter for gwalerts with matching graceid and filter types
+			gwalerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid_parsed, models.gw_alert.alert_type == alert_type_parsed).order_by(models.gw_alert.datecreated).all()
+			print(gwalerts)
+			alert = gwalerts[0]
+			if ('1' in alert_type_parsed):
+				print('Yes')
+				alert = gwalerts[1]
+			setattr(alert, 'duration', duration)
+			setattr(alert, 'central_freq', central_freq)
+			#db.session.commit()
+			print(alert.id, alert.graceid, alert.alert_type, duration, central_freq)
 	return make_response("Success", 200)
 
+#            requests.post(url= base_url + '/fixdata', json = {"alert_name":f, "duration":test['event']['duration'], "central_freq":test['event']['central_frequency']})
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
