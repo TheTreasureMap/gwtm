@@ -12,7 +12,7 @@ GeoAlchemy2
 healpy
 pyjwt
 matplotlib
-numpy --no-use-pep517
+numpy
 pandas
 plotly
 psycopg2-binary
