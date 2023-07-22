@@ -1124,6 +1124,45 @@ def del_test_alerts_v1():
 	return make_response('Sucksess', 200)
 
 
+@app.route('/api/v1/post_icecube_notice', methods=['POST'])
+def post_icecube_notice_v1():
+
+	'''
+	inputs:
+	'''
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+
+	if user.id not in [2]:
+			return make_response("Only admin can access this endpoint", 500)
+
+	notice_json = args["icecube_notice"]
+	notice_events_json = args["icecube_notice_coinc_events"]
+	events = []
+
+	notice = models.icecube_notice.from_json(notice_json)
+	db.session.add(notice)
+	db.session.flush()
+
+	for event_json in notice_events_json:
+		event = models.icecube_notice_coinc_event.from_json(event_json)
+		event.icecube_notice_id = notice.id
+		db.session.add(event)
+		events.append(event)
+
+	db.session.flush()
+	db.session.commit()
+
+	resp = {
+		"icecube_notice" : json.dumps(notice.parse),
+		"icecube_notice_events" : [json.dumps(x.parse) for x in events]
+	}
+	return make_response(json.dumps(resp), 200)
+
+
 #FIX DATA
 @app.route('/fixdata', methods=['GET', 'POST'])
 def fixdata_v1():
@@ -1133,39 +1172,12 @@ def fixdata_v1():
 	# if not valid:
 	# 	return make_response(response_message=message, status_code=500)
 
-	# if user.id not in [2]:
-	# 	return make_response("Only admin can access this endpoint", 500)
+	if user.id not in [2]:
+		return make_response("Only admin can access this endpoint", 500)
 
 	# Get information such as duration and central frequency
-	alert_name = args.get('alert_name')
-	duration = args.get('duration')
-	central_freq = args.get('central_freq')
 
-	#alert_name
-	#graceid-Preliminary.....json - first
-	#graceid-Preliminary1...json - second
-	print(alert_name)
-	print(duration)
-	print(central_freq)
-
-	pattern_text = r'(\w+)\/(\w+)-(\w+)_alert\.json'
-	pattern = re.compile(pattern_text)
-	match = pattern.match(alert_name)
-	graceid_parsed = match.group(2)
-	alert_type_parsed = match.group(3)
-	print(graceid_parsed)
-	print(alert_type_parsed)
-
-	# Query the database and filter for gwalerts with matching graceid and filter types
-	gwalerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid_parsed, models.gw_alert.alert_type == alert_type_parsed).all()
-	print(gwalerts)
-	alert = gwalerts[0]
-
-	setattr(alert, 'duration', duration)
-	setattr(alert, 'central_freq', central_freq)
-	db.session.commit()
-	return make_response("Success", 200)
-
+	return make_response("", 200)
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects

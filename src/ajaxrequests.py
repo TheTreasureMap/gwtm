@@ -328,6 +328,45 @@ def ajax_event_galaxies():
 	return(jsonify(event_galaxies))
 
 
+@app.route('/ajax_icecube_notice')
+def ajax_icecube_notice():
+	args = request.args
+	graceid = args['graceid']
+	return_events = []
+
+	icecube_notices = db.session.query(models.icecube_notice).filter(
+		models.icecube_notice.graceid == graceid
+	)
+
+	icecube_notice_ids = list(set([x.id for x in icecube_notices]))
+
+	icecube_notice_events = db.session.query(
+		models.icecube_notice_coinc_event
+	).filter(
+		models.icecube_notice_coinc_event.icecube_notice_id.in_(icecube_notice_ids)
+	).all()
+
+	for notice in icecube_notices:
+		markers = []
+		events = [x for x in icecube_notice_events if x.icecube_notice_id == notice.id]
+		for i,e in enumerate(events):
+			markers.append({
+				"name":f"ICN_EVENT_{e.id}",
+				"ra": e.ra,
+				"dec": e.dec,
+				"radius": e.ra_uncertainty,
+				"info": function.sanatize_icecube_event(e, notice)
+			})
+		return_events.append({
+			"name":f"ICECUBENotice{notice.id}",
+			"color":"#324E72",
+			"markers":markers
+		})
+
+	print(return_events)
+	return(jsonify(return_events))
+
+
 @app.route('/ajax_scimma_xrt')
 def ajax_scimma_xrt():
 	args = request.args

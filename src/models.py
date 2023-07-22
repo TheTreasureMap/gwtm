@@ -1453,3 +1453,87 @@ class gw_galaxy_entry(db.Model):
 
         v.valid = len(v.errors) == 0
         return v
+    
+    
+class icecube_notice(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    graceid = db.Column(db.String)
+    alert_datetime = db.Column(db.DateTime)
+    datecreated = db.Column(db.DateTime)
+    observation_start = db.Column(db.DateTime)
+    observation_stop = db.Column(db.DateTime)
+    pval_generic = db.Column(db.Float)
+    pval_bayesian = db.Column(db.Float)
+    most_probable_direction_ra = db.Column(db.Float)
+    most_probable_direction_dec = db.Column(db.Float)
+    flux_sens_low = db.Column(db.Float)
+    flux_sens_high = db.Column(db.Float)
+    sens_energy_range_low = db.Column(db.Float)
+    sens_energy_range_high = db.Column(db.Float)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+    
+    @staticmethod
+    def from_json(args):
+        akeys = args.keys()
+
+        notice = icecube_notice(
+            graceid                     = args['graceid'] if 'graceid' in akeys else 'ERROR',
+            alert_datetime              = args['alert_datetime'] if 'alert_datetime' in akeys else datetime.datetime(year=1991, month=12, day=23),
+            observation_start           = args['observation_start'] if 'observation_start' in akeys else datetime.datetime(year=1991, month=12, day=23),
+            observation_stop            = args['observation_stop'] if 'observation_stop' in akeys else datetime.datetime(year=1991, month=12, day=23),
+            pval_generic                = args['pval_generic'] if 'pval_generic' in akeys else 0.0,
+            pval_bayesian               = args['pval_bayesian'] if 'pval_bayesian' in akeys else 0.0,
+            most_probable_direction_ra  = args['most_probable_direction_ra'] if 'most_probable_direction_ra' in akeys else 0.0,
+            most_probable_direction_dec = args['most_probable_direction_dec'] if 'most_probable_direction_dec' in akeys else 0.0,
+            flux_sens_low               = args['flux_sens_low'] if 'flux_sens_low' in akeys else 0.0,
+            flux_sens_high              = args['flux_sens_high'] if 'flux_sens_high' in akeys else 0.0,
+            sens_energy_range_low       = args['sens_energy_range_low'] if 'sens_energy_range_low' in akeys else 0.0,
+            sens_energy_range_high      = args['sens_energy_range_high'] if 'sens_energy_range_high' in akeys else 0.0,
+            datecreated                 = args['datecreated'] if 'datecreated' in akeys else datetime.datetime.now(),
+        )
+        return notice
+    
+
+class icecube_notice_coinc_event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    icecube_notice_id = db.Column(db.Integer)
+    datecreated = db.Column(db.DateTime)
+    event_dt = db.Column(db.Float)
+    ra = db.Column(db.Float)
+    dec = db.Column(db.Float)
+    containment_probability = db.Column(db.Float)
+    event_pval_generic = db.Column(db.Float)
+    event_pval_bayesian = db.Column(db.Float)
+    ra_uncertainty = db.Column(db.Float)
+
+    @property
+    def json(self):
+        return to_json(self, self.__class__)
+
+    @property
+    def parse(self):
+        return parse_model(self, self.__class__)
+    
+    @staticmethod
+    def from_json(args):
+        akeys = args.keys()
+
+        event = icecube_notice_coinc_event(
+            icecube_notice_id       = args['icecube_notice_id'] if 'icecube_notice_id' in akeys else -999,
+            event_dt                = args['event_dt'] if 'event_dt' in akeys else 0.0,
+            ra                      = args['ra'] if 'ra' in akeys else 0.0,
+            dec                     = args['dec'] if 'dec' in akeys else 0.0,
+            containment_probability = args['containment_probability'] if 'containment_probability' in akeys else 0.0,
+            event_pval_generic      = args['event_pval_generic'] if 'event_pval_generic' in akeys else 0.0,
+            event_pval_bayesian     = args['event_pval_bayesian'] if 'event_pval_bayesian' in akeys else 0.0,
+            ra_uncertainty          = args['ra_uncertainty'] if 'ra_uncertainty' in akeys else 0.0,
+            datecreated             = args['datecreated'] if 'datecreated' in akeys else datetime.datetime.now(),
+        )
+        return event

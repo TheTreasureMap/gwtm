@@ -239,12 +239,12 @@ def alerts():
 	args = {'graceid':graceid, 'pointing_status':status, 'alert_type': alerttype}
 	form = forms.AlertsForm
 	form.page = 'alerts'
-	form, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats = form.construct_alertform(form, args)
+	form = form.construct_alertform(form, args)
 	if graceid != 'None' and graceid is not None:
-		return render_template("alerts.html", form=form, detection_overlays= detection_overlays, inst_overlays=inst_overlays, GRBoverlays=GRBoverlays, galaxy_cats=galaxy_cats)
+		return render_template("alerts.html", form=form, detection_overlays=form.detection_overlays, GRBoverlays=form.GRBoverlays)
 
 	form.graceid = 'None'
-	return render_template("alerts.html", form=form)
+	return render_template("alerts.html", form=form, detection_overlays=form.detection_overlays, GRBoverlays=form.GRBoverlays)
 
 
 @app.route("/fairuse", methods=['GET'])

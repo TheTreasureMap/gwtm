@@ -1121,10 +1121,43 @@ def del_test_alerts():
 	return make_response('Sucksess', 200)
 
 
-#FIX DATA
-@app.route('/fixdata', methods=['GET'])
-def fixdata():
-	pass
+@app.route('/api/v0/post_icecube_notice', methods=['POST'])
+def post_icecube_notice_v0():
+
+	'''
+	inputs:
+	'''
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+
+	if user.id not in [2]:
+			return make_response("Only admin can access this endpoint", 500)
+
+	notice_json = args["icecube_notice"]
+	notice_events_json = args["icecube_notice_coinc_events"]
+	events = []
+
+	notice = models.icecube_notice.from_json(notice_json)
+	db.session.add(notice)
+	db.session.flush()
+
+	for event_json in notice_events_json:
+		event = models.icecube_notice_coinc_event.from_json(event_json)
+		event.icecube_notice_id = notice.id
+		db.session.add(event)
+		events.append(event)
+
+	db.session.flush()
+	db.session.commit()
+
+	resp = {
+		"icecube_notice" : json.dumps(notice.parse),
+		"icecube_notice_events" : [json.dumps(x.parse) for x in events]
+	}
+	return make_response(json.dumps(resp), 200)
 
 
 #Post Candidate/s

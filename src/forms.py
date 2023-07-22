@@ -247,8 +247,14 @@ class AlertsForm(FlaskForm):
     distance_error = None
     avgra, avgdec = '', ''
     spectral_type_units = None
+    detection_overlays = []
+    GRBoverlays = []
+    has_icecube = False
 
     def construct_alertform(self, args):
+
+        self.detection_overlays = []
+        self.GRBoverlays = []
 
         self.spectral_type_units = {
             'wavelength': [x.name for x in enums.wavelength_units],
@@ -258,10 +264,6 @@ class AlertsForm(FlaskForm):
 
         graceid = args['graceid']
 
-        detection_overlays = None
-        inst_overlays = None
-        GRBoverlays = None
-        galaxy_cats = None
         self.viz = False
 
         statuses = [
@@ -311,7 +313,7 @@ class AlertsForm(FlaskForm):
 
         #if there is a selected graceid
         if graceid != 'None' and graceid is not None:
-
+    
             t_start = time.time()
             #preserve the forms graceid
             self.graceid = graceid
@@ -330,11 +332,8 @@ class AlertsForm(FlaskForm):
                 models.gw_alert.datecreated.asc()
             ).all()
 
-            detection_overlays = []
-            GRBoverlays = []
-
             if len(alert_info) == 0:
-                return self, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats
+                return self, self.detection_overlays, self.GRBoverlays, self.galaxy_cats
             
             role = alert_info[0].role
             s3path = 'fit' if role == 'observation' else 'test'
@@ -490,7 +489,7 @@ class AlertsForm(FlaskForm):
                 try:
                     f = gwtm_io.download_gwtm_file(batpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
-                    GRBoverlays.append({
+                    self.GRBoverlays.append({
                         'name':'Swift/BAT',
                         'color':'#3cb44b',
                         'json':contours_data
@@ -508,13 +507,13 @@ class AlertsForm(FlaskForm):
                 try:
                     f = gwtm_io.download_gwtm_file(GBMpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
-                    GRBoverlays.append({
+                    self.GRBoverlays.append({
                         'name':'Fermi/GBM',
                         'color':'magenta',
                         'json':contours_data
                     })
                 except:
-                    GRBoverlays.append({
+                    self.GRBoverlays.append({
                         'name': 'Fermi in South Atlantic Anomaly'
                         })
                 #Do LAT stuff
@@ -522,7 +521,7 @@ class AlertsForm(FlaskForm):
                 try:
                     f = gwtm_io.download_gwtm_file(LATpathinfo, config.STORAGE_BUCKET_SOURCE, config)
                     contours_data = json.loads(f)
-                    GRBoverlays.append({
+                    self.GRBoverlays.append({
                         'name':'Fermi/LAT',
                         'color':'red',
                         'json':contours_data
@@ -552,7 +551,7 @@ class AlertsForm(FlaskForm):
                 for contour in contours_data['features']:
                     contour_geometry.extend(contour['geometry']['coordinates'])
 
-                detection_overlays.append({
+                self.detection_overlays.append({
                     "display":True,
                     "name":"GW Contour",
                     "color": '#e6194B',
@@ -561,6 +560,10 @@ class AlertsForm(FlaskForm):
             except:
                 print(f'No key: {contourpath}')
 
+            icecube_data = db.session.query(models.icecube_notice).filter(models.icecube_notice.graceid == self.graceid).all()
+            self.has_icecube = len(icecube_data) > 0
+
             t_stop = time.time()
             print("Time loading page: ", t_stop-t_start)
-        return self, detection_overlays, inst_overlays, GRBoverlays, galaxy_cats
+
+        return self

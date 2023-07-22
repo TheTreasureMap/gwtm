@@ -32,25 +32,15 @@ function gwtmAladinInit(data) {
         showReticle: false
     };
 
-    if ('aladin' in data){
-        var aladin = data.aladin;
-    }
-    //aladin v3 init... breaks everythin
-    /*else {
-        A.init.then(() => {
-            var aladin = A.aladin('#aladin-lite-div', aladinParams);
-        });
-    }
-    */
-    else {
-        var aladin = A.aladin('#aladin-lite-div', aladinParams);
-    }
+    var aladin = A.aladin(
+            "#aladin-lite-div",
+            aladinParams
+    );
 
-    var IMG = new Image();
-    IMG.src = 'static/sun-logo-100.png';
-    var cat = A.catalog({shape: IMG, name: 'Sun at GW T0'})
-    aladin.addCatalog(cat);
-    cat.addSources(A.source(data.sun_ra, data.sun_dec))
+    return overlayInit(aladin, data)
+};
+
+function overlayInit(aladin, data) {
 
     aladin_setImage(aladin, 'static/sun-logo-100.png', 'Sun at GW T0', data.sun_ra, data.sun_dec)
     aladin_setImage(aladin, 'static/moon-supersmall.png', 'Moon at GW T0', data.moon_ra, data.moon_dec)
@@ -70,8 +60,7 @@ function gwtmAladinInit(data) {
     }
 
     return ret;
-};
-
+}
 /*
     not sure if this works. Didn't delete
 */
@@ -149,16 +138,27 @@ function aladin_setMarkers(
         var groupname = marker_list[i].name
         var markers = marker_list[i].markers
         var markerlayer = A.catalog({name:groupname})
+        var overlay = A.graphicOverlay()
+        var has_overlay = false
+        if (markers.length > 0 && 'radius' in markers[0]){
+            aladin.addOverlay(overlay)
+            has_overlay = true
+        }
         for (j = 0; j < markers.length; j++) {
             var marker = A.marker(markers[j].ra, markers[j].dec, {popupTitle: markers[j].name, popupDesc: markers[j].info})
             markerlayer.addSources([marker])
+            if (has_overlay) {
+                overlay.add(A.circle(markers[j].ra, markers[j].dec, markers[j].radius, {color: markerlayer.color}))
+            }
         }
         aladin.addCatalog(markerlayer)
         set_marker_list[i] = {
             'name':groupname,
             'toshow': true,
             'tocolor': markerlayer.color,
-            'markerlayer': markerlayer
+            'markerlayer': markerlayer,
+            'overlaylayer': overlay,
+            'has_overlay' : has_overlay
         }
         marker_list[i].color = markerlayer.color
     }
@@ -319,8 +319,18 @@ function aladin_markerToggleOne(
       for (var i = 0; i < marker_list.length; i++) {
         var idstr = marker_list[i].name.replace(/\s+/g, '')
         if (group_id == idstr) {
-          if (target.checked) { marker_list[i].markerlayer.show() }
-          else { marker_list[i].markerlayer.hide() }
+          if (target.checked) { 
+            marker_list[i].markerlayer.show()
+            if (marker_list[i].has_overlay) {
+                marker_list[i].overlaylayer.show() 
+            }
+          }
+          else { 
+            marker_list[i].markerlayer.hide() 
+            if (marker_list[i].has_overlay) {
+                marker_list[i].overlaylayer.hide() 
+            }
+          }
         }
       }
   }
@@ -336,11 +346,19 @@ function aladin_markerToggleAll(
 ) {
     for (var i = 0; i < marker_list.length; i++) {
         markerlayer = marker_list[i].markerlayer
+        overlaylayer = marker_list[i].overlaylayer
+        has_overlay = marker_list[i].has_overlay
         if (toShow) {
             markerlayer.show() 
+            if (has_overlay) {
+                overlaylayer.show()
+            }
         }
         else { 
             markerlayer.hide() 
+            if (has_overlay) {
+                overlaylayer.hide()
+            }
         }
     }
 }
@@ -421,7 +439,7 @@ function aladin_setMarkerHtml(
         html += '\
         <li>\
             <fieldset>\
-                <button id="collbtn'+idstr+'" onclick="changeCollapseButtonText(this.id)" type="button" class="btn btn-primary btn-xs right-triangle" data-toggle="collapse" data-target="#collapse'+idstr+'"></button> \
+                <button id="collbtn'+idstr+'" onclick="changeCollapseButtonText(this.id)" type="button" class="btn btn-primary btn-sm right-triangle my-1" data-toggle="collapse" data-target="#collapse'+idstr+'"></button> \
                 <label for="marker_group_'+idstr+'"> \
                     <input id="marker_group_' + idstr + '" type="checkbox" checked="checked"> \
                         <div class="markercolordot" style="background-color: '+marker_list[i].color+';"> </div> \
@@ -539,6 +557,13 @@ $(function() {
             $('#alert_scimmadiv').html('');
             var button = document.getElementById('alert_scimma_xrt');
             button.innerHTML = 'Get'
+
+            $('#alert_icecubediv').html('');
+            var button = document.getElementById('alert_icecube_notice');
+            if (button != null) {
+                button.innerHTML = 'Get'
+            }
+            
         }
   });
   $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +

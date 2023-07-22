@@ -181,6 +181,18 @@ def sanatize_gal_info(entry, glist):
     return ret
 
 
+def sanatize_icecube_event(entry, notice):
+    ret = "<p>"
+    ret = "<b> RA DEC: </b>"+str(round(entry.ra,4))+" "+str(round(entry.dec,4))+"<br>"
+    ret += "<b>Event dt: </b>"+str(entry.event_dt)+"<br>"
+    ret += "<b>RA Uncertainty: </b>"+str(entry.ra_uncertainty)+"<br>" 
+    ret += "<b>Containment Prob: </b>"+str(entry.containment_probability)+"<br>" 
+    ret += "<b>Pval Gen: </b>"+str(entry.event_pval_generic)+"<br>" 
+    ret += "<b>Pval Bayesian: </b>"+str(entry.event_pval_bayesian)+"<br>" 
+    ret += "</p>"
+    return ret
+
+
 def sanatize_pointing(p):
     ra = float(p.split('(')[1].split(')')[0].split()[0])
     dec = float(p.split('(')[1].split(')')[0].split()[1])
