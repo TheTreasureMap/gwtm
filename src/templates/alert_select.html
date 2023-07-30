@@ -54,8 +54,8 @@
           <p><center style="color: red">All ingested test alerts (MS...) are deleted within 48 hours</center></p>
         </div>
       {% endif %}
-      
-      <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>  
+
+      <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
       <br>
       <p>Click on an alert name to see its visualization</p>
@@ -84,19 +84,47 @@
         </tbody>
       </table>
     </div>
-    
+
+    <div class="pagination" style="margin-top: 20px;">
+      <ul class="pagination justify-content-center">
+        <li class="page-item">
+          <button id="prev_button" onclick="changePage('prev')" {% if page == 0 %}disabled{% endif %}>Previous</button>
+        </li>
+        <li class="page-item">
+          <button id="next_button" onclick="changePage('next')" {% if page == 4 %}disabled{% endif %}>Next</button>
+        </li>
+      </ul>
+    </div>
+
     <script type='text/javascript'>
-      
+
       window.onload = function() {
         var alerts = JSON.parse('{{ alerts | tojson }}')
+        var alerts_length = alerts.length
 
-        for (var k=0 ; k<alerts.length; k++) {
+        for (var k=0 ; k<alerts_length; k++) {
           row_id = "row_" + alerts[k].alertname
-          
+
           row_html = '<a href="/alerts?graceids='+alerts[k].alertname+'">'+alerts[k].alertname+'</a> '
           row_html += get_alerttype_badge_span(alerts[k].alert_types)
           $("#"+row_id).html(row_html)
         }
+      }
+
+      function changePage(button) {
+        var urlParams = new URLSearchParams(window.location.search);
+        var page = parseInt(urlParams.get('page')) || 0;
+        if (button == "prev") {
+          page = page - 1;
+        } else if (button == "next") {
+          page = page + 1;
+        }
+        var role = "{{ selected_role }}";
+        var observing_run = "{{ selected_observing_run }}";
+        var far = "{{ selected_far }}";
+        var haspointings = "{{ selected_haspointings }}";
+
+        window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page;
       }
 
       function get_alerttype_badge_span(alert_types) {
@@ -113,7 +141,7 @@
         alerttype_badge_span = ""
         parsed_types = []
 
-        for (var a=0; a <alert_types.length; a++) {
+        for (var a=0; a <alerts_length; a++) {
           atype = alert_types[a]
           subtype = null
           if (atype.includes("ExtCoinc")) {
@@ -167,6 +195,6 @@
       };
 
     </script>
-    
+
     </body>
 {% endblock %}

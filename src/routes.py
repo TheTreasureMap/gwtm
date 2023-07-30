@@ -123,7 +123,7 @@ def home():
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)
 
-	selected_observing_run = request.args.get('observing_run', default="O4") 
+	selected_observing_run = request.args.get('observing_run', default="O4")
 	selected_role = request.args.get('role', default="observation")
 	selected_far = request.args.get('far', default="all")
 	selected_haspointings = request.args.get('haspointings', default="false")
@@ -135,10 +135,13 @@ def alert_select():
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
 
-	allerts = db.session.query(
-		models.gw_alert
-	).filter(*filter).order_by(models.gw_alert.datecreated.asc()).all()
+	page = request.args.get('page', default=0)
+	num_results = 20
 
+	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(page * num_results).limit(num_results).all()
+
+	# gets all the unique alerts
+	# we can control how much is listed here, or slice depending on how we want to
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	p_event_counts = db.session.query(
@@ -224,9 +227,9 @@ def alert_select():
 		'subthreshold' : 'Subthreshold'
 	}
 
-	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far, 
-			selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run, 
-			selected_role=selected_role, selected_far=selected_far)
+	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
+			selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
+			selected_role=selected_role, selected_far=selected_far, page=page)
 
 
 @app.route("/alerts", methods=['GET', 'POST'])
