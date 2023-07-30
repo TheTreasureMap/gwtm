@@ -145,10 +145,10 @@ if __name__ == '__main__':
     alerts = ['S230621ad', 'S230620z']
     base_url = 'https://treasuremap.space'
     abfs_content = list_gwtm_bucket("fit", "abfs", config)
-    for a in alerts:
-        filtered_content = [x for x in abfs_content if a in x and 'alert.json' in x]
-        for f in filtered_content:
-            json_file = download_gwtm_file(f, source="abfs", config=config)
-            test = json.loads(json_file)
-            print(f, test['event']['duration'], test['event']['central_frequency'])
-            requests.post(url= base_url + '/fixdata', json = {"alert_name":f, "duration":test['event']['duration'], "central_freq":test['event']['central_frequency']})
+    # for a in alerts:
+    #     filtered_content = [x for x in abfs_content if a in x and 'alert.json' in x]
+    #     for f in filtered_content:
+    #         json_file = download_gwtm_file(f, source="abfs", config=config)
+    #         test = json.loads(json_file)
+    #         print(f, test['event']['duration'], test['event']['central_frequency'])
+    #         requests.post(url= base_url + '/fixdata', json = {"alert_name":f, "duration":test['event']['duration'], "central_freq":test['event']['central_frequency']})
