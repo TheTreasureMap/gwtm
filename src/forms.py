@@ -333,7 +333,7 @@ class AlertsForm(FlaskForm):
             ).all()
 
             if len(alert_info) == 0:
-                return self, self.detection_overlays, self.GRBoverlays, self.galaxy_cats
+                return self
             
             role = alert_info[0].role
             s3path = 'fit' if role == 'observation' else 'test'
