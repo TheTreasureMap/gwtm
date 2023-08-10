@@ -273,7 +273,7 @@ class AlertsForm(FlaskForm):
         for m in enums.pointing_status:
             statuses.append({'name':m.name, 'value':m.name})
         self.pointing_status = statuses
-        self.status = 'all'
+        self.status = 'completed'
 
         #grab all observation alerts
         gwalerts = models.gw_alert.query.order_by(models.gw_alert.time_of_signal).all()
