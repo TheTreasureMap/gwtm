@@ -236,7 +236,6 @@ def alert_select():
 def alerts():
 	models.useractions.write_action(request=request, current_user=current_user)
 	graceid = request.args.get('graceids')
-	print(graceid)
 	status = request.args.get('pointing_status')
 	status = status if status is not None else 'completed'
 	alerttype = request.args.get('alert_type')

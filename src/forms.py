@@ -273,7 +273,7 @@ class AlertsForm(FlaskForm):
         for m in enums.pointing_status:
             statuses.append({'name':m.name, 'value':m.name})
         self.pointing_status = statuses
-        self.status = 'completed'
+        self.status = 'all'
 
         #grab all observation alerts
         gwalerts = models.gw_alert.query.order_by(models.gw_alert.time_of_signal).all()
@@ -333,7 +333,7 @@ class AlertsForm(FlaskForm):
             ).all()
 
             if len(alert_info) == 0:
-                return self
+                return self, self.detection_overlays, self.GRBoverlays, self.galaxy_cats
             
             role = alert_info[0].role
             s3path = 'fit' if role == 'observation' else 'test'
