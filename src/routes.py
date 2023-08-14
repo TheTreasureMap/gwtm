@@ -16,7 +16,6 @@ from . import enums
 
 from src import app
 from src.gwtmconfig import config
-from sqlalchemy.orm import Query
 
 db = models.db
 
@@ -124,10 +123,6 @@ def home():
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)
 
-	page = request.args.get('page', 1, type=int)
-	per_page = 15  # Number of alerts to show per page
-	offset = (page - 1) * per_page
-
 	selected_observing_run = request.args.get('observing_run', default="O4")
 	selected_role = request.args.get('role', default="observation")
 	selected_far = request.args.get('far', default="all")
@@ -140,14 +135,13 @@ def alert_select():
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
 
-	# Get the total count of alerts matching the filter criteria
-	total_alerts = db.session.query(models.gw_alert).filter(*filter).count()
-
-	# Create a pagination object
-	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(offset).limit(per_page).all()
+	page = request.args.get('page', default=0)
+	num_results = 20
 	#page*num_results results in something that is too big, need to figure out how many items are in the list to determine how many pages and results to show
-	#allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(page * num_results).limit(num_results).all()
+	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(page * num_results).limit(num_results).all()
 
+	# gets all the unique alerts
+	# we can control how much is listed here, or slice depending on how we want to
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	p_event_counts = db.session.query(
@@ -234,8 +228,8 @@ def alert_select():
 	}
 
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
-        selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
-        selected_role=selected_role, selected_far=selected_far, page=page, total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page)
+			selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
+			selected_role=selected_role, selected_far=selected_far, page=page)
 
 
 @app.route("/alerts", methods=['GET', 'POST'])

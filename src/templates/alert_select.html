@@ -59,18 +59,6 @@
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
       <br>
       <p>Click on an alert name to see its visualization</p>
-
-      <p>
-        Page:
-        <span id="pageNumber"></span>
-      </p>
-
-      <script type="text/javascript">
-        var urlParams = new URLSearchParams(window.location.search);
-        var page = parseInt(urlParams.get('page')) || 1;
-        document.getElementById("pageNumber").textContent = page;
-      </script>
-
       <table class="table table-bordered table-striped">
         <thead>
           <tr>
@@ -97,28 +85,16 @@
       </table>
     </div>
 
-    <!-- Display pagination controls -->
-    <!-- <div class="pagination">
-      {% if alerts.has_prev %}
-        <a href="#" onclick="changePage('prev')">Previous</a>
-      {% endif %}
-
-      <span class="page">{{ alerts.page }}</span>
-
-      {% if alerts.has_next %}
-        <a href="#" onclick="changePage('next')">Next</a>
-      {% endif %}
-    </div> -->
-
     <div class="pagination" style="margin-top: 20px;">
       <ul class="pagination justify-content-center">
         <li class="page-item">
-          <button id="prev_button" onclick="changePage('prev')" {% if page <= 1 %}disabled{% endif %}>Previous</button>
+          <button id="prev_button" onclick="changePage('prev')" {% if page == 0 %}disabled{% endif %}>Previous</button>
         </li>
         <li class="page-item">
-          <button id="next_button" onclick="changePage('next')" {% if left <= 0 %}disabled{% endif %}>Next</button>
+          <button id="next_button" onclick="changePage('next')" {% if page == 4 %}disabled{% endif %}>Next</button>
         </li>
       </ul>
+    </div>
 
     <script type='text/javascript'>
 
@@ -137,7 +113,7 @@
 
       function changePage(button) {
         var urlParams = new URLSearchParams(window.location.search);
-        var page = parseInt(urlParams.get('page')) || 1;
+        var page = parseInt(urlParams.get('page')) || 0;
         if (button == "prev") {
           page = page - 1;
         } else if (button == "next") {
@@ -147,7 +123,6 @@
         var observing_run = "{{ selected_observing_run }}";
         var far = "{{ selected_far }}";
         var haspointings = "{{ selected_haspointings }}";
-        var total_pointings = "{{total_alerts}}"
 
         window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page;
       }
