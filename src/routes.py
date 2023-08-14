@@ -138,7 +138,8 @@ def alert_select():
 	page = request.args.get('page', default=0)
 	num_results = 20
 	#page*num_results results in something that is too big, need to figure out how many items are in the list to determine how many pages and results to show
-	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(page * num_results).limit(num_results).all()
+	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).all()
+		#.offset(page * num_results).limit(num_results).all()
 
 	# gets all the unique alerts
 	# we can control how much is listed here, or slice depending on how we want to
