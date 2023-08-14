@@ -1457,6 +1457,7 @@ class gw_galaxy_entry(db.Model):
     
 class icecube_notice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    ref_id = db.Column(db.String)
     graceid = db.Column(db.String)
     alert_datetime = db.Column(db.DateTime)
     datecreated = db.Column(db.DateTime)
@@ -1485,6 +1486,7 @@ class icecube_notice(db.Model):
 
         notice = icecube_notice(
             graceid                     = args['graceid'] if 'graceid' in akeys else 'ERROR',
+            ref_id                      = args['ref_id'] if 'ref_id' in akeys else 'ERROR',
             alert_datetime              = args['alert_datetime'] if 'alert_datetime' in akeys else datetime.datetime(year=1991, month=12, day=23),
             observation_start           = args['observation_start'] if 'observation_start' in akeys else datetime.datetime(year=1991, month=12, day=23),
             observation_stop            = args['observation_stop'] if 'observation_stop' in akeys else datetime.datetime(year=1991, month=12, day=23),
@@ -1500,6 +1502,26 @@ class icecube_notice(db.Model):
         )
         return notice
     
+    def already_exists(self):
+
+        other_notices = db.session.query(
+            icecube_notice
+        ).filter(
+            icecube_notice.graceid == self.graceid,
+            icecube_notice.alert_datetime == self.alert_datetime,
+            icecube_notice.observation_start == self.observation_start,
+            icecube_notice.observation_stop == self.observation_stop,
+            icecube_notice.pval_generic == self.pval_generic,
+            icecube_notice.pval_bayesian == self.pval_bayesian,
+            icecube_notice.most_probable_direction_ra == self.most_probable_direction_ra,
+            icecube_notice.most_probable_direction_dec == self.most_probable_direction_dec
+        ).all()
+
+        if len(other_notices):
+            return True
+        return False
+
+    
 
 class icecube_notice_coinc_event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1512,6 +1534,7 @@ class icecube_notice_coinc_event(db.Model):
     event_pval_generic = db.Column(db.Float)
     event_pval_bayesian = db.Column(db.Float)
     ra_uncertainty = db.Column(db.Float)
+    uncertainty_shape = db.Column(db.String)
 
     @property
     def json(self):
@@ -1534,6 +1557,7 @@ class icecube_notice_coinc_event(db.Model):
             event_pval_generic      = args['event_pval_generic'] if 'event_pval_generic' in akeys else 0.0,
             event_pval_bayesian     = args['event_pval_bayesian'] if 'event_pval_bayesian' in akeys else 0.0,
             ra_uncertainty          = args['ra_uncertainty'] if 'ra_uncertainty' in akeys else 0.0,
+            uncertainty_shape       = args['uncertainty_shape'] if 'uncertainty_shape' in akeys else 0.0,
             datecreated             = args['datecreated'] if 'datecreated' in akeys else datetime.datetime.now(),
         )
         return event
