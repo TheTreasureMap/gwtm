@@ -1144,20 +1144,28 @@ def post_icecube_notice_v1():
 	events = []
 
 	notice = models.icecube_notice.from_json(notice_json)
-	db.session.add(notice)
-	db.session.flush()
 
-	for event_json in notice_events_json:
-		event = models.icecube_notice_coinc_event.from_json(event_json)
-		event.icecube_notice_id = notice.id
-		db.session.add(event)
-		events.append(event)
+	if not notice.already_exists():
+		db.session.add(notice)
+		db.session.flush()
 
-	db.session.flush()
-	db.session.commit()
+		for event_json in notice_events_json:
+			event = models.icecube_notice_coinc_event.from_json(event_json)
+			event.icecube_notice_id = notice.id
+			db.session.add(event)
+			events.append(event)
 
+		db.session.flush()
+		db.session.commit()
+
+		resp = {
+			"icecube_notice" : json.dumps(notice.parse),
+			"icecube_notice_events" : [json.dumps(x.parse) for x in events]
+		}
+		return make_response(json.dumps(resp), 200)
+	
 	resp = {
-		"icecube_notice" : json.dumps(notice.parse),
+		"icecube_notice": json.dumps({"message" : "event already exists"}), 
 		"icecube_notice_events" : [json.dumps(x.parse) for x in events]
 	}
 	return make_response(json.dumps(resp), 200)

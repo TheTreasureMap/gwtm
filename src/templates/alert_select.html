@@ -97,19 +97,6 @@
       </table>
     </div>
 
-    <!-- Display pagination controls -->
-    <!-- <div class="pagination">
-      {% if alerts.has_prev %}
-        <a href="#" onclick="changePage('prev')">Previous</a>
-      {% endif %}
-
-      <span class="page">{{ alerts.page }}</span>
-
-      {% if alerts.has_next %}
-        <a href="#" onclick="changePage('next')">Next</a>
-      {% endif %}
-    </div> -->
-
     <div class="pagination" style="margin-top: 20px;">
       <ul class="pagination justify-content-center">
         <li class="page-item">
@@ -119,14 +106,14 @@
           <button id="next_button" onclick="changePage('next')" {% if left <= 0 %}disabled{% endif %}>Next</button>
         </li>
       </ul>
+    </div>
 
     <script type='text/javascript'>
 
       window.onload = function() {
         var alerts = JSON.parse('{{ alerts | tojson }}')
-        var alerts_length = alerts.length
 
-        for (var k=0 ; k<alerts_length; k++) {
+        for (var k=0 ; k<alerts.length; k++) {
           row_id = "row_" + alerts[k].alertname
 
           row_html = '<a href="/alerts?graceids='+alerts[k].alertname+'">'+alerts[k].alertname+'</a> '
@@ -166,7 +153,7 @@
         alerttype_badge_span = ""
         parsed_types = []
 
-        for (var a=0; a <alerts_length; a++) {
+        for (var a=0; a <alert_types.length; a++) {
           atype = alert_types[a]
           subtype = null
           if (atype.includes("ExtCoinc")) {
