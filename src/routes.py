@@ -145,8 +145,6 @@ def alert_select():
 
 	# Create a pagination object
 	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(offset).limit(per_page).all()
-	#page*num_results results in something that is too big, need to figure out how many items are in the list to determine how many pages and results to show
-	#allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(page * num_results).limit(num_results).all()
 
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 

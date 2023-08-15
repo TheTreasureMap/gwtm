@@ -61,14 +61,21 @@
       <p>Click on an alert name to see its visualization</p>
 
       <p>
-        Page:
+        <span id="totalAlerts"></span> record(s) found.
+        Showing page
         <span id="pageNumber"></span>
+        / <span id="totalPages"></span>.
       </p>
 
       <script type="text/javascript">
         var urlParams = new URLSearchParams(window.location.search);
         var page = parseInt(urlParams.get('page')) || 1;
         document.getElementById("pageNumber").textContent = page;
+        var total_alerts = "{{total_alerts}}"
+        var per_page = "{{per_page}}"
+        var total_pages = Math.ceil(total_alerts / per_page)
+        document.getElementById("totalAlerts").textContent = total_alerts;
+        document.getElementById("totalPages").textContent = total_pages;
       </script>
 
       <table class="table table-bordered table-striped">
@@ -108,6 +115,9 @@
       </ul>
     </div>
 
+    <!-- if haspointings:
+    do the math for how many pages out of what -->
+
     <script type='text/javascript'>
 
       window.onload = function() {
@@ -134,7 +144,6 @@
         var observing_run = "{{ selected_observing_run }}";
         var far = "{{ selected_far }}";
         var haspointings = "{{ selected_haspointings }}";
-        var total_pointings = "{{total_alerts}}"
 
         window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page;
       }
