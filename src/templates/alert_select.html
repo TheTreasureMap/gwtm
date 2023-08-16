@@ -105,7 +105,7 @@
           row_id = "row_" + alerts[k].alertname
 
           row_html = '<a href="/alerts?graceids='+alerts[k].alertname+'">'+alerts[k].alertname+'</a> '
-          row_html += get_alerttype_badge_span(alerts[k].alert_types)
+          row_html += get_alerttype_badge_span(alerts[k].alert_types, alerts[k].has_icecube)
           $("#"+row_id).html(row_html)
         }
       }
@@ -126,7 +126,7 @@
         window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page;
       }
 
-      function get_alerttype_badge_span(alert_types) {
+      function get_alerttype_badge_span(alert_types, has_icecube) {
         var BADGE_DICT = {
           "Preliminary" : ["primary", "P"],
           "Initial"     : ["info", "I"],
@@ -171,6 +171,10 @@
 
           alerttype_badge_span += '<span class="badge badge-'+badgetype+'">'+at+'</span>'
           parsed_types.push(atype)
+        }
+
+        if (has_icecube) {
+          alerttype_badge_span += '<span style="display:inline-block;"><img src="static/ice.png" style="width:25px;height:25px;"></span>'
         }
         return alerttype_badge_span
       }

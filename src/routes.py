@@ -135,11 +135,7 @@ def alert_select():
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
 
-	page = request.args.get('page', default=0)
-	num_results = 20
-	#page*num_results results in something that is too big, need to figure out how many items are in the list to determine how many pages and results to show
 	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).all()
-		#.offset(page * num_results).limit(num_results).all()
 
 	# gets all the unique alerts
 	# we can control how much is listed here, or slice depending on how we want to
@@ -157,6 +153,14 @@ def alert_select():
 		func.count(models.pointing_event.graceid).label('pcount'),
 		models.pointing_event.graceid
 	)
+
+	icecubes = db.session.query(
+		models.icecube_notice
+	).filter(
+		models.icecube_notice.graceid.in_(gids)
+	).all()
+
+	icecube_gids = [x.graceid for x in icecubes]
 
 	p_event_counts = list(p_event_counts)
 
@@ -187,13 +191,16 @@ def alert_select():
 			if len(pcounts):
 				pointing_counts = pcounts[0]
 
+			hasicecubenotice = g in icecube_gids
+
 			if 'Retraction' in alert_types:
 				all_alerts.append({
 					"alertname" : g,
 					"class":"Retracted",
 					"alert_types":alert_types,
 					"distance":"",
-					"pcounts":pointing_counts
+					"pcounts":pointing_counts,
+					"has_icecube" : False
 				})
 
 			else:
@@ -203,7 +210,8 @@ def alert_select():
 					"class":classification,
 					"alert_types":alert_types,
 					"distance":str(round(most_recent_alert.distance, 2)) + " +/- " + str(round(most_recent_alert.distance_error, 2)),
-					"pcounts":pointing_counts
+					"pcounts":pointing_counts,
+					"has_icecube" : hasicecubenotice
 				})
 
 	if selected_haspointings == 'true':
@@ -230,7 +238,7 @@ def alert_select():
 
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
 			selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
-			selected_role=selected_role, selected_far=selected_far, page=page)
+			selected_role=selected_role, selected_far=selected_far)
 
 
 @app.route("/alerts", methods=['GET', 'POST'])
