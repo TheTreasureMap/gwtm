@@ -363,7 +363,6 @@ def ajax_icecube_notice():
 			"markers":markers
 		})
 
-	print(return_events)
 	return(jsonify(return_events))
 
 
