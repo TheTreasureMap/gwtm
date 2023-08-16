@@ -143,6 +143,8 @@ def alert_select():
 	# Get the total count of alerts matching the filter criteria
 	total_alerts = db.session.query(models.gw_alert).filter(*filter).count()
 
+	total_pages = round(total_alerts / per_page)
+
 	# Create a pagination object
 	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(offset).limit(per_page).all()
 
@@ -233,7 +235,7 @@ def alert_select():
 
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
         selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
-        selected_role=selected_role, selected_far=selected_far, page=page, total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page)
+        selected_role=selected_role, selected_far=selected_far, page=page, total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page, total_pages=total_pages)
 
 
 @app.route("/alerts", methods=['GET', 'POST'])

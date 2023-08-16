@@ -60,20 +60,12 @@
       <br>
       <p>Click on an alert name to see its visualization</p>
 
-      <p>
-        <span id="totalAlerts"></span> record(s) found.
-        Showing page
-        <span id="pageNumber"></span>
-        / <span id="totalPages"></span>.
-      </p>
-
       <script type="text/javascript">
         var urlParams = new URLSearchParams(window.location.search);
         var page = parseInt(urlParams.get('page')) || 1;
         document.getElementById("pageNumber").textContent = page;
-        var total_alerts = "{{total_alerts}}"
-        var per_page = "{{per_page}}"
-        var total_pages = Math.ceil(total_alerts / per_page)
+        var total_alerts = "{{ total_alerts }}";
+        var total_pages = "{{ total_pages }}";
         document.getElementById("totalAlerts").textContent = total_alerts;
         document.getElementById("totalPages").textContent = total_pages;
       </script>
@@ -104,19 +96,19 @@
       </table>
     </div>
 
-    <div class="pagination" style="margin-top: 20px;">
-      <ul class="pagination justify-content-center">
+    <div class="pagination" style="margin-top: 20px; display: flex; justify-content: center;">
+      <ul class="pagination d-flex justify-content-between" style="width: 100%; list-style-type: none; padding: 0;">
         <li class="page-item">
-          <button id="prev_button" onclick="changePage('prev')" {% if page <= 1 %}disabled{% endif %}>Previous</button>
+          <button id="prev_button" onclick="changePage('prev')" {% if page <= 1 %}disabled{% endif %}>&#9668; Previous</button>
         </li>
         <li class="page-item">
-          <button id="next_button" onclick="changePage('next')" {% if left <= 0 %}disabled{% endif %}>Next</button>
+          <span id="totalAlerts">{{ total_alerts }}</span> record(s) found. Showing page <span id="pageNumber">{{ page }}</span> / <span id="totalPages">{{ total_pages }}</span>.
+        </li>
+        <li class="page-item">
+          <button id="next_button" onclick="changePage('next')" {% if left <= 0 %}disabled{% endif %}>Next &#9658;</button>
         </li>
       </ul>
     </div>
-
-    <!-- if haspointings:
-    do the math for how many pages out of what -->
 
     <script type='text/javascript'>
 
