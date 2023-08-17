@@ -2,6 +2,7 @@
 
 import json, datetime
 import plotly
+import math
 import plotly.graph_objects as go
 
 from flask import request, render_template, redirect, flash, url_for
@@ -123,9 +124,8 @@ def home():
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)
-
 	page = request.args.get('page', 1, type=int)
-	per_page = 15  # Number of alerts to show per page
+	per_page = request.args.get('per_page', 25, type=int)
 	offset = (page - 1) * per_page
 
 	selected_observing_run = request.args.get('observing_run', default="O4")
@@ -143,11 +143,10 @@ def alert_select():
 	# Get the total count of alerts matching the filter criteria
 	total_alerts = db.session.query(models.gw_alert).filter(*filter).count()
 
-	total_pages = round(total_alerts / per_page)
+	total_pages = math.ceil(total_alerts / per_page)
 
 	# Create a pagination object
 	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(offset).limit(per_page).all()
-
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	p_event_counts = db.session.query(
@@ -234,9 +233,10 @@ def alert_select():
 	}
 
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
-        selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
-        selected_role=selected_role, selected_far=selected_far, page=page, total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page, total_pages=total_pages)
-
+                           selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
+                           selected_role=selected_role, selected_far=selected_far, page=page,
+                           total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page,
+                           total_pages=total_pages)
 
 @app.route("/alerts", methods=['GET', 'POST'])
 def alerts():
