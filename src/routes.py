@@ -162,6 +162,16 @@ def alert_select():
 		models.pointing_event.graceid
 	)
 
+	icecubes = db.session.query(
+		models.icecube_notice,
+		models.icecube_notice_coinc_event
+	).filter(
+		models.icecube_notice.graceid.in_(gids),
+		models.icecube_notice_coinc_event.icecube_notice_id == models.icecube_notice.id
+	).all()
+
+	icecube_gids = [x.icecube_notice.graceid for x in icecubes]
+
 	p_event_counts = list(p_event_counts)
 
 	all_alerts = []
