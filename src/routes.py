@@ -191,13 +191,16 @@ def alert_select():
 			if len(pcounts):
 				pointing_counts = pcounts[0]
 
+			hasicecubenotice = g in icecube_gids
+
 			if 'Retraction' in alert_types:
 				all_alerts.append({
 					"alertname" : g,
 					"class":"Retracted",
 					"alert_types":alert_types,
 					"distance":"",
-					"pcounts":pointing_counts
+					"pcounts":pointing_counts,
+					"has_icecube" : False
 				})
 
 			else:
@@ -207,7 +210,8 @@ def alert_select():
 					"class":classification,
 					"alert_types":alert_types,
 					"distance":str(round(most_recent_alert.distance, 2)) + " +/- " + str(round(most_recent_alert.distance_error, 2)),
-					"pcounts":pointing_counts
+					"pcounts":pointing_counts,
+					"has_icecube" : hasicecubenotice
 				})
 
 	if selected_haspointings == 'true':

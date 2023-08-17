@@ -1508,7 +1508,6 @@ class icecube_notice(db.Model):
             icecube_notice
         ).filter(
             icecube_notice.graceid == self.graceid,
-            icecube_notice.alert_datetime == self.alert_datetime,
             icecube_notice.observation_start == self.observation_start,
             icecube_notice.observation_stop == self.observation_stop,
             icecube_notice.pval_generic == self.pval_generic,
