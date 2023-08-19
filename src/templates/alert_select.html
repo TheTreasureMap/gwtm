@@ -3,7 +3,6 @@
 {% block content %}
 <div style="padding-left:16px">
   <body>
-
     <div class="container">
       <h2>Gravitational Wave Events</h2>
       <div style="white-space: nowrap;">
@@ -47,6 +46,13 @@
             <b>Has Pointings</b>
           </label>
         </span>
+        <label for="per_page"><b>Alerts per Page:</b></label>
+        <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=per_page id=per_page onchange="reload_alert_select_table()">
+          <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
+          <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+          <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+          <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
+        </select>
       </div>
 
       {% if selected_role == 'test' or selected_role == 'all' %}
@@ -59,6 +65,17 @@
       <input class="form-control" id="myInput" type="text" placeholder="Search..">
       <br>
       <p>Click on an alert name to see its visualization</p>
+
+      <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var page = parseInt(urlParams.get('page')) || 1;
+        document.getElementById("pageNumber").textContent = page;
+        var total_alerts = "{{ total_alerts }}";
+        var total_pages = "{{ total_pages }}";
+        document.getElementById("totalAlerts").textContent = total_alerts;
+        document.getElementById("totalPages").textContent = total_pages;
+      </script>
+
       <table class="table table-bordered table-striped">
         <thead>
           <tr>
@@ -85,16 +102,19 @@
       </table>
     </div>
 
-    <!-- <div class="pagination" style="margin-top: 20px;">
-      <ul class="pagination justify-content-center">
+    <div class="pagination" style="margin-top: 20px; display: flex; justify-content: center;">
+      <ul class="pagination d-flex justify-content-between" style="width: 100%; list-style-type: none; padding: 0;">
         <li class="page-item">
-          <button id="prev_button" onclick="changePage('prev')" {% if page == 0 %}disabled{% endif %}>Previous</button>
+          <button id="prev_button" onclick="changePage('prev')" {% if page <= 1 %}disabled{% endif %}>&#9668; Previous</button>
         </li>
         <li class="page-item">
-          <button id="next_button" onclick="changePage('next')" {% if page == 4 %}disabled{% endif %}>Next</button>
+          <span id="totalAlerts">{{ total_alerts }}</span> record(s) found. Showing page <span id="pageNumber">{{ page }}</span> / <span id="totalPages">{{ total_pages }}</span>.
+        </li>
+        <li class="page-item">
+          <button id="next_button" onclick="changePage('next')" {% if total_pages <= page %}disabled{% endif %}>&#9658; Next </button>
         </li>
       </ul>
-    </div> -->
+    </div>
 
     <script type='text/javascript'>
 
@@ -112,7 +132,7 @@
 
       function changePage(button) {
         var urlParams = new URLSearchParams(window.location.search);
-        var page = parseInt(urlParams.get('page')) || 0;
+        var page = parseInt(urlParams.get('page')) || 1;
         if (button == "prev") {
           page = page - 1;
         } else if (button == "next") {
@@ -122,8 +142,9 @@
         var observing_run = "{{ selected_observing_run }}";
         var far = "{{ selected_far }}";
         var haspointings = "{{ selected_haspointings }}";
+        var per_page = "{{ per_page }}";
 
-        window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page;
+        window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page + '&per_page=' + per_page;
       }
 
       function get_alerttype_badge_span(alert_types, has_icecube) {
@@ -193,10 +214,19 @@
         var role = $('#role').val()
         var far = $('#far').val()
         var haspointings = $('#haspointings').is(":checked")
+        var per_page = $('#per_page').val()
 
-        window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings
+        window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings+'&per_page='+per_page
       };
 
+      function changeResultsPerPage() {
+        var selected_results_per_page = parseInt(document.getElementById("results_per_page").value);
+        // Update the results per page value in the URL
+        var urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('results_per_page', selected_results_per_page);
+        // Redirect to the same page with the updated results per page value
+        window.location.search = urlParams.toString();
+      };
     </script>
 
     </body>
