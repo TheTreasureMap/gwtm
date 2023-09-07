@@ -48,10 +48,13 @@
         </span>
         <label for="per_page"><b>Alerts per Page:</b></label>
         <select class="selectpicker" style="max-width: 60px;" data-live-search="false" name=per_page id=per_page onchange="reload_alert_select_table()">
-          <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
-          <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
-          <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
-          <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
+          {% for pp in per_pages %}
+             {% if pp == selected_per_page %}
+              <option value='{{ pp }}' selected>{{ per_pages[pp] }}</option>
+             {% else %}
+              <option value='{{ pp }}'>{{ per_pages[pp] }}</option>
+             {% endif %}
+          {% endfor %}
         </select>
       </div>
 
@@ -62,7 +65,11 @@
       {% endif %}
 
       <p>Type something in the input field to search the table for GW Event Names or Classifications:</p>
-      <input class="form-control" id="myInput" type="text" placeholder="Search..">
+      {% if queryparam %}
+        <input class="form-control" id="myInput" type="text" value="{{ queryparam }}">
+      {% else %}
+        <input class="form-control" id="myInput" type="text" placeholder="Search...">
+      {% endif %}
       <br>
       <p>Click on an alert name to see its visualization</p>
 
@@ -138,13 +145,14 @@
         } else if (button == "next") {
           page = page + 1;
         }
+        var queryparam = $("#myInput").val().toLowerCase();
         var role = "{{ selected_role }}";
         var observing_run = "{{ selected_observing_run }}";
         var far = "{{ selected_far }}";
         var haspointings = "{{ selected_haspointings }}";
-        var per_page = "{{ per_page }}";
+        var per_page = "{{ selected_per_page }}";
 
-        window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page + '&per_page=' + per_page;
+        window.location = 'alert_select?role=' + role + '&observing_run=' + observing_run + '&far=' + far + '&haspointings=' + haspointings + '&page=' + page + '&per_page=' + per_page+'&queryparam='+queryparam
       }
 
       function get_alerttype_badge_span(alert_types, has_icecube) {
@@ -203,20 +211,27 @@
       $(document).ready(function(){
         $("#myInput").on("keyup", function() {
           var value = $(this).val().toLowerCase();
-          $("#myTable tr").filter(function() {
-            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-          });
+          var observing_run = $('#observing_run').val()
+          var role = $('#role').val()
+          var far = $('#far').val()
+          var haspointings = $('#haspointings').is(":checked")
+          var per_page = $('#per_page').val()
+          window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings+'&per_page='+per_page+'&queryparam='+value
+          // $("#myTable tr").filter(function() {
+          //   $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+          // });
         });
       });
 
       function reload_alert_select_table() {
+        var queryparam = $("#myInput").val().toLowerCase();
         var observing_run = $('#observing_run').val()
         var role = $('#role').val()
         var far = $('#far').val()
         var haspointings = $('#haspointings').is(":checked")
         var per_page = $('#per_page').val()
 
-        window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings+'&per_page='+per_page
+        window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings+'&per_page='+per_page+'&queryparam='+queryparam
       };
 
       function changeResultsPerPage() {

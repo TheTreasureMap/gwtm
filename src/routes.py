@@ -5,6 +5,7 @@ import plotly
 import math
 import plotly.graph_objects as go
 
+from itertools import islice
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
@@ -125,13 +126,14 @@ def home():
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)
 	page = request.args.get('page', 1, type=int)
-	per_page = request.args.get('per_page', 25, type=int)
-	offset = (page - 1) * per_page
+	selected_per_page = request.args.get('per_page', 25, type=int)
+	offset = (page - 1) * selected_per_page
 
 	selected_observing_run = request.args.get('observing_run', default="O4")
 	selected_role = request.args.get('role', default="observation")
 	selected_far = request.args.get('far', default="all")
 	selected_haspointings = request.args.get('haspointings', default="false")
+	queryparam = request.args.get('queryparam', default=None)
 
 	filter = []
 	if selected_role != 'all':
@@ -140,13 +142,7 @@ def alert_select():
 	if selected_observing_run != 'all':
 		filter.append(models.gw_alert.observing_run == selected_observing_run)
 
-	# Get the total count of alerts matching the filter criteria
-	total_alerts = db.session.query(models.gw_alert).filter(*filter).count()
-
-	total_pages = math.ceil(total_alerts / per_page)
-
-	# Create a pagination object
-	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).offset(offset).limit(per_page).all()
+	allerts = db.session.query(models.gw_alert).filter(*filter).order_by(models.gw_alert.datecreated.asc()).all()
 	gids = list(sorted(set([x.graceid for x in allerts]), reverse=True))
 
 	p_event_counts = db.session.query(
@@ -227,6 +223,15 @@ def alert_select():
 	if selected_haspointings == 'true':
 		all_alerts = [x for x in all_alerts if x['pcounts'] > 0]
 
+	if queryparam is not None:
+		all_alerts = [x for x in all_alerts if (queryparam in str(x['alertname']).lower() or queryparam in str(x['class']).lower())]
+
+	total_alerts = len(all_alerts)
+
+	total_pages = math.ceil(total_alerts / selected_per_page)
+
+	all_alerts = list(islice(all_alerts, offset, offset+selected_per_page))
+
 	observing_runs = {
 		'all' : 'All',
 		'O2':'O2',
@@ -246,11 +251,18 @@ def alert_select():
 		'subthreshold' : 'Subthreshold'
 	}
 
+	per_pages = {
+		'10' : 10,
+		'25' : 25,
+		'50' : 50,
+		'100': 100
+	}
+
 	return render_template("alert_select.html", alerts=all_alerts, observing_runs=observing_runs, roles=roles, far=far,
                            selected_haspointings=selected_haspointings, selected_observing_run=selected_observing_run,
                            selected_role=selected_role, selected_far=selected_far, page=page,
-                           total_alerts=total_alerts, per_page=per_page, left=total_alerts-per_page*page,
-                           total_pages=total_pages)
+                           total_alerts=total_alerts, per_pages=per_pages, selected_per_page=str(selected_per_page), left=total_alerts-selected_per_page*page,
+                           total_pages=total_pages, queryparam=queryparam)
 
 @app.route("/alerts", methods=['GET', 'POST'])
 def alerts():
