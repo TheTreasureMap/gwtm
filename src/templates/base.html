@@ -65,8 +65,14 @@
           <li class="nav-item">
             <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/alert_select">GW Events</a>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">
+              GW Events
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="/alert_select">Events</a>
+              <a class="dropdown-item" href="/reported_instruments">Reporting Instruments</a>
+            </div>
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">
@@ -109,9 +115,9 @@
       </div>
     </div>
   </nav>
-  
+
 <!--
-  <nav class="navbar navbar-inverse" style="background-color: #2c3840">  
+  <nav class="navbar navbar-inverse" style="background-color: #2c3840">
   <div class="container">
     <div class="navbar-header">
       <a class="navbar-brand" href="/">Treasure Map</a>
@@ -145,7 +151,7 @@
           <li><a href="/jupyter_tutorial">API Jupyter Notebook Tutorial</a></li>
           <li><a href="/development_blog">What's New</a></li>
         </ul>
-    </ul> 
+    </ul>
     <ul class="nav navbar-nav navbar-right">
         {% if current_user.is_anonymous %}
           <li><a href="/login">Login</a></li>

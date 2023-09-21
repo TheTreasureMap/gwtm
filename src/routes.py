@@ -122,6 +122,31 @@ def home():
 
 	return render_template("index.html")
 
+@app.route("/reported_instruments", methods=['GET'])
+def reported_instruments():
+	models.useractions.write_action(request=request, current_user=current_user)
+
+	inst_info = db.session.query(
+		models.pointing,
+		models.instrument
+	).group_by(
+		models.pointing.instrumentid,
+		models.instrument
+	).filter(
+		models.pointing.status == enums.pointing_status.completed,
+		models.instrument.id == models.pointing.instrumentid,
+		models.pointing_event.pointingid == models.pointing.id,
+		models.pointing_event.graceid != 'TEST_EVENT'
+	).order_by(
+		func.count(models.pointing.id).desc()
+	).values(
+		func.count(models.pointing.id).label('count'),
+		models.instrument.instrument_name,
+		models.instrument.id
+	)
+
+	return render_template("report.html", inst_table=inst_info)
+
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
 	models.useractions.write_action(request=request, current_user=current_user)

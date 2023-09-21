@@ -46,14 +46,14 @@ td, th {
 			<div class="col-md-8">
 				<h1>Gravitational Wave Treasure Map</h1>
 				<p class="lead">
-					Welcome! The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events. 
-					It allows observers to easily report their planned and executed observations in search of counterparts to GW events, 
-					and to query the reports of other observers, in a programatic way. 
+					Welcome! The Treasure Map is designed to help coordinate electromagnetic followup of gravitational-wave (GW) events.
+					It allows observers to easily report their planned and executed observations in search of counterparts to GW events,
+					and to query the reports of other observers, in a programatic way.
 					The goal is to enable coordination between observatories in order to minimize unnecessary overlap in these searches,
 						and find the counterpart as quickly and as efficiently as possible.
 				</p>
-				<p class="lead"> 
-					Please <a href="/register"><b>register</b></a> for an account, so that you can programatically query the Treasure Map. 
+				<p class="lead">
+					Please <a href="/register"><b>register</b></a> for an account, so that you can programatically query the Treasure Map.
 					For more details on how to use the Treasure Map see our  <a href="/documentation"><b>User Guide</b></a>.
 				</p>
 				<p class="my-4">
@@ -113,7 +113,7 @@ td, th {
 				Explore all GW alerts <a type="button" href="alert_select" class="btn btn-primary link">here</a>
 			</p>
 		</div>
-		
+
 	</div>
 
 	<div class="card-group">
@@ -131,7 +131,7 @@ td, th {
 		  <div class="card-body">
 			<h5 class="card-title"><a href="submit_instrument">Submit</a> your follow-up instruments</h5>
 			<p class="card-text">
-				If you are planning to follow-up gravitational wave alerts, we urge you to submit your instrument footprint to our database, 
+				If you are planning to follow-up gravitational wave alerts, we urge you to submit your instrument footprint to our database,
 				so that you can let the community know about your GW follow-up efforts
 			</p>
 		  </div>
@@ -141,7 +141,7 @@ td, th {
 		  <div class="card-body">
 			<h5 class="card-title"><a href="documentation">Integrate</a> our API</h5>
 			<p class="card-text">
-				Our API has endpoints for querying and posting telescope pointings for every GW event. 
+				Our API has endpoints for querying and posting telescope pointings for every GW event.
 				The more users that <i>at least</i> submit their planned/completed observing strategies can lead to more and quicker discoveries!
 			</p>
 		  </div>
@@ -150,10 +150,10 @@ td, th {
 	  <div class="shadow-lg p-3 mb-5 bg-white rounded">
 		<p class="text-center alert alert-info">Coming Soon! Our <tt>python</tt> API wrapper: <a href=https://github.com/TheTreasureMap/gwtm_api>gwtm_api</a></p>
 	</div>
-	  
+
 </main>
-<!--
-<div class="container" style="text-align: left">
+
+<!-- <div class="container" style="text-align: left">
 
   		<h2>Welcome to the Gravitational Wave Treasure Map</h2>
 	<div class="column">
@@ -170,6 +170,7 @@ td, th {
 				Michael Lundquist, University of Arizona <br>
 				Curtis McCully, Las Cumbres Observatory <br>
 				Austin Riba, Las Cumbres Observatory <br>
+				Arif Chu, University of Washington <br>
 		  </p>
 		  <p>
 				Please direct any general inqueries to <a href="mailto:arcavi@tauex.tau.ac.il" target="_top">Iair Arcavi</a>.
@@ -202,11 +203,8 @@ td, th {
   	</table>
 	#}
 	</div>
-</div>
--->
+</div> -->
 
-
-	  
 	<!--<div style="padding-left: 16px">
 		{#
 		<h2>An Interesting Event: {{ form.graceid }} </h3>
@@ -215,26 +213,26 @@ td, th {
 <script>
 	// Set the date we're counting down to
 	var countDownDate = new Date("May 24, 2023 00:00:00").getTime();
-	
+
 	// Update the count down every 1 second
 	var x = setInterval(function() {
-	
+
 	  // Get today's date and time
 	  var now = new Date().getTime();
-	
+
 	  // Find the distance between now and the count down date
 	  var distance = countDownDate - now;
-	
+
 	  // Time calculations for days, hours, minutes and seconds
 	  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
 	  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 	  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
 	  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-	
+
 	  // Display the result in the element with id="demo"
 	  document.getElementById("O4date").innerHTML ="IGWN O4 Countdown: " + days + "d " + hours + "h "
 	  + minutes + "m " + seconds + "s ";
-	
+
 	  // If the count down is finished, write some text
 	  if (distance < 0) {
 		clearInterval(x);
