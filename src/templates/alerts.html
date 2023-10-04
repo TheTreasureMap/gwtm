@@ -13,12 +13,12 @@
             <li><a href="/alerts?graceids={{ a['value'] }}">{{ a['name'] }}</a></li>
           {% endfor %}
       </ul>
-    </div>  
+    </div>
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }} [<a href="https://gracedb.ligo.org/superevents/{{ form.graceid }}/view/">GraceDB</a>]</h3>
       {% if "Retraction" in form.alert_types: %}
-        <h1><span style="color: red;"> RETRACTED </span> </h1>  
+        <h1><span style="color: red;"> RETRACTED </span> </h1>
       {% elif form.graceid[0:2] == 'MS' %}
         <h5 style="color:red">This is a test event. These events and pointings are automatically deleted every 48 hours</h5>
       {% elif form.graceid == 'S200219ac' %}
@@ -29,7 +29,7 @@
   {% else %}
     <center><h3>Event <i style="color: red;">{{ form.graceid }}</i> does not exist</h3></center>
   {% endif %}
-  
+
   </form>
 </div>
   <body>

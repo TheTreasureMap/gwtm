@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="padding-left:16px">
+  <h2 style="padding-bottom:16px; padding-top:16px">Reporting Instruments</h2>
+    <table class="table table-striped table-bordered table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Pointings reported</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inst in inst_table %}
+          <tr>
+            <td><a href="{{ url_for('instrument_info', id=inst.id) }}">{{inst.instrument_name}}</a></td>
+            <td>{{ inst.count }} </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+{% endblock %}
