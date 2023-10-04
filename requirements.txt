@@ -20,17 +20,16 @@ pytz
 requests
 scipy
 Shapely
-SQLAlchemy
+SQLAlchemy==1.4
 urllib3
 validators
-Werkzeug
+Werkzeug==0.16.1
 WTForms
 WTForms-Components
 gunicorn
 boto3==1.26.90
 pygcn
 MOCpy
-ligo.skymap
 celery
 redis
 Flask-Caching
@@ -39,3 +38,4 @@ gcn-kafka
 fsspec
 adlfs
 s3fs
+markupsafe==2.0.1
