@@ -3,7 +3,13 @@
 {% block content %}
 <div style="padding-left:16px">
   <h2 style="padding-bottom:16px; padding-top:16px">Reporting Instruments</h2>
-    <table class="table table-striped table-bordered table-hover">
+  <p>Type something in the input field to search the table for Reporting Instruments:</p>
+      {% if queryparam %}
+        <input class="form-control" id="myInput" type="text" value="{{ queryparam }}">
+      {% else %}
+        <input class="form-control" id="myInput" type="text" placeholder="Search...">
+      {% endif %}
+    <table id="myTable" class="table table-striped table-bordered table-hover">
       <thead class="thead-light">
         <tr>
           <th scope="col">Name</th>
@@ -20,4 +26,21 @@
       </tbody>
     </table>
 </div>
+
+<script type='text/javascript'>
+  $(document).ready(function(){
+    $("#myInput").on("keyup", function() {
+      var value = $(this).val().toLowerCase();
+      window.location = 'reported_instruments?queryparam='+value;
+      $("#myTable tbody tr").each(function() {
+        var name = $(this).find("td:first").text().toLowerCase();
+        if (name.indexOf(value) !== -1) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

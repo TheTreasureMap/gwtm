@@ -217,9 +217,9 @@
           var haspointings = $('#haspointings').is(":checked")
           var per_page = $('#per_page').val()
           window.location = 'alert_select?role='+role+'&observing_run='+observing_run+'&far='+far+'&haspointings='+haspointings+'&per_page='+per_page+'&queryparam='+value
-          // $("#myTable tr").filter(function() {
-          //   $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-          // });
+          $("#myTable tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+          });
         });
       });
 

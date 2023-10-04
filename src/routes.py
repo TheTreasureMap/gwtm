@@ -124,28 +124,41 @@ def home():
 
 @app.route("/reported_instruments", methods=['GET'])
 def reported_instruments():
-	models.useractions.write_action(request=request, current_user=current_user)
+    models.useractions.write_action(request=request, current_user=current_user)
 
-	inst_info = db.session.query(
-		models.pointing,
-		models.instrument
-	).group_by(
-		models.pointing.instrumentid,
-		models.instrument
-	).filter(
-		models.pointing.status == enums.pointing_status.completed,
-		models.instrument.id == models.pointing.instrumentid,
-		models.pointing_event.pointingid == models.pointing.id,
-		models.pointing_event.graceid != 'TEST_EVENT'
-	).order_by(
-		func.count(models.pointing.id).desc()
-	).values(
-		func.count(models.pointing.id).label('count'),
-		models.instrument.instrument_name,
-		models.instrument.id
-	)
+    # Get the value of the query parameter from the request
+    queryparam = request.args.get('queryparam', default=None)
 
-	return render_template("report.html", inst_table=inst_info)
+    # Modify your query to filter results based on queryparam if it's provided
+    query = db.session.query(
+        models.pointing,
+        models.instrument
+    ).group_by(
+        models.pointing.instrumentid,
+        models.instrument
+    ).filter(
+        models.pointing.status == enums.pointing_status.completed,
+        models.instrument.id == models.pointing.instrumentid,
+        models.pointing_event.pointingid == models.pointing.id,
+        models.pointing_event.graceid != 'TEST_EVENT'
+    )
+
+    # If queryparam is provided, filter by instrument_name
+    if queryparam:
+        query = query.filter(models.instrument.instrument_name.ilike(f'%{queryparam}%'))
+
+    query = query.order_by(
+        func.count(models.pointing.id).desc()
+    ).values(
+        func.count(models.pointing.id).label('count'),
+        models.instrument.instrument_name,
+        models.instrument.id
+    )
+
+    # Execute the query and convert results to a list
+    inst_info = list(query)
+
+    return render_template("report.html", inst_table=inst_info, queryparam=queryparam)
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
