@@ -156,7 +156,7 @@ def alert_select():
 
 	selected_observing_run = request.args.get('observing_run', default="O4")
 	selected_role = request.args.get('role', default="observation")
-	selected_far = request.args.get('far', default="all")
+	selected_far = request.args.get('far', default="significant")
 	selected_haspointings = request.args.get('haspointings', default="false")
 	queryparam = request.args.get('queryparam', default=None)
 
