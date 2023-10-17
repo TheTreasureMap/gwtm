@@ -145,7 +145,7 @@ def reported_instruments():
 		models.instrument.id
 	)
 
-	return render_template("report.html", inst_table=inst_info)
+	return render_template("report.html", inst_table=list(inst_info))
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
