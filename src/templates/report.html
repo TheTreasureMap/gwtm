@@ -14,7 +14,7 @@
         {% for inst in inst_table %}
           <tr>
             <td><a href="{{ url_for('instrument_info', id=inst.id) }}">{{inst.instrument_name}}</a></td>
-            <td>{{ inst.count }} </td>
+            <td>{{ inst.num }} </td>
           </tr>
         {% endfor %}
       </tbody>

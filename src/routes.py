@@ -140,7 +140,7 @@ def reported_instruments():
 	).order_by(
 		func.count(models.pointing.id).desc()
 	).values(
-		func.count(models.pointing.id).label('count'),
+		func.count(models.pointing.id).label('num'),
 		models.instrument.instrument_name,
 		models.instrument.id
 	)
