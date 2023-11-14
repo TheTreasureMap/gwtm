@@ -926,15 +926,17 @@ def get_instruments_v1():
 		filter.append(models.instrument.id == int(_id))
 	if "ids" in args:
 		#validate
-		ids = json.loads(args.get('ids'))
-		print(ids)
+		ids = args.get('ids')
+		if isinstance(ids, str):
+			ids = json.loads(ids)
 		filter.append(models.instrument.id.in_(ids))
 	if "name" in args:
 		name = args.get('name')
 		filter.append(models.instrument.instrument_name.contains(name))
 	if "names" in args:
 		insts = args.get('instruments')
-		insts = str(insts).split('[')[1].split(']')[0].split(',')
+		if isinstance(insts, str):
+			insts = json.loads(insts)
 		ors = []
 		for i in insts:
 			ors.append(models.instrument.instrument_name.contains(i.strip()))
@@ -950,6 +952,46 @@ def get_instruments_v1():
 	insts = [x.parse for x in insts]
 
 	return make_response(json.dumps(insts), 200)
+
+
+@app.route('/api/v1/gw_contour', methods=['GET'])
+def get_gw_contours():
+	'''
+	inputs:
+		graceid: Can take GW... or S notation
+	'''
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+
+	if "graceid" in args:
+		gid = args.get('graceid')
+		gid = models.gw_alert.graceidfromalternate(gid)
+	else:
+		return make_response('graceid is required', 500)
+
+	gw_alerts = db.session.query(
+		models.gw_alert
+	).filter(
+		models.gw_alert.graceid == gid
+	).order_by(
+		models.gw_alert.datecreated.desc()
+	).all()
+
+	alert_types = [x.alert_type for x in gw_alerts]
+	latest_alert_type = gw_alerts[0].alert_type
+	num = len([x for x in alert_types if x == latest_alert_type])-1
+	alert_type = latest_alert_type if num < 1 else latest_alert_type+ str(num)
+	path_info = gid + '-' + alert_type
+	contourpath = f'fit/'+path_info+'-contours-smooth.json'
+	
+	try:
+		_file = gwtm_io.download_gwtm_file(filename=contourpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+		return make_response(_file, 200)
+	except:
+		return make_response(f'Error in retrieving Contour file: {contourpath}', 200)
 
 
 
@@ -1026,13 +1068,20 @@ def query_alerts_v1():
 
 	if "graceid" in args:
 		graceid = args.get('graceid')
+		graceid = models.gw_alert.graceidfromalternate(graceid)
 		filter.append(models.gw_alert.graceid == graceid)
 
 	if "alert_type" in args:
 		alert_type = args.get('alert_type')
 		filter.append(models.gw_alert.alert_type == alert_type)
 
-	alerts = db.session.query(models.gw_alert).filter(*filter).all()
+	alerts = db.session.query(
+		models.gw_alert
+	).filter(
+		*filter
+	).order_by(
+		models.gw_alert.datecreated.desc()
+	).all()
 	alerts = [x.parse for x in alerts]
 
 	return make_response(json.dumps(alerts), 200)

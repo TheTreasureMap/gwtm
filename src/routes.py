@@ -129,16 +129,15 @@ def reported_instruments():
 	inst_info = db.session.query(
 		models.pointing,
 		models.instrument
-	).group_by(
-		models.pointing.instrumentid,
-		models.instrument
 	).filter(
 		models.pointing.status == enums.pointing_status.completed,
 		models.instrument.id == models.pointing.instrumentid,
 		models.pointing_event.pointingid == models.pointing.id,
-		models.pointing_event.graceid != 'TEST_EVENT'
 	).order_by(
 		func.count(models.pointing.id).desc()
+	).group_by(
+		models.pointing.instrumentid,
+		models.instrument
 	).values(
 		func.count(models.pointing.id).label('num'),
 		models.instrument.instrument_name,
@@ -146,6 +145,7 @@ def reported_instruments():
 	)
 
 	return render_template("report.html", inst_table=list(inst_info))
+
 
 @app.route("/alert_select", methods=['GET'])
 def alert_select():
@@ -761,6 +761,7 @@ def instrument_info():
 		models.pointing.instrumentid == instid,
 		models.pointing_event.pointingid == models.pointing.id,
 		models.gw_alert.graceid == models.pointing_event.graceid,
+		models.pointing.status ==enums.pointing_status.completed
 	).all()
 
 	gids = sorted(list(set([x.graceid for x in events_contributed])), reverse=True)
