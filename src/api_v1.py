@@ -6,6 +6,8 @@ from botocore.exceptions import ClientError
 import json, datetime
 import boto3
 import io
+import tempfile
+import healpy as hp
 
 from src import app
 from src.gwtmconfig import config
@@ -992,6 +994,46 @@ def get_gw_contours():
 		return make_response(_file, 200)
 	except:
 		return make_response(f'Error in retrieving Contour file: {contourpath}', 200)
+
+
+@app.route('/api/v1/gw_skymap', methods=['GET'])
+def get_gw_skymap():
+	'''
+	inputs:
+		graceid: Can take GW... or S notation
+	'''
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+
+	if "graceid" in args:
+		gid = args.get('graceid')
+		gid = models.gw_alert.graceidfromalternate(gid)
+	else:
+		return make_response('graceid is required', 500)
+
+	gw_alerts = db.session.query(
+		models.gw_alert
+	).filter(
+		models.gw_alert.graceid == gid
+	).order_by(
+		models.gw_alert.datecreated.desc()
+	).all()
+
+	alert_types = [x.alert_type for x in gw_alerts]
+	latest_alert_type = gw_alerts[0].alert_type
+	num = len([x for x in alert_types if x == latest_alert_type])-1
+	alert_type = latest_alert_type if num < 1 else latest_alert_type+ str(num)
+	path_info = gid + '-' + alert_type
+	skymap_path = f'fit/'+path_info+'.fits.gz'
+	
+	try:
+		_file = gwtm_io.download_gwtm_file(filename=skymap_path, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
+		return make_response(_file, 200)
+	except:
+		return make_response(f'Error in retrieving Contour file: {skymap_path}', 200)
 
 
 
