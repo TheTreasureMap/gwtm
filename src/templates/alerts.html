@@ -3,7 +3,7 @@
 {% block content %}
 <div style="padding-left:16px">
   <form action="" method="post">
-    <div class="dropdown" name=gracieds id=graceids>
+    <!-- <div class="dropdown" name=gracieds id=graceids>
     <h2>Gravitational Wave Events</h2>      Choose an event:
       <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Events
       <span class="caret"></span></button>
@@ -13,7 +13,7 @@
             <li><a href="/alerts?graceids={{ a['value'] }}">{{ a['name'] }}</a></li>
           {% endfor %}
       </ul>
-    </div>
+    </div> -->
 
   {% if form.viz %}
       <h3>Gravitational Wave Localization and Pointings: {{ form.graceid }} [<a href="https://gracedb.ligo.org/superevents/{{ form.graceid }}/view/">GraceDB</a>]</h3>

@@ -117,7 +117,7 @@ class SearchPointingsForm(FlaskForm):
         for g in gwalerts_ids:
             types = [x.alert_type for x in gwalerts if x.graceid == g]
             gid_types[g] = types
-
+        print(len(gwalerts_ids))
         #form the custom dropdown dictionary
         graceids = [{'name':'--Select--', 'value':None, "selected":False}]
 
@@ -252,7 +252,10 @@ class AlertsForm(FlaskForm):
     has_icecube = False
 
     def construct_alertform(self, args):
+        
+        print("here")
 
+        t_start = time.time()
         self.detection_overlays = []
         self.GRBoverlays = []
 
@@ -281,40 +284,40 @@ class AlertsForm(FlaskForm):
 
         #link all alert types to its graceid
         #we want to be able to label the retracted ones individual for the custom dropdown
-        gid_types = {}
-        for g in gwalerts_ids:
-            types = [x.alert_type for x in gwalerts if x.graceid == g]
-            gid_types[g] = types
+        
+        # gid_types = {}
+        # for g in gwalerts_ids:
+        #     types = [x.alert_type for x in gwalerts if x.graceid == g]
+        #     gid_types[g] = types
 
-        #form the custom dropdown dictionary
-        graceids = [{'name':'--Select--', 'value':None}]
+        # #form the custom dropdown dictionary
+        # graceids = [{'name':'--Select--', 'value':None}]
 
-        for g in gwalerts_ids:
-            #get the alert types for each graceid to test for retractions
-            gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
-            gid_roles = [x.role for x in gwalerts if x.graceid == g]
-            gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
+        # for g in gwalerts_ids:
+        #     #get the alert types for each graceid to test for retractions
+        #     gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
+        #     gid_roles = [x.role for x in gwalerts if x.graceid == g]
+        #     gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
 
-            alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
-            if len(alternateid):
-                g = alternateid[0]
+        #     alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
+        #     if len(alternateid):
+        #         g = alternateid[0]
 
-            name_g = g
-            if 'test' in gid_roles:
-                name_g = f"TEST-{g}"
-            run = gid_runs[0]
-            name_g = f"{run} - {name_g}"
-            if 'Retraction' in gid_types:
-                graceids.append({'name':name_g + ' -retracted-', 'value':g})
-            else:
-                graceids.append({'name':name_g, 'value':g})
+        #     name_g = g
+        #     if 'test' in gid_roles:
+        #         name_g = f"TEST-{g}"
+        #     run = gid_runs[0]
+        #     name_g = f"{run} - {name_g}"
+        #     if 'Retraction' in gid_types:
+        #         graceids.append({'name':name_g + ' -retracted-', 'value':g})
+        #     else:
+        #         graceids.append({'name':name_g, 'value':g})
 
-        self.graceids = graceids
+        # self.graceids = graceids
 
         #if there is a selected graceid
         if graceid != 'None' and graceid is not None:
     
-            t_start = time.time()
             #preserve the forms graceid
             self.graceid = graceid
 
