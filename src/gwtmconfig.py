@@ -12,9 +12,10 @@ class Config(object):
     SQLALCHEMY_POOL_TIMEOUT = 300
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'gwtreasuremap@gmail.com')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'gwtreasuremap@gmail.com')
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
+    MAIL_PORT = os.environ.get("MAIL_PORT", 465)
     ADMINS = os.environ.get('ADMINS', 'gwtreasuremap@gmail.com')
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-    SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'localhost')
     RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY', '')
     RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY', '')
     ZENODO_ACCESS_KEY = os.environ.get('ZENODO_ACCESS_KEY', '')

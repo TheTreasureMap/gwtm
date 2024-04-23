@@ -1,44 +1,45 @@
-import emails
+from typing import List, Optional
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import ssl
+import smtplib
 
-class SESMail():
-    def __init__(self, app_config, fromaddr=('GWTM Admin (Do Not Reply)', 'gwtreasuremap@gmail.com')):
-        self.SMTP_USERNAME = app_config['SMTP_USERNAME']
-        self.SMTP_PASSWORD = app_config['SMTP_PASSWORD']
-        self.smtp={
-            "host": "email-smtp.us-east-2.amazonaws.com", 
-            "port": 587, 
-            "timeout": 5,
-            "user": self.SMTP_USERNAME,
-            "password": self.SMTP_PASSWORD,
-            "tls": True,
-        }
-        self.fromaddr=fromaddr
+from .gwtmconfig import Config
 
-    def send_message(self, recipients, subject, body_html, attachments=[]):
-        message = emails.html(
-            html=body_html,
-            subject=subject,
-            mail_from=self.fromaddr,
-        )
-        
+
+class AppMail:
+    def __init__(self, config: Config) -> None:
+        self.sender_email_addr = config.MAIL_DEFAULT_SENDER
+        self.login_email_user = config.MAIL_USERNAME
+        self.login_email_password = config.MAIL_PASSWORD
+        self.smtp_host = config.MAIL_SERVER
+        self.smtp_port = int(config.MAIL_PORT)
+
+    def send_message(
+        self,
+        recipients: List[str],
+        subject: str,
+        # content_body: Optional[str] = None,
+        content_html: Optional[str] = None,
+        attachments=[],
+    ):
+        em = MIMEMultipart("alternative")
+        em["From"] = self.sender_email_addr
+        em["To"] = ",".join(recipients)
+        em["Subject"] = subject
+
+        # if content_body:
+        #     em.attach(MIMEText(content_body, "plain"))
+        if content_html:
+            em.attach(MIMEText(content_html, "html"))
         if attachments:
-            for a in attachments:
-                message.attach(data=open(a, 'rb'), filename=a)
+            # TODO: configure attachments, not sure if we will need this yet
+            pass
 
-        r = message.send(
-            to=recipients,
-            smtp=self.smtp
-        )
-        
-        return r.status_code == 250
+        context = ssl.create_default_context()
 
-if __name__ == '__main__':
-
-    test_config = {
-        'SMTP_USERNAME':"-------------",
-        'SMTP_PASSWORD':"-------------"
-    }
-    mail = SESMail(app_config=test_config)
-    valid = mail.send_message(["righteousloaf@gmail.com", "swyatt@email.arizona.edu"], "This is a subject", 
-            "app_mail working", ['test.xml'])
-    assert valid
+        with smtplib.SMTP_SSL(
+            host=self.smtp_host, port=self.smtp_port, context=context
+        ) as smtp:
+            smtp.login(self.login_email_user, self.login_email_password)
+            smtp.sendmail(self.sender_email_addr, recipients, em.as_string())

@@ -1,25 +1,17 @@
 
-import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_mail import Mail
 from flask_caching import Cache
-import logging
-from logging.handlers import RotatingFileHandler, SMTPHandler
-from werkzeug.utils import import_string
 from . import app_mail
+from .gwtmconfig import config
 
 app = Flask(__name__)
 login = LoginManager(app)
 login.login_view = 'login'
 
-configModule = os.environ.get('CONFIGMODULE', 'src.gwtmconfig.Config')
-cfg = import_string(configModule)()
-app.config.from_object(cfg)
+app.config.from_object(config)
 
-#mail = Mail(app)
-mail = app_mail.SESMail(app.config)
+mail = app_mail.AppMail(config)
 cache = Cache(app)
 
 
