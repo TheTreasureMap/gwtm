@@ -472,8 +472,9 @@ def ajax_request_doi():
 
 def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
+	approx_cov = True
 	ztfid = 47; ztf_approx_id = 76
-	decamid = 38; decam_approx_id = 77
+	decamid = 38; decam_approx_id = 98
 	
 	approx_dict = {
 		ztfid: ztf_approx_id,
@@ -507,7 +508,7 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
-	if depth != None and function.isFloat(depth):
+	if depth is not None and function.isFloat(depth):
 		if 'mag' in depth_unit:
 			pointing_filter.append(models.pointing.depth >= float(depth))
 		elif 'flux' in depth_unit:
@@ -552,12 +553,12 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	).filter(
 		models.gw_alert.graceid == graceid
 	).filter(
-		models.gw_alert.time_of_signal != None
+		models.gw_alert.time_of_signal is not None
 	).order_by(
 		models.gw_alert.datecreated.desc()
 	).first()[0]
 
-	if time_of_signal == None:
+	if time_of_signal is None:
 		raise HTTPException("<i><font color='red'>ERROR: Please contact administrator</font></i>")
 
 	qps = []
@@ -586,11 +587,11 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 			ras_poly = [x[0] for x in pointing_footprint][:-1]
 			decs_poly = [x[1] for x in pointing_footprint][:-1]
 			xyzpoly = astropy.coordinates.spherical_to_cartesian(1, np.deg2rad(decs_poly), np.deg2rad(ras_poly))
-			qp = hp.query_polygon(nside,np.array(xyzpoly).T)
+			qp = hp.query_polygon(nside,np.array(xyzpoly).T, inclusive=True)
 			qps.extend(qp)
 
 			#do a separate calc just for area coverage. hardcode NSIDE to be high enough so sampling error low
-			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T)
+			qparea = hp.query_polygon(NSIDE4area, np.array(xyzpoly).T, inclusive=True)
 			qpsarea.extend(qparea)
 
 			#deduplicate indices, so that pixels already covered are not double counted
