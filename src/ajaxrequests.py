@@ -617,14 +617,7 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	print(f"setting prob cache file: {cache_key}")
 	gwtm_io.set_cached_file(cache_key, cache_file, config)
 
-	if debug:
-		return times, probs, areas
-
-	#cache.set(f'{cache_key}_times', times)
-	#cache.set(f'{cache_key}_probs', probs)
-	#cache.set(f'{cache_key}_areas', areas)
-
-	return cache_key
+	return times, probs, areas
 
 
 def generate_prob_plot(times, probs, areas):
