@@ -45,8 +45,8 @@ function overlayInit(aladin, data) {
     aladin_setImage(aladin, 'static/sun-logo-100.png', 'Sun at GW T0', data.sun_ra, data.sun_dec)
     aladin_setImage(aladin, 'static/moon-supersmall.png', 'Moon at GW T0', data.moon_ra, data.moon_dec)
 
-    var detectionoverlaylist = aladin_setContours(aladin, data.detection_overlays)
     var instoverlaylist = aladin_setContours(aladin, data.inst_overlays)
+    var detectionoverlaylist = aladin_setContours(aladin, data.detection_overlays)
     var grboverlaylist = aladin_setMOC(aladin, data.GRBoverlays)
 
     aladin_drawInstHTML(data.inst_overlays, 'alert_instruments_div')

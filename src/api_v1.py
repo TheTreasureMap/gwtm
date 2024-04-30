@@ -1268,15 +1268,10 @@ def fixdata_v1():
 	# Validates if user has access to endpoint
 	valid, message, args, user = initial_request_parse(request=request)
 
-	# if not valid:
-	# 	return make_response(response_message=message, status_code=500)
-
 	if user.id not in [2]:
 		return make_response("Only admin can access this endpoint", 500)
 
-	# Get information such as duration and central frequency
-
-	return make_response("", 200)
+	return make_response("success", 200)
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
