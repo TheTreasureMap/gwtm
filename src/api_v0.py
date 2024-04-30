@@ -767,6 +767,7 @@ def api_request_doi():
 		graceid = models.gw_alert.graceidfromalternate(graceid)
 		filter.append(models.pointing_event.graceid == graceid)
 		filter.append(models.pointing_event.pointingid == models.pointing.id)
+		filter.append(models.pointing.submitterid == user.id)
 
 	if "id" in args:
 		_id = args.get('id')
@@ -789,7 +790,7 @@ def api_request_doi():
 	gids, doi_points, warnings = [], [], []
 
 	for p in points:
-		if p.status == enums.pointing_status.completed and p.submitterid == user.id and p.doi_id == None:
+		if p.status == enums.pointing_status.completed and p.submitterid == user.id and p.doi_id is None:
 			doi_points.append(p)
 		else:
 			warnings.append("Invalid doi request for pointing: " + str(p.id))
