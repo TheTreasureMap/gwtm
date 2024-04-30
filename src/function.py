@@ -601,10 +601,9 @@ def send_password_reset_email(user):
 def create_pointing_doi(points, graceid, creators, insts):
     points_json = []
 
-    print(insts)
     for p in points:
         if p.status == enums.pointing_status.completed:
-            points_json.append(p.json)
+            points_json.append(p.parse)
 
     if len(insts) > 1:
         inst_str = "These observations were taken on the"
@@ -617,8 +616,6 @@ def create_pointing_doi(points, graceid, creators, insts):
         inst_str += " instruments."
     else:
         inst_str = "These observations were taken on the " + insts[0] + " instrument."
-
-    print(len(points_json), creators, inst_str)
 
     if len(points_json):
         payload = {

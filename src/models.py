@@ -1215,11 +1215,12 @@ class gw_alert(db.Model):
     def alternatefromgraceid(graceid):
 
         alternateids = db.session.query(gw_alert).filter(
-            gw_alert.graceid == graceid
+            gw_alert.graceid == graceid,
+            gw_alert.alternateid != "",
+            gw_alert.alternateid is not None
         ).all()
         if len(alternateids):
-            if alternateids[0].alternateid is not None:
-                graceid = alternateids[0].alternateid
+            graceid = alternateids[0].alternateid
 
         return graceid
 
