@@ -27,3 +27,4 @@ config
 scratch/
 environment_variables.sh
 test/
+*.DS_Store

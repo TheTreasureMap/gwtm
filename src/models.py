@@ -1561,3 +1561,22 @@ class icecube_notice_coinc_event(db.Model):
             datecreated             = args['datecreated'] if 'datecreated' in akeys else datetime.datetime.now(),
         )
         return event
+
+
+class gw_candidate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    datecreated = db.Column(db.DateTime)
+    graceid = db.Column(db.String)
+    name = db.Column(db.String)
+    tns_name = db.Column(db.String, nullable=True)
+    tns_url = db.Column(db.String, nullable=True)
+    position = db.Column(Geography('POINT', srid=4326))
+    discovery_date = db.Column(db.DateTime) 
+    discovery_magnitude = db.Column(db.Float)
+    magnitude_central_wave = db.Column(db.Float)
+    magnitude_bandwidth = db.Column(db.Float)
+    magnitude_unit = db.Column(db.Float)
+    magnitude_bandpass = db.Column(db.Enum(enums.bandpass))
+    associated_galaxy = db.Column(db.String, nullable=True)
+    associated_galaxy_redshift = db.Column(db.Float, nullable=True)
+    associated_galaxy_distance = db.Column(db.Float, nullable=True)
