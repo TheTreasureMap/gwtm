@@ -704,6 +704,8 @@ def submit_instrument():
 
 	insts = db.session.query(
 		models.instrument
+	).order_by(
+		models.instrument.datecreated
 	).all()
 
 	args = request.args
