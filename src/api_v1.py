@@ -1263,6 +1263,27 @@ def post_icecube_notice_v1():
 	return make_response(json.dumps(resp), 200)
 
 
+# GW Candidate Endpoint
+@app.route('/api/v1/candidate', methods=["GET"])
+def get_gw_candidates():
+	pass
+
+
+@app.route('/api/v1/candidate', methods=["POST"])
+def post_gw_candidates():
+	pass
+
+
+@app.route("/api/v1/candidates", methods=["PUT"])
+def put_gw_candidates():
+	pass
+
+
+@app.route('/api/v1/candidates', methods=["DELETE"])
+def del_gw_candidates():
+	pass
+
+
 #FIX DATA
 @app.route('/fixdata', methods=['GET', 'POST'])
 def fixdata_v1():
@@ -1273,6 +1294,8 @@ def fixdata_v1():
 		return make_response("Only admin can access this endpoint", 500)
 
 	return make_response("success", 200)
+
+
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
