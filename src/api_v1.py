@@ -1421,7 +1421,20 @@ def post_gw_candidates():
 
 @app.route("/api/v1/candidates", methods=["PUT"])
 def put_gw_candidates():
-	pass
+	"""
+		inputs:
+			candidate_id: int
+			payload: dictionary {}
+
+		queries for existing candidate
+			returns 500 if not exist
+		converts the existing candidate record to json
+
+		takes the payload and updates json record with the key/values 
+			needs to validate keys / record columns
+				cannot update id, submitterid, datecreated.
+	"""
+	return make_response("not implemented yet", 200)
 
 
 @app.route('/api/v1/candidates', methods=["DELETE"])
