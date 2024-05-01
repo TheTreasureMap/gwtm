@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import request, make_response
+from flask import request
 from sqlalchemy import func, or_
 from botocore.exceptions import ClientError
 import json, datetime
@@ -37,7 +37,7 @@ def initial_request_parse(request, only_json=False):
 
 	if "api_token" in args:
 		apitoken = args['api_token']
-		if apitoken is not None:
+		if apitoken is not None and isinstance(apitoken, str):
 			user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 			if user is None:
 				return False, "Invalid api_token", args, None
@@ -1281,8 +1281,11 @@ def post_gw_candidates():
 
 	if "graceid" in args:
 		graceid = args.get("graceid")
-		valid_alerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).all()
-		if len(valid_alerts) == 0:
+		if isinstance(graceid, str):
+			valid_alerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).all()
+			if len(valid_alerts) == 0:
+				return make_response("Invalid \'graceid\'. Vist https://treasuremap.space/alert_select for valid alerts", 500)
+		else:
 			return make_response("Invalid \'graceid\'. Vist https://treasuremap.space/alert_select for valid alerts", 500)
 	else:
 		return make_response("argument: \'graceid\' is required", 500)
@@ -1304,7 +1307,7 @@ def post_gw_candidates():
 	elif "candidates" in args:
 		candidates = args.get("candidates")
 		if not isinstance(candidates, list):
-			return make_response("Invalid \'candidates\' format. Must be a dictionary or json object", 500)
+			return make_response("Invalid \'candidates\' format. Must be a list of dictionaries or json objects", 500)
 		for candidate in candidates:
 			if not isinstance(candidate, dict):
 				return make_response("Invalid \'candidate\' format. Must be a dictionary or json object", 500)

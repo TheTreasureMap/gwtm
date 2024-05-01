@@ -1633,13 +1633,20 @@ class gw_candidate(db.Model):
             v.errors.append("Error: \'candidate_name\' is required")
 
         if 'tns_name' in p:
-            self.tns_name = p["tns_name"]
+            tns_name = p["tns_name"]
+            if isinstance(tns_name, str):
+                self.tns_name = tns_name
+            else:
+                v.errors.append("Invalid \'tns_name\' type. Must be str")
         if 'tns_url' in p:
             tns_url = p['tns_url']
-            if "https://www.wis-tns.org/object/" not in tns_url:
-                v.errors.append("Invalid \'tns_url\'. Must contain following format: https://www.wis-tns.org/object/\{tns_name\}")
+            if isinstance(tns_url, str):
+                if "https://www.wis-tns.org/object/" not in tns_url:
+                    v.errors.append("Invalid \'tns_url\'. Must contain following format: https://www.wis-tns.org/object/\{tns_name\}")
+                else:
+                    self.tns_url = tns_url
             else:
-                self.tns_url = tns_url
+                v.errors.append("Invalid \'tns_url\' type. Must be str")
         
         if 'associated_galaxy' in p:
             associated_galaxy = p['associated_galaxy_distance']
@@ -1647,12 +1654,14 @@ class gw_candidate(db.Model):
                 self.associated_galaxy = associated_galaxy
             else:
                 v.errors.append("Invalid format for \'associated_galaxy\'. Must be str")
+
         if 'associated_galaxy_redshift' in p:
             associated_galaxy_redshift = p['associated_galaxy_redshift']
             if isinstance(associated_galaxy_redshift, float):
                 self.associated_galaxy_redshift = associated_galaxy_redshift
             else:
                 v.errors.append("Invalid format for \'associated_galaxy_redshift\'. Must be float")
+                
         if 'associated_galaxy_distance' in p:
             associated_galaxy_distance = p['associated_galaxy_distance']
             if isinstance(associated_galaxy_distance, float):
