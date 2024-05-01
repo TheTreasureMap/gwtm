@@ -1564,20 +1564,20 @@ class icecube_notice_coinc_event(db.Model):
 
 
 class gw_candidate(db.Model):
-    id = db.Column(db.Integer, primary_key=True) #
-    datecreated = db.Column(db.DateTime) #
-    submitterid = db.Column(db.Integer) #
-    graceid = db.Column(db.String) #
-    candidate_name = db.Column(db.String) #
-    tns_name = db.Column(db.String, nullable=True) #
-    tns_url = db.Column(db.String, nullable=True) #
-    position = db.Column(Geography('POINT', srid=4326)) #
-    discovery_date = db.Column(db.DateTime) #
-    discovery_magnitude = db.Column(db.Float) #
-    magnitude_central_wave = db.Column(db.Float) #
-    magnitude_bandwidth = db.Column(db.Float) #
-    magnitude_unit = db.Column(db.Enum(enums.depth_unit)) #
-    magnitude_bandpass = db.Column(db.Enum(enums.bandpass)) #
+    id = db.Column(db.Integer, primary_key=True)
+    datecreated = db.Column(db.DateTime)
+    submitterid = db.Column(db.Integer)
+    graceid = db.Column(db.String)
+    candidate_name = db.Column(db.String)
+    tns_name = db.Column(db.String, nullable=True)
+    tns_url = db.Column(db.String, nullable=True)
+    position = db.Column(Geography('POINT', srid=4326))
+    discovery_date = db.Column(db.DateTime)
+    discovery_magnitude = db.Column(db.Float)
+    magnitude_central_wave = db.Column(db.Float)
+    magnitude_bandwidth = db.Column(db.Float)
+    magnitude_unit = db.Column(db.Enum(enums.depth_unit))
+    magnitude_bandpass = db.Column(db.Enum(enums.bandpass))
     associated_galaxy = db.Column(db.String, nullable=True)
     associated_galaxy_redshift = db.Column(db.Float, nullable=True)
     associated_galaxy_distance = db.Column(db.Float, nullable=True)
@@ -1661,7 +1661,7 @@ class gw_candidate(db.Model):
                 self.associated_galaxy_redshift = associated_galaxy_redshift
             else:
                 v.errors.append("Invalid format for \'associated_galaxy_redshift\'. Must be float")
-                
+
         if 'associated_galaxy_distance' in p:
             associated_galaxy_distance = p['associated_galaxy_distance']
             if isinstance(associated_galaxy_distance, float):

@@ -2,12 +2,8 @@
 
 from flask import request
 from sqlalchemy import func, or_
-from botocore.exceptions import ClientError
+from dateutil.parser import parse as date_parse
 import json, datetime
-import boto3
-import io
-import tempfile
-import healpy as hp
 
 from src import app
 from src.gwtmconfig import config
@@ -15,7 +11,6 @@ from . import function
 from . import models
 from . import enums
 from . import gwtm_io
-import re
 
 db = models.db
 
@@ -1266,7 +1261,100 @@ def post_icecube_notice_v1():
 # GW Candidate Endpoint
 @app.route('/api/v1/candidate', methods=["GET"])
 def get_gw_candidates():
-	pass
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+
+	filter = []
+	if "id" in args:
+		_id = args.get("id")
+		if isinstance(_id, int):
+			filter.append(models.gw_candidate.id == _id)
+	if "ids" in args:
+		ids = args.get("ids")
+		ids_list = None
+		if isinstance(ids, str):
+			ids_list = ids.split('[')[1].split(']')[0].split(',')
+		elif isinstance(ids, list):
+			ids_list = ids
+		if ids_list:
+			filter.append(models.gw_candidate.id.in_(ids_list))
+	if "graceid" in args:
+		graceid = args.get("graceid")
+		if isinstance(graceid, str):
+			filter.append(models.gw_candidate.graceid == graceid)
+	if "userid" in args:
+		userid = args.get("userid")
+		if isinstance(userid, int):
+			filter.append(models.gw_candidate.submitterid == userid)
+	if "submitted_date_after" in args:
+		submitted_date_after = args.get("submitted_date_after")
+		try:
+			parsed_date_after = date_parse(submitted_date_after)
+			filter.append(models.gw_candidate.datecreated >= parsed_date_after)
+		except:
+			pass
+	if "submitted_date_before" in args:
+		submitted_date_before = args.get("submitted_date_before")
+		try:
+			parsed_date_before = date_parse(submitted_date_before)
+			filter.append(models.gw_candidate.datecreated <= parsed_date_before)
+		except:
+			pass
+	if "discovery_magnitude_gt" in args:
+		discovery_magnitude_gt = args.get("discovery_magnitude_gt")
+		if isinstance(discovery_magnitude_gt, float):
+			filter.append(models.gw_candidate.discovery_magnitude >= discovery_magnitude_gt)
+	if "discovery_magnitude_lt" in args:
+		discovery_magnitude_lt = args.get("discovery_magnitude_lt")
+		if isinstance(discovery_magnitude_lt, float):
+			filter.append(models.gw_candidate.discovery_magnitude <= discovery_magnitude_lt)
+	if "discovery_date_after" in args:
+		discovery_date_after = args.get("discovery_date_after")
+		try:
+			parsed_date_after = date_parse(discovery_date_after)
+			filter.append(models.gw_candidate.discovery_date >= parsed_date_after)
+		except:
+			pass
+	if "discovery_date_before" in args:
+		discovery_date_before = args.get("discovery_date_before")
+		try:
+			parsed_date_before = date_parse(discovery_date_before)
+			filter.append(models.gw_candidate.discovery_date <= parsed_date_before)
+		except:
+			pass
+	if "associated_galaxy_name" in args:
+		associated_galaxy_name = args.get("associated_galaxy_name")
+		if isinstance(associated_galaxy_name, str):
+			filter.append(models.gw_candidate.associated_galaxy.contains(associated_galaxy_name))
+	if "associated_galaxy_redshift_gt" in args:
+		associated_galaxy_redshift_gt = args.get("associated_galaxy_redshift_gt")
+		if isinstance(associated_galaxy_redshift_gt, float):
+			filter.append(models.gw_candidate.associated_galaxy_redshift >= associated_galaxy_redshift_gt)
+	if "associated_galaxy_redshift_lt" in args:
+		associated_galaxy_redshift_lt = args.get("associated_galaxy_redshift_lt")
+		if isinstance(associated_galaxy_redshift_lt, float):
+			filter.append(models.gw_candidate.associated_galaxy_redshift <= associated_galaxy_redshift_lt)
+	if "associated_galaxy_distance_gt" in args:
+		associated_galaxy_distance_gt = args.get("associated_galaxy_distance_gt")
+		if isinstance(associated_galaxy_redshift_gt, float):
+			filter.append(models.gw_candidate.associated_galaxy_distance >= associated_galaxy_distance_gt)
+	if "associated_galaxy_distance_lt" in args:
+		associated_galaxy_distance_lt = args.get("associated_galaxy_distance_lt")
+		if isinstance(associated_galaxy_redshift_lt, float):
+			filter.append(models.gw_candidate.associated_galaxy_distance <= associated_galaxy_distance_lt)
+
+	candidates = db.session.query(
+		models.gw_candidate
+	).filter(
+		*filter
+	).all()
+
+	response_message = json.dumps([x.parse for x in candidates])
+
+	return make_response(response_message, 200)
 
 
 @app.route('/api/v1/candidate', methods=["POST"])
