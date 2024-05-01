@@ -1426,7 +1426,17 @@ def put_gw_candidates():
 
 @app.route('/api/v1/candidates', methods=["DELETE"])
 def del_gw_candidates():
-	pass
+	"""
+		inputs:
+			id: int for single candidate
+			ids: list(ints) for multiple candidates
+
+		Query for gw_candidates from id/ids
+		Delete the records that correspond to the user's API token
+		let the user know which were deleted
+		let the user know which ones weren't theirs, and slap em for being naughty.
+	"""
+	return make_response("not implemeted yet :)", 200)
 
 
 #FIX DATA
