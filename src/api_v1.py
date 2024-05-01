@@ -1271,7 +1271,59 @@ def get_gw_candidates():
 
 @app.route('/api/v1/candidate', methods=["POST"])
 def post_gw_candidates():
-	pass
+	
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+	
+	errors, warnings, valid_candidates = [], [], []
+
+	if "graceid" in args:
+		graceid = args.get("graceid")
+		valid_alerts = db.session.query(models.gw_alert).filter(models.gw_alert.graceid == graceid).all()
+		if len(valid_alerts) == 0:
+			return make_response("Invalid \'graceid\'. Vist https://treasuremap.space/alert_select for valid alerts", 500)
+	else:
+		return make_response("argument: \'graceid\' is required", 500)
+
+	if "candidate" in args:
+		candidate = args.get("candidate")
+		if not isinstance(candidate, dict):
+			return make_response("Invalid \'candidate\' format. Must be a dictionary or json object", 500)
+		gwc = models.gw_candidate()
+		v = gwc.from_json(candidate, graceid, user.id)
+		if v.valid:
+			valid_candidates.append(gwc)
+			if len(v.warnings) > 0:
+				warnings.append(["Object: " + json.dumps(candidate), v.warnings])
+			db.session.add(gwc)
+		else:
+			errors.append(["Object: "+json.dumps(candidate), v.errors])
+
+	elif "candidates" in args:
+		candidates = args.get("candidates")
+		if not isinstance(candidate, list):
+			return make_response("Invalid \'candidates\' format. Must be a dictionary or json object", 500)
+		for candidate in candidates:
+			if not isinstance(candidate, dict):
+				return make_response("Invalid \'candidate\' format. Must be a dictionary or json object", 500)
+			gwc = models.gw_candidate()
+			v = gwc.from_json(candidate, graceid, user.id)
+			if v.valid:
+				valid_candidates.append(gwc)
+				if len(v.warnings) > 0:
+					warnings.append(["Object: " + json.dumps(candidate), v.warnings])
+				db.session.add(gwc)
+			else:
+				errors.append(["Object: "+json.dumps(candidate), v.errors])
+
+	db.session.flush()
+	db.session.commit()
+
+	response_message = json.dumps({"candidate_ids":[x.id for x in valid_candidates], "ERRORS":errors, "WARNINGS":warnings})
+	
+	return make_response(response_message, 200)
 
 
 @app.route("/api/v1/candidates", methods=["PUT"])

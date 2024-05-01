@@ -1564,20 +1564,20 @@ class icecube_notice_coinc_event(db.Model):
 
 
 class gw_candidate(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    datecreated = db.Column(db.DateTime)
-    submitterid = db.Column(db.Integer)
-    graceid = db.Column(db.String)
-    candidate_name = db.Column(db.String)
-    tns_name = db.Column(db.String, nullable=True)
-    tns_url = db.Column(db.String, nullable=True)
-    position = db.Column(Geography('POINT', srid=4326))
-    discovery_date = db.Column(db.DateTime) 
-    discovery_magnitude = db.Column(db.Float)
-    magnitude_central_wave = db.Column(db.Float)
-    magnitude_bandwidth = db.Column(db.Float)
-    magnitude_unit = db.Column(db.Enum(enums.depth_unit))
-    magnitude_bandpass = db.Column(db.Enum(enums.bandpass))
+    id = db.Column(db.Integer, primary_key=True) #
+    datecreated = db.Column(db.DateTime) #
+    submitterid = db.Column(db.Integer) #
+    graceid = db.Column(db.String) #
+    candidate_name = db.Column(db.String) #
+    tns_name = db.Column(db.String, nullable=True) #
+    tns_url = db.Column(db.String, nullable=True) #
+    position = db.Column(Geography('POINT', srid=4326)) #
+    discovery_date = db.Column(db.DateTime) #
+    discovery_magnitude = db.Column(db.Float) #
+    magnitude_central_wave = db.Column(db.Float) #
+    magnitude_bandwidth = db.Column(db.Float) #
+    magnitude_unit = db.Column(db.Enum(enums.depth_unit)) #
+    magnitude_bandpass = db.Column(db.Enum(enums.bandpass)) #
     associated_galaxy = db.Column(db.String, nullable=True)
     associated_galaxy_redshift = db.Column(db.Float, nullable=True)
     associated_galaxy_distance = db.Column(db.Float, nullable=True)
@@ -1589,3 +1589,211 @@ class gw_candidate(db.Model):
     @property
     def parse(self):
         return parse_model(self, self.__class__)
+    
+    def from_json(self, p, graceid, userid):
+        self.datecreated = datetime.datetime.now()
+        self.graceid = graceid
+        self.submitterid = userid
+
+        v = valid_mapping()
+
+        if 'position' in p:
+            pos = p['position']
+            if "POINT" in pos:
+                self.position = p['position']
+            else:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
+        else:
+            if 'ra' in p or 'RA' in p:
+                ra = p['ra'] if 'ra' in p else p['RA']
+                if not isFloat(ra):
+                    ra = None
+            else:
+                ra = None
+
+            if 'dec' in p or 'DEC' in p:
+                dec = p['dec'] if 'dec' in p else p['DEC']
+                if not isFloat(dec):
+                    dec = None
+            else:
+                dec = None
+
+            if ra is None or dec is None:
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+            else:
+                self.position = "POINT("+str(ra)+" "+str(dec)+")"
+        
+        if 'candidate_name' in p:
+            candidate_name = p["candidate_name"]
+            if isinstance(candidate_name, str):
+                self.candidate_name = candidate_name
+            else:
+                v.errors.append("Invalid \'candidate_name\' type. Must be str")
+        else:
+            v.errors.append("Error: \'candidate_name\' is required")
+
+        if 'tns_name' in p:
+            self.tns_name = p["tns_name"]
+        if 'tns_url' in p:
+            tns_url = p['tns_url']
+            if "https://www.wis-tns.org/object/" not in tns_url:
+                v.errors.append("Invalid \'tns_url\'. Must contain following format: https://www.wis-tns.org/object/\{tns_name\}")
+            else:
+                self.tns_url = tns_url
+        
+        if 'associated_galaxy' in p:
+            associated_galaxy = p['associated_galaxy_distance']
+            if isinstance(associated_galaxy, str):
+                self.associated_galaxy = associated_galaxy
+            else:
+                v.errors.append("Invalid format for \'associated_galaxy\'. Must be str")
+        if 'associated_galaxy_redshift' in p:
+            associated_galaxy_redshift = p['associated_galaxy_redshift']
+            if isinstance(associated_galaxy_redshift, float):
+                self.associated_galaxy_redshift = associated_galaxy_redshift
+            else:
+                v.errors.append("Invalid format for \'associated_galaxy_redshift\'. Must be float")
+        if 'associated_galaxy_distance' in p:
+            associated_galaxy_distance = p['associated_galaxy_distance']
+            if isinstance(associated_galaxy_distance, float):
+                self.associated_galaxy_distance = associated_galaxy_distance
+            else:
+                v.errors.append("Invalid format for \'associated_galaxy_distance\'. Must be float")
+
+        if 'discovery_date' in p:
+            try:
+                self.discovery_date = date_parse(p['discovery_date'])
+                #self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
+            except:
+                v.errors.append("Error parsing \'discovery_date\'. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
+        else:
+            v.errors.append("Error: \'discovery_date\' is required")
+
+        if 'discovery_magnitude' in p:
+            discovery_magnitude = p['discovery_magnitude']
+            if isFloat(discovery_magnitude):
+                self.discovery_magnitude = discovery_magnitude
+            else:
+                v.errors.append("Error: Invalid \'discovery_magnitude\' type. Must be float")
+        else:
+            v.errors.append("Error: \'discovery_mag\' is required")
+
+        if 'magnitude_unit' in p:
+            mu = p['magnitude_unit']
+            validdepthunit = [int(b) for b in enums.depth_unit]
+            validdepthunitstr = [str(b.name) for b in enums.depth_unit]
+            if mu in validdepthunit or mu in validdepthunitstr:
+                duenum = [d for d in enums.depth_unit if int(d) == mu or str(d.name) == mu][0]
+                self.magnitude_unit = duenum
+            else:
+                v.errors.append('Invalid magnitude_unit. Must be \'ab_mag\', \'vega_mag\', \'flux_erg\', or \'flux_jy\'')
+        else:
+            v.errors.append('magnitude_unit is required')
+        
+        if "wavelength_regime" in p and "wavelength_unit" in p:
+            try:
+                regime = str(p['wavelength_regime']).split('[')[1].split(']')[0].split(',')
+                wave_min, wave_max = float(regime[0]), float(regime[1])
+
+                validwavelengthunits_ints = [int(b) for b in enums.wavelength_units]
+                validwavelengthunits_str = [str(b.name) for b in enums.wavelength_units]
+                user_unit = p['wavelength_unit']
+
+                if user_unit in validwavelengthunits_ints or user_unit in validwavelengthunits_str:
+                    wuenum = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.wavelength_units.get_scale(wuenum)
+                    wave_min = wave_min*scale
+                    wave_max = wave_max*scale
+                    
+                    self.magnitude_bandwidth = 0.5*(wave_max-wave_min)
+                    self.magnitude_central_wave = wave_min + self.magnitude_bandwidth
+                    self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['band'] = self.band
+                else:
+                    v.errors.append('Error: \'wavelength_unit\' is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
+            except:
+                v.errors.append('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
+
+        if "frequency_regime" in p and "frequency_unit" in p:
+            try:
+                regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
+                min_freq, max_freq = float(regime[0]), float(regime[1])
+
+                validfrequnits_ints = [int(b) for b in enums.frequency_units]
+                validfrequnits_str = [str(b.name) for b in enums.frequency_units]
+                user_unit = p['frequency_unit']
+
+                if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
+                    fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.frequency_units.get_scale(fuenum)
+                    min_freq = min_freq*scale
+                    max_freq = max_freq*scale
+
+                    self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
+                    self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['magnitude_bandpass'] = self.magnitude_bandpass
+                else:
+                    v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+            except:
+               v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
+
+        if "energy_regime" in p and "energy_unit" in p:
+            try:
+                regime = str(p['energy_regime']).split('[')[1].split(']')[0].split(',')
+                min_energy, max_energy = float(regime[0]), float(regime[1])
+
+                validenergyunits_ints = [int(b) for b in enums.energy_units]
+                validenergyunits_str = [str(b.name) for b in enums.energy_units]
+                user_unit = p['energy_unit']
+
+                if user_unit in validenergyunits_ints or user_unit in validenergyunits_str:
+                    euenum = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.energy_units.get_scale(euenum)
+                    min_energy = min_energy*scale
+                    max_energy = max_energy*scale
+
+                    self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromEnergyRange(min_energy, max_energy)
+                    self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['magnitude_bandpass'] = self.magnitude_bandpass
+                else:
+                    v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
+            except:
+                v.errors.apend('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
+            pass
+
+        if 'magnitude_central_wave' in p:
+            magnitude_central_wave = p['magnitude_central_wave']
+            if isFloat(magnitude_central_wave):
+                self.magnitude_central_wave = magnitude_central_wave
+            else:
+                v.errors.append('Error parsing \'magnitude_central_wave\'. required format is decimal')
+
+        if 'magnitude_bandwidth' in p:
+            magnitude_bandwidth = p['magnitude_bandwidth']
+            if isFloat(magnitude_bandwidth):
+                self.bandwidth = magnitude_bandwidth
+            else:
+                v.errors.append('Error parsing \'magnitude_bandwidth\'. required format is decimal')
+
+        if "magnitude_bandpass" in p:
+            validbandints = [int(b) for b in enums.bandpass]
+            validbandstr = [str(b.name) for b in enums.bandpass]
+            userband = p['magnitude_bandpass']
+            if userband in validbandints or userband in validbandstr:
+                bandenum = [b for b in enums.bandpass if userband == int(b) or userband == str(b.name)][0]
+                self.magnitude_bandpass = userband
+                if self.magnitude_central_wave is None and self.magnitude_bandwidth is None:
+                    bandinfo = SpectralRangeHandler.bandpass_wavelength_dictionary[bandenum]
+                    self.magnitude_central_wave = bandinfo['central_wave']
+                    self.magnitude_bandwidth = bandinfo['bandwidth']
+            else:
+                v.errors.append("Field \"magnitude_bandpass\" is invalid, or manually state the wavelength, frequency, or energy regime of your observation")
+
+        if self.magnitude_bandwidth is None or self.magnitude_central_wave is None:
+            v.errors.append('Error Parsing Bandpass/Energy/Frequency information. Please refer to http://treasuremap.space/documentation for further assistance')
+        elif self.magnitude_bandpass is None:
+            self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.magnitude_central_wave, self.magnitude_bandwidth)
+
+        #valid if no errors
+        v.valid = len(v.errors) == 0
+        return v
