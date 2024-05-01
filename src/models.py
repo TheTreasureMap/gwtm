@@ -1692,71 +1692,92 @@ class gw_candidate(db.Model):
         
         if "wavelength_regime" in p and "wavelength_unit" in p:
             try:
-                regime = str(p['wavelength_regime']).split('[')[1].split(']')[0].split(',')
-                wave_min, wave_max = float(regime[0]), float(regime[1])
+                regime = None
+                in_regime = p["wavelength_regime"]
+                if isinstance(in_regime, str):
+                    regime = str(p['wavelength_regime']).split('[')[1].split(']')[0].split(',')
+                elif isinstance(in_regime, list):
+                    regime = in_regime
+                
+                if regime:
+                    wave_min, wave_max = float(regime[0]), float(regime[1])
 
-                validwavelengthunits_ints = [int(b) for b in enums.wavelength_units]
-                validwavelengthunits_str = [str(b.name) for b in enums.wavelength_units]
-                user_unit = p['wavelength_unit']
+                    validwavelengthunits_ints = [int(b) for b in enums.wavelength_units]
+                    validwavelengthunits_str = [str(b.name) for b in enums.wavelength_units]
+                    user_unit = p['wavelength_unit']
 
-                if user_unit in validwavelengthunits_ints or user_unit in validwavelengthunits_str:
-                    wuenum = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
-                    scale = enums.wavelength_units.get_scale(wuenum)
-                    wave_min = wave_min*scale
-                    wave_max = wave_max*scale
-                    
-                    self.magnitude_bandwidth = 0.5*(wave_max-wave_min)
-                    self.magnitude_central_wave = wave_min + self.magnitude_bandwidth
-                    self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
-                    p['band'] = self.band
-                else:
-                    v.errors.append('Error: \'wavelength_unit\' is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
+                    if user_unit in validwavelengthunits_ints or user_unit in validwavelengthunits_str:
+                        wuenum = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                        scale = enums.wavelength_units.get_scale(wuenum)
+                        wave_min = wave_min*scale
+                        wave_max = wave_max*scale
+                        
+                        self.magnitude_bandwidth = 0.5*(wave_max-wave_min)
+                        self.magnitude_central_wave = wave_min + self.magnitude_bandwidth
+                        self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.magnitude_central_wave, self.magnitude_bandwidth)
+                        p['band'] = self.magnitude_bandwidth
+                    else:
+                        v.errors.append('Error: \'wavelength_unit\' is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
             except:
                 v.errors.append('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
 
         if "frequency_regime" in p and "frequency_unit" in p:
             try:
-                regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
-                min_freq, max_freq = float(regime[0]), float(regime[1])
+                regime = None
+                in_regime = p["frequency_regime"]
+                if isinstance(in_regime, str):
+                    regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
+                elif isinstance(in_regime, list):
+                    regime = in_regime
+                
+                if regime:
+                    min_freq, max_freq = float(regime[0]), float(regime[1])
 
-                validfrequnits_ints = [int(b) for b in enums.frequency_units]
-                validfrequnits_str = [str(b.name) for b in enums.frequency_units]
-                user_unit = p['frequency_unit']
+                    validfrequnits_ints = [int(b) for b in enums.frequency_units]
+                    validfrequnits_str = [str(b.name) for b in enums.frequency_units]
+                    user_unit = p['frequency_unit']
 
-                if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
-                    fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
-                    scale = enums.frequency_units.get_scale(fuenum)
-                    min_freq = min_freq*scale
-                    max_freq = max_freq*scale
+                    if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
+                        fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                        scale = enums.frequency_units.get_scale(fuenum)
+                        min_freq = min_freq*scale
+                        max_freq = max_freq*scale
 
-                    self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
-                    self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
-                    p['magnitude_bandpass'] = self.magnitude_bandpass
-                else:
-                    v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+                        self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
+                        self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.magnitude_central_wave, self.magnitude_bandwidth)
+                        p['magnitude_bandpass'] = self.magnitude_bandpass
+                    else:
+                        v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
             except:
                v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
 
         if "energy_regime" in p and "energy_unit" in p:
             try:
-                regime = str(p['energy_regime']).split('[')[1].split(']')[0].split(',')
-                min_energy, max_energy = float(regime[0]), float(regime[1])
+                regime = None
+                in_regime = p["energy_regime"]
+                if isinstance(in_regime, str):
+                    regime = str(p['energy_regime']).split('[')[1].split(']')[0].split(',')
+                elif isinstance(in_regime, list):
+                    regime = in_regime
+                
+                if regime:
+                    min_energy, max_energy = float(regime[0]), float(regime[1])
 
-                validenergyunits_ints = [int(b) for b in enums.energy_units]
-                validenergyunits_str = [str(b.name) for b in enums.energy_units]
-                user_unit = p['energy_unit']
+                    validenergyunits_ints = [int(b) for b in enums.energy_units]
+                    validenergyunits_str = [str(b.name) for b in enums.energy_units]
+                    user_unit = p['energy_unit']
 
-                if user_unit in validenergyunits_ints or user_unit in validenergyunits_str:
-                    euenum = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
-                    scale = enums.energy_units.get_scale(euenum)
-                    min_energy = min_energy*scale
-                    max_energy = max_energy*scale
+                    if user_unit in validenergyunits_ints or user_unit in validenergyunits_str:
+                        euenum = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                        scale = enums.energy_units.get_scale(euenum)
+                        min_energy = min_energy*scale
+                        max_energy = max_energy*scale
 
-                    self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromEnergyRange(min_energy, max_energy)
-                    self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
-                    p['magnitude_bandpass'] = self.magnitude_bandpass
-                else:
-                    v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
+                        self.magnitude_central_wave, self.magnitude_bandwidth = SpectralRangeHandler.wavefromEnergyRange(min_energy, max_energy)
+                        self.magnitude_bandpass = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.magnitude_central_wave, self.magnitude_bandwidth)
+                        p['magnitude_bandpass'] = self.magnitude_bandpass
+                    else:
+                        v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
             except:
                 v.errors.apend('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
             pass

@@ -1303,7 +1303,7 @@ def post_gw_candidates():
 
 	elif "candidates" in args:
 		candidates = args.get("candidates")
-		if not isinstance(candidate, list):
+		if not isinstance(candidates, list):
 			return make_response("Invalid \'candidates\' format. Must be a dictionary or json object", 500)
 		for candidate in candidates:
 			if not isinstance(candidate, dict):
@@ -1317,6 +1317,8 @@ def post_gw_candidates():
 				db.session.add(gwc)
 			else:
 				errors.append(["Object: "+json.dumps(candidate), v.errors])
+	else:
+		return make_response("Error: Missing \'candidate\' or \'candidates\' information.")
 
 	db.session.flush()
 	db.session.commit()
