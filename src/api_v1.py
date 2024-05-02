@@ -4,6 +4,7 @@ from flask import request
 from sqlalchemy import func, or_
 from dateutil.parser import parse as date_parse
 import json, datetime
+import shapely
 
 from src import app
 from src.gwtmconfig import config
@@ -1419,12 +1420,84 @@ def post_gw_candidates():
 	return make_response(response_message, 200)
 
 
-@app.route("/api/v1/candidates", methods=["PUT"])
+@app.route("/api/v1/candidate", methods=["PUT"])
 def put_gw_candidates():
-	pass
+	"""
+		inputs:
+			candidate_id: int
+			payload: dictionary {}
+
+		queries for existing candidate
+			returns 500 if not exist
+		converts the existing candidate record to json
+
+		takes the payload and updates json record with the key/values 
+			needs to validate keys / record columns
+				cannot update id, submitterid, datecreated.
+	"""
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+	
+	if "id" in args:
+		_id = args.get("id")
+		if isinstance(_id, int):
+			candidate = db.session.query(models.gw_candidate).filter(models.gw_candidate.id == _id).first()
+			position = shapely.wkb.loads(bytes(candidate.position.data))
+			if not candidate:
+				return make_response(f"No candidate found with \'id\': {_id}", 500)
+			if candidate.submitterid != user.id:
+				return make_response("Error: Unauthorized. Unable to alter other user's records", 500)
+		else:
+			return make_response(f"Invalid candidate \'id\': {_id}", 500)
+	else:
+		return make_response("Error: Candidate \'id\' required", 500)
+	
+	if "payload" in args:
+		payload = args.get("payload")
+		if not isinstance(payload, dict):
+			return make_response(f"Put Candidate \'payload\' is required to be object of type \'dict\' or \'json\'. Detected <{type(payload)}", 500)
+	else:
+		return make_response("Error: Candidate \'payload\' is required", 500)
+	
+	editable_columns = [
+		"graceid", "candidate_name", "tns_name", "tns_url", "position", "ra", "dec", "discovery_date", 
+		"discovery_magnitude", "magnitude_central_wave", "magnitude_bandwidth", "magnitude_bandwidth",
+		"magnitude_bandpass", "associated_galaxy", "associated_galaxy_redshift", "associated_galaxy_distance",
+		"wavelength_regime", "wavelength_unit", "frequency_regime", "frequency_unit",
+		"energy_regime", "energy_unit"
+	]
+
+	candidate_dict = candidate.parse
+	
+	candidate_dict.update(
+		(str(key).lower(), value) for key, value in payload.items() if str(key).lower() in editable_columns
+	)
+
+	if any([x in payload.keys() for x in ["ra", "dec"]]):
+		del candidate_dict["position"]
+	elif "position" not in payload.keys():
+		candidate_dict["position"] = str(position)
+	print(candidate_dict)
+
+	errors = []
+	#run through the post from json method for model validation
+	gwc = models.gw_candidate()
+	v = gwc.from_json(candidate_dict, candidate_dict["graceid"], candidate.submitterid)
+	if v.valid:
+		updated_model = gwc.__dict__
+		for key, value in updated_model.items():
+			if key in editable_columns:
+				setattr(candidate, key, value)
+		db.session.commit()
+		return make_response(json.dumps({"message": "success", "candidate": candidate.parse}), 200)
+	else:
+		errors.append(v.errors)
+	return make_response(json.dumps({"message": "failure", "errors": errors}), 500)
 
 
-@app.route('/api/v1/candidates', methods=["DELETE"])
+@app.route('/api/v1/candidate', methods=["DELETE"])
 def del_gw_candidates():
 	"""
 		inputs:
