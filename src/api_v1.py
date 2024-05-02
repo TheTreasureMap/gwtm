@@ -1525,12 +1525,12 @@ def del_gw_candidates():
 		if isinstance(_id, int):
 			candidate = db.session.query(models.gw_candidate).filter(models.gw_candidate.id == _id).first()
 			if not candidate:
-				return make_response(f"No candidate found with \'id\': {_id}", 500)
+				return make_response(json.dumps({"message": f"No candidate found with \'id\': {_id}"}), 500)
 			if candidate.submitterid != user.id:
-				return make_response("Error: Unauthorized. Unable to alter other user's records", 500)
+				return make_response(json.dumps({"message": "Error: Unauthorized. Unable to alter other user's records"}), 500)
 			candidates_to_delete.append(candidate)
 		else:
-			return make_response(f"Invalid candidate \'id\': {_id}", 500)
+			return make_response(json.dumps({"message": f"Invalid candidate \'id\': {_id}"}), 500)
 		
 	if "ids" in args:
 		ids  = args.get("ids")
@@ -1540,6 +1540,8 @@ def del_gw_candidates():
 		elif isinstance(ids, str):
 			try:
 				query_ids = ids.split('[')[1].split(']')[0].split(',')
+				if not all([isinstance(x, int) for x in query_ids]):
+					return make_response(json.dumps({"message": "Invalid \'ids\' format. Must be <list[int]>"}), 500)
 			except:  # noqa: E722
 				return make_response(json.dumps({"message": "Invalid \'ids\' format. Must be <list[int]>"}), 500)
 		else:
