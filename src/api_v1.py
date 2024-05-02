@@ -3,7 +3,8 @@
 from flask import request
 from sqlalchemy import func, or_
 from dateutil.parser import parse as date_parse
-import json, datetime
+import json
+import datetime
 import shapely
 
 from src import app
@@ -20,7 +21,7 @@ def initial_request_parse(request, only_json=False):
 	args = None
 	try:
 		args = request.get_json()
-	except:
+	except:  # noqa: E722
 		if only_json:
 			return False, "Endpoint only accepts json argument parameters", args, None
 		pass
@@ -132,8 +133,9 @@ def get_event_galaxies_v1():
 	if "timesent_stamp" in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
+			#parsetime
 			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 
 		alert = db.session.query(models.gw_alert).filter(
@@ -174,7 +176,7 @@ def post_event_galaxies_v1():
 
 	try:
 		args = request.get_json()
-	except:
+	except: # noqa: E722
 		return make_response("Whoaaaa that JSON is a little wonky", 500)
 
 	post_doi = False
@@ -200,8 +202,9 @@ def post_event_galaxies_v1():
 	if "timesent_stamp" in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
+			#parsetime
 			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 
 		alert = db.session.query(models.gw_alert).filter(
@@ -484,7 +487,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[graceid1, graceid2...]\'', 500)
 		if isinstance(arg, list):
 			gids = []
@@ -505,7 +508,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
 		if isinstance(arg, list):
 			ids = []
@@ -525,7 +528,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[band1, band2...]\'', 500)
 		if isinstance(arg, list):
 			bands = []
@@ -550,7 +553,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[status1, status2]\'', 500)
 		if isinstance(arg, list):
 			statuses = []
@@ -566,7 +569,7 @@ def get_pointings_v1():
 		time = args.get('completed_after')
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.completed)
 		filter.append(models.pointing.time >= time)
@@ -575,7 +578,7 @@ def get_pointings_v1():
 		time = args.get('completed_before')
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.completed)
 		filter.append(models.pointing.time <= time)
@@ -584,7 +587,7 @@ def get_pointings_v1():
 		time = args.get('planned_after')
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.planned)
 		filter.append(models.pointing.time >= time)
@@ -593,7 +596,7 @@ def get_pointings_v1():
 		time = args.get('planned_before')
 		try:
 			time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
-		except:
+		except: # noqa: E722
 			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
 		filter.append(models.pointing.status == enums.pointing_status.planned)
 		filter.append(models.pointing.time <= time)
@@ -614,7 +617,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2..]\'', 500)
 		if isinstance(arg, list):
 			ors = []
@@ -643,7 +646,7 @@ def get_pointings_v1():
 		if isinstance(arg, str):
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
-			except:
+			except: # noqa: E722
 				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
 		if isinstance(arg, list):
 			ors = []
@@ -664,17 +667,17 @@ def get_pointings_v1():
 			if isinstance(arg, str):
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
-				except:
+				except: # noqa: E722
 					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				specmin, specmax = float(arg[0]), float(arg[1])
-		except:
+		except: # noqa: E722
 			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 
 		try:
 			user_unit = args['wavelength_unit']
 			spectral_unit = [w for w in enums.wavelength_units if int(w) == user_unit or str(w.name) == user_unit][0]
-		except:
+		except: # noqa: E722
 			return make_response('wavelength_unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'', 500)
 		scale = enums.wavelength_units.get_scale(spectral_unit)
 		specmin = specmin*scale
@@ -689,17 +692,17 @@ def get_pointings_v1():
 			if isinstance(arg, str):
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
-				except:
+				except: # noqa: E722
 					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				print(arg)
 				specmin, specmax = float(arg[0]), float(arg[1])
-		except:
+		except: # noqa: E722
 			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['frequency_unit']
 			spectral_unit = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
-		except:
+		except: # noqa: E722
 			return make_response('frequency_unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'', 500)
 		scale = enums.frequency_units.get_scale(spectral_unit)
 		specmin = specmin*scale
@@ -715,17 +718,17 @@ def get_pointings_v1():
 			if isinstance(arg, str):
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
-				except:
+				except: # noqa: E722
 					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				print(arg)
 				specmin, specmax = float(arg[0]), float(arg[1])
-		except:
+		except: # noqa: E722
 			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['energy_unit']
 			spectral_unit = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
-		except:
+		except: # noqa: E722
 			return make_response('energy_unit is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'', 500)
 		scale = enums.energy_units.get_scale(spectral_unit)
 		specmin = specmin*scale
@@ -778,7 +781,7 @@ def api_request_doi_v1():
 		try:
 			ids = args.get('ids')
 			filter.append(models.pointing.id.in_(ids))
-		except:
+		except: # noqa: E722
 			return make_response('Invalid list format of IDs', 500)
 
 	if len(filter) == 0:
@@ -887,7 +890,7 @@ def del_pointings_v1():
 			filter1.append(models.pointing.id.in_(json.loads(args.get('ids'))))
 		else:
 			return make_response('id or ids of pointing event is required', 500)
-	except:
+	except: # noqa: E722
 		return make_response('There was a problem reading your list of ids', 500)
 
 	if len(filter1) > 0:
@@ -984,12 +987,12 @@ def get_gw_contours():
 	num = len([x for x in alert_types if x == latest_alert_type])-1
 	alert_type = latest_alert_type if num < 1 else latest_alert_type+ str(num)
 	path_info = gid + '-' + alert_type
-	contourpath = f'fit/'+path_info+'-contours-smooth.json'
+	contourpath = f'fit/{path_info}-contours-smooth.json'
 	
 	try:
 		_file = gwtm_io.download_gwtm_file(filename=contourpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
 		return make_response(_file, 200)
-	except:
+	except: # noqa: E722
 		return make_response(f'Error in retrieving Contour file: {contourpath}', 200)
 
 
@@ -1024,12 +1027,12 @@ def get_gw_skymap():
 	num = len([x for x in alert_types if x == latest_alert_type])-1
 	alert_type = latest_alert_type if num < 1 else latest_alert_type+ str(num)
 	path_info = gid + '-' + alert_type
-	skymap_path = f'fit/'+path_info+'.fits.gz'
+	skymap_path = f'fit/{path_info}.fits.gz'
 	
 	try:
 		_file = gwtm_io.download_gwtm_file(filename=skymap_path, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
 		return make_response(_file, 200)
-	except:
+	except: # noqa: E722
 		return make_response(f'Error in retrieving Contour file: {skymap_path}', 200)
 
 
@@ -1067,7 +1070,7 @@ def get_grbmoc_v1():
 	try:
 		_file = gwtm_io.download_gwtm_file(filename=moc_filepath, source=config.STORAGE_BUCKET_SOURCE, config=config)
 		return make_response(_file, 200)
-	except:
+	except: # noqa: E722 
 		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 200)
 
 
@@ -1295,14 +1298,14 @@ def get_gw_candidates():
 		try:
 			parsed_date_after = date_parse(submitted_date_after)
 			filter.append(models.gw_candidate.datecreated >= parsed_date_after)
-		except:
+		except: # noqa: E722
 			pass
 	if "submitted_date_before" in args:
 		submitted_date_before = args.get("submitted_date_before")
 		try:
 			parsed_date_before = date_parse(submitted_date_before)
 			filter.append(models.gw_candidate.datecreated <= parsed_date_before)
-		except:
+		except: # noqa: E722
 			pass
 	if "discovery_magnitude_gt" in args:
 		discovery_magnitude_gt = args.get("discovery_magnitude_gt")
@@ -1317,14 +1320,14 @@ def get_gw_candidates():
 		try:
 			parsed_date_after = date_parse(discovery_date_after)
 			filter.append(models.gw_candidate.discovery_date >= parsed_date_after)
-		except:
+		except: # noqa: E722
 			pass
 	if "discovery_date_before" in args:
 		discovery_date_before = args.get("discovery_date_before")
 		try:
 			parsed_date_before = date_parse(discovery_date_before)
 			filter.append(models.gw_candidate.discovery_date <= parsed_date_before)
-		except:
+		except: # noqa: E722
 			pass
 	if "associated_galaxy_name" in args:
 		associated_galaxy_name = args.get("associated_galaxy_name")
@@ -1509,7 +1512,68 @@ def del_gw_candidates():
 		let the user know which were deleted
 		let the user know which ones weren't theirs, and slap em for being naughty.
 	"""
-	return make_response("not implemeted yet :)", 200)
+
+	valid, message, args, user = initial_request_parse(request=request)
+
+	if not valid:
+		return make_response(message, 500)
+	
+	warnings = []
+	candidates_to_delete = []
+	if "id" in args:
+		_id = args.get("id")
+		if isinstance(_id, int):
+			candidate = db.session.query(models.gw_candidate).filter(models.gw_candidate.id == _id).first()
+			if not candidate:
+				return make_response(f"No candidate found with \'id\': {_id}", 500)
+			if candidate.submitterid != user.id:
+				return make_response("Error: Unauthorized. Unable to alter other user's records", 500)
+			candidates_to_delete.append(candidate)
+		else:
+			return make_response(f"Invalid candidate \'id\': {_id}", 500)
+		
+	if "ids" in args:
+		ids  = args.get("ids")
+		query_ids = []
+		if isinstance(ids, list):
+			query_ids = ids
+		elif isinstance(ids, str):
+			try:
+				query_ids = ids.split('[')[1].split(']')[0].split(',')
+			except:  # noqa: E722
+				return make_response(json.dumps({"message": "Invalid \'ids\' format. Must be <list[int]>"}), 500)
+		else:
+			return make_response(json.dumps({"message": "Invalid \'ids\' format. Must be <list[int]>"}), 500)
+		
+		candidates = db.session.query(models.gw_candidate).filter(
+			models.gw_candidate.id.in_(query_ids)
+		).all()
+
+		if len(candidates) == 0:
+			return make_response(json.dumps({"message": "No candidates found with input \'ids\'"}), 500)
+	
+		candidates_to_delete.extend([x for x in candidates if x.submitterid == user.id])
+		if len(candidates_to_delete) < len(candidates):
+			warnings.extend("Some entries were not deleted. You cannot delete candidates you didn't submit")
+	
+	if len(candidates_to_delete):
+		del_ids = []
+		for ctd in candidates_to_delete:
+			del_ids.append(ctd.id)
+			db.session.delete(ctd)
+		message = {
+			"message": f"Successfully deleted {len(candidates_to_delete)} candidate(s)",
+			"deleted_ids": del_ids,
+			"warnings": warnings
+		}
+		db.session.commit()
+		return(make_response(json.dumps(message), 200))
+	else:
+		message = {
+			"message": "No candidates found with input parameters",
+			"warnings": warnings
+		}
+		return make_response(json.dumps(message), 200)
 
 
 #FIX DATA
