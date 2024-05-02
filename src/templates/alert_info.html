@@ -471,7 +471,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 <script type='text/javascript' src="{{ url_for('static',filename='js/alert_aladin.js') }}"></script>
 <script type='text/javascript'>
   var data = {
-    detection_overlays: {},
+    detection_overlays: detection_overlays,
     inst_overlays: inst_overlays,
     GRBoverlays: GRBoverlays,
     target_init: target_init,
@@ -483,7 +483,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
   var d = gwtmAladinInit(data)
   data.aladin = d.aladin
   var aladin = d.aladin
-  var detectionoverlaylist = {} 
+  var detectionoverlaylist = d.detectionoverlaylist 
   var grboverlaylist = d.grboverlaylist
   var instoverlaylist = {}
   var set_aladin_markerlist = {} 
