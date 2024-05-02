@@ -40,7 +40,7 @@ def to_json(inst, cls):
         if c.type in convert.keys() and v is not None:
             try:
                 d[c.name] = convert[c.type](v)
-            except:
+            except:  # noqa: E722
                 d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
         elif c in json_cols:
             d[c.name] = v
@@ -81,7 +81,7 @@ def parse_model(inst, cls):
         if c.type in convert.keys() and v is not None:
             try:
                 d[c.name] = convert[c.type](v)
-            except:
+            except:  # noqa: E722
                 d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
         elif c in json_cols:
             d[c.name] = v
@@ -449,7 +449,7 @@ class users(UserMixin, db.Model):
         try:
             id = jwt.decode(token, app.config['SECRET_KEY'],
                             algorithms=['HS256'])['reset_password']
-        except:
+        except:  # noqa: E722
             return
         return users.query.get(id)
 
@@ -488,7 +488,7 @@ class useractions(db.Model):
                 if jsonvals is None:
                     try:
                         jsonvals = request.get_json()
-                    except:
+                    except:  # noqa: E722
                         jsonvals = {}
 
                 ua = useractions(
@@ -501,7 +501,7 @@ class useractions(db.Model):
                 )
                 db.session.add(ua)
                 db.session.commit()
-            except:
+            except:  # noqa: E722
                 print(f"error in writing user actions: request={request}")
 
 
@@ -816,7 +816,7 @@ class pointing(db.Model):
 
         if 'position' in p and not PLANNED:
             pos = p['position']
-            if "POINT" in pos:
+            if all([x in pos for x in ["POINT", "(", ")", " "]]) and "," not in pos:
                 self.position = p['position']
             else:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
@@ -835,18 +835,10 @@ class pointing(db.Model):
             else:
                 dec = None
 
-            if ra == None or dec == None:
+            if ra is None or dec is None:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
             else:
                 self.position = "POINT("+str(ra)+" "+str(dec)+")"
-
-        #if 'galaxy_catalog' in p:
-        #    if isInt(p['galaxy_catalog']):
-        #        self.galaxy_catalog = p['galaxy_catalog']
-
-        #if 'galaxy_catalogid' in p:
-        #    if isInt(p['galaxy_catalogid']):
-        #        self.galaxy_catalogid = p['galaxy_catalogid']
 
         if 'instrumentid' in p and not PLANNED:
             inst = p['instrumentid']
@@ -906,8 +898,7 @@ class pointing(db.Model):
         if 'time' in p:
             try:
                 self.time = date_parse(p['time'])
-                #self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
-            except:
+            except:  # noqa: E722
                 v.errors.append("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
         elif self.status == enums.pointing_status.planned:
             v.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
@@ -939,32 +930,32 @@ class pointing(db.Model):
                     p['band'] = self.band
                 else:
                     v.errors.append('Wavelength Unit is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
-            except:
+            except:  # noqa: E722
                 v.errors.append('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
 
         if "frequency_regime" in p and "frequency_unit" in p and not PLANNED:
 
-            #try:
-            regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
-            min_freq, max_freq = float(regime[0]), float(regime[1])
+            try:
+                regime = str(p['frequency_regime']).split('[')[1].split(']')[0].split(',')
+                min_freq, max_freq = float(regime[0]), float(regime[1])
 
-            validfrequnits_ints = [int(b) for b in enums.frequency_units]
-            validfrequnits_str = [str(b.name) for b in enums.frequency_units]
-            user_unit = p['frequency_unit']
+                validfrequnits_ints = [int(b) for b in enums.frequency_units]
+                validfrequnits_str = [str(b.name) for b in enums.frequency_units]
+                user_unit = p['frequency_unit']
 
-            if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
-                fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
-                scale = enums.frequency_units.get_scale(fuenum)
-                min_freq = min_freq*scale
-                max_freq = max_freq*scale
+                if user_unit in validfrequnits_ints or user_unit in validfrequnits_str:
+                    fuenum = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
+                    scale = enums.frequency_units.get_scale(fuenum)
+                    min_freq = min_freq*scale
+                    max_freq = max_freq*scale
 
-                self.central_wave, self.bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
-                self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
-                p['band'] = self.band
-            else:
-                v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
-            #except:
-            #    v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
+                    self.central_wave, self.bandwidth = SpectralRangeHandler.wavefromFrequencyRange(min_freq, max_freq)
+                    self.band = SpectralRangeHandler.bandEnumFromCentralWaveBandwidth(self.central_wave, self.bandwidth)
+                    p['band'] = self.band
+                else:
+                    v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
+            except:  # noqa: E722
+               v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
 
 
         if "energy_regime" in p and "energy_unit" in p and not PLANNED:
@@ -987,7 +978,7 @@ class pointing(db.Model):
                     p['band'] = self.band
                 else:
                     v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
-            except:
+            except:  # noqa: E722
                 v.errors.apend('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
             pass
 
@@ -1235,6 +1226,7 @@ class gw_galaxy(db.Model):
     def json(self):
         return to_json(self, self.__class__)
 
+
 class event_galaxy(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
@@ -1404,7 +1396,7 @@ class gw_galaxy_entry(db.Model):
 
         if 'position' in p:
             pos = p['position']
-            if "POINT" in pos:
+            if all([x in pos for x in ["POINT", "(", ")", " "]]) and "," not in pos:
                 self.position = p['position']
             else:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
@@ -1423,7 +1415,7 @@ class gw_galaxy_entry(db.Model):
             else:
                 dec = None
 
-            if ra == None or dec == None:
+            if ra is None or dec is None:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
             else:
                 self.position = "POINT("+str(ra)+" "+str(dec)+")"
@@ -1522,7 +1514,6 @@ class icecube_notice(db.Model):
         return False
 
     
-
 class icecube_notice_coinc_event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     icecube_notice_id = db.Column(db.Integer)
@@ -1599,7 +1590,7 @@ class gw_candidate(db.Model):
 
         if 'position' in p:
             pos = p['position']
-            if "POINT" in pos:
+            if all([x in pos for x in ["POINT", "(", ")", " "]]) and "," not in pos:
                 self.position = p['position']
             else:
                 v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
@@ -1649,7 +1640,7 @@ class gw_candidate(db.Model):
                 v.errors.append("Invalid \'tns_url\' type. Must be str")
         
         if 'associated_galaxy' in p:
-            associated_galaxy = p['associated_galaxy_distance']
+            associated_galaxy = p['associated_galaxy']
             if isinstance(associated_galaxy, str):
                 self.associated_galaxy = associated_galaxy
             else:
@@ -1660,20 +1651,19 @@ class gw_candidate(db.Model):
             if isinstance(associated_galaxy_redshift, float):
                 self.associated_galaxy_redshift = associated_galaxy_redshift
             else:
-                v.errors.append("Invalid format for \'associated_galaxy_redshift\'. Must be float")
+                v.warnings.append("Invalid format for \'associated_galaxy_redshift\'. Must be float")
 
         if 'associated_galaxy_distance' in p:
             associated_galaxy_distance = p['associated_galaxy_distance']
             if isinstance(associated_galaxy_distance, float):
                 self.associated_galaxy_distance = associated_galaxy_distance
             else:
-                v.errors.append("Invalid format for \'associated_galaxy_distance\'. Must be float")
+                v.warnings.append("Invalid format for \'associated_galaxy_distance\'. Must be float")
 
         if 'discovery_date' in p:
             try:
                 self.discovery_date = date_parse(p['discovery_date'])
-                #self.time = datetime.datetime.strptime(p['time'], "%Y-%m-%dT%H:%M:%S.%f")
-            except:
+            except:  # noqa: E722
                 v.errors.append("Error parsing \'discovery_date\'. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00")
         else:
             v.errors.append("Error: \'discovery_date\' is required")
@@ -1727,7 +1717,7 @@ class gw_candidate(db.Model):
                         p['band'] = self.magnitude_bandwidth
                     else:
                         v.errors.append('Error: \'wavelength_unit\' is required, valid units are \'angstrom\', \'nanometer\', and \'micron\'')
-            except:
+            except:  # noqa: E722
                 v.errors.append('Error parsing \'wavelength_regime\'. required format is a list: \'[low, high]\'')
 
         if "frequency_regime" in p and "frequency_unit" in p:
@@ -1757,7 +1747,7 @@ class gw_candidate(db.Model):
                         p['magnitude_bandpass'] = self.magnitude_bandpass
                     else:
                         v.errors.append('Frequency Unit is required, valid units are \'Hz\', \'kHz\', \'MHz\', \'GHz\', and \'THz\'')
-            except:
+            except:  # noqa: E722
                v.errors.apend('Error parsing \'frequency_regime\'. required format is a list: \'[low, high]\'')
 
         if "energy_regime" in p and "energy_unit" in p:
@@ -1787,7 +1777,7 @@ class gw_candidate(db.Model):
                         p['magnitude_bandpass'] = self.magnitude_bandpass
                     else:
                         v.errors.append('\'energy_unit\' is required, valid units are \'eV\', \'keV\', \'MeV\', \'GeV\', and \'TeV\'')
-            except:
+            except:  # noqa: E722
                 v.errors.apend('Error parsing \'energy_regime\'. required format is a list: \'[low, high]\'')
             pass
 
@@ -1801,7 +1791,7 @@ class gw_candidate(db.Model):
         if 'magnitude_bandwidth' in p:
             magnitude_bandwidth = p['magnitude_bandwidth']
             if isFloat(magnitude_bandwidth):
-                self.bandwidth = magnitude_bandwidth
+                self.magnitude_bandwidth = magnitude_bandwidth
             else:
                 v.errors.append('Error parsing \'magnitude_bandwidth\'. required format is decimal')
 
