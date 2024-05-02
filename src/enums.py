@@ -28,7 +28,7 @@ class bandpass(IntEnum):
     B = 2
     V = 3
     R = 4
-    I = 5
+    I = 5  # noqa: E741
     J = 6
     H = 7
     K = 8
