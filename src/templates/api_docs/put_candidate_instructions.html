@@ -1,22 +1,14 @@
-<h2>REST API METHOD: GET Instructions</h2>
-<p>Retrieving a list of posted galaxies that are within the GW Event contour</p>
+<h2>REST API METHOD: PUT Instructions</h2>
+<p>Alter your candidate records</p>
 <p><b>Usage</b></p>
-<i>/api/v0/event_galaxies</i>
-<p><i>/api/v1/event_galaxies</i></p>
+<p><i>/api/v1/candidate</i></p>
 
 <p><b>Notes</b></p>
-<p>This endpoint is for getting a list of galaxies the lie within the GW contour.</p>
+<p>This endpoint is for altering your posted candidates. You can only alter candidates associated with your API_TOKEN. You can only alter one at a time</p>
 <p>The parameters my be passed in via a json argument in the request or as URL querystring arguments (i.e. <i>/api/v0/event_galaxies?param1=value1...</i>)</p>
 <p>Parameters</p>
 <ul>
-    <li><i>api_token=api_token1</i></li>
-    <li><i>graceid=graceid1</i></li>
-    <ul><li>This is required</li></ul>
-    <li><i>timesent_stamp=event_timesent1</i></li>
-    <ul><li>Not required, but if sent in, it will filter the lists based on the alert type: Initial, Preliminary, Update.. etc</li></ul>
-    <li><i>groupname=groupname1</i></li>
-    <li><i>score_gt=score1</i></li>
-    <ul><li>(Greater than or equal to) If you want to filter by score >= <i>score1</i></li></ul>
-    <li><i>score_lt=score1</i></li>
-    <ul><li>(Less than or equal to) If you want to filter by score <= <i>score1</i></li></ul>
+    <li><i>api_token</i> (str; your verified account api_token)</li>
+    <li><i>id</i> (int; candidate id you want to alter)</li>
+    <li><i>payload</i> (dict; json object that follows the candidate POST parameters)</li>
 </ul>
