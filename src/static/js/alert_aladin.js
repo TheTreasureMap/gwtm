@@ -554,9 +554,9 @@ $(function() {
             var button = document.getElementById('alert_event_galaxies');
             button.innerHTML = 'Get'
 
-            $('#alert_scimmadiv').html('');
-            var button = document.getElementById('alert_scimma_xrt');
-            button.innerHTML = 'Get'
+            // $('#alert_scimmadiv').html('');
+            // var button = document.getElementById('alert_scimma_xrt');
+            // button.innerHTML = 'Get'
 
             $('#alert_icecubediv').html('');
             var button = document.getElementById('alert_icecube_notice');

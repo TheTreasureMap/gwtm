@@ -13,13 +13,14 @@ import tempfile
 import time
 import hashlib
 
+import shapely.wkb
 from werkzeug.exceptions import HTTPException
-from celery.result import AsyncResult
 
 from flask import request, jsonify
 from flask_login import current_user
 from sqlalchemy import func, or_
 from plotly.subplots import make_subplots
+import shapely
 
 from . import function
 from . import models
@@ -27,7 +28,6 @@ from . import forms
 from . import enums
 from . import gwtm_io
 from src import app
-from src import cache
 from src.gwtmconfig import config
 #from .tasks import celery
 
@@ -123,7 +123,7 @@ def ajax_alertinstruments_footprints():
 			name = inst.nickname if inst.nickname and inst.nickname != 'None' else inst.instrument_name
 			try:
 				color = colorlist[i]
-			except:
+			except:  # noqa: E722
 				color = colors[inst.id]
 				pass
 			footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
@@ -247,7 +247,7 @@ def ajax_get_eventcontour():
 			"color": '#e6194B',
 			"contours":function.polygons2footprints(contour_geometry, 0)
 		})
-	except:
+	except:  # noqa: E722
 		print(f'No key: {contourpath}')
 		pass
 
@@ -366,6 +366,37 @@ def ajax_icecube_notice():
 	return(jsonify(return_events))
 
 
+@app.route('/ajax_candidate')
+def ajax_candidate_fetch():
+	args = request.args
+	graceid = args['graceid']
+	graceid = models.gw_alert.graceidfromalternate(graceid)
+	candidates = db.session.query(models.gw_candidate).filter(models.gw_candidate.graceid == graceid).all()
+
+	markers = []
+	payload = []
+	for c in candidates:
+		print(c.position)
+		clean_position = shapely.wkb.loads(bytes(c.position.data), hex=True)
+		print(clean_position, type(clean_position))
+		ra, dec = function.sanatize_pointing(str(clean_position))
+
+		markers.append({
+			"name": c.candidate_name,
+			"ra": ra,
+			"dec": dec,
+			"shape": "star",
+			"info": function.sanatize_candidate_info(c, ra, dec)
+		})
+		
+	if len(markers):
+		payload.append({
+			'name':'Candidates',
+			'color':'',
+			'markers':markers
+		})
+	return jsonify(payload)
+
 @app.route('/ajax_scimma_xrt')
 def ajax_scimma_xrt():
 	args = request.args
@@ -473,8 +504,10 @@ def ajax_request_doi():
 def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	approx_cov = True
-	ztfid = 47; ztf_approx_id = 76
-	decamid = 38; decam_approx_id = 98
+	ztfid = 47 
+	ztf_approx_id = 76
+	decamid = 38
+	decam_approx_id = 98
 	
 	approx_dict = {
 		ztfid: ztf_approx_id,
@@ -670,7 +703,7 @@ def plot_prob_coverage():
 	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
-	if depth != None and function.isFloat(depth):
+	if depth is not None and function.isFloat(depth):
 		if 'mag' in depth_unit:
 			pointing_filter.append(models.pointing.depth >= float(depth))
 		elif 'flux' in depth_unit:
@@ -849,8 +882,8 @@ def spectral_range_from_selected_bands():
 	band_cov = args.get('band_cov')
 	spectral_type = args.get('spectral_type')
 	spectral_unit = args.get('spectral_unit')
-	spec_low = args.get('spec_range_low')
-	spec_high = args.get('spec_range_high')
+	# spec_low = args.get('spec_range_low')
+	# spec_high = args.get('spec_range_high')
 
 	if band_cov != '' and band_cov != 'null':
 		bands = band_cov.split(',')

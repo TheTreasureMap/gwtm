@@ -1,14 +1,11 @@
 import astropy
-import boto3
-from botocore.exceptions import ClientError
 import pandas as pd
-import io
 import json
 import time
 
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import RecaptchaField
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 
 from . import function
@@ -250,11 +247,10 @@ class AlertsForm(FlaskForm):
     detection_overlays = []
     GRBoverlays = []
     has_icecube = False
+    has_candidate = False
 
     def construct_alertform(self, args):
         
-        print("here")
-
         t_start = time.time()
         self.detection_overlays = []
         self.GRBoverlays = []
@@ -280,40 +276,6 @@ class AlertsForm(FlaskForm):
 
         #grab all observation alerts
         gwalerts = models.gw_alert.query.order_by(models.gw_alert.time_of_signal).all()
-        gwalerts_ids = sorted(list(set([a.graceid for a in gwalerts])), reverse=True)
-
-        #link all alert types to its graceid
-        #we want to be able to label the retracted ones individual for the custom dropdown
-        
-        # gid_types = {}
-        # for g in gwalerts_ids:
-        #     types = [x.alert_type for x in gwalerts if x.graceid == g]
-        #     gid_types[g] = types
-
-        # #form the custom dropdown dictionary
-        # graceids = [{'name':'--Select--', 'value':None}]
-
-        # for g in gwalerts_ids:
-        #     #get the alert types for each graceid to test for retractions
-        #     gid_types = [x.alert_type for x in gwalerts if x.graceid == g]
-        #     gid_roles = [x.role for x in gwalerts if x.graceid == g]
-        #     gid_runs  = [x.observing_run for x in gwalerts if x.graceid == g]
-
-        #     alternateid = [gw.alternateid for gw in gwalerts if gw.graceid == g and (gw.alternateid != '' and gw.alternateid is not None)]
-        #     if len(alternateid):
-        #         g = alternateid[0]
-
-        #     name_g = g
-        #     if 'test' in gid_roles:
-        #         name_g = f"TEST-{g}"
-        #     run = gid_runs[0]
-        #     name_g = f"{run} - {name_g}"
-        #     if 'Retraction' in gid_types:
-        #         graceids.append({'name':name_g + ' -retracted-', 'value':g})
-        #     else:
-        #         graceids.append({'name':name_g, 'value':g})
-
-        # self.graceids = graceids
 
         #if there is a selected graceid
         if graceid != 'None' and graceid is not None:
@@ -447,10 +409,10 @@ class AlertsForm(FlaskForm):
 
             self.inst_cov = []
             for inst in [x for x in instrumentinfo if x.id != 49]:
-                self.inst_cov.append({'name':inst.nickname if inst.nickname != None else inst.instrument_name, 'value':inst.id})
+                self.inst_cov.append({'name':inst.nickname if inst.nickname is not None else inst.instrument_name, 'value':inst.id})
 
             self.depth_unit=[]
-            for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit != None])):
+            for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit is not None])):
                 self.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 
@@ -497,8 +459,9 @@ class AlertsForm(FlaskForm):
                         'color':'#3cb44b',
                         'json':contours_data
                     })
-                except:
-                    print(f"Key does not exist: {batpathinfo}")
+                except:  # noqa: E722
+                    if config.DEBUG:
+                        print(f"Key does not exist: {batpathinfo}")
                     pass
 
             #do Fermi stuff
@@ -515,7 +478,7 @@ class AlertsForm(FlaskForm):
                         'color':'magenta',
                         'json':contours_data
                     })
-                except:
+                except:  # noqa: E722
                     self.GRBoverlays.append({
                         'name': 'Fermi in South Atlantic Anomaly'
                         })
@@ -529,8 +492,9 @@ class AlertsForm(FlaskForm):
                         'color':'red',
                         'json':contours_data
                     })
-                except:
-                    print(f'No key: {LATpathinfo}')
+                except:  # noqa: E722
+                    if config.DEBUG:
+                        print(f'No key: {LATpathinfo}')
 
             #grab the precomputed localization contour region
             if len(self.alert_type.split()) > 1:
@@ -560,13 +524,18 @@ class AlertsForm(FlaskForm):
                     "color": '#e6194B',
                     "contours":function.polygons2footprints(contour_geometry, 0)
                 })
-            except:
-                print(f'No key: {contourpath}')
+            except:  # noqa: E722
+                if config.DEBUG:
+                    print(f'No key: {contourpath}')
 
             icecube_data = db.session.query(models.icecube_notice).filter(models.icecube_notice.graceid == self.graceid).all()
             self.has_icecube = len(icecube_data) > 0
 
+            candidate_data = db.session.query(models.gw_candidate).filter(models.gw_candidate.graceid == self.graceid).all()
+            self.has_candidate = len(candidate_data) > 0
+
             t_stop = time.time()
-            print("Time loading page: ", t_stop-t_start)
+            if config.DEBUG:
+                print("Time loading page: ", t_stop-t_start)
 
         return self

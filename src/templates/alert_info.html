@@ -171,14 +171,14 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <div class="collapse in gal_coll" id='alert_gal_div'></div>
       </div>
       <!-- XRT sources block buttons and div -->
-      <div class="btn-group">
+      <!-- <div class="btn-group">
         <button id='alert_xrt_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_scimmadiv'></button>
         <button type="button" id="alert_scimma_xrt" class="btn btn-primary btn-sm my-1">Get</button>
         <h4 style="display: inline-block;">XRT Sources</h4> 
       </div>
       <div class="row">
         <div class="collapse in xrt_coll" id ="alert_scimmadiv"></div>
-      </div>
+      </div> -->
       {% if form.has_icecube %}
         <!-- ICECUBE block buttons and div -->
         <div class="btn-group">
@@ -188,6 +188,17 @@ text.info:hover span{ /*the span will display just on :hover state*/
         </div>
         <div class="row">
           <div class="collapse in icecube_coll" id ="alert_icecubediv"></div>
+        </div>
+      {% endif %}
+      {% if form.has_candidate %}
+        <!-- ICECUBE block buttons and div -->
+        <div class="btn-group">
+          <button id='alert_candidate_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_candidatediv'></button>
+          <button type="button" id="alert_candidate" class="btn btn-primary btn-sm my-1">Get</button>
+          <h4 style="display: inline-block;">Candidates</h4> 
+        </div>
+        <div class="row">
+          <div class="collapse in candidate_coll" id ="alert_candidatediv"></div>
         </div>
       {% endif %}
     </div>
@@ -905,6 +916,44 @@ text.info:hover span{ /*the span will display just on :hover state*/
         aladin_markerToggleAll(set_aladin_markerlist['alert_icecube'], toShow)
         button.innerHTML = 'Hide'
         $('.icecube_coll input:checkbox').prop('checked', toShow)
+      }
+    });
+  });
+
+  $(document).ready( function() {
+    $('#alert_candidate').click(function() {
+      var button = document.getElementById('alert_candidate');
+      if (button.innerHTML == 'Get') {
+        $('#alert_candidate').prop('disabled', true)
+        $.ajax(
+        {
+            url: '/ajax_candidate',
+            data: 'graceid={{ form.graceid }}'
+        }).done(function (event_candidates) {
+          $('#alert_candidate').prop('disabled', false)
+          if (event_candidates.length > 0) {
+            marker_list['alert_candidate'] = event_candidates
+            var candidate_marker_list = aladin_setMarkers(aladin, event_candidates)
+            aladin_setMarkerHtml(event_candidates, 'alert_candidatediv')
+            button.innerHTML = 'Hide'
+            set_aladin_markerlist['alert_candidate'] = candidate_marker_list
+          } else {
+            var html = '<p>No results</p>'
+            $('#alert_candidiatediv').html(html);
+          }
+        });
+      }
+      else if (button.innerHTML == 'Hide') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_candidate'], toShow)
+        button.innerHTML = 'Show'
+        $('.candidate_coll input:checkbox').prop('checked', toShow)
+      }
+      else if (button.innerHTML == 'Show') {
+        toShow = button.innerHTML == 'Show'
+        aladin_markerToggleAll(set_aladin_markerlist['alert_candidate'], toShow)
+        button.innerHTML = 'Hide'
+        $('.candidate_coll input:checkbox').prop('checked', toShow)
       }
     });
   });
