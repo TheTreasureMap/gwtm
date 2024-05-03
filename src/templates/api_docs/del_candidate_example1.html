@@ -4,17 +4,17 @@
 import requests
 
 BASE = "https://treasuremap.space/api/v1"
-TARGET = "remove_event_galaxies"
+TARGET = "candidate"
 API_TOKEN = "-your-verified-account-api-token-"
 
 json_params = {
     "api_token":API_TOKEN,
-    "listid":"listid1"
+    "id":candidate_id
 }
 
 url = "{}/{}".format(BASE, target)
 
-r = requests.post(url=url, json=json_params)
+r = requests.delete(url=url, json=json_params)
 
 print(r.text)
     </code>
