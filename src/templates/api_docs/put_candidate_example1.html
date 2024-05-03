@@ -1,0 +1,23 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "https://treasuremap.space/api/v1"
+TARGET = "event_galaxies"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_params = {
+    "api_token":API_TOKEN,
+    "graceid":"graceid1",
+    "groupname":groupname1
+    "score_lt":0.01
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.get(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

@@ -1,0 +1,63 @@
+<h2>REST API METHOD: POST Instructions</h2>
+<p>Posting transient Candidates that are potentially affiliated with a GW event.</p>
+    <p><b>Usage</b></p>
+    <p><i>/api/v1/candidate</i></p>
+
+    <p><b>Notes</b></p>
+    <p>This endpoint is for posting a candidate (or list of candidates) that coincides with a GW event.</p>
+    <p>JSON Parameters</p>
+    <ul>
+        <li><i>api_token=api_token1</i></li>
+        <li><i>graceid=graceid1</i></li>
+        <li><i>candidates=candidates_list</i></li>
+    </ul>
+    <h5>Valid <b>candidate</b> class parameters</h5>
+    <p><b>*parameters required unless otherwise specified as (optional)</b></p>
+    <ul>
+        <li><i>position</i>: two acceptable formats</li>
+        <ul>
+            <li>geometry type: <b>POINT(RA DEC)</b></li>
+            <li>simply pass two json fields that are <b>RA</b> and <b>DEC</b> which must be <b>decimal</b></li>
+        </ul>
+        <li><i>candidate_name</i> (str)</li>
+        <li><i>tns_name</i> (str; optional)</li>
+        <li><i>tns_url</i> (str; optional)</li>
+        <li><i>associated_galaxy</i> (str; optional)</li>
+        <li><i>associated_galaxy_redshift</i> (float; optional)</li>
+        <li><i>associated_galaxy_distance</i> (float; optional)</li>
+        <li><i>discovery_date</i> (datetime: <b>%Y-%m-%dT%H:%M:%S</b> format; e.g. 1991-12-23T19:15:11) </li>
+        <ul>
+            <li>datetime, must be after associated GW event T0</li>
+        </ul>
+        <li><i>discovery_magnitude</i>: (float)</li>
+        <li><i>magnitude_unit</i></li>
+        <ul>
+            <li>units for magnitude. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
+        </ul>
+        <li><b>Bandpass Information:</b> is required and can be passed in by stating the band, the range of wavelengths, energies, or frequencies the pointing covers. If your candidate observation is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
+        <ul>
+            <li><b>Method 1:</b> Bandpass List</li>
+            <ul>
+                <li><i>magnitude_bandpass</i></li>
+                <ul>
+                    <li>Must be one of: U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+                </ul>
+            </ul>
+            <li><b>Method 2</b>: Central Wavelength and Bandwidth</li>
+            <ul>
+                <li><i>magnitude_central_wave</i> (float)</li>
+                <li><i>magnitude_bandwidth</i> (float)</li>
+            </ul>
+            <li><b>Method 3</b>: Spectrum Regimes: There are 3 ways to submit a spectrum regime for your associated pointing. By stating the wavelength, energy, or frequency regimes along with their associated units</li>
+            <ul>
+                <li><i>wavelength_regime:</i> must be a list of <b>'[low,high]'</b></li>
+                <li><i>wavelength_unit:</i> valid inputs are: <b>angstrom, nanometer</b> or <b>micron</b></li>
+                <br>
+                <li><i>energy_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                <li><i>energy_unit:</i> valid inputs are: <b>eV, keV, MeV, GeV,</b> and <b>TeV</b></li>
+                <br>
+                <li><i>frequency_regime:</i> must be a list of <b>'[low, high]'</b></li>
+                <li><i>frequency_unit:</i> valid inputs are:<b>Hz, kHz, MHz, GHz</b> and <b>THz</b></li>
+            </ul>
+        </ul>
+    </ul>
