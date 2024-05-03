@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import json, datetime
+import json
+import datetime
 import plotly
 import math
 import plotly.graph_objects as go
@@ -9,7 +10,7 @@ from itertools import islice
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
-from sqlalchemy import func, or_
+from sqlalchemy import func
 
 from . import function
 from . import models
@@ -17,8 +18,6 @@ from . import forms
 from . import enums
 
 from src import app
-from src.gwtmconfig import config
-from sqlalchemy.orm import Query
 
 db = models.db
 
@@ -707,8 +706,6 @@ def submit_instrument():
 	).order_by(
 		models.instrument.datecreated
 	).all()
-
-	args = request.args
 
 	if request.method == 'POST' or False:
 

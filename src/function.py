@@ -183,12 +183,28 @@ def sanatize_gal_info(entry, glist):
 
 def sanatize_icecube_event(entry, notice):
     ret = "<p>"
-    ret = "<b> RA DEC: </b>"+str(round(entry.ra,4))+" "+str(round(entry.dec,4))+"<br>"
+    ret += "<b>RA DEC: </b>"+str(round(entry.ra,4))+" "+str(round(entry.dec,4))+"<br>"
     ret += "<b>Event dt: </b>"+str(entry.event_dt)+"<br>"
     ret += "<b>RA Uncertainty: </b>"+str(entry.ra_uncertainty)+"<br>" 
     ret += "<b>Containment Prob: </b>"+str(entry.containment_probability)+"<br>" 
     ret += "<b>Pval Gen: </b>"+str(entry.event_pval_generic)+"<br>" 
     ret += "<b>Pval Bayesian: </b>"+str(entry.event_pval_bayesian)+"<br>" 
+    ret += "</p>"
+    return ret
+
+
+def sanatize_candidate_info(cand, ra: float, dec: float):
+    ret = "<p><br>"
+    ret += f"<b>RA DEC: </b>{str(round(ra,4))} {str(round(dec,4))}<br>"
+    ret += f"<b>Discovery Date: </b>{cand.discovery_date}<br>"
+    ret += f"<b>Magnitude: </b>{cand.discovery_magnitude}<br>"
+    ret += f"<b>Central λ (A): </b>{cand.magnitude_central_wave}<br>"
+    ret += f"<b>Bandwidth (A): </b>{cand.magnitude_bandwidth}<br>"
+    ret += f"<b>Galaxy: </b>{cand.associated_galaxy}<br>"
+    ret += f"<b>Redshift: </b>{cand.associated_galaxy_redshift}<br>"
+    ret += f"<b>Distance: </b>{cand.associated_galaxy_distance}<br>"
+    if cand.tns_url:
+        ret += f"<br><a href=\"{cand.tns_url}\">TNS Source</a>"
     ret += "</p>"
     return ret
 
