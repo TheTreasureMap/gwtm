@@ -7,10 +7,13 @@ BASE = "https://treasuremap.space/api/v1"
 TARGET = "candidate"
 API_TOKEN = "-your-verified-account-api-token-"
 
-#get all candidates associated with GW event GW170817
+#get all candidates associated with multiple filters
 json_params = {
     "api_token":API_TOKEN,
-    "graceid":"GW170817"
+    "graceid": "GW170817",
+    "associated_galaxy_redshift_gt": 0.05,
+    "associated_galaxy_redshift_lt": 0.15,
+    "discovery_date_after": "2017-08-18T12:30:00"
 }
 
 url = "{}/{}".format(BASE, target)

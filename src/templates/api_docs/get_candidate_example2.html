@@ -7,10 +7,10 @@ BASE = "https://treasuremap.space/api/v1"
 TARGET = "candidate"
 API_TOKEN = "-your-verified-account-api-token-"
 
-#get all candidates associated with GW event GW170817
+#get all candidates associated with candidate ids
 json_params = {
     "api_token":API_TOKEN,
-    "graceid":"GW170817"
+    "ids": [id1, id2, id3...]
 }
 
 url = "{}/{}".format(BASE, target)
