@@ -1,0 +1,26 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "https://treasuremap.space/api/v1"
+TARGET = "candidate"
+API_TOKEN = "-your-verified-account-api-token-"
+
+#update your candidate with tns information
+json_params = {
+    "api_token":API_TOKEN,
+    "id": candidate_id,
+    "payload": {
+        "tns_name": "AT2024xxx",
+        "tns_url": "https://www.wis-tns.org/object/2024xxx"
+    }
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.put(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

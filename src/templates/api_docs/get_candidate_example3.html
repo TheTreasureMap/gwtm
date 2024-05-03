@@ -1,0 +1,25 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "https://treasuremap.space/api/v1"
+TARGET = "candidate"
+API_TOKEN = "-your-verified-account-api-token-"
+
+#get all candidates associated with multiple filters
+json_params = {
+    "api_token":API_TOKEN,
+    "graceid": "GW170817",
+    "associated_galaxy_redshift_gt": 0.05,
+    "associated_galaxy_redshift_lt": 0.15,
+    "discovery_date_after": "2017-08-18T12:30:00"
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.get(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

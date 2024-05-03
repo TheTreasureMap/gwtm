@@ -400,6 +400,195 @@ We also point users to a Python script produced by a Treasure Map user, Dougal D
 </div>
 
 <div class="shadow-lg p-3 mb-5 bg-white rounded">
+    <h3 class="text-center">Event Candidates</h3>
+
+    <div class="accordion" id="candidateCollapse">
+        <div class="card">
+            <div class="card-header" id="get_candidate_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#get_candidateCollapse" aria-expanded="false" aria-controls="get_candidateCollapse">
+                        GET Candidates
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="get_candidateCollapse" class="collapse" aria-labelledby="get_candidate_hdr" data-parent="#candidateCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/get_candidate_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="getcandidateexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="getcandidateex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getcandidateex1" aria-expanded="false" aria-controls="getcandidateex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getcandidateex1" class="collapse show" aria-labelledby="getcandidateex1hdr" data-parent="#getcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_candidate_example1.html' %}
+                                    </div>
+                                </div>
+
+                                <div class="card-header" id="getcandidateex2hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getcandidateex2" aria-expanded="false" aria-controls="getcandidateex2">
+                                            Example 2
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getcandidateex2" class="collapse" aria-labelledby="getcandidateex2hdr" data-parent="#getcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_candidate_example2.html' %}
+                                    </div>
+                                </div>
+
+                                <div class="card-header" id="getcandidateex3hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#getcandidateex3" aria-expanded="false" aria-controls="getcandidateex3">
+                                            Example 3
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="getcandidateex3" class="collapse" aria-labelledby="getcandidateex3hdr" data-parent="#getcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/get_candidate_example3.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="post_candidate_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#post_candidateCollapse" aria-expanded="false" aria-controls="post_candidateCollapse">
+                        POST Candidates
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="post_candidateCollapse" class="collapse" aria-labelledby="post_candidate_hdr" data-parent="#candidateCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/post_candidate_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="postcandidateexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="postcandidateex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#postcandidateex1" aria-expanded="false" aria-controls="postcandidateex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="postcandidateex1" class="collapse show" aria-labelledby="postcandidateex1hdr" data-parent="#postcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/post_candidate_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="put_candidate_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#put_candidateCollapse" aria-expanded="false" aria-controls="put_candidateCollapse">
+                        PUT Candidates
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="put_candidateCollapse" class="collapse" aria-labelledby="put_candidate_hdr" data-parent="#candidateCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/put_candidate_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="putcandidateexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="putcandidateex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#putcandidateex1" aria-expanded="false" aria-controls="putcandidateex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="putcandidateex1" class="collapse show" aria-labelledby="putcandidateex1hdr" data-parent="#putcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/put_candidate_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" id="del_candidate_hdr">
+                <h2 class="mb-0">
+                    <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#del_candidateCollapse" aria-expanded="false" aria-controls="del_candidateCollapse">
+                        DELETE Candidates
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div id="del_candidateCollapse" class="collapse" aria-labelledby="del_candidate_hdr" data-parent="#candidateCollapse">
+            <div class="row">
+                <div class="column">
+                    <div class="card card-body">
+                        {% include 'api_docs/del_candidate_instructions.html' %}
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card card-body">
+                        <div class="accordion" id="delcandidateexample_acc">
+                            <div class="card">
+                                <div class="card-header" id="delcandidateex1hdr">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-primary btn-block text-left" type="button" data-toggle="collapse" data-target="#delcandidateex1" aria-expanded="false" aria-controls="delcandidateex1">
+                                            Example 1
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="delcandidateex1" class="collapse show" aria-labelledby="delcandidateex1hdr" data-parent="#delcandidateexample_acc">
+                                    <div class="card-body">
+                                        {% include 'api_docs/del_candidate_example1.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
     <h3 class="text-center">Convolved Galaxies</h3>
 
     <div class="accordion" id="convgalCollapse">
@@ -480,6 +669,7 @@ We also point users to a Python script produced by a Treasure Map user, Dougal D
                 </div>
             </div>
         </div>
+
         <div class="card">
             <div class="card-header" id="del_convgal_hdr">
                 <h2 class="mb-0">
@@ -518,6 +708,7 @@ We also point users to a Python script produced by a Treasure Map user, Dougal D
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 

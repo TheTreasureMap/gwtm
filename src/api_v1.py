@@ -1287,6 +1287,7 @@ def get_gw_candidates():
 	if "graceid" in args:
 		graceid = args.get("graceid")
 		if isinstance(graceid, str):
+			graceid = models.gw_alert.graceidfromalternate(graceid)
 			filter.append(models.gw_candidate.graceid == graceid)
 	if "userid" in args:
 		userid = args.get("userid")

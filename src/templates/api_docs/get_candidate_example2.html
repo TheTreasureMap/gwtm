@@ -1,0 +1,22 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "https://treasuremap.space/api/v1"
+TARGET = "candidate"
+API_TOKEN = "-your-verified-account-api-token-"
+
+#get all candidates associated with candidate ids
+json_params = {
+    "api_token":API_TOKEN,
+    "ids": [id1, id2, id3...]
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.get(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

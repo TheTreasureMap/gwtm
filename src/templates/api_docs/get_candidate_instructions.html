@@ -1,0 +1,27 @@
+<h2>REST API METHOD: GET Instructions</h2>
+<p>Retrieving a list of posted candidates that are associated with a GW event.</p>
+<p><b>Usage</b></p>
+<p><i>/api/v1/candidate</i></p>
+
+<p><b>Notes</b></p>
+<p>This endpoint is for getting a list of candidates that are associated with a GW event.</p>
+<p>The parameters my be passed in via a json argument in the request or as URL querystring arguments (i.e. <i>/api/v1/candidate?param1=value1...</i>)</p>
+<p>Parameters</p>
+<ul>
+    <li><i>api_token</i> (str; verified account API Token)</li>
+    <li><i>graceid</i> (str; graceid associated with GW event)</li>
+    <li><i>id</i> (int; id for single candidate)</li>
+    <li><i>ids</i> (list[int]; list of ids for multiple candidates)</li>
+    <li><i>userid</i> (int; user id associated with api_token that posted candidates)</li>
+    <li><i>submitted_date_after</i> (str(datetime); filters candidates created after or on a specified datetime)</li>
+    <li><i>submitted_date_before</i> (str(datetime); filters candidates created before or on a specified datetime)</li>
+    <li><i>discovery_date_after</i> (str(datetime); filters candidates discovered after or on a specified datetime)</li>
+    <li><i>discovery_date_after</i> (str(datetime); filters candidates discovered after or on a specified datetime)</li>
+    <li><i>discovery_magnitude_gt</i> (float; filters candidates with magnitude greater than (or equal) specified value)</li>
+    <li><i>discovery_magnitude_lt</i> (float; filters candidates with magnitude lesser than (or equal) specified value)</li>
+    <li><i>associated_galaxy</i> (str; filters candidates that are submitted with an associated galaxy name)</li>
+    <li><i>associated_galaxy_redshift_gt</i> (float; filters candidates with associated_galaxy_redshift greater than (or equal) specified value)</li>
+    <li><i>associated_galaxy_redshift_lt</i> (float; filters candidates with associated_galaxy_redshift lesser than (or equal) specified value)</li>
+    <li><i>associated_galaxy_distance_gt</i> (float; filters candidates with associated_galaxy_distance greater than (or equal) specified value)</li>
+    <li><i>associated_galaxy_distance_lt</i> (float; filters candidates with associated_galaxy_distance lesser than (or equal) specified value)</li>
+</ul>

@@ -1,0 +1,34 @@
+<h2>Python Example</h2>
+<pre>
+    <code class="python_code">
+import requests
+
+BASE = "https://treasuremap.space/api/v1"
+TARGET = "candidate"
+API_TOKEN = "-your-verified-account-api-token-"
+
+json_data = {
+    "api_token":"API_TOKEN",
+    "graceid":"graceid1",
+    "candidates":[
+        {
+            "ra": 24.0,
+            "dec": 48.0,
+            "candidate_name": "AT2021fxy"
+            "tns_name": "AT2021fxy",
+            "tns_url": "https://www.wis-tns.org/object/2021fxy",
+            "discovery_date": "2021-03-17T17:23:37.000",
+            "discovery_magnitude": 18.0,
+            "magnitude_unit": "ab_mag",
+            "magnitude_bandpass": "r"
+        },
+    ]
+}
+
+url = "{}/{}".format(BASE, target)
+
+r = requests.post(url=url, json=json_params)
+
+print(r.text)
+    </code>
+</pre>

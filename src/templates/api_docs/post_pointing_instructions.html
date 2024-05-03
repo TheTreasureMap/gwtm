@@ -21,7 +21,7 @@
     <li><i>doi_group_id</i> - if you have created an authors list through the website, you can link either the name of the group or the id</li>
 </ul>
 
-<h3>Valid <b>pointing</b> class parameters</h3>
+<h5>Valid <b>candidate</b> class parameters</h5>
 <p><b>If you are posting a PLANNED pointing Observation</b></p>
 <p><b>REQUIRED</b></p>
 <ul>
@@ -52,13 +52,13 @@
         <li>units for depth. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
     </ul>
     <br>
-    <li><b>Bandpass Information:</b> is required can be passed in by stating the band, or the range of wavelengths, energies, or frequencies the pointing covers. If your pointing is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
+    <li><b>Bandpass Information:</b> is required, and can be passed in by stating the band, or the range of wavelengths, energies, or frequencies the pointing covers. If your pointing is associated with a bandpass, we will calculate the wavelength range from a generic set of filters from <a href="http://svo2.cab.inta-csic.es/theory/fps/index.php?asttype=astro">SVO</a></li>
     <ul>
         <li><b>Method 1:</b> Bandpass List</li>
         <ul>
             <li><i>band</i></li>
             <ul>
-                <li>Must be one of U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
+                <li>Must be one of: U, B, V, R, I, J, H, K, u, g, r, i, z, UVW1, UVW2, XRT, clear, open, UHF, VHF, L, S, C, X, other, TESS, BAT, HESS, WISEL</li>
             </ul>
         </ul>
         <li><b>Method 2</b>: Central Wavelength and Bandwidth</li>
@@ -82,14 +82,6 @@
 
 <p><b>NOT REQUIRED</b></p>
 <ul>
-    <!--<li><i>galaxy_catalog</i></li>
-    <ul>
-        <li>id of galaxy catalog (glade_2p3 = 1)</li>
-    </ul>
-    <li><i>galaxy_catalogid</i></li>
-    <ul>
-        <li>id of galaxy in the galaxy_catalog</li>
-    </ul>-->
     <li><i>pos_angle</i></li>
     <ul>
         <li>Position angle of telescope exposure</li>
