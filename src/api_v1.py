@@ -1036,7 +1036,6 @@ def get_gw_skymap():
 		return make_response(f'Error in retrieving Contour file: {skymap_path}', 200)
 
 
-
 @app.route('/api/v1/grb_moc_file', methods=['GET'])
 def get_grbmoc_v1():
 	'''
