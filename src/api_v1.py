@@ -1171,6 +1171,14 @@ def del_test_alerts_v1():
 	galaxylist_ids = [x.id for x in galaxylists]
 	galaxyentries = db.session.query(models.gw_galaxy_entry).filter(models.gw_galaxy_entry.listid.in_(galaxylist_ids)).all()
 
+	#query for candidates to delete
+	candidates = db.session.query(models.gw_candidate).filter(models.gw_galaxy_list.graceid.in_(gids_to_rm)).all()
+ 
+	if len(candidates) > 0:
+		print(f"deleting {len(candidates)} galaxy entries")
+		for c in candidates:
+			db.session.delete(c)
+
 	if len(galaxyentries) > 0:
 		print(f"deleting {len(galaxyentries)} galaxy entries")
 		for ge in galaxyentries:

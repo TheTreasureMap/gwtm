@@ -1,14 +1,13 @@
 import fsspec
 import json
-import requests
 
 def _get_fs(source, config):
     try:
         if source == 's3':
-            return fsspec.filesystem(f"s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
+            return fsspec.filesystem("s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
         if source == 'abfs':
-            return fsspec.filesystem(f"abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
-    except:
+            return fsspec.filesystem("abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
+    except:  # noqa: E722
         raise Exception(f"Error in creating {source} filesystem")
 
 
@@ -52,7 +51,7 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
     if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:
         filename = f"{config.AWS_BUCKET}/{filename}"
 
-    if type(content) == bytes:
+    if isinstance(content, bytes):
         open_file = fs.open(filename, "wb")
     else:
         open_file = fs.open(filename, "w")
