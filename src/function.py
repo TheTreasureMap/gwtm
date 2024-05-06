@@ -37,24 +37,24 @@ def readconfig(directory,_file):
     for i in data:
         try:
             gg[i[0]]=eval(i[1])
-        except:
+        except:  # noqa: E722
             gg[i[0]]=i[1]
     return gg
 
 
 def isInt(i):
 	try:
-		ret = int(i)
+		_ = int(i)
 		return True
-	except:
+	except:  # noqa: E722
 		return False
 
 
 def isFloat(i):
 	try:
-		ret = float(i)
+		_ = float(i)
 		return True
-	except:
+	except:  # noqa: E722
 		return False
 
 
@@ -62,7 +62,7 @@ def floatNone(i):
     if i is not None:
         try:
             return float(i)
-        except:
+        except:  # noqa: E722
             return 0.0
     else:
         return None
@@ -137,8 +137,8 @@ def polygons2footprints(polygons, time_of_signal):
     #split list of poly corners into ra list and dec list
     footprints= []
     for polygon in polygons:
-        if type(polygon[0]) != list:
-            polygon = [l.tolist() for l in polygon]
+        if not isinstance(polygon[0], list): #type(polygon[0]) != list:
+            polygon = [l.tolist() for l in polygon]  # noqa: E741
         footprints.append({'polygon':polygon, 'time':time_of_signal})
     return footprints
 
@@ -293,8 +293,8 @@ def getDataFromTLE(datetime, tleLatOffset=0, tleLonOffset=0.21):
     tle_obj = clean_tle.split('\r\n')
 
     # Print age of TLE
-    year = "20"+tle_obj[1][18:20]
-    day = tle_obj[1][20:32]
+    # year = "20"+tle_obj[1][18:20]
+    # day = tle_obj[1][20:32]
     #print("\nTLE most recently updated "+year+"DOY"+ day)
     
     # Create spacecraft instance
@@ -315,7 +315,7 @@ def getDataFromTLE(datetime, tleLatOffset=0, tleLonOffset=0.21):
     
     try:
         Fermi.compute(observer_Fermi)
-    except:
+    except:  # noqa: E722
         return False, False, False
 
     lat.append(np.degrees(Fermi.sublat.znorm))
@@ -388,10 +388,10 @@ def getearthsatpos(datetime):
 
     try:
         lon, lat, elevation= getDataFromTLE(datetime, tleLatOffset=tleLatOffset, tleLonOffset=tleLonOffset)
-    except:
+    except:    # noqa: E722
         return False, False, False
 
-    if lon == False and lat == False and elevation == False:
+    if not all([lon, lat, elevation]):
         return False, False, False
 
     # Get the geo center coordinates in ra and dec
@@ -428,12 +428,10 @@ def getFermiFT2file(timestamp):
     week_diff = day_diff//7
     week = week_diff + base_week
 
-    doy = timestamp.timetuple().tm_yday
-
     resp = urlopen("https://fermi.gsfc.nasa.gov/ssc/observations/timeline/ft2/files/")
     soup = BeautifulSoup(resp, from_encoding=resp.info().get_param('charset'), features="lxml")
     for link in soup.find_all('a', href=True):
-        if not 'FERMI' in link['href'] or 'PRELIM' in link['href']:
+        if 'FERMI' not in link['href'] or 'PRELIM' in link['href']:
             continue
         if int(link['href'].strip('FERMI_POINTING_FINAL').strip('_00.fits').split('_')[0]) == week:
             filename = (link['href'])
@@ -484,7 +482,7 @@ def getFermiPointing(timestamp, theta_max=65, verbose=True):
     ra_lat_pointing = data.field('RA_SCZ')[index_closest]
     dec_lat_pointing = data.field('DEC_SCZ')[index_closest]
 
-    if verbose == True:
+    if verbose:
         print("\nLAT Pointing @ %s (dt = %s seconds):\nRA = %s, Dec = %s\n" % (time[index_closest], time[index_closest]-trigger_met, ra_lat_pointing, dec_lat_pointing))
 
     return ra_lat_pointing, dec_lat_pointing
@@ -698,7 +696,7 @@ def create_doi(payload):
     return_json = r.json()
     try:
         doi_url = return_json['doi_url']
-    except:
+    except:  # noqa: E722
         doi_url = None
     return int(d_id), doi_url
 
