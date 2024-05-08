@@ -552,7 +552,9 @@ $(function() {
             //place holder fix for Sources. 
             $('#alert_gal_div').html('');
             var button = document.getElementById('alert_event_galaxies');
-            button.innerHTML = 'Get'
+            if (button != null) {
+                button.innerHTML = 'Get'
+            }
 
             // $('#alert_scimmadiv').html('');
             // var button = document.getElementById('alert_scimma_xrt');
@@ -563,7 +565,12 @@ $(function() {
             if (button != null) {
                 button.innerHTML = 'Get'
             }
-            
+
+            $('#alert_candidatediv').html('');
+            var button = document.getElementById('alert_candidate');
+            if (button != null) {
+                button.innerHTML = 'Get'
+            }
         }
   });
   $( "#amount" ).val( (new Number($( "#slider-range" ).slider( "values", 0 ))) +
