@@ -376,9 +376,7 @@ def ajax_candidate_fetch():
 	markers = []
 	payload = []
 	for c in candidates:
-		print(c.position)
 		clean_position = shapely.wkb.loads(bytes(c.position.data), hex=True)
-		print(clean_position, type(clean_position))
 		ra, dec = function.sanatize_pointing(str(clean_position))
 
 		markers.append({
@@ -647,7 +645,6 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 		'probs': probs,
 		'areas': areas,
 	}
-	print(f"setting prob cache file: {cache_key}")
 	gwtm_io.set_cached_file(cache_key, cache_file, config)
 
 	return times, probs, areas
@@ -744,7 +741,6 @@ def plot_prob_coverage():
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
 	
 	if cache_file is None:
-		print('debug calculator mode')
 		times, probs, areas = calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 
 	else:

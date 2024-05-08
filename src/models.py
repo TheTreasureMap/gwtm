@@ -435,14 +435,10 @@ class users(UserMixin, db.Model):
         return verification_key == self.verification_key
 
     def get_reset_password_token(self, expires_in=600):
-        print(self.id, app.config['SECRET_KEY'])
         token = jwt.encode(
             {'reset_password': self.id, 'exp': time() + expires_in},
             app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
-        print(token)
-        return jwt.encode(
-            {'reset_password': self.id, 'exp': time() + expires_in},
-            app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+        return token
 
     @staticmethod
     def verify_reset_password_token(token):
@@ -816,10 +812,11 @@ class pointing(db.Model):
 
         if 'position' in p and not PLANNED:
             pos = p['position']
-            if all([x in pos for x in ["POINT", "(", ")", " "]]) and "," not in pos:
-                self.position = p['position']
-            else:
-                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+            if pos is not None:
+                if all([x in pos for x in ["POINT", "(", ")", " "]]) and "," not in pos:
+                    self.position = p['position']
+                else:
+                    v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
         elif not PLANNED:
             if 'ra' in p or 'RA' in p:
                 ra = p['ra'] if 'ra' in p else p['RA']
@@ -836,7 +833,7 @@ class pointing(db.Model):
                 dec = None
 
             if ra is None or dec is None:
-                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA, DEC)\"")
+                v.errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
             else:
                 self.position = "POINT("+str(ra)+" "+str(dec)+")"
 
