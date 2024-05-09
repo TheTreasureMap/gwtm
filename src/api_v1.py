@@ -1490,7 +1490,6 @@ def put_gw_candidates():
 		del candidate_dict["position"]
 	elif "position" not in payload.keys():
 		candidate_dict["position"] = str(position)
-	print(candidate_dict)
 
 	errors = []
 	#run through the post from json method for model validation

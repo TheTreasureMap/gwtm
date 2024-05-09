@@ -1629,10 +1629,11 @@ class gw_candidate(db.Model):
         if 'tns_url' in p:
             tns_url = p['tns_url']
             if isinstance(tns_url, str):
-                if "https://www.wis-tns.org/object/" not in tns_url:
-                    v.errors.append("Invalid \'tns_url\'. Must contain following format: https://www.wis-tns.org/object/\{tns_name\}")
-                else:
-                    self.tns_url = tns_url
+                if not function.is_str_empty_or_None(tns_url):
+                    if "https://www.wis-tns.org/object/" not in tns_url:
+                        v.errors.append("Invalid \'tns_url\'. Must contain following format: https://www.wis-tns.org/object/\{tns_name\}")
+                    else:
+                        self.tns_url = tns_url
             else:
                 v.errors.append("Invalid \'tns_url\' type. Must be str")
         

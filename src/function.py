@@ -68,6 +68,13 @@ def floatNone(i):
         return None
 
 
+def is_str_empty_or_None(i: str):
+    if i and len(i):
+        return False
+    else:
+        return True
+
+
 def rotate(footprint, angle):
     #footprint is a list of vertices points
     #   vertice points = [ra, dec]
