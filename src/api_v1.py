@@ -509,7 +509,7 @@ def get_pointings_v1():
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
 			except: # noqa: E722
-				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[id1, id2...]\'', 500)
 		if isinstance(arg, list):
 			ids = []
 			for i in arg:
@@ -618,7 +618,7 @@ def get_pointings_v1():
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
 			except: # noqa: E722
-				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2..]\'', 500)
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[user1, user2..]\'', 500)
 		if isinstance(arg, list):
 			ors = []
 			for i in arg:
@@ -630,7 +630,7 @@ def get_pointings_v1():
 			filter.append(or_(*ors))
 			filter.append(models.users.id == models.pointing.submitterid)
 		else:
-			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[user1, user2, ..]\'', 500)
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[user1, user2, ..]\'', 500)
 
 	if "instrument" in args:
 		inst = args.get('instrument')
@@ -647,7 +647,7 @@ def get_pointings_v1():
 			try:
 				arg = str(arg).split('[')[1].split(']')[0].split(',')
 			except: # noqa: E722
-				return make_response(f'Error parsing \{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
+				return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
 		if isinstance(arg, list):
 			ors = []
 			for i in arg:
@@ -658,7 +658,7 @@ def get_pointings_v1():
 			filter.append(or_(*ors))
 			filter.append(models.instrument.id == models.pointing.instrumentid)
 		else:
-			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[inst1, inst2...]\'', 500)
 
 	if 'wavelength_regime' in args and 'wavelength_unit' in args:
 		argname = "wavelength_regime"
@@ -668,11 +668,11 @@ def get_pointings_v1():
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
 				except: # noqa: E722
-					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+					return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				specmin, specmax = float(arg[0]), float(arg[1])
 		except: # noqa: E722
-			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 
 		try:
 			user_unit = args['wavelength_unit']
@@ -693,12 +693,12 @@ def get_pointings_v1():
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
 				except: # noqa: E722
-					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+					return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				print(arg)
 				specmin, specmax = float(arg[0]), float(arg[1])
 		except: # noqa: E722
-			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['frequency_unit']
 			spectral_unit = [w for w in enums.frequency_units if int(w) == user_unit or str(w.name) == user_unit][0]
@@ -719,12 +719,12 @@ def get_pointings_v1():
 				try:
 					arg = str(arg).split('[')[1].split(']')[0].split(',')
 				except: # noqa: E722
-					return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+					return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 			if isinstance(arg, list):
 				print(arg)
 				specmin, specmax = float(arg[0]), float(arg[1])
 		except: # noqa: E722
-			return make_response(f'Error parsing \{argname}\'. required format is a list: \'[low, high]\'', 500)
+			return make_response(f'Error parsing \'{argname}\'. required format is a list: \'[low, high]\'', 500)
 		try:
 			user_unit = args['energy_unit']
 			spectral_unit = [w for w in enums.energy_units if int(w) == user_unit or str(w.name) == user_unit][0]
@@ -735,6 +735,36 @@ def get_pointings_v1():
 		specmax = specmax*scale
 
 		filter.append(models.pointing.inSpectralRange(specmin, specmax, models.SpectralRangeHandler.spectralrangetype.energy))
+
+	if 'depth_gt' in args: #query for brighter things
+		depth_gt = args.get('depth_gt')
+		user_unit = args.get('depth_unit')
+		if function.isFloat(depth_gt):
+			try:
+				depth_unit = [w for w in enums.depth_unit if int(w) == user_unit or str(w.name) == user_unit][0]
+			except:  # noqa: E722
+				depth_unit = enums.depth_unit.ab_mag
+			if 'mag' in depth_unit.name:
+				filter.append(models.pointing.depth <= float(depth_gt))
+			elif 'flux' in depth_unit.name:
+				filter.append(models.pointing.depth >= float(depth_gt))
+		else:
+			make_response(f"Error parsing \"depth_gt\": {depth_gt}. Required format is float", 500)
+
+	if 'depth_lt' in args: #query for dimmer things 
+		depth_lt = args.get('depth_lt')
+		user_unit = args.get('depth_unit')
+		if function.isFloat(depth_lt):
+			try:
+				depth_unit = [w for w in enums.depth_unit if int(w) == user_unit or str(w.name) == user_unit][0]
+			except:  # noqa: E722
+				depth_unit = enums.depth_unit.ab_mag
+			if 'mag' in depth_unit.name:
+				filter.append(models.pointing.depth >= float(depth_lt))
+			elif 'flux' in depth_unit.name:
+				filter.append(models.pointing.depth <= float(depth_lt))
+		else:
+			make_response(f"Error parsing \"depth_lt\": {depth_lt}. Required format is float", 500)
 
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.parse for x in pointings]

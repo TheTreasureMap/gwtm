@@ -34,6 +34,18 @@
     <ul>Notes
         <li>Can be a list user <b>ids</b>, list of <b>usernames</b>, or a list of user's <b>'firstname lastname'</b></li>
     </ul>
+    <li><i>depth_gt=depth_value</i></li>
+    <ul>
+        <li>will query for pointings with a depth <b>brighter</b> than or equal to the value (e.g. depth_unit = *mag it will query for pointings with a depth <= value)</li>
+    </ul>
+    <li><i>depth_lt=depth_value</i></li>
+    <ul>
+        <li>will query for pointings with a depth <b>dimmer</b> than or equal to the value (e.g. depth_unit = *mag it will query for pointings with a depth >= value)</li>
+    </ul>
+    <li><i>depth_unit</i></li>
+    <ul>
+        <li>units for depth comparisions. Can be: <b>ab_mag</b>, <b>vega_mag</b>, <b>flux_erg</b>, or <b>flux_jy</b></li>
+    </ul>
     <li><b>Bandpass:</b> pointings can be queried and filtered in the same manner they are posted to the database.</li>
     <ul>
         <li><b>Method 1:</b> Bandpass List</li>
