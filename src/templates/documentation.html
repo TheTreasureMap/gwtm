@@ -28,11 +28,18 @@ We have two versions of the API, as a consequence of my adolescence in API progr
     <li class="alert alert-info"><i><a>/api/v0</a></i>: This version's GET responses <b>does not</b> return valid JSON. When iterating over the results, you'd have to json.parse() each result in the result list.</li>
     <li class="alert alert-info"><i><a>/api/v1</a></i>: This version's GET responses does return valid JSON. You only have to perform json.parse(request.text) once then interate over the JSON objects as expected.</li>
 </ul>
-You can find these API endpoints utilized in our <a href="jupyter_tutorial">Jupyter notebook tutorial</a>.<br>
+<!-- You can find these API endpoints utilized in our <a href="jupyter_tutorial">Jupyter notebook tutorial</a>.<br> -->
+<center>
+    <p style="font-size: x-large;">
+        Newly released is our <ttt>python</ttt> API wrapper: <a href="https://github.com/TheTreasureMap/gwtm_api">gwtm_api</a>.
+    </p>
+    <p style="font-size: large;">
+        It fully encompasses the API endpoints, while also providing event tools to further aid in GW follow-up
+    </p>
+</center>
 
-We also point users to a Python script produced by a Treasure Map user, Dougal Dobie, and shared in the spirit of the Treasure Map community <a href='https://github.com/ddobie/TreasureMapPy'> on Github here</a>, that manages pointing uploads to Treasure Map using the API defined below.<br>
 <br>
-
+<h4>API Use Cases</h4>
 <ol>
     <li><b>I am an observer and I would like to report my observations</b><br>
         <p>
