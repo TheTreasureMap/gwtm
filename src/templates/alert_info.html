@@ -512,6 +512,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         async: true
       }
     ).done( function(payload){
+      aladin.removeLayers()
       data.inst_overlays = payload
       aladin_drawInstHTML(data.inst_overlays, 'alert_instruments_div')
       instoverlaylist = aladin_setContours(aladin, payload)
@@ -661,6 +662,19 @@ text.info:hover span{ /*the span will display just on :hover state*/
         aladin_animateToMarker(event.target, marker_list['alert_icecube'])
       }
     })
+    $('#alert_candidatediv').click(function(event) {
+      if (event.target.id.includes('marker_group_')) {
+        var boxes = $('.candidate_coll input:checkbox');
+        var checkedBoxes = $('.candidate_coll input:checked');
+        var button = document.getElementById('alert_candidate');
+        if (boxes.length == checkedBoxes.length) { button.innerHTML = 'Hide'}
+        if (checkedBoxes.length == 0) { button.innerHTML = 'Show'}
+        aladin_markerToggleOne(set_aladin_markerlist['alert_candidate'], event.target)
+      }
+      else if (event.target.id != '') {
+        aladin_animateToMarker(event.target, marker_list['alert_candidate'])
+      }
+    })
   });
 
   //redraw with new contour from the alert type tabs
@@ -720,8 +734,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
           aladin.removeLayers()
           data.detection_overlays = payload.detection_overlays;
-          d = gwtmAladinInit(data)
-          aladin = d.aladin
+          d = overlayInit(aladin, data)
           aladin.animateToRaDec(payload.alert_avgra, payload.alert_avgdec, 2);
           detectionoverlaylist = d.detectionoverlaylist
           instoverlaylist = d.instoverlaylist
