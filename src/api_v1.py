@@ -79,7 +79,7 @@ def get_footprints_v1():
 		ors.append(models.instrument.nickname.contains(name.strip()))
 		filter.append(or_(*ors))
 
-	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
+	footprints = db.session.query(models.footprint_ccd).filter(*filter).all()
 	footprints = [x.parse for x in footprints]
 
 	return make_response(json.dumps(footprints), 200)
@@ -104,7 +104,7 @@ def remove_event_galaxies_v1():
 					for ge in gallist_entries:
 						db.session.delete(ge)
 					db.session.commit()
-					return make_response(json.dumps("Successfully deleted your galaxy list"), 200)
+					return make_response('Successfully deleted your galaxy list', 200)
 				else:
 					return make_response('You can only delete information related to your api_token! shame shame', 500)
 			else:
@@ -125,7 +125,7 @@ def get_event_galaxies_v1():
 	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
 
 	if 'graceid' in args:
-		graceid = models.gw_alert.graceidfromalternate(args['graceid'])
+		graceid = models.gw_alert().graceidfromalternate(args['graceid'])
 		filter.append(models.gw_galaxy_list.graceid == graceid)
 	else:
 		return make_response("\'graceid\' is required", 500)
@@ -168,7 +168,7 @@ def get_event_galaxies_v1():
 	gal_entries = db.session.query(models.gw_galaxy_entry).filter(*filter).all()
 	gal_entries = [x.parse for x in gal_entries]
 
-	return make_response(json.dumps(gal_entries), 200)
+	return make_response(dump_json(gal_entries), 200)
 
 
 @app.route('/api/v1/event_galaxies', methods=['POST'])
@@ -1625,7 +1625,8 @@ def fixdata_v1():
 
 	return make_response("success", 200)
 
-
+def dump_json(input_object):
+	return json.dumps(input_object)
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects
