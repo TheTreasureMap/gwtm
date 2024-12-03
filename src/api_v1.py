@@ -183,7 +183,7 @@ def post_event_galaxies_v1():
 	warnings = []
 	errors = []
 
-	if "api_token" in args:
+	if 'api_token' in args:
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
@@ -197,19 +197,25 @@ def post_event_galaxies_v1():
 	if not is_valid:
 		return make_response(response_message, 500)
 
+	graceid = args['graceid']
+
+	if 'timesent_stamp' in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
-			#parsetime
-			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
-		except: # noqa: E722
-			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
+			# parsetime
+			time_sent = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
+		except:  # noqa: E722
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00",
+								 500)
 
 		alert = db.session.query(models.gw_alert).filter(
-			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
-			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
-			models.gw_alert.graceid == graceid).first()
+			models.gw_alert.timesent < time_sent + datetime.timedelta(seconds=15),
+			models.gw_alert.timesent > time_sent - datetime.timedelta(seconds=15),
+			models.gw_alert.graceid == args['graceid']).first()
 		if alert is None:
-			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
+			return make_response(
+				'Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(
+					graceid), 500)
 	else:
 		return make_response('timesent_stamp is required', 500)
 

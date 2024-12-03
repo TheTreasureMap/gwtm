@@ -30,7 +30,7 @@ class ApiV1Tests(unittest.TestCase):
         self.mock_gw_alert = MagicMock()
         self.mock_gw_alert.graceid = 'graceid'
         self.valid_timesent_stamp = '2019-05-01T12:00:00.00'
-        self.valid_galaxies = [{'ra': 0.0, 'dec': 0.0, 'score': 0.0, 'groupname': 'test_group'}]
+        self.valid_galaxies = [{'ra': 0.0, 'dec': 0.0, 'score': 0.0, 'name': 'test_name', 'rank': 123, 'groupname': 'test_group'}]
         self.galaxy = MagicMock()
         self.galaxy_entry = [self.galaxy]
 
@@ -225,6 +225,7 @@ class ApiV1Tests(unittest.TestCase):
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_valid_request(self, mock_db):
         models.db = mock_db
+        mock_db.session.query().filter().all.return_value = [ MagicMock() ]
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'token',
             'graceid': 'valid_graceid',
@@ -237,6 +238,7 @@ class ApiV1Tests(unittest.TestCase):
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_invalid_api_token(self, mock_db):
         models.db = mock_db
+        mock_db.session.query(models.users).filter(models.users.api_token == 'invalid').first.return_value = None
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'invalid',
             'graceid': 'valid_graceid',
@@ -248,6 +250,7 @@ class ApiV1Tests(unittest.TestCase):
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_missing_api_token(self, mock_db):
+        models.db = mock_db
         response = self.client.post('/api/v1/event_galaxies', json={
             'graceid': 'valid_graceid',
             'timesent_stamp': self.valid_timesent_stamp,
@@ -258,6 +261,7 @@ class ApiV1Tests(unittest.TestCase):
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_invalid_graceid(self, mock_db):
+        models.db = mock_db
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'valid_api_token',
             'graceid': 'invalid_graceid',
@@ -269,44 +273,54 @@ class ApiV1Tests(unittest.TestCase):
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_missing_graceid(self, mock_db):
+        models.db = mock_db
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'valid_api_token',
             'timesent_stamp': self.valid_timesent_stamp,
             'galaxies': self.valid_galaxies
         })
         assert response.status_code == 500
-        assert response.json['message'] == 'graceid is required'
+        assert response.data.decode() == 'graceid is required'
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_invalid_timesent_stamp(self, mock_db):
+        models.db = mock_db
+        mock_db.session.query(models.users).filter().first.return_value = MagicMock() # mock for valid api_token
+        mock_db.session.query().filter().all.return_value = [MagicMock()] # mock for valid graceid
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'valid_api_token',
             'graceid': 'valid_graceid',
-            'timesent_stamp': self.invalid_timesent_stamp,
+            'timesent_stamp': 'not a timestamp',
             'galaxies': self.valid_galaxies
         })
         assert response.status_code == 500
-        assert 'Error parsing date' in response.json['message']
+        assert 'Error parsing date' in response.data.decode()
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_missing_timesent_stamp(self, mock_db):
+        models.db = mock_db
+        mock_db.session.query(models.users).filter().first.return_value = MagicMock() # mock for valid api_token
+        mock_db.session.query().filter().all.return_value = [MagicMock()] # mock for valid graceid
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'valid_api_token',
             'graceid': 'valid_graceid',
             'galaxies': self.valid_galaxies
         })
         assert response.status_code == 500
-        assert response.json['message'] == 'timesent_stamp is required'
+        assert response.data.decode() == 'timesent_stamp is required'
 
     @patch('src.api_v1.db')
     def test_post_event_galaxies_v1_missing_galaxies(self, mock_db):
+        models.db = mock_db
+        mock_db.session.query(models.users).filter().first.return_value = MagicMock() # mock for valid api_token
+        mock_db.session.query().filter().all.return_value = [MagicMock()] # mock for valid graceid
         response = self.client.post('/api/v1/event_galaxies', json={
             'api_token': 'valid_api_token',
             'graceid': 'valid_graceid',
             'timesent_stamp': self.valid_timesent_stamp
         })
         assert response.status_code == 500
-        assert response.json['message'] == 'a list of galaxies is required'
+        assert response.data.decode() == 'a list of galaxies is required'
 
 if __name__ == '__main__':
     unittest.main()
