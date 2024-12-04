@@ -778,7 +778,7 @@ def get_pointings_v1():
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.parse for x in pointings]
 
-	return make_response(json.dumps(pointings), 200)
+	return make_response(dump_json(pointings), 200)
 
 
 @app.route("/api/v1/request_doi", methods=['POST'])
