@@ -42,7 +42,7 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U treasuremap -d treasuremap_dev" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 60s
       timeout: 65s
       retries: 5
