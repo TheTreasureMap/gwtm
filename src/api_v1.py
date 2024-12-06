@@ -339,19 +339,6 @@ def get_galaxies_v1():
 #Returns: List of assigned IDs
 #Comments: Check if instrument configuration already exists to avoid duplication.
 #Check if pointing is centered at a galaxy in one of the catalogs and if so, associate it.
-def is_graceid_valid(args, db):
-	if "graceid" in args:
-		gid = args['graceid']
-		gid = models.gw_alert.graceidfromalternate(gid)
-		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
-		if len(current_gids) > 0:
-			return True, None
-		else:
-			return False, 'Invalid graceid'
-	else:
-		return False, 'graceid is required'
-
-
 @app.route("/api/v1/pointings", methods=["POST"])
 def add_pointings_v1():
 
@@ -370,6 +357,7 @@ def add_pointings_v1():
 	is_valid, response_message = is_graceid_valid(args, db)
 	if not is_valid:
 		return make_response(response_message, 500)
+	gid = args['graceid']
 
 	if 'request_doi' in args:
 		post_doi = bool(args['request_doi'])
@@ -1634,7 +1622,20 @@ def fixdata_v1():
 
 	return make_response("success", 200)
 
+def is_graceid_valid(args, db):
+	if "graceid" in args:
+		gid = args['graceid']
+		gid = models.gw_alert.graceidfromalternate(gid)
+		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
+		if len(current_gids) > 0:
+			return True, None
+		else:
+			return False, 'Invalid graceid'
+	else:
+		return False, 'graceid is required'
+
 def dump_json(input_object):
+	# Wrap json.dumps() for easier testing
 	return json.dumps(input_object)
 
 #Post Candidate/s
