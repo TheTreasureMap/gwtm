@@ -561,6 +561,97 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.decode('utf-8'), '[]')
 
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_post_alert_success(self, mock_db, mock_initial_request_parse):
+        # Mock the initial_request_parse to return valid data
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'S190425z'}, MagicMock(id=2))
+
+        # Mock the database session
+        mock_alert = MagicMock()
+        mock_alert.parse = {'graceid': 'S190425z', 'alert_type': 'Initial'}
+        mock_db.session.add.return_value = None
+        mock_db.session.flush.return_value = None
+        mock_db.session.commit.return_value = None
+
+        response = self.client.post('/api/v1/post_alert', json={'graceid': 'S190425z'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('S190425z', response.data.decode('utf-8'))
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_post_alert_invalid_request(self, mock_db, mock_initial_request_parse):
+        # Mock the initial_request_parse to return invalid data
+        mock_initial_request_parse.return_value = (False, 'Invalid request', {}, None)
+
+        response = self.client.post('/api/v1/post_alert')
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Invalid request', response.data.decode('utf-8'))
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_post_alert_unauthorized_user(self, mock_db, mock_initial_request_parse):
+        # Mock the initial_request_parse to return a non-admin user
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'S190425z'}, MagicMock(id=1))
+
+        response = self.client.post('/api/v1/post_alert', json={'graceid': 'S190425z'})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Only admin can access this endpoint', response.data.decode('utf-8'))
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_get_grbmoc_v1_valid_request(self, mock_db, mock_initial_request_parse):
+        models.db = mock_db
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'valid_graceid', 'instrument': 'gbm'}, MagicMock())
+        mock_file = MagicMock()
+        mock_file.read.return_value = b'file_content'
+        mock_db.session.query().filter().all.return_value = [MagicMock()]
+        with patch('src.api_v1.gwtm_io.download_gwtm_file', return_value=mock_file):
+            response = self.client.get('/api/v1/grb_moc_file', query_string={'graceid': 'valid_graceid', 'instrument': 'gbm'})
+            self.assertEqual(response.status_code, 200)
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_get_grbmoc_v1_invalid_graceid(self, mock_db, mock_initial_request_parse):
+        models.db = mock_db
+        mock_initial_request_parse.return_value = (True, '', {'instrument': 'gbm'}, MagicMock())
+        response = self.client.get('/api/v1/grb_moc_file', query_string={'instrument': 'gbm'})
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('graceid is required', response.data.decode())
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_get_grbmoc_v1_invalid_instrument(self, mock_db, mock_initial_request_parse):
+        models.db = mock_db
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'valid_graceid'}, MagicMock())
+        response = self.client.get('/api/v1/grb_moc_file', query_string={'graceid': 'valid_graceid'})
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Instrument is required', response.data.decode())
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_get_grbmoc_v1_invalid_instrument_value(self, mock_db, mock_initial_request_parse):
+        models.db = mock_db
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'valid_graceid', 'instrument': 'invalid'}, MagicMock())
+        response = self.client.get('/api/v1/grb_moc_file', query_string={'graceid': 'valid_graceid', 'instrument': 'invalid'})
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Valid instruments are in', response.data.decode())
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db')
+    def test_get_grbmoc_v1_file_not_found(self, mock_db, mock_initial_request_parse):
+        models.db = mock_db
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'valid_graceid', 'instrument': 'gbm'}, MagicMock())
+        mock_db.session.query().filter().all.return_value = [MagicMock()]
+        with patch('src.api_v1.gwtm_io.download_gwtm_file', side_effect=Exception('File not found')):
+            response = self.client.get('/api/v1/grb_moc_file', query_string={'graceid': 'valid_graceid', 'instrument': 'gbm'})
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('MOC file for GW-Alert', response.data.decode())
+
+
 
 if __name__ == '__main__':
     unittest.main()
