@@ -673,7 +673,150 @@ class ApiV1Tests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn('MOC file for GW-Alert', response.data.decode())
 
+    # Test Scenario: Test deleting a single candidate with a valid ID that belongs to the user
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_delete_single_valid_candidate(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 1
+        mock_candidate = MagicMock()
+        mock_candidate.submitterid = 1
+        mock_candidate.id = 123
 
+        mock_initial_request_parse.return_value = (True, '', {'id': 123}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.first.return_value = mock_candidate
+
+        response = self.client.delete('/api/v1/candidate', json={'id': 123})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Successfully deleted 1 candidate(s)', response.data.decode())
+
+    # Test Scenario: Test the behavior when attempting to delete a candidate with an invalid ID
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_delete_invalid_candidate_id(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 1
+
+        mock_initial_request_parse.return_value = (True, '', {'id': 999}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.first.return_value = None
+
+        response = self.client.delete('/api/v1/candidate', json={'id': 999})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('No candidate found with', response.data.decode())
+
+    # Test Scenario: Test deleting multiple candidates with valid IDs
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_delete_multiple_valid_candidates(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 1
+        mock_candidate1 = MagicMock()
+        mock_candidate1.submitterid = 1
+        mock_candidate1.id = 123
+        mock_candidate2 = MagicMock()
+        mock_candidate2.submitterid = 1
+        mock_candidate2.id = 124
+
+        mock_initial_request_parse.return_value = (True, '', {'ids': [123, 124]}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.all.return_value = [mock_candidate1, mock_candidate2]
+
+        response = self.client.delete('/api/v1/candidate', json={'ids': [123, 124]})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Successfully deleted 2 candidate(s)', response.data.decode())
+
+    # Test Scenario: Test the behavior when the 'ids' parameter is provided in an invalid format
+    @patch('src.api_v1.initial_request_parse')
+    def test_delete_invalid_ids_format(self, mock_initial_request_parse):
+        mock_user = MagicMock()
+        mock_user.id = 1
+
+        mock_initial_request_parse.return_value = (True, '', {'ids': 'invalid_format'}, mock_user)
+
+        response = self.client.delete('/api/v1/candidate', json={'ids': 'invalid_format'})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Invalid \'ids\' format', response.data.decode())
+
+    # Test Scenario: Test unauthorized deletion of a single candidate by a user who is not the submitter
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_unauthorized_single_candidate_deletion(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 2
+        mock_candidate = MagicMock()
+        mock_candidate.submitterid = 1
+        mock_candidate.id = 123
+
+        mock_initial_request_parse.return_value = (True, '', {'id': 123}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.first.return_value = mock_candidate
+
+        response = self.client.delete('/api/v1/candidate', json={'id': 123})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Error: Unauthorized', response.data.decode())
+
+
+    # Test Scenario: Test the response when no candidates are found for deletion
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_no_candidates_found_for_deletion(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 1
+
+        mock_initial_request_parse.return_value = (True, '', {'ids': [999, 1000]}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.all.return_value = []
+
+        response = self.client.delete('/api/v1/candidate', json={'ids': [999, 1000]})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('No candidates found with input', response.data.decode())
+
+    # Test Scenario: Test the behavior when an invalid type is provided for the 'id' parameter
+    @patch('src.api_v1.initial_request_parse')
+    def test_invalid_id_type(self, mock_initial_request_parse):
+        mock_user = MagicMock()
+        mock_user.id = 1
+
+        mock_initial_request_parse.return_value = (True, '', {'id': 'invalid_type'}, mock_user)
+
+        response = self.client.delete('/api/v1/candidate', json={'id': 'invalid_type'})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Invalid candidate \'id\'', response.data.decode())
+
+    # Test Scenario: Test the behavior when the 'ids' parameter is provided in an invalid format
+    @patch('src.api_v1.initial_request_parse')
+    def test_invalid_ids_format_again(self, mock_initial_request_parse):
+        mock_user = MagicMock()
+        mock_user.id = 1
+
+        mock_initial_request_parse.return_value = (True, '', {'ids': '[invalid]'}, mock_user)
+
+        response = self.client.delete('/api/v1/candidate', json={'ids': '[invalid]'})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('Invalid \'ids\' format', response.data.decode())
+
+    # Test Scenario: Test the successful deletion of a single candidate
+    @patch('src.api_v1.db')
+    @patch('src.api_v1.initial_request_parse')
+    def test_successful_single_candidate_deletion(self, mock_initial_request_parse, mock_db):
+        mock_user = MagicMock()
+        mock_user.id = 1
+        mock_candidate = MagicMock()
+        mock_candidate.submitterid = 1
+        mock_candidate.id = 123
+
+        mock_initial_request_parse.return_value = (True, '', {'id': 123}, mock_user)
+        mock_db.session.query.return_value.filter.return_value.first.return_value = mock_candidate
+
+        response = self.client.delete('/api/v1/candidate', json={'id': 123})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Successfully deleted 1 candidate(s)', response.data.decode())
 
 if __name__ == '__main__':
     unittest.main()
