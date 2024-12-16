@@ -42,27 +42,44 @@ class ApiV1Tests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Set up a test client for the application
         cls.client = app.test_client()
+        # Set a valid token for authentication in tests
         cls.valid_token = 'valid_token'
 
     def setUp(self):
+        # Mock the dump_json function to avoid actual JSON dumping during tests
         api_v1.dump_json = MagicMock()
 
-        self.footprint = MagicMock(parse={'instrumentid': INSTRUMENT_ID, 'name': INSTRUMENT_NAME, 'footprint': FOOTPRINT})
+        # Mock footprint object with parsed data
+        self.footprint = MagicMock(
+            parse={'instrumentid': INSTRUMENT_ID, 'name': INSTRUMENT_NAME, 'footprint': FOOTPRINT})
+        # Mock user object with an ID
         self.user = MagicMock(id=1234)
+        # Mock galaxy list object with an ID and submitter ID
         self.galaxy_list = MagicMock(id=1, submitterid=1234)
+        # Mock GW alert object with a graceid
         self.mock_gw_alert = MagicMock(graceid='graceid')
+        # Set a valid timestamp for timesent
         self.valid_timesent_stamp = '2019-05-01T12:00:00.00'
-        self.valid_galaxies = [{'ra': 0.0, 'dec': 0.0, 'score': 0.0, 'name': 'test_name', 'rank': 123, 'groupname': 'test_group'}]
+        # Mock valid galaxies data
+        self.valid_galaxies = [
+            {'ra': 0.0, 'dec': 0.0, 'score': 0.0, 'name': 'test_name', 'rank': 123, 'groupname': 'test_group'}]
+        # Mock galaxy entry object
         self.galaxy_entry = [MagicMock()]
+        # Mock valid candidate data
         self.valid_candidate_data = MagicMock(id='valid_candidate_id')
 
     @patch('src.api_v1.db')
     def test_initial_request_parse_valid_json(self, mock_db):
+        # Mock request object with valid JSON data
         mock_request = MagicMock()
         mock_request.get_json.return_value = {'api_token': 'valid_token'}
+        # Mock database query to return a valid user
         mock_db.session.query().filter().first.return_value = MagicMock()
+        # Call the function to test with the mocked request
         valid, message, args, user = initial_request_parse(mock_request, only_json=True)
+        # Assert that the function returns valid results
         self.assertTrue(valid)
         self.assertEqual(message, '')
         self.assertIsNotNone(args)
@@ -70,9 +87,12 @@ class ApiV1Tests(unittest.TestCase):
 
     @patch('src.api_v1.db')
     def test_initial_request_parse_invalid_json(self, mock_db):
+        # Mock request object to raise an exception when getting JSON data
         mock_request = MagicMock()
         mock_request.get_json.side_effect = Exception()
+        # Call the function to test with the mocked request
         valid, message, args, user = initial_request_parse(mock_request, only_json=True)
+        # Assert that the function returns invalid results
         self.assertFalse(valid)
         self.assertEqual(message, 'Endpoint only accepts json argument parameters')
         self.assertIsNone(args)
@@ -102,7 +122,8 @@ class ApiV1Tests(unittest.TestCase):
 
     @patch('src.api_v1.db')
     def test_valid_request_returns_footprints(self, mock_db):
-        response = self.client.get('/api/v1/footprints?api_token=token', headers={'Authorization': f'Bearer {self.valid_token}'})
+        response = self.client.get('/api/v1/footprints?api_token=token',
+                                   headers={'Authorization': f'Bearer {self.valid_token}'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.is_json, True)
 
@@ -114,7 +135,8 @@ class ApiV1Tests(unittest.TestCase):
     @patch('src.api_v1.db')
     def test_valid_id_returns_correct_footprint(self, mock_db):
         mock_db.session.query().filter().all.return_value = [self.footprint]
-        response = self.client.get(f'/api/v1/footprints?id={self.footprint.instrumentid}&api_token=token', headers={'Authorization': f'Bearer {self.valid_token}'})
+        response = self.client.get(f'/api/v1/footprints?id={self.footprint.instrumentid}&api_token=token',
+                                   headers={'Authorization': f'Bearer {self.valid_token}'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 1)
         self.assertEqual(response.json[0]['instrumentid'], INSTRUMENT_ID)
