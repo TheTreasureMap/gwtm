@@ -1148,10 +1148,10 @@ def query_alerts_v1():
 		*filter
 	).order_by(
 		models.gw_alert.datecreated.desc()
-	).all()
+  	).all()
 	alerts = [x.parse for x in alerts]
 
-	return make_response(json.dumps(alerts), 200)
+	return make_response(dump_json(alerts), 200)
 
 
 @app.route('/api/v1/del_test_alerts', methods=['POST'])

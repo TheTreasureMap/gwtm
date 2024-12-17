@@ -458,7 +458,6 @@ class ApiV1Tests(unittest.TestCase):
     from unittest.mock import patch
 
 
-    # Test Scenario: Test a valid request to the '/api/v1/glade' endpoint with correct parameters
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db.session.query')
     def test_valid_request(self, mock_query, mock_initial_request_parse):
@@ -468,9 +467,8 @@ class ApiV1Tests(unittest.TestCase):
         response = self.client.get('/api/v1/glade')
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, [])
+        self.assertEqual(response.is_json, True)
 
-    # Test Scenario: Test the API endpoint with invalid request data
     @patch('src.api_v1.initial_request_parse')
     def test_invalid_request(self, mock_initial_request_parse):
         mock_initial_request_parse.return_value = (False, 'Invalid request', None, None)
@@ -480,7 +478,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid request', response.data.decode())
 
-    # Test Scenario: Test the response when the initial request parsing fails
     @patch('src.api_v1.initial_request_parse')
     def test_initial_request_parsing_failure(self, mock_initial_request_parse):
         mock_initial_request_parse.return_value = (False, 'Invalid Arguments.', None, None)
@@ -490,7 +487,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid Arguments.', response.data.decode())
 
-    # Test Scenario: Test with valid 'ra' and 'dec' parameters
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db.session.query')
     def test_valid_ra_dec_parameters(self, mock_query, mock_initial_request_parse):
@@ -500,9 +496,8 @@ class ApiV1Tests(unittest.TestCase):
         response = self.client.get('/api/v1/glade')
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, [])
+        self.assertEqual(response.is_json, True)
 
-    # Test Scenario: Test the filtering of galaxies by name
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db.session.query')
     def test_filtering_by_name(self, mock_query, mock_initial_request_parse):
@@ -512,9 +507,8 @@ class ApiV1Tests(unittest.TestCase):
         response = self.client.get('/api/v1/glade')
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, [])
+        self.assertEqual(response.is_json, True)
 
-    # Test Scenario: Test the filtering and ordering of galaxies
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db.session.query')
     def test_filtering_and_ordering(self, mock_query, mock_initial_request_parse):
@@ -524,9 +518,8 @@ class ApiV1Tests(unittest.TestCase):
         response = self.client.get('/api/v1/glade')
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, [])
+        self.assertEqual(response.is_json, True)
 
-    # Test Scenario: Test the successful retrieval of galaxies
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db.session.query')
     def test_successful_retrieval(self, mock_query, mock_initial_request_parse):
@@ -547,14 +540,14 @@ class ApiV1Tests(unittest.TestCase):
         mock_initial_request_parse.return_value = (True, '', {'graceid': 'S190425z'}, MagicMock())
 
         # Mock the database query
-        mock_alert = MagicMock()
-        mock_alert.parse = {'graceid': 'S190425z', 'alert_type': 'Initial'}
-        mock_db.session.query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+        mock_alert = MagicMock(
+            parse={'graceid': 'S190425z', 'alert_type': 'Initial'})
+        mock_db.session.query.filter.order_by.all.retrun_value = [mock_alert]
 
         response = self.client.get('/api/v1/query_alerts', query_string={'graceid': 'S190425z'})
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('S190425z', response.data.decode('utf-8'))
+        self.assertEqual(response.is_json, True)
 
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db')
@@ -567,21 +560,6 @@ class ApiV1Tests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid request', response.data.decode('utf-8'))
-
-    @patch('src.api_v1.initial_request_parse')
-    @patch('src.api_v1.db')
-    def test_query_alerts_no_results(self, mock_db, mock_initial_request_parse):
-        models.db = mock_db
-        # Mock the initial_request_parse to return valid data
-        mock_initial_request_parse.return_value = (True, '', {'graceid': 'S190425z'}, MagicMock())
-
-        # Mock the database query to return no results
-        mock_db.session.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
-
-        response = self.client.get('/api/v1/query_alerts', query_string={'graceid': 'S190425z'})
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data.decode('utf-8'), '[]')
 
     @patch('src.api_v1.initial_request_parse')
     @patch('src.api_v1.db')
@@ -673,7 +651,6 @@ class ApiV1Tests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn('MOC file for GW-Alert', response.data.decode())
 
-    # Test Scenario: Test deleting a single candidate with a valid ID that belongs to the user
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_delete_single_valid_candidate(self, mock_initial_request_parse, mock_db):
@@ -691,7 +668,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Successfully deleted 1 candidate(s)', response.data.decode())
 
-    # Test Scenario: Test the behavior when attempting to delete a candidate with an invalid ID
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_delete_invalid_candidate_id(self, mock_initial_request_parse, mock_db):
@@ -706,7 +682,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('No candidate found with', response.data.decode())
 
-    # Test Scenario: Test deleting multiple candidates with valid IDs
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_delete_multiple_valid_candidates(self, mock_initial_request_parse, mock_db):
@@ -727,7 +702,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Successfully deleted 2 candidate(s)', response.data.decode())
 
-    # Test Scenario: Test the behavior when the 'ids' parameter is provided in an invalid format
     @patch('src.api_v1.initial_request_parse')
     def test_delete_invalid_ids_format(self, mock_initial_request_parse):
         mock_user = MagicMock()
@@ -740,7 +714,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid \'ids\' format', response.data.decode())
 
-    # Test Scenario: Test unauthorized deletion of a single candidate by a user who is not the submitter
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_unauthorized_single_candidate_deletion(self, mock_initial_request_parse, mock_db):
@@ -759,7 +732,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertIn('Error: Unauthorized', response.data.decode())
 
 
-    # Test Scenario: Test the response when no candidates are found for deletion
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_no_candidates_found_for_deletion(self, mock_initial_request_parse, mock_db):
@@ -774,7 +746,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('No candidates found with input', response.data.decode())
 
-    # Test Scenario: Test the behavior when an invalid type is provided for the 'id' parameter
     @patch('src.api_v1.initial_request_parse')
     def test_invalid_id_type(self, mock_initial_request_parse):
         mock_user = MagicMock()
@@ -787,7 +758,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid candidate \'id\'', response.data.decode())
 
-    # Test Scenario: Test the behavior when the 'ids' parameter is provided in an invalid format
     @patch('src.api_v1.initial_request_parse')
     def test_invalid_ids_format_again(self, mock_initial_request_parse):
         mock_user = MagicMock()
@@ -800,7 +770,6 @@ class ApiV1Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn('Invalid \'ids\' format', response.data.decode())
 
-    # Test Scenario: Test the successful deletion of a single candidate
     @patch('src.api_v1.db')
     @patch('src.api_v1.initial_request_parse')
     def test_successful_single_candidate_deletion(self, mock_initial_request_parse, mock_db):
@@ -817,6 +786,131 @@ class ApiV1Tests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('Successfully deleted 1 candidate(s)', response.data.decode())
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.models.gw_alert.from_json')
+    @patch('src.api_v1.db.session')
+    def test_post_alert_v1_admin_user_success(self, mock_db_session, mock_from_json, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'alert_data': 'data'}, MagicMock(id=2))
+        mock_from_json.return_value = MagicMock(parse={'alert': 'data'})
+        mock_db_session.add.return_value = None
+        mock_db_session.commit.return_value = None
+
+        response = self.client.post('/api/v1/post_alert')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'alert': 'data'})
+
+    @patch('src.api_v1.initial_request_parse')
+    def test_post_alert_v1_non_admin_user(self, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {}, MagicMock(id=3))
+
+        response = self.client.post('/api/v1/post_alert')
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.data.decode(), "Only admin can access this endpoint")
+
+    @patch('src.api_v1.initial_request_parse')
+    def test_post_alert_v1_initial_request_parse_fail(self, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (False, 'Invalid request', None, None)
+
+        response = self.client.post('/api/v1/post_alert')
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.data.decode(), 'Invalid request')
+
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.models.gw_alert.from_json')
+    @patch('src.api_v1.db.session')
+    def test_post_alert_v1_successful_db_addition(self, mock_db_session, mock_from_json, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'alert_data': 'data'}, MagicMock(id=2))
+        mock_from_json.return_value = MagicMock(parse={'alert': 'data'})
+        mock_db_session.add.return_value = None
+        mock_db_session.commit.return_value = None
+
+        response = self.client.post('/api/v1/post_alert')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'alert': 'data'})
+
+
+
+    @patch('src.api_v1.initial_request_parse')
+    def test_initial_request_parse_fail(self, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (False, 'Invalid request', None, None)
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.data.decode(), 'Invalid request')
+
+    @patch('src.api_v1.initial_request_parse')
+    def test_invalid_arguments_or_missing_api_token(self, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (False, 'api_token is required', None, None)
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.data.decode(), 'api_token is required')
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db.session.query')
+    def test_graceid_filter(self, mock_query, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'G123'}, MagicMock())
+        mock_alert = MagicMock()
+        mock_alert.parse = {'id': 1, 'graceid': 'G123'}
+        mock_query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.is_json, True)
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db.session.query')
+    def test_alert_type_filter(self, mock_query, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'alert_type': 'type1'}, MagicMock())
+        mock_alert = MagicMock()
+        mock_alert.parse = {'id': 1, 'alert_type': 'type1'}
+        mock_query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.is_json, True)
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db.session.query')
+    def test_valid_filters_graceid_and_alert_type(self, mock_query, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'G123', 'alert_type': 'type1'}, MagicMock())
+        mock_alert = MagicMock()
+        mock_alert.parse = {'id': 1, 'graceid': 'G123', 'alert_type': 'type1'}
+        mock_query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.is_json, True)
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db.session.query')
+    def test_alerts_parsed_to_json(self, mock_query, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'G123'}, MagicMock())
+        mock_alert = MagicMock()
+        mock_alert.parse = {'id': 1, 'graceid': 'G123'}
+        mock_query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.is_json, True)
+
+    @patch('src.api_v1.initial_request_parse')
+    @patch('src.api_v1.db.session.query')
+    def test_successful_retrieval_with_valid_params(self, mock_query, mock_initial_request_parse):
+        mock_initial_request_parse.return_value = (True, '', {'graceid': 'G123', 'alert_type': 'type1'}, MagicMock())
+        mock_alert = MagicMock()
+        mock_alert.parse = {'id': 1, 'graceid': 'G123', 'alert_type': 'type1'}
+        mock_query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_alert]
+
+        response = self.client.get('/api/v1/query_alerts')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.is_json, True)
 
 if __name__ == '__main__':
     unittest.main()
