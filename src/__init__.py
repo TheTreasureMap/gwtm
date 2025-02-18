@@ -4,6 +4,9 @@ from flask_login import LoginManager
 from flask_caching import Cache
 from . import app_mail
 from .gwtmconfig import config
+from flask_profiler import Profiler
+
+profiler = Profiler()
 
 app = Flask(__name__)
 login = LoginManager(app)
@@ -14,6 +17,27 @@ app.config.from_object(config)
 mail = app_mail.AppMail(config)
 cache = Cache(app)
 
+app.config["DEBUG"] = True
+
+# You need to declare necessary configuration to initialize
+# flask-profiler as follows:
+app.config["flask_profiler"] = {
+    "enabled": app.config["DEBUG"],
+    "storage": {
+        "engine": "sqlalchemy",
+        "db_url": config.SQLALCHEMY_DATABASE_URI
+    },
+    "basicAuth":{
+        "enabled": True,
+        "username": config.PROFILER_USERNAME,
+        "password": config.PROFILER_PASSWORD
+    },
+    "endpointRoot": config.PROFILER_ENDPOINT,
+    "ignore": [
+	    "^/static/.*"
+	]
+}
+profiler.init_app(app)
 
 #if not app.debug:
 #    if app.config['MAIL_SERVER']:
