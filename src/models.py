@@ -45,8 +45,6 @@ def create_database_tables():
         db.create_all()
         db.engine.execute("CREATE INDEX idx_pointing_status_id ON public.pointing(status, id);")
 
-        #db.engine.execute(f"ALTER DATABASE {gwtmconfig.config.DB_NAME} SET search_path TO public,postgis;")
-
 
 
 def to_json(inst, cls):
@@ -161,7 +159,6 @@ class SpectralRangeHandler:
     '''
 
     class spectralrangetype(IntEnum):
-        #__table_args__ = {'schema': 'public'}
 
         wavelength = 1
         energy = 2
