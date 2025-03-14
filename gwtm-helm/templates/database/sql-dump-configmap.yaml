@@ -1,0 +1,24 @@
+{{- if and .Values.database.restore.enabled (eq .Values.database.restore.method "configMap") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.database.restore.configMapName }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+data:
+  {{ .Values.database.restore.configMapKey }}: |
+    -- This is a sample SQL dump. In production, you would create this ConfigMap separately
+    -- with the full dump content or use a different approach for large dumps.
+    
+    -- Sample data insertion (replace with your actual dump content)
+    -- INSERT INTO your_table (column1, column2) VALUES ('value1', 'value2');
+    
+    -- For large SQL dumps, you should use a different method such as:
+    -- 1. Store the dump in a persistent volume
+    -- 2. Use a job that downloads the dump from a secure location
+    -- 3. Split the dump into smaller chunks if using ConfigMaps
+    
+    -- Example: Insert a test record
+    INSERT INTO users (username, email) VALUES ('testuser', 'test@example.com');
+{{- end }}

@@ -1,0 +1,18 @@
+# templates/frontend/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.frontend.name }}
+spec:
+  selector:
+    app: {{ .Values.frontend.name }}
+  ports:
+  - port: {{ .Values.frontend.service.port }}
+    targetPort: {{ .Values.frontend.service.targetPort }}
+    # Use NodePort for direct access on port 8081
+    nodePort: 30081
+  type: NodePort

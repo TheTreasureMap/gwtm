@@ -1,0 +1,133 @@
+# values.yaml
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  namespace: gwtm
+  environment: development
+
+backend:
+  name: flask-backend
+  replicas: 2
+  image:
+    repository: gwtm
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+    targetPort: 8080
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi    
+
+frontend:
+  name: frontend
+  replicas: 2
+  image:
+    repository: nginx
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+    targetPort: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+
+database:
+  name: postgres
+  image:
+    repository: postgis/postgis
+    tag: 12-3.5
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  initScripts:
+    enabled: true
+    additionalScripts: |
+      # Add any additional SQL or shell commands here
+      #
+
+cache:
+  name: redis
+  replicas: 1
+  image:
+    repository: redis
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 6379
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  persistence:
+    enabled: false  # Set to false for development
+    size: 1Gi      
+
+ingress:
+  enabled: true
+  className: nginx
+  host: gwtm.local
+  tls: false
+
+secrets:
+  # For development, you might specify these values directly
+  # For production, you should use sealed-secrets, external-secrets, or similar
+  # and NOT store sensitive values in version control
+  dbUser: "postgres"
+  dbPassword: "" # Will be randomly generated if empty
+  dbName: "treasuremap"
+  mailPassword: ""
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  recaptchaPublicKey: ""
+  recaptchaPrivateKey: ""
+  zenodoAccessKey: ""
+  extraSecrets: {}

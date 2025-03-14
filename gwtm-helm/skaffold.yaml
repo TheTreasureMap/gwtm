@@ -1,0 +1,57 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+metadata:
+  name: gwtm
+build:
+  local:
+    push: false
+  artifacts:
+  - image: gwtm
+    context: ..
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: gwtm
+      chartPath: .
+      createNamespace: true
+      valuesFiles:
+      - values-dev.yaml
+      setValues:
+        global.namespace: gwtm
+        global.createNamespace: true
+        
+        # Database values
+        database.initScripts.enabled: true
+        database.livenessProbe.enabled: true
+        database.readinessProbe.enabled: true
+        database.persistence.enabled: false
+        
+        # Cache values
+        cache.livenessProbe.enabled: true
+        cache.readinessProbe.enabled: true
+        cache.persistence.enabled: false
+        
+        # Backend values
+        backend.readinessProbe.enabled: true
+        backend.livenessProbe.enabled: true
+        
+        # Image settings
+        backend.image.repository: gwtm
+        backend.image.tag: latest
+      wait: true
+      upgradeOnChange: true
+portForward:
+# Direct backend access on local port 8080
+- resourceType: service
+  resourceName: flask-backend
+  namespace: gwtm
+  port: 8080
+  localPort: 8080
+# Frontend on local port 8081  
+- resourceType: service
+  resourceName: frontend
+  namespace: gwtm
+  port: 80
+  localPort: 8081
