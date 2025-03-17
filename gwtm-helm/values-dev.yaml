@@ -55,17 +55,3 @@ frontend:
 database:
   persistence:
     size: 1Gi
-  restore:
-    enabled: true  # Set to true when you want to restore a database dump
-    method: "hostPath"  # Options: hostPath, configMap
-    
-    # For hostPath method (when method is set to "hostPath"):
-    # These paths must be accessible from your minikube or k8s node
-    sqlDumpDir: "/home/stevefoale/PycharmWorkspace/gwtm.changed"  # Directory containing your SQL dump
-    sqlDumpPath: "data_dump.sql"                                  # Just the filename within sqlDumpDir
-    # For configMap method (when method is set to "configMap"):
-    # You can either:
-    # 1. Use the template-provided ConfigMap and edit the sql-dump-configmap.yaml file
-    # 2. Create your own ConfigMap outside of Helm and reference it here
-    configMapName: "sql-dump"  
-    configMapKey: "dump.sql"

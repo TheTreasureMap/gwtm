@@ -39,20 +39,53 @@ Or by using a utility like [direnv](https://direnv.net).
 
 ### Running the application and dependencies locally
 
-1. Build the docker image
-```bash
-docker build -t gwtm_web .
-```
-2. Set mimimum required environment variables: DB_USER, DB_PWD, DB_NAME.
-3. Run the docker image using docker-compose:
-```bash
-docker-compose up -d
-```
-4. The application should now be running on localhost:8080.
+#### Using Skaffold with Kubernetes for Development
 
-Note that the provided docker compose creates an empty database. 
+For a more complete development environment with Kubernetes, you can use Skaffold with the Helm chart:
 
-**TO DO** - Add some sample data to the database before starting the app.
+1. Prerequisites:
+   - Install [Skaffold](https://skaffold.dev/docs/install/)
+   - Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+   - Have a Kubernetes cluster running (Minikube, Docker Desktop Kubernetes, etc.)
+
+2. Navigate to the Helm chart directory:
+```bash
+cd gwtm-helm
+```
+
+3. Start the development environment:
+```bash
+skaffold dev
+```
+   This will:
+   - Build the Docker image
+   - Deploy the application to your Kubernetes cluster
+   - Set up port-forwarding (frontend: localhost:8081, backend: localhost:8080)
+   - Display logs in real-time
+   - Automatically redeploy when files change
+
+4. To restore sample data to the database:
+```bash
+cd gwtm-helm
+./restore-db /path/to/your/dump.sql
+```
+   This script copies the SQL dump to the database pod and executes it directly.
+
+5. Access the application:
+   - Frontend dashboard: http://localhost:8081
+   - Flask application: http://localhost:8080
+   - Specific endpoints like http://localhost:8080/reported_instruments
+
+6. When finished, stop Skaffold with Ctrl+C or run:
+```bash
+skaffold delete
+```
+
+This Kubernetes setup includes:
+- PostgreSQL database with PostGIS
+- Redis cache
+- Flask backend API
+- Frontend dashboard
 
 ### Running tests
 
