@@ -13,6 +13,3 @@ spec:
   ports:
   - port: {{ .Values.frontend.service.port }}
     targetPort: {{ .Values.frontend.service.targetPort }}
-    # Use NodePort for direct access on port 8081
-    nodePort: 30081
-  type: NodePort

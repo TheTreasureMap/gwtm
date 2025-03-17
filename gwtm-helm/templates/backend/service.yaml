@@ -13,6 +13,3 @@ spec:
   ports:
   - port: {{ .Values.backend.service.port }}
     targetPort: {{ .Values.backend.service.targetPort }}
-    # Use NodePort for direct access
-    nodePort: 30088
-  type: NodePort
