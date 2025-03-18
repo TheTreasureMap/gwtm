@@ -20,29 +20,29 @@ spec:
       initContainers:
       - name: wait-for-db
         image: postgres:14-alpine
-        command: ['sh', '-c', 'echo "Testing connection to ${DB_HOST}:${DB_PORT}..."; 
+        command: ['sh', '-c', 'echo "Testing connection to ${DB_HOST}:${DB_PORT}...";
                  until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}; do
-                 echo "$(date) - Waiting for database at ${DB_HOST}:${DB_PORT}..."; 
+                 echo "$(date) - Waiting for database at ${DB_HOST}:${DB_PORT}...";
                  echo "Trying to ping database...";
                  nc -v -z -w2 ${DB_HOST} ${DB_PORT} || echo "Network connection failed";
-                 sleep 5; 
-                 done; 
+                 sleep 5;
+                 done;
                  echo "Database is ready!"']
         env:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}
@@ -51,7 +51,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-password
       containers:
       - name: flask-app
@@ -70,17 +70,17 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-user
         - name: DB_PWD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}
@@ -91,32 +91,32 @@ spec:
         - name: MAIL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: mail-password
         - name: RECAPTCHA_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: recaptcha-public-key
         - name: RECAPTCHA_PRIVATE_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: recaptcha-private-key
         - name: ZENODO_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: zenodo-access-key
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: aws-access-key-id
         - name: AWS_SECRET_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name }}-secrets
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
               key: aws-secret-access-key
         - name: DEBUG
           value: "True"
@@ -150,7 +150,7 @@ spec:
       volumes:
       - name: db-user
         secret:
-          secretName: {{ .Release.Name }}-secrets
+          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
           items:
           - key: db-user
             path: db-user

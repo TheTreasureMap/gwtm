@@ -23,6 +23,12 @@ spec:
         imagePullPolicy: {{ .Values.cache.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.cache.service.port }}
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: redis-password
         {{- if .Values.cache.extraArgs }}
         args:
         {{- range .Values.cache.extraArgs }}

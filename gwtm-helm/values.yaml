@@ -121,13 +121,37 @@ secrets:
   # For development, you might specify these values directly
   # For production, you should use sealed-secrets, external-secrets, or similar
   # and NOT store sensitive values in version control
+  
+  # Database configuration
   dbUser: "postgres"
   dbPassword: "" # Will be randomly generated if empty
   dbName: "treasuremap"
+  
+  # Mail configuration
   mailPassword: ""
+  mailUsername: ""
+  mailDefaultSender: ""
+  mailServer: "smtp.gmail.com"
+  mailPort: "465"
+  admins: ""
+  
+  # AWS credentials
   awsAccessKeyId: ""
   awsSecretAccessKey: ""
+  awsDefaultRegion: "us-east-2"
+  awsBucket: "gwtreasuremap"
+  
+  # Azure storage
+  azureAccountName: ""
+  azureAccountKey: ""
+  storageBucketSource: "s3"
+  
+  # reCAPTCHA keys
   recaptchaPublicKey: ""
   recaptchaPrivateKey: ""
+  
+  # Zenodo access
   zenodoAccessKey: ""
+  
+  # Additional configuration
   extraSecrets: {}

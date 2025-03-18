@@ -10,10 +10,22 @@ secrets:
 
   # Mail configuration
   mailPassword: "your-mail-password"  # Add actual password for dev environment
+  mailUsername: ""
+  mailDefaultSender: ""
+  mailServer: "smtp.gmail.com"
+  mailPort: "465"
+  admins: ""
 
   # AWS credentials
   awsAccessKeyId: "your-awsa-access-key-id"
   awsSecretAccessKey: "your-aws-secret-key"
+  awsDefaultRegion: "us-east-2"
+  awsBucket: "gwtreasuremap"
+
+  # Azure storage
+  azureAccountName: "your-azure-account-name"
+  azureAccountKey: "your-azure-account-key"
+  storageBucketSource: "s3"
 
   # reCAPTCHA keys
   recaptchaPublicKey: "your-recaptcha-public-key"
@@ -22,18 +34,8 @@ secrets:
   # Zenodo access
   zenodoAccessKey: "your-zenodo-access-key"
 
-  # Additional secrets needed from docker-compose.yml
+  # Additional configuration
   extraSecrets:
-    AZURE_ACCOUNT_NAME: "your-azure-account-name"
-    AZURE_ACCOUNT_KEY: "your-azure-account-key"
-    STORAGE_BUCKET_SOURCE: "s3"
-    MAIL_USERNAME: ""
-    MAIL_DEFAULT_SENDER: ""
-    MAIL_SERVER: "smtp.gmail.com"
-    MAIL_PORT: "465"
-    ADMINS: ""
-    AWS_DEFAULT_REGION: "us-east-2"
-    AWS_BUCKET: "gwtreasuremap"
     REDIS_URL: "redis://redis:6379/0"
     DEBUG: "True"
 

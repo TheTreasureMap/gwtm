@@ -1,6 +1,7 @@
 # values-prod.yaml
 global:
   environment: production
+  useGeneratedSecrets: false
 
 backend:
   replicas: 3
