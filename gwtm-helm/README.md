@@ -67,7 +67,11 @@ To restore a database dump to your local development environment:
 ```bash
 ./restore-db /path/to/your/dump.sql
 ```
+To dump a copy of the production database use something like
 
+```bash
+pg_dump  -h treasuremap.host.org -U treasuremap -d treasuremap -a -f ./dump_latest.sql
+```
 ## Production Deployment
 
 For production environments, you should:
