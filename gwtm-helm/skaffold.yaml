@@ -49,9 +49,11 @@ portForward:
   namespace: gwtm
   port: 8080
   localPort: 8080
+  address: 0.0.0.0
 # Frontend on local port 8081  
 - resourceType: service
   resourceName: frontend
   namespace: gwtm
   port: 80
   localPort: 8081
+  address: 0.0.0.0
