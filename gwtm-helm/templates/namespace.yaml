@@ -1,0 +1,10 @@
+# templates/namespace.yaml
+{{- if .Values.global.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    name: {{ .Values.global.namespace }}
+{{- end }}

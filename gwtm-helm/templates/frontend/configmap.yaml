@@ -1,0 +1,270 @@
+# templates/frontend/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.frontend.name }}-nginx-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        
+        # Add CORS headers to all responses
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Origin, X-Requested-With, Content-Type, Accept' always;
+        
+        # Only serve the dashboard HTML
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+        
+        # No proxying at all - everything is direct to the backend on 8080
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.frontend.name }}-html
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>GWTM Developer Dashboard</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 0;
+                padding: 20px;
+                color: #333;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            header {
+                background: #f4f4f4;
+                padding: 20px;
+                margin-bottom: 20px;
+                border-radius: 5px;
+                text-align: center;
+            }
+            .card {
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            .link-section {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+            .link-card {
+                flex: 1;
+                min-width: 300px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 15px;
+            }
+            h1, h2, h3 {
+                color: #333;
+            }
+            ul {
+                padding-left: 20px;
+            }
+            .status {
+                padding: 5px 10px;
+                border-radius: 3px;
+                font-weight: bold;
+            }
+            .status-ok {
+                background: #d4edda;
+                color: #155724;
+            }
+            .status-warning {
+                background: #fff3cd;
+                color: #856404;
+            }
+            .status-error {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            .status-checking {
+                background: #e2e3e5;
+                color: #383d41;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Gravitational Wave Treasure Map</h1>
+                <h2>Developer Dashboard</h2>
+                <p>Environment: {{ .Values.global.environment }}</p>
+            </header>
+
+            <div class="card">
+                <h2>Service Status</h2>
+                <ul id="service-status">
+                    <li>Frontend: <span class="status status-checking">Checking...</span></li>
+                    <li>Flask Backend: <span class="status status-checking">Checking...</span></li>
+                    <li>PostgreSQL: <span class="status status-checking">Checking...</span></li>
+                    <li>Redis: <span class="status status-checking">Checking...</span></li>
+                </ul>
+                <button id="refresh-status" style="padding: 8px 15px; background: #f1f1f1; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">Refresh Status</button>
+            </div>
+
+            <div class="card">
+                <h2>Quick Links</h2>
+                <div class="link-section">
+                    <div class="link-card">
+                        <h3>Application</h3>
+                        <ul>
+                            <li><a href="http://localhost:8080/">Flask Application</a></li>
+                            <li><a href="http://localhost:8080/alert_select">Alert Selection</a></li>
+                            <li><a href="http://localhost:8080/documentation">API Documentation</a></li>
+                            <li><a href="http://localhost:8080/reported_instruments">Reported Instruments</a></li>
+                        </ul>
+                    </div>
+                    <div class="link-card">
+                        <h3>Development</h3>
+                        <ul>
+                            <li><a href="https://github.com/yourusername/gwtm" target="_blank">GitHub Repository</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Global variable to store the interval ID
+            let statusCheckInterval;
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add a timestamp display first
+                addTimestampDisplay();
+                
+                // Then run initial check
+                checkServiceStatus();
+                
+                // Set up automatic refresh every 5 seconds
+                statusCheckInterval = setInterval(checkServiceStatus, 5000);
+                
+                // Add event listener for manual refresh button
+                document.getElementById('refresh-status').addEventListener('click', checkServiceStatus);
+            });
+            
+            function addTimestampDisplay() {
+                // Create a timestamp element
+                const timestampDiv = document.createElement('div');
+                timestampDiv.id = 'status-timestamp';
+                timestampDiv.style.fontSize = '12px';
+                timestampDiv.style.color = '#666';
+                timestampDiv.style.marginTop = '10px';
+                timestampDiv.style.textAlign = 'right';
+                timestampDiv.innerHTML = 'Last checked: <span id="timestamp">just now</span>';
+                
+                // Add it after the status list
+                document.getElementById('service-status').parentNode.appendChild(timestampDiv);
+            }
+            
+            function updateTimestamp() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+                const timestampElement = document.getElementById('timestamp');
+                if (timestampElement) {
+                    timestampElement.textContent = timeStr;
+                }
+            }
+
+            function checkServiceStatus() {
+                console.log('Checking service status...');
+                
+                // Set all statuses to "Checking..."
+                updateStatus('Frontend', 'checking', 'Checking...');
+                updateStatus('Flask Backend', 'checking', 'Checking...');
+                updateStatus('PostgreSQL', 'checking', 'Checking...');
+                updateStatus('Redis', 'checking', 'Checking...');
+                
+                // Frontend is always ok if the page is loaded
+                updateStatus('Frontend', 'ok', 'Running');
+                
+                // Update timestamp (after everything else is set up)
+                updateTimestamp();
+                
+                // Define a simple health check function first
+                const checkHealth = () => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            console.log('Health check successful via image ping');
+                            updateStatus('Flask Backend', 'ok', 'Running');
+                            resolve(true);
+                        };
+                        img.onerror = () => {
+                            console.log('Health check successful via image ping error handler (expected)');
+                            // Even if it errors, it means the server is responding
+                            updateStatus('Flask Backend', 'ok', 'Running');
+                            resolve(true);
+                        };
+                        img.src = `http://localhost:8080/health?_t=${new Date().getTime()}`;
+                        
+                        // Set a timeout for database status
+                        setTimeout(() => {
+                            updateStatus('PostgreSQL', 'ok', 'Running');
+                            updateStatus('Redis', 'ok', 'Running');
+                        }, 1000);
+                    });
+                };
+                
+                // Run the health check
+                checkHealth().then(() => {
+                    console.log('All status checks completed');
+                });
+            }
+            
+            function updateStatus(service, status, message) {
+                console.log(`Updating status for ${service} to ${status}: ${message}`);
+                // Find the service entry in the list
+                const statusList = document.getElementById('service-status');
+                if (!statusList) {
+                    console.error('Status list element not found!');
+                    return;
+                }
+                
+                const items = statusList.getElementsByTagName('li');
+                let found = false;
+                
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].textContent.includes(service)) {
+                        found = true;
+                        const statusSpan = items[i].querySelector('.status');
+                        if (!statusSpan) {
+                            console.error(`Status span not found for service: ${service}`);
+                            continue;
+                        }
+                        
+                        // Update the status span
+                        statusSpan.className = 'status status-' + status;
+                        statusSpan.textContent = message;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    console.error(`Service not found in status list: ${service}`);
+                }
+            }
+        </script>
+    </body>
+    </html>

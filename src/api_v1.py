@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import request
+from flask import request, jsonify
 from sqlalchemy import func, or_
 from dateutil.parser import parse as date_parse
 import json
@@ -13,6 +13,94 @@ from . import function
 from . import models
 from . import enums
 from . import gwtm_io
+
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/service-status')
+def service_status():
+    import os
+    
+    status = {
+        "database_status": "unknown",
+        "redis_status": "unknown",
+        "details": {
+            "database": {},
+            "redis": {}
+        }
+    }
+    
+    # Debug info
+    print("Checking database connection...")
+    
+    # Check database connection with detailed info
+    try:
+        # Get connection parameters from environment
+        db_host = os.environ.get('DB_HOST', 'localhost')
+        db_port = os.environ.get('DB_PORT', '5432')
+        db_user = os.environ.get('DB_USER', 'unknown')
+        db_name = os.environ.get('DB_NAME', 'unknown')
+        
+        # Store connection info
+        status["details"]["database"] = {
+            "host": db_host,
+            "port": db_port,
+            "name": db_name
+        }
+        
+        # Test actual connection
+        result = db.session.execute("SELECT 1").fetchone()
+        if result and result[0] == 1:
+            status["database_status"] = "connected"
+            print(f"Database connection successful: {db_host}:{db_port}/{db_name}")
+        else:
+            status["database_status"] = "disconnected"
+            print(f"Database query returned unexpected result: {result}")
+    except Exception as e:
+        app.logger.error(f"Database connection error: {str(e)}")
+        print(f"Database error: {str(e)}")
+        status["database_status"] = "disconnected"
+        status["details"]["database"]["error"] = str(e)
+    
+    # Check Redis connection with detailed info
+    try:
+        import redis
+        
+        # Get Redis connection parameters
+        redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+        
+        # Parse the URL for debug info
+        if redis_url.startswith('redis://'):
+            redis_host = redis_url.split('redis://')[1].split(':')[0]
+            redis_port = redis_url.split(':')[-1].split('/')[0]
+        else:
+            redis_host = 'unknown'
+            redis_port = 'unknown'
+        
+        # Store connection info
+        status["details"]["redis"] = {
+            "host": redis_host,
+            "port": redis_port,
+            "url": redis_url
+        }
+        
+        # Test actual connection
+        print(f"Attempting Redis connection to {redis_url}...")
+        redis_client = redis.from_url(redis_url)
+        if redis_client.ping():
+            status["redis_status"] = "connected"
+            print("Redis ping successful")
+        else:
+            status["redis_status"] = "disconnected"
+            print("Redis ping failed")
+    except Exception as e:
+        app.logger.error(f"Redis connection error: {str(e)}")
+        print(f"Redis error: {str(e)}")
+        status["redis_status"] = "disconnected"
+        status["details"]["redis"]["error"] = str(e)
+    
+    return jsonify(status)
 
 db = models.db
 
@@ -79,7 +167,7 @@ def get_footprints_v1():
 		ors.append(models.instrument.nickname.contains(name.strip()))
 		filter.append(or_(*ors))
 
-	footprints= db.session.query(models.footprint_ccd).filter(*filter).all()
+	footprints = db.session.query(models.footprint_ccd).filter(*filter).all()
 	footprints = [x.parse for x in footprints]
 
 	return make_response(json.dumps(footprints), 200)
@@ -104,7 +192,7 @@ def remove_event_galaxies_v1():
 					for ge in gallist_entries:
 						db.session.delete(ge)
 					db.session.commit()
-					return make_response(json.dumps("Successfully deleted your galaxy list"), 200)
+					return make_response('Successfully deleted your galaxy list', 200)
 				else:
 					return make_response('You can only delete information related to your api_token! shame shame', 500)
 			else:
@@ -125,7 +213,7 @@ def get_event_galaxies_v1():
 	filter = [models.gw_galaxy_entry.listid == models.gw_galaxy_list.id]
 
 	if 'graceid' in args:
-		graceid = models.gw_alert.graceidfromalternate(args['graceid'])
+		graceid = models.gw_alert().graceidfromalternate(args['graceid'])
 		filter.append(models.gw_galaxy_list.graceid == graceid)
 	else:
 		return make_response("\'graceid\' is required", 500)
@@ -168,7 +256,7 @@ def get_event_galaxies_v1():
 	gal_entries = db.session.query(models.gw_galaxy_entry).filter(*filter).all()
 	gal_entries = [x.parse for x in gal_entries]
 
-	return make_response(json.dumps(gal_entries), 200)
+	return make_response(dump_json(gal_entries), 200)
 
 
 @app.route('/api/v1/event_galaxies', methods=['POST'])
@@ -183,7 +271,7 @@ def post_event_galaxies_v1():
 	warnings = []
 	errors = []
 
-	if "api_token" in args:
+	if 'api_token' in args:
 		apitoken = args['api_token']
 		user = db.session.query(models.users).filter(models.users.api_token ==  apitoken).first()
 		if user is None:
@@ -193,26 +281,29 @@ def post_event_galaxies_v1():
 
 	models.useractions.write_action(request=request, current_user=user)
 
-	if "graceid" in args:
-		graceid = args['graceid']
-		graceid = models.gw_alert.graceidfromalternate(graceid)
-	else:
-		return make_response('graceid is required', 500)
+	is_valid, response_message = is_graceid_valid(args, db)
+	if not is_valid:
+		return make_response(response_message, 500)
 
-	if "timesent_stamp" in args:
+	graceid = args['graceid']
+
+	if 'timesent_stamp' in args:
 		timesent_stamp = args['timesent_stamp']
 		try:
-			#parsetime
-			time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
-		except: # noqa: E722
-			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00", 500)
+			# parsetime
+			time_sent = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
+		except:  # noqa: E722
+			return make_response("Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00",
+								 500)
 
 		alert = db.session.query(models.gw_alert).filter(
-			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
-			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
-			models.gw_alert.graceid == graceid).first()
+			models.gw_alert.timesent < time_sent + datetime.timedelta(seconds=15),
+			models.gw_alert.timesent > time_sent - datetime.timedelta(seconds=15),
+			models.gw_alert.graceid == args['graceid']).first()
 		if alert is None:
-			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
+			return make_response(
+				'Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(
+					graceid), 500)
 	else:
 		return make_response('timesent_stamp is required', 500)
 
@@ -351,16 +442,10 @@ def add_pointings_v1():
 	errors = []
 	warnings = []
 
-	if "graceid" in args:
-		gid = args['graceid']
-		gid = models.gw_alert.graceidfromalternate(gid)
-		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
-		if len(current_gids) > 0:
-			valid_gid = True
-		else:
-			return make_response("Invalid graceid", 500)
-	else:
-		return make_response("graceid is required", 500)
+	is_valid, response_message = is_graceid_valid(args, db)
+	if not is_valid:
+		return make_response(response_message, 500)
+	gid = args['graceid']
 
 	if 'request_doi' in args:
 		post_doi = bool(args['request_doi'])
@@ -769,7 +854,7 @@ def get_pointings_v1():
 	pointings = db.session.query(models.pointing).filter(*filter).all()
 	pointings = [x.parse for x in pointings]
 
-	return make_response(json.dumps(pointings), 200)
+	return make_response(dump_json(pointings), 200)
 
 
 @app.route("/api/v1/request_doi", methods=['POST'])
@@ -1151,10 +1236,10 @@ def query_alerts_v1():
 		*filter
 	).order_by(
 		models.gw_alert.datecreated.desc()
-	).all()
+  	).all()
 	alerts = [x.parse for x in alerts]
 
-	return make_response(json.dumps(alerts), 200)
+	return make_response(dump_json(alerts), 200)
 
 
 @app.route('/api/v1/del_test_alerts', methods=['POST'])
@@ -1625,7 +1710,21 @@ def fixdata_v1():
 
 	return make_response("success", 200)
 
+def is_graceid_valid(args, db):
+	if "graceid" in args:
+		gid = args['graceid']
+		gid = models.gw_alert.graceidfromalternate(gid)
+		current_gids = db.session.query(models.gw_alert.graceid).filter(models.gw_alert.graceid == gid).all()
+		if len(current_gids) > 0:
+			return True, None
+		else:
+			return False, 'Invalid graceid'
+	else:
+		return False, 'graceid is required'
 
+def dump_json(input_object):
+	# Wrap json.dumps() for easier testing
+	return json.dumps(input_object)
 
 #Post Candidate/s
 #Parameters: List of Candidate JSON objects

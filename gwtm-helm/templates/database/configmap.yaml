@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: gwtm
+data:
+  postgresql.conf: |
+    log_statement = 'all'
