@@ -168,6 +168,9 @@ function aladin_setMarkers(
 /*
     Function that redraws the instrument contours based on the pointing time
     the slidervals come from the timeslider ui
+    Each contour with a distinct color is redrawn (not based on name)
+    since two insts should never have the same color but sometimes
+    two insts (same network) can have the same name.
 */
 function aladin_sliderRedrawContours(
     aladin, 
@@ -184,7 +187,7 @@ function aladin_sliderRedrawContours(
         var iter = 0
     
         for (j = 0; j < set_contour_list.length; j++) {
-            if (input_contour_list[i].name == set_contour_list[j].contour.name) {
+            if (input_contour_list[i].color == set_contour_list[j].tocolor) {
                 toshow = set_contour_list[j].toshow; 
                 tocolor = set_contour_list[j].tocolor; 
                 iter = j
@@ -228,7 +231,7 @@ function aladin_overlayToggleOne(
     var iter = 0
     for(var k=0; k<overlay_list.length; k++)
     {
-        if (target.dataset.color == overlay_list[k].contour.color) {
+        if (target.dataset.color == overlay_list[k].tocolor) {
             iter = k
         }
     }
