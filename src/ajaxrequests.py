@@ -13,6 +13,7 @@ import tempfile
 import time
 import hashlib
 import ligo.skymap.postprocess
+from io import StringIO
 
 import shapely.wkb
 from werkzeug.exceptions import HTTPException
@@ -1008,13 +1009,29 @@ def plot_renormalized_skymap():
 	#can't find a cached one, then generate one (warning, can be slow)
 	if cache_file is None:
 		normed_contours = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+	else:
+		normed_result = json.loads(cache_file)
+		normed_contours = pd.read_json(StringIO(normed_result['contours_json']))
+
+	contour_geometry = []
+	for contour in normed_contours['features']:
+		contour_geometry.extend(contour['geometry']['coordinates'])
+
+	detection_overlays = []
+	detection_overlays.append({
+		"display":True,
+		"name":"GW Contour",
+		"color": '#e6194B',
+		"contours":function.polygons2footprints(contour_geometry, 0)
+	})
+	payload = {'detection_overlays':detection_overlays}
         
 	end = time.time()
 
 	total = end-start
 	print('total time doing renormalize skymap: {}'.format(total))
         
-	return cache_key
+	return payload
 
 
 @app.route('/ajax_preview_footprint', methods=['GET'])
