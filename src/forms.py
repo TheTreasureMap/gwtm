@@ -250,6 +250,9 @@ class AlertsForm(FlaskForm):
     GRBoverlays = []
     has_icecube = False
     has_candidate = False
+    calc_ids = ["calc-info",
+                "calc-coverage",
+                "calc-renorm-skymap"]
 
     def construct_alertform(self, args):
         
