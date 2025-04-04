@@ -80,6 +80,13 @@ div.constrained {
   color: darkgrey;
 }
 
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block;
+}
+
 text.info{
     position:relative; /*this is the key*/
     z-index:24; 
@@ -227,242 +234,347 @@ text.info:hover span{ /*the span will display just on :hover state*/
     <br>
   </div>
 
-  <!-- GW Alert Information -->
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-sm-6">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Information</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-            {% if form.selected_alert_info.group != 'None' and form.selected_alert_info.group != '' and form.selected_alert_info.group != None %}
-            <tr class="alert-info">
-              <td>Group</td>
-              <td id='alert_group'>{{ form.selected_alert_info.group }}</td>
-            </tr>
-            {% endif %}
-            <tr class="alert-info">
-              <td>Detectors</td>
-              <td id='alert_detectors'>{{ form.selected_alert_info.detectors }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Time of Signal</td>
-              <td id='alert_time_of_signal'>{{ form.selected_alert_info.time_of_signal }} UTC</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Time Sent</td>
-              <td id='alert_timesent'>{{ form.selected_alert_info.timesent }} UTC</td>
-            </tr>
-            <tr class="alert-info">
-              <td>False Alarm Rate</td>
-              <td id='alert_human_far'>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>50% Area</td>
-              <td id='alert_area_50'>{{ form.selected_alert_info.area_50}} deg<sup>2</sup></td>
-            </tr>
-            <tr class="alert-info">
-              <td>90% Area</td>
-              <td id='alert_area_90'>{{ form.selected_alert_info.area_90}} deg<sup>2</sup></td>
-            </tr>
-            {% if form.selected_alert_info.group != 'Burst' %}
-            <tr class="alert-info">
-              <td>Distance</td>
-              <td id='alert_distance_plus_error'>{{ form.distance }} +/- {{ form.distance_error }} Mpc</td>
-            </tr>
-            {% else %}
-            <tr class="alert-info">
-              <td>Central Frequency</td>
-              <td id='alert_centralfreq'>{{form.selected_alert_info.centralfreq}} Hz</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Duration</td>
-              <td id='alert_duration'>{{form.selected_alert_info.duration}} seconds</td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-        <table class="table ext_coinc" hidden>
-          <thead>
-            <tr>
-              <th>External Coincidence Info</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="alert-info ext_coinc">
-              <td>GCN Notice ID</td>
-              <td id="alert_gcn_notice_id"></td>
-            </tr>
-            <!-- <tr class="alert-info ext_coinc">
-              <td>Ivorn</td>
-              <td id="alert_ivorn"></td>
-            </tr> -->
-            <tr class="alert-info ext_coinc">
-              <td>ExtCoinc Observatory</td>
-              <td id="alert_ext_coinc_observatory"></td>
-            </tr>
-            <tr class="alert-info ext_coinc">
-              <td>ExtCoinc Search</td>
-              <td id="alert_ext_coinc_search"></td>
-            </tr>
-            <tr class="alert-info ext_coinc">
-              <td>Time Difference (s)</td>
-              <td id="alert_time_difference"></td>
-            </tr>
-            <tr class="alert-info ext_coinc">
-              <td>Time Coincidence FAR</td>
-              <td id="alert_time_coincidence_far"></td>
-            </tr>
-            <tr class="alert-info ext_coinc">
-              <td>Time-Sky position Coincidence FAR</td>
-              <td id="alert_time_sky_position_coincidence_far"></td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- alert info and calculator tabs -->
+  <ul id='calcnav' class="nav nav-tabs">
+    <li class="nav-item"><a id="calc-title">
+    <span class="nav-link disabled" tabindex="-1" aria-disabled="true" style="font-weight: bold;">Calculators:</span>
+    </li>
+    <li class="nav-item" style="cursor: pointer;"><a class="nav-link active" id="calc-info" data-tab="calc-info-content">Summary</a></li>
+    <li class="nav-item" style="cursor: pointer;"><a class="nav-link" id="calc-coverage" data-tab="calc-coverage-content">Coverage Calculator</a></li>
+    <li class="nav-item" style="cursor: pointer;"><a class="nav-link" id="calc-renorm-skymap" data-tab="calc-renorm-skymap-content">Renormalize Skymap</a></li>
+  </ul>
+
+  <!-- alert info and calculator tab content -->
+  <div id="tab-content">
+    <div class="tab-pane active" id="calc-info-content">
+      <!-- GW Alert Information -->
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-sm-6">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Information</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                {% if form.selected_alert_info.group != 'None' and form.selected_alert_info.group != '' and form.selected_alert_info.group != None %}
+                <tr class="alert-info">
+                  <td>Group</td>
+                  <td id='alert_group'>{{ form.selected_alert_info.group }}</td>
+                </tr>
+                {% endif %}
+                <tr class="alert-info">
+                  <td>Detectors</td>
+                  <td id='alert_detectors'>{{ form.selected_alert_info.detectors }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Time of Signal</td>
+                  <td id='alert_time_of_signal'>{{ form.selected_alert_info.time_of_signal }} UTC</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Time Sent</td>
+                  <td id='alert_timesent'>{{ form.selected_alert_info.timesent }} UTC</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>False Alarm Rate</td>
+                  <td id='alert_human_far'>once per {{form.selected_alert_info.human_far}} {{form.selected_alert_info.human_far_unit}}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>50% Area</td>
+                  <td id='alert_area_50'>{{ form.selected_alert_info.area_50}} deg<sup>2</sup></td>
+                </tr>
+                <tr class="alert-info">
+                  <td>90% Area</td>
+                  <td id='alert_area_90'>{{ form.selected_alert_info.area_90}} deg<sup>2</sup></td>
+                </tr>
+                {% if form.selected_alert_info.group != 'Burst' %}
+                <tr class="alert-info">
+                  <td>Distance</td>
+                  <td id='alert_distance_plus_error'>{{ form.distance }} +/- {{ form.distance_error }} Mpc</td>
+                </tr>
+                {% else %}
+                <tr class="alert-info">
+                  <td>Central Frequency</td>
+                  <td id='alert_centralfreq'>{{form.selected_alert_info.centralfreq}} Hz</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Duration</td>
+                  <td id='alert_duration'>{{form.selected_alert_info.duration}} seconds</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+            <table class="table ext_coinc" hidden>
+              <thead>
+                <tr>
+                  <th>External Coincidence Info</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="alert-info ext_coinc">
+                  <td>GCN Notice ID</td>
+                  <td id="alert_gcn_notice_id"></td>
+                </tr>
+                <!-- <tr class="alert-info ext_coinc">
+                  <td>Ivorn</td>
+                  <td id="alert_ivorn"></td>
+                </tr> -->
+                <tr class="alert-info ext_coinc">
+                  <td>ExtCoinc Observatory</td>
+                  <td id="alert_ext_coinc_observatory"></td>
+                </tr>
+                <tr class="alert-info ext_coinc">
+                  <td>ExtCoinc Search</td>
+                  <td id="alert_ext_coinc_search"></td>
+                </tr>
+                <tr class="alert-info ext_coinc">
+                  <td>Time Difference (s)</td>
+                  <td id="alert_time_difference"></td>
+                </tr>
+                <tr class="alert-info ext_coinc">
+                  <td>Time Coincidence FAR</td>
+                  <td id="alert_time_coincidence_far"></td>
+                </tr>
+                <tr class="alert-info ext_coinc">
+                  <td>Time-Sky position Coincidence FAR</td>
+                  <td id="alert_time_sky_position_coincidence_far"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {% if form.selected_alert_info.group != 'Burst' %}
+          <div class="col-sm-6">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Classification (CBC Only)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="alert-info">
+                  <td>BNS</td>
+                  <td id='alert_prob_bns'>{{ form.selected_alert_info.prob_bns }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>NSBH</td>
+                  <td id='alert_prob_nsbh'>{{ form.selected_alert_info.prob_nsbh }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Mass Gap</td>
+                  <td id='alert_prob_gap'>{{ form.selected_alert_info.prob_gap }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>BBH</td>
+                  <td id='alert_prob_bbh'>{{ form.selected_alert_info.prob_bbh }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Terrestrial</td>
+                  <td id='alert_prob_terrestrial'>{{ form.selected_alert_info.prob_terrestrial }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Has NS</td>
+                  <td id='alert_prob_hasns'>{{ form.selected_alert_info.prob_hasns }}</td>
+                </tr>
+                <tr class="alert-info">
+                  <td>Has Remnant</td>
+                  <td id='alert_prob_hasremenant'>{{ form.selected_alert_info.prob_hasremenant }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
       </div>
-      {% if form.selected_alert_info.group != 'Burst' %}
-      <div class="col-sm-6">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Classification (CBC Only)</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="alert-info">
-              <td>BNS</td>
-              <td id='alert_prob_bns'>{{ form.selected_alert_info.prob_bns }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>NSBH</td>
-              <td id='alert_prob_nsbh'>{{ form.selected_alert_info.prob_nsbh }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Mass Gap</td>
-              <td id='alert_prob_gap'>{{ form.selected_alert_info.prob_gap }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>BBH</td>
-              <td id='alert_prob_bbh'>{{ form.selected_alert_info.prob_bbh }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Terrestrial</td>
-              <td id='alert_prob_terrestrial'>{{ form.selected_alert_info.prob_terrestrial }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Has NS</td>
-              <td id='alert_prob_hasns'>{{ form.selected_alert_info.prob_hasns }}</td>
-            </tr>
-            <tr class="alert-info">
-              <td>Has Remnant</td>
-              <td id='alert_prob_hasremenant'>{{ form.selected_alert_info.prob_hasremenant }}</td>
-            </tr>
-          </tbody>
-        </table>
+    </div>
+
+    <div class="tab-pane" id="calc-coverage-content">
+      <!-- BEGIN: coverage calculator -->
+      <div class = "container-fluid">
+        <center><h3 style="margin-top: 2rem;">Coverage Calculator</h3></center>
+      
+        <br>
+      
+        <i> 
+          Calculate the coverage of the GW localization over time, 
+          with choices to limit the coverage calculation to particular sets of instruments, 
+          wavelengths, or depth. All fields are optional, but cuts on depths must have an associated unit. 
+          If an empty form is submitted, the total reported coverage regardless of depth or band is computed. 
+          Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
+          when the same field is covered multiple times. After clicking Calculate, be patient, it may take up to 2 minutes 
+          to fully compute the coverage profile.
+        </i>
+        <p style="color: red; font-size: small;">
+          Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
+        </p>
+      
+        <br>
+      
+        <!-- Coverage plot placeholder -->
+        <div id ="coveragediv"></div>
+        
+        <!-- Coverage plot input parameters-->
+        <div>
+          <b>Instrument</b>
+          <select class="selectpicker" multiple data-live-search="true" name=inst_cov id=inst_cov>
+              {% for a in form.inst_cov %}
+                  <option value={{ a['value'] }}>{{ a['name'] }}</option>
+              {% endfor %}
+          </select>
+      
+          <b>Depth</b>
+          <input type="text" size=7 name=depth_cov id=depth_cov oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')">
+      
+          <b>Depth Unit</b>
+          <select class="selectpicker" multiple data-max-options="1" name=depth_unit id=depth_unit>
+              {% for a in form.depth_unit %}
+                {% if 'erg' in a['name'] %}
+                <option value={{ a['value'] }}>FLUX erg cm^-2 s^-1</option>
+                {% else %}
+                <option value={{ a['value'] }}>{{ a['name'] }}</option>
+                {% endif %}
+              {% endfor %}
+          </select>
+          <b><text class='info'>Approximate
+            <span>
+              For footprints with multiple ccd's this will approximate the calculator's input by using a simplified instrument footprint without chip-gaps. It is substantially faster, but does introduce a level of uncertainty in the resulting area and probability.
+            </span>
+          </text></b>
+          <select class="selectpicker" multiple data-max-options="1"  name=approx_cov id=approx_cov>
+            <option value=1 selected>Yes</option>
+            <option value=0>No</option>
+          </select>
+      
+          <br>
+          <b>Band</b>
+          <select class="selectpicker" style="max-width: 60px;" multiple data-live-search="true" name=band_cov id=band_cov onchange="spectral_range_from_bandpasses()">
+              {% for a in form.band_cov %}
+                <option value={{ a['value'] }}>{{ a['name'] }}</option>
+              {% endfor %}
+          </select>
+          <b><text class='info'>Spectral Range
+            <span>
+              Filter pointings based on their wavelength, energy, or frequency range
+            </span>
+          </text></b>
+          <b>Type: </b>
+          <select style="max-width: 60px;" class="selectpicker" name=spectral_range_type id=spectral_range_type onchange="spectral_units_dynammic_selector(this.value)">
+            <option value='wavelength' selected>Wavelength</option>
+            <option value='energy'>Energy</option>
+            <option value='frequency'>Frequency</option>
+          </select>
+            <b>Range: </b><input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="spectral_range_low" name="spectral_range_low"> -
+            <input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="spectral_range_high" name="spectral_range_high">
+          <b>Unit</b>
+          <select id=spectral_range_unit onchange="spectral_range_from_bandpasses()">
+      
+          </select>
+        </div>
+        
+      
+        <br><br>
+        <div style="display: flex; justify-content: center; gap: 10px; margin: 0 auto;">
+          <input type="button" id="calculate" value="Calculate" class="btn btn-primary"/>
+	</div>
       </div>
-      {% endif %}
+    </div>
+
+    <div class="tab-pane" id="calc-renorm-skymap-content">
+      <!-- BEGIN: renormalize skymap -->
+      <div class = "container-fluid">
+        <center><h3 style="margin-top: 2rem;">Renormalize Skymap</h3></center>
+      
+        <br>
+      
+        <i> 
+	  Removes pointings from the GW skymap and calculates renormalized contours from the remaining probability mass, 
+          with choices to select particular sets of instruments, 
+          and/or pointings that cover certain wavelengths or depth. All fields are optional, but cuts on depths must have an associated unit. 
+          If an empty form is submitted, all pointings regardless of depth or band are removed from the skymap to calculate renormalized contours. 
+          Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
+          when the same field is covered multiple times. After clicking Calculate, be patient, it may take up to 2 minutes 
+          to fully compute the renormalized contour.
+        </i>
+        <p style="color: red; font-size: small;">
+          Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
+        </p>
+      
+        <br>
+      
+        <!-- renorm-skymap result placeholder -->
+        <div id ="renormdiv"></div>
+        
+        <!-- Renorm skymap input parameters-->
+        <div>
+          <b>Instrument</b>
+          <select class="selectpicker" multiple data-live-search="true" name=r_inst_cov id=r_inst_cov>
+              {% for a in form.inst_cov %}
+                  <option value={{ a['value'] }}>{{ a['name'] }}</option>
+              {% endfor %}
+          </select>
+      
+          <b>Depth</b>
+          <input type="text" size=7 name=r_depth_cov id=r_depth_cov oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')">
+      
+          <b>Depth Unit</b>
+          <select class="selectpicker" multiple data-max-options="1" name=r_depth_unit id=r_depth_unit>
+              {% for a in form.depth_unit %}
+                {% if 'erg' in a['name'] %}
+                <option value={{ a['value'] }}>FLUX erg cm^-2 s^-1</option>
+                {% else %}
+                <option value={{ a['value'] }}>{{ a['name'] }}</option>
+                {% endif %}
+              {% endfor %}
+          </select>
+          <b><text class='info'>Approximate
+            <span>
+              For footprints with multiple ccd's this will approximate the calculator's input by using a simplified instrument footprint without chip-gaps. It is substantially faster, but does introduce a level of uncertainty in the resulting area and probability.
+            </span>
+          </text></b>
+          <select class="selectpicker" multiple data-max-options="1"  name=r_approx_cov id=r_approx_cov>
+            <option value=1 selected>Yes</option>
+            <option value=0>No</option>
+          </select>
+      
+          <br>
+          <b>Band</b>
+          <select class="selectpicker" style="max-width: 60px;" multiple data-live-search="true" name=r_band_cov id=r_band_cov onchange="spectral_range_from_bandpasses()">
+              {% for a in form.band_cov %}
+                <option value={{ a['value'] }}>{{ a['name'] }}</option>
+              {% endfor %}
+          </select>
+          <b><text class='info'>Spectral Range
+            <span>
+              Filter pointings based on their wavelength, energy, or frequency range
+            </span>
+          </text></b>
+          <b>Type: </b>
+          <select style="max-width: 60px;" class="selectpicker" name=r_spectral_range_type id=r_spectral_range_type onchange="spectral_units_dynammic_selector(this.value)">
+            <option value='wavelength' selected>Wavelength</option>
+            <option value='energy'>Energy</option>
+            <option value='frequency'>Frequency</option>
+          </select>
+            <b>Range: </b><input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="r_spectral_range_low" name="r_spectral_range_low"> -
+            <input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="r_spectral_range_high" name="r_spectral_range_high">
+          <b>Unit</b>
+          <select id=r_spectral_range_unit onchange="spectral_range_from_bandpasses()">
+      
+          </select>
+        </div>
+        
+      
+        <br><br>
+        <div style="display: flex; justify-content: center; gap: 10px; margin: 0 auto;">
+          <input type="button" id="renorm-skymap" value="Renorm Skymap" class="btn btn-primary"/>
+        </div>
+      </div>     
     </div>
   </div>
 
-<!-- BEGIN: coverage calculator -->
-<div class = "container-fluid">
-  <center><h3>Coverage Calculator</h3></center>
-
-  <br>
-
-  <i> 
-    Calculate the coverage of the GW localization over time, 
-    with choices to limit the coverage calculation to particular sets of instruments, 
-    wavelengths, or depth. All fields are optional, but cuts on depths must have an associated unit. 
-    If an empty form is submitted, the total reported coverage regardless of depth or band is computed. 
-    Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
-    when the same field is covered multiple times. After clicking Calculate, be patient, it may take up to 2 minutes 
-    to fully compute the coverage profile.
-    You may also click Renorm Skymap to remove the selected pointings from the GW localization contours in the map above. 
-  </i>
-  <p style="color: red; font-size: small;">
-    Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
-  </p>
-
-  <br>
-
-  <!-- Coverage plot placeholder -->
-  <div id ="coveragediv"></div>
-  
-  <!-- Coverage plot input parameters-->
-  <div>
-    <b>Instrument</b>
-    <select class="selectpicker" multiple data-live-search="true" name=inst_cov id=inst_cov>
-        {% for a in form.inst_cov %}
-            <option value={{ a['value'] }}>{{ a['name'] }}</option>
-        {% endfor %}
-    </select>
-
-    <b>Depth</b>
-    <input type="text" size=7 name=depth_cov id=depth_cov oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')">
-
-    <b>Depth Unit</b>
-    <select class="selectpicker" multiple data-max-options="1" name=depth_unit id=depth_unit>
-        {% for a in form.depth_unit %}
-          {% if 'erg' in a['name'] %}
-          <option value={{ a['value'] }}>FLUX erg cm^-2 s^-1</option>
-          {% else %}
-          <option value={{ a['value'] }}>{{ a['name'] }}</option>
-          {% endif %}
-        {% endfor %}
-    </select>
-    <b><text class='info'>Approximate
-      <span>
-        For footprints with multiple ccd's this will approximate the calculator's input by using a simplified instrument footprint without chip-gaps. It is substantially faster, but does introduce a level of uncertainty in the resulting area and probability.
-      </span>
-    </text></b>
-    <select class="selectpicker" multiple data-max-options="1"  name=approx_cov id=approx_cov>
-      <option value=1 selected>Yes</option>
-      <option value=0>No</option>
-    </select>
-
-    <br>
-    <b>Band</b>
-    <select class="selectpicker" style="max-width: 60px;" multiple data-live-search="true" name=band_cov id=band_cov onchange="spectral_range_from_bandpasses()">
-        {% for a in form.band_cov %}
-          <option value={{ a['value'] }}>{{ a['name'] }}</option>
-        {% endfor %}
-    </select>
-    <b><text class='info'>Spectral Range
-      <span>
-        Filter pointings based on their wavelength, energy, or frequency range
-      </span>
-    </text></b>
-    <b>Type: </b>
-    <select style="max-width: 60px;" class="selectpicker" name=spectral_range_type id=spectral_range_type onchange="spectral_units_dynammic_selector(this.value)">
-      <option value='wavelength' selected>Wavelength</option>
-      <option value='energy'>Energy</option>
-      <option value='frequency'>Frequency</option>
-    </select>
-      <b>Range: </b><input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="spectral_range_low" name="spectral_range_low"> -
-      <input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="spectral_range_high" name="spectral_range_high">
-    <b>Unit</b>
-    <select id=spectral_range_unit onchange="spectral_range_from_bandpasses()">
-
-    </select>
-  </div>
-  
-
-  <br><br>
-  <div style="display: flex; justify-content: center; gap: 10px; margin: 0 auto;">
-    <input type="button" id="calculate" value="Calculate" class="btn btn-primary"/>
-    <input type="button" id="renorm-skymap" value="Renorm Skymap" class="btn btn-primary"/>
-  </div>
-  <!input type="button" id="calculate" value="Calculate" class="btn btn-primary" style="display: block; margin: 0 auto;"/>
-  <!input type="button" id="renorm-skymap" value="Renorm Skymap" class="btn btn-secondary"/>
-</div>
     
 <!-- Creation of Aladin Lite instance with initial parameters -->
 <script type='text/javascript'>
@@ -538,7 +650,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 </script>
 <!-- Page Interaction JS -->
 <script>
-
+  
   //twistyyyyy -> changes collapsible stuff
   function changeCollapseButtonText(clicked_id){
     var button = document.getElementById(clicked_id);
@@ -694,7 +806,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
         var actives = document.getElementsByClassName('nav-link active')
         var thisEl = document.getElementById(event.target.id)
         for(i = 0; i<actives.length; i++){
-          actives[i].classList.remove('active')
+	  if (!{{form.calc_ids|tojson}}.includes(actives[i].id)) {
+            actives[i].classList.remove('active')
+	  }
         }
         thisEl.classList.add('active')
 
@@ -776,6 +890,31 @@ text.info:hover span{ /*the span will display just on :hover state*/
     })
   })
 
+  //serve the relevant info for calculator tabs
+  $(document).ready( function() {
+    $('#calcnav').click(function(event) {
+      if (event.target.id != 'calcnav' && event.target.id != 'calc-title') {
+	// Update tab style on click
+	var actives = document.getElementsByClassName('nav-link active')
+        var thisEl = document.getElementById(event.target.id)
+        for(i = 0; i<actives.length; i++){
+	  if ({{form.calc_ids|tojson}}.includes(actives[i].id)) {
+            actives[i].classList.remove('active')
+	  }
+        }
+        thisEl.classList.add('active')
+
+	// Toggle tab content
+	actives = document.getElementsByClassName('tab-pane active')
+	thisEl = document.getElementById(event.target.dataset.tab)
+	for(i = 0; i<actives.length; i++){
+          actives[i].classList.remove('active')
+        }
+        thisEl.classList.add('active')
+      }
+    })
+  })
+  
   //Function that creates the Coverage plot
   $(document).ready( function() {
       $('#calculate').click(function() {
@@ -817,15 +956,15 @@ text.info:hover span{ /*the span will display just on :hover state*/
       $('#renorm-skymap').click(function() {
         $('#renorm-skymap').prop('disabled', true)
         var btn = $(this).button('loading');
-        var inst_cov = $('#inst_cov').val()
-        var band_cov = $('#band_cov').val()
-        var depth_cov = $('#depth_cov').val()
-        var depth_unit = $('#depth_unit').val()
-        var approx_cov = $('#approx_cov').val()
-        var spectral_type = $('#spectral_range_type').val()
-        var spectral_unit = $('#spectral_range_unit').val()
-        var spectral_range_low = $('#spectral_range_low').val()
-        var spectral_range_high = $('#spectral_range_high').val()
+        var inst_cov = $('#r_inst_cov').val()
+        var band_cov = $('#r_band_cov').val()
+        var depth_cov = $('#r_depth_cov').val()
+        var depth_unit = $('#r_depth_unit').val()
+        var approx_cov = $('#r_approx_cov').val()
+        var spectral_type = $('#r_spectral_range_type').val()
+        var spectral_unit = $('#r_spectral_range_unit').val()
+        var spectral_range_low = $('#r_spectral_range_low').val()
+        var spectral_range_high = $('#r_spectral_range_high').val()
 
         $.ajax(
           {
@@ -844,7 +983,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
             instoverlaylist = d.instoverlaylist
             grboverlaylist = d.grboverlaylist
 	    
-	    $('#coveragediv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
+	    $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
 
 	    //used to just reload the window with a path to the cache
 	    //window.location.href = '/alerts?graceids={{ form.graceid }}&normed_path=' + reply;
@@ -852,7 +991,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         ).fail(function(jqXHR, textStatus)
           {
             $('#renorm-skymap').prop('disabled', false)
-            $('#coveragediv').html("<i><font color='red'>Error in Renormalize Skymap</font></i>")
+            $('#renormdiv').html("<i><font color='red'>Error in Renormalize Skymap</font></i>")
             btn.button('reset')
           }
       );
