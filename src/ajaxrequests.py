@@ -1008,11 +1008,11 @@ def plot_renormalized_skymap():
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
 	#can't find a cached one, then generate one (warning, can be slow)
 	if cache_file is None:
-		normed_contours = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+		normed_contours_json = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 	else:
-		normed_result = json.loads(cache_file)
-		normed_contours = pd.read_json(StringIO(normed_result['contours_json']))
-
+		normed_contours_json = json.loads(cache_file)['contours_json']
+                
+	normed_contours = pd.read_json(StringIO(normed_contours_json))
 	contour_geometry = []
 	for contour in normed_contours['features']:
 		contour_geometry.extend(contour['geometry']['coordinates'])
