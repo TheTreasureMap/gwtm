@@ -1000,6 +1000,8 @@ def plot_renormalized_skymap():
 	).all()
 
 	pointingids = [x.id for x in pointings_sorted]
+	if not len(pointingids):
+		return ""
 	pointingids = sorted(pointingids)
 	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 

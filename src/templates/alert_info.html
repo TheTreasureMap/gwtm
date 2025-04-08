@@ -973,18 +973,21 @@ text.info:hover span{ /*the span will display just on :hover state*/
           }
         ).done(function (reply) 
           {
-            $('#renorm-skymap').prop('disabled', false)
-	    //reload aladin with the normed skymap contour
-	    aladin.removeLayers()
-            data.detection_overlays = reply.detection_overlays;
-            d = overlayInit(aladin, data)
-            //aladin.animateToRaDec(payload.alert_avgra, payload.alert_avgdec, 2);
-            detectionoverlaylist = d.detectionoverlaylist
-            instoverlaylist = d.instoverlaylist
-            grboverlaylist = d.grboverlaylist
+	    if (reply) {
+	      $('#renorm-skymap').prop('disabled', false)
+	      //reload aladin with the normed skymap contour
+	      aladin.removeLayers()
+              data.detection_overlays = reply.detection_overlays;
+              d = overlayInit(aladin, data)
+              //aladin.animateToRaDec(payload.alert_avgra, payload.alert_avgdec, 2);
+              detectionoverlaylist = d.detectionoverlaylist
+              instoverlaylist = d.instoverlaylist
+              grboverlaylist = d.grboverlaylist
 	    
-	    $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
-
+	      $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
+	    } else {
+	      $('#renormdiv').html("<i><font color='#e6194B'>Done! No completed pointings selected.</font></i>")
+            }
 	    //used to just reload the window with a path to the cache
 	    //window.location.href = '/alerts?graceids={{ form.graceid }}&normed_path=' + reply;
           }
