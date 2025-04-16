@@ -39,6 +39,6 @@ class Config(object):
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):
-        return f'postgresql://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
+        return f'postgresql://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?options=-csearch_path=postgis,public'
 
 config = Config()

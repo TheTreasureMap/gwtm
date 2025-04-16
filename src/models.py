@@ -28,7 +28,23 @@ db = SQLAlchemy(app)
 def create_database_tables():
     app.config["SQLALCHEMY_DATABASE_URI"] = gwtmconfig.config.SQLALCHEMY_DATABASE_URI
     with app.app_context():
+        db.engine.execute("CREATE SCHEMA IF NOT EXISTS postgis;")
+        db.engine.execute("""
+            DO $$
+            BEGIN
+                IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
+                    DROP EXTENSION postgis CASCADE;
+                END IF;
+            END
+            $$;
+        """)
+        db.engine.execute("CREATE EXTENSION IF NOT EXISTS postgis SCHEMA postgis;")
+        db.engine.execute("UPDATE pg_extension SET extrelocatable = TRUE WHERE extname = 'postgis';")
+        db.engine.execute("ALTER EXTENSION postgis SET SCHEMA postgis;")
+        db.engine.execute("SET search_path TO public;")
         db.create_all()
+        db.engine.execute("CREATE INDEX idx_pointing_status_id ON public.pointing(status, id);")
+
 
 
 def to_json(inst, cls):
@@ -143,6 +159,7 @@ class SpectralRangeHandler:
     '''
 
     class spectralrangetype(IntEnum):
+
         wavelength = 1
         energy = 2
         frequency = 3
@@ -411,6 +428,8 @@ def load_user(id):
 # API Models
 
 class users(UserMixin, db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(25), index=True, unique=True)
     firstname = db.Column(db.String(25))
@@ -460,6 +479,8 @@ class users(UserMixin, db.Model):
 
 
 class usergroups(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
     groupid = db.Column(db.Integer)
@@ -467,12 +488,16 @@ class usergroups(db.Model):
 
 
 class groups(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(25))
     datecreated = db.Column(db.DateTime)
 
 
 class useractions(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
     ipaddress = db.Column(db.String(50))
@@ -511,14 +536,15 @@ class useractions(db.Model):
 
 
 class instrument(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    instrument_name = db.Column(db.String(25))
+    instrument_name = db.Column(db.String(64))
     nickname = db.Column(db.String(25))
     instrument_type = db.Column(db.Enum(enums.instrument_type))
     datecreated = db.Column(db.DateTime)
     # footprint = db.Column(Geography('POLYGON', srid=4326))
     submitterid = db.Column(db.Integer)
-
     @property
     def json(self):
         return to_json(self, self.__class__)
@@ -657,8 +683,10 @@ class instrument(db.Model):
 
 
 class footprint_ccd(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    instrumentid = db.Column(db.Integer)
+    instrumentid = db.Column(db.Integer, index=True)
     footprint = db.Column(Geography('POLYGON', srid=4326))
 
     @property
@@ -671,8 +699,10 @@ class footprint_ccd(db.Model):
 
 
 class pointing(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Enum(enums.pointing_status))
+    status = db.Column(db.Enum(enums.pointing_status), index=True)
     position = db.Column(Geography('POINT', srid=4326))
     galaxy_catalog = db.Column(db.Integer)
     galaxy_catalogid = db.Column(db.Integer)
@@ -1036,9 +1066,11 @@ class pointing(db.Model):
 
 
 class pointing_event(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    pointingid = db.Column(db.Integer)
-    graceid = db.Column(db.String)
+    pointingid = db.Column(db.Integer, index=True)
+    graceid = db.Column(db.String, index=True)
 
     @property
     def json(self):
@@ -1050,6 +1082,8 @@ class pointing_event(db.Model):
 
 
 class glade_2p3(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     pgc_number = db.Column(db.Integer)
     position = db.Column(Geography('POINT', srid=4326))
@@ -1083,17 +1117,19 @@ class glade_2p3(db.Model):
 
 
 class gw_alert(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    graceid = db.Column(db.String)
-    alternateid = db.Column(db.String)
-    role = db.Column(db.String)
+    graceid = db.Column(db.String, index=True)
+    alternateid = db.Column(db.String, index=True)
+    role = db.Column(db.String, index=True)
     timesent = db.Column(db.DateTime)
-    time_of_signal = db.Column(db.DateTime)
+    time_of_signal = db.Column(db.DateTime, index=True)
     packet_type = db.Column(db.Integer)
     alert_type = db.Column(db.String)
     detectors = db.Column(db.String)
     description = db.Column(db.String)
-    far = db.Column(db.Float)
+    far = db.Column(db.Float, index=True)
     skymap_fits_url = db.Column(db.String)
     distance = db.Column(db.Float)
     distance_error = db.Column(db.Float)
@@ -1104,12 +1140,12 @@ class gw_alert(db.Model):
     prob_terrestrial = db.Column(db.Float)
     prob_hasns = db.Column(db.Float)
     prob_hasremenant = db.Column(db.Float)
-    datecreated = db.Column(db.DateTime)
+    datecreated = db.Column(db.DateTime, index=True)
     group = db.Column(db.String)
     centralfreq = db.Column(db.Float)
     duration = db.Column(db.Float)
     avgra = db.Column(db.Float)
-    avgdec = db.Column(db.Float)
+    avgdec = db.Column(db.Float, index=True)
     observing_run = db.Column(db.String)
     pipeline = db.Column(db.String)
     search = db.Column(db.String)
@@ -1230,10 +1266,13 @@ class gw_alert(db.Model):
 
 
 class gw_galaxy(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
     galaxy_catalog = db.Column(db.Integer)
-    galaxy_catalogID = db.Column(db.Integer)
+    galaxy_catalogid = db.Column(db.Integer)
+    reference = db.Column(db.String)
 
     @property
     def json(self):
@@ -1241,10 +1280,12 @@ class gw_galaxy(db.Model):
 
 
 class event_galaxy(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
     galaxy_catalog = db.Column(db.Integer)
-    galaxy_catalogID = db.Column(db.Integer)
+    galaxy_catalogid = db.Column(db.Integer)
 
     @property
     def json(self):
@@ -1256,8 +1297,10 @@ class event_galaxy(db.Model):
 
 
 class gw_galaxy_score(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
-    gw_galaxyID = db.Column(db.Integer)
+    gw_galaxyid = db.Column(db.Integer)
     score_type = db.Column(db.Enum(enums.gw_galaxy_score_type))
     score = db.Column(db.Float)
 
@@ -1271,6 +1314,8 @@ class gw_galaxy_score(db.Model):
 
 
 class doi_author_group(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer)
     name = db.Column(db.String)
@@ -1285,6 +1330,8 @@ class doi_author_group(db.Model):
 
 
 class doi_author(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     affiliation = db.Column(db.String)
@@ -1369,6 +1416,8 @@ class doi_author(db.Model):
 
 
 class gw_galaxy_list(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     graceid = db.Column(db.String)
     groupname = db.Column(db.String)
@@ -1388,6 +1437,8 @@ class gw_galaxy_list(db.Model):
 
 
 class gw_galaxy_entry(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     listid = db.Column(db.Integer)
     name = db.Column(db.String)
@@ -1464,11 +1515,13 @@ class gw_galaxy_entry(db.Model):
 
 
 class icecube_notice(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     ref_id = db.Column(db.String)
-    graceid = db.Column(db.String)
+    graceid = db.Column(db.String, index=True)
     alert_datetime = db.Column(db.DateTime)
-    datecreated = db.Column(db.DateTime)
+    datecreated = db.Column(db.DateTime, index=True)
     observation_start = db.Column(db.DateTime)
     observation_stop = db.Column(db.DateTime)
     pval_generic = db.Column(db.Float)
@@ -1535,6 +1588,8 @@ class icecube_notice(db.Model):
 
 
 class icecube_notice_coinc_event(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     icecube_notice_id = db.Column(db.Integer)
     datecreated = db.Column(db.DateTime)
@@ -1575,10 +1630,12 @@ class icecube_notice_coinc_event(db.Model):
 
 
 class gw_candidate(db.Model):
+    __table_args__ = {'schema': 'public'}
+
     id = db.Column(db.Integer, primary_key=True)
     datecreated = db.Column(db.DateTime)
     submitterid = db.Column(db.Integer)
-    graceid = db.Column(db.String)
+    graceid = db.Column(db.String, index=True)
     candidate_name = db.Column(db.String)
     tns_name = db.Column(db.String, nullable=True)
     tns_url = db.Column(db.String, nullable=True)
