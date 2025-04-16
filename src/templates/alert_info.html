@@ -515,9 +515,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
         </p>
       
         <br>
-      
-        <!-- renorm-skymap result placeholder -->
-        <div id ="renormdiv"></div>
         
         <!-- Renorm skymap input parameters-->
         <div>
@@ -589,9 +586,14 @@ text.info:hover span{ /*the span will display just on :hover state*/
         </div>
         
       
-        <br><br>
+        <br>
+	<!-- renorm-skymap result placeholder -->
+        <div id ="renormdiv"></div>
+	<br>
+	
         <div style="display: flex; justify-content: center; gap: 10px; margin: 0 auto;">
-          <input type="button" id="renorm-skymap" value="Calculate" class="btn btn-primary"/>
+	  <input type="button" id="download-renorm" value="Download" class="btn btn-primary"/>
+          <input type="button" id="renorm-skymap" value="Visualize" class="btn btn-primary"/>
         </div>
       </div>     
     </div>
@@ -978,6 +980,8 @@ text.info:hover span{ /*the span will display just on :hover state*/
       $('#renorm-skymap').click(function() {
         $('#renorm-skymap').prop('disabled', true)
         var btn = $(this).button('loading');
+	$('#download-renorm').prop('disabled', true)
+	$('#download-renorm').button('loading')
         var inst_cov = $('#r_inst_cov').val()
         var band_cov = $('#r_band_cov').val()
         var depth_cov = $('#r_depth_cov').val()
@@ -996,7 +1000,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
         ).done(function (reply) 
           {
 	    if (reply) {
-	      $('#renorm-skymap').prop('disabled', false)
 	      //reload aladin with the normed skymap contour
 	      aladin.removeLayers()
               data.detection_overlays = reply.detection_overlays;
@@ -1007,15 +1010,110 @@ text.info:hover span{ /*the span will display just on :hover state*/
               grboverlaylist = d.grboverlaylist
 	    
 	      $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
+	      btn.prop('disabled', false)
+              btn.button('reset')
+	      $('#download-renorm').prop('disabled', false)
+              $('#download-renorm').button('reset')
 	    } else {
 	      $('#renormdiv').html("<i><font color='#e6194B'>Done! No completed pointings selected.</font></i>")
+	      btn.prop('disabled', false)
+              btn.button('reset')
+              $('#download-renorm').prop('disabled', false)
+              $('#download-renorm').button('reset')
             }
           }
         ).fail(function(jqXHR, textStatus)
           {
             $('#renorm-skymap').prop('disabled', false)
+	    $('#download-renorm').prop('disabled', false)
             $('#renormdiv').html("<i><font color='red'>Error in Renormalize Skymap</font></i>")
             btn.button('reset')
+            $('#download-renorm').button('reset')
+          }
+      );
+    });
+  });
+
+  //Function that generates a downloadable renormed skymap
+  $(document).ready( function() {
+      $('#download-renorm').click(function() {
+        $('#download-renorm').prop('disabled', true)
+        var btn = $(this).button('loading');
+	$('#renorm-skymap').prop('disabled', true)
+	$('#renorm-skymap').button('loading')
+        var inst_cov = $('#r_inst_cov').val()
+        var band_cov = $('#r_band_cov').val()
+        var depth_cov = $('#r_depth_cov').val()
+        var depth_unit = $('#r_depth_unit').val()
+        var approx_cov = $('#r_approx_cov').val()
+        var spectral_type = $('#r_spectral_range_type').val()
+        var spectral_unit = $('#r_spectral_range_unit').val()
+        var spectral_range_low = $('#r_spectral_range_low').val()
+        var spectral_range_high = $('#r_spectral_range_high').val()
+	
+	$('#renormdiv').html(`
+          <i>Generating fits file...</i>
+          <progress id="dl-progress-bar" value="0" max="100" style="width: 100%;"></progress>`);
+
+	//animate progress bar from 0% to 90% over 300s
+	let progressVal = 0;
+	const interval = 300000 / 90; //ms per increment to reach % in 300s
+	const progressTimer = setInterval(() => {
+	  progressVal++;
+	  if (progressVal <= 90) {
+            $('#dl-progress-bar').val(progressVal);
+          } else {
+            clearInterval(progressTimer);
+          }
+        }, interval);
+
+	//caching disabled for this ajax request because we want the calculation to be done each time, returning a skymap file that can be downloaded
+        $.ajax(
+          {
+              url: '/ajax_renormalize_skymap',
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
+	      xhrFields: {
+		  responseType: 'blob'
+	      }
+          }
+        ).done(function (reply) 
+          {
+	    if (reply instanceof Blob && reply.size > 0) {
+	      clearInterval(progressTimer)
+	      $('#renormdiv').find('i').text("Downloading fits file...")
+              $('#dl-progress-bar').val(90);
+	      //download renormalized skymap
+	      const downloadUrl = URL.createObjectURL(reply);
+	      const tempa = document.createElement('a');
+	      tempa.href = downloadUrl;
+	      tempa.download = 'normed-skymap.fits';
+	      tempa.click();
+	      //garbage cleanup
+	      URL.revokeObjectURL(downloadUrl);
+
+	      //output success message
+	      $('#renormdiv').find('i').text("Download complete!")
+              $('#dl-progress-bar').val(100);
+	      //reset buttons on completion
+	      btn.prop('disabled', false)
+              btn.button('reset')
+              $('#renorm-skymap').prop('disabled', false)
+              $('#renorm-skymap').button('reset')
+	    } else {
+	      $('#renormdiv').html("<i><font color='red'>No completed pointings selected.</font></i>")
+              btn.prop('disabled', false)
+              btn.button('reset')
+              $('#renorm-skymap').prop('disabled', false)
+              $('#renorm-skymap').button('reset')
+            }
+          }
+        ).fail(function(jqXHR, textStatus)
+          {
+            $('#download-renorm').prop('disabled', false)
+	    $('#renorm-skymap').prop('disabled', false)
+            $('#renormdiv').html("<i><font color='red'>Error Downloading Renormalized Skymap</font></i>")
+            btn.button('reset')
+	    $('#renorm-skymap').button('reset')
           }
       );
     });
@@ -1178,7 +1276,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
     });
   });
 
-  //redraws the screen when changing pointing status dropdown
+  //redraws the screen when changing pointing status 
   $('#pointing_status').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
     $('#instrumentsHeader').text('...Loading...')
     $('#alert_instruments_div').html('');

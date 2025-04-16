@@ -13,12 +13,12 @@ import tempfile
 import time
 import hashlib
 import ligo.skymap.postprocess
-from io import StringIO
+from io import StringIO, BytesIO
 
 import shapely.wkb
 from werkzeug.exceptions import HTTPException
 
-from flask import request, jsonify
+from flask import request, jsonify, send_file
 from flask_login import current_user
 from sqlalchemy import func, or_
 from plotly.subplots import make_subplots
@@ -759,14 +759,7 @@ def calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, de
 	
 	skymap[deduped_indices] = 0
 	normed_skymap = skymap/np.sum(skymap)
-	normed_contours_json = calc_renormalized_skymap_contours(normed_skymap)
-	
-	cache_file = {
-		'contours_json': normed_contours_json,
-	}
-	gwtm_io.set_cached_file(cache_key, cache_file, config)
-
-	return normed_contours_json
+	return normed_skymap
 
 def calc_renormalized_skymap_contours(normed_skymap):
 	#generate map of confidence levels from skymap
@@ -949,6 +942,7 @@ def plot_renormalized_skymap():
 	spec_range_unit = request.args.get('spec_range_unit')
 	spec_range_low = request.args.get('spec_range_low')
 	spec_range_high = request.args.get('spec_range_high')
+	download = request.args.get('download', default='false') == 'true'
 	slow, shigh = None, None
 	specenum = None
 	
@@ -1008,12 +1002,61 @@ def plot_renormalized_skymap():
 	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
 	#try to load a cached contour
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
-	#can't find a cached one, then generate one (warning, can be slow)
-	if cache_file is None:
-		normed_contours_json = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+	if cache_file is None or download:
+		#warning, this part is slow, so we only calculate this
+		#if not cached or need to download the fits
+		normed_skymap = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+		
+		if cache_file is None:
+			#if not cached, then cache it
+			normed_contours_json = calc_renormalized_skymap_contours(normed_skymap)
+			cache_file = {
+				'contours_json': normed_contours_json,
+			}
+			gwtm_io.set_cached_file(cache_key, cache_file, config)
+		if download:
+			#if we just want the skymap for download
+			end = time.time()
+			total = end-start
+			print('total time doing renormalize skymap: {}'.format(total))
+
+			#Old healpy: convert the skymap into a fits hdu
+			#Unfortunately must be done with astropy to write
+			#into in-memory buffer rather than an actual file.
+			#This avoids db blowing up w/ cached skymaps.
+			nside = hp.npix2nside(len(normed_skymap))
+			header = astropy.io.fits.Header()
+			header["PIXTYPE"] = "HEALPIX"
+			header["ORDERING"] = "RING"
+			header["NSIDE"] = nside
+			header["FIRSTPIX"] = 0
+			header["LASTPIX"] = len(normed_skymap) - 1
+			hdu = astropy.io.fits.BinTableHDU.from_columns([astropy.io.fits.Column(name='PROB', format='E', array=normed_skymap)], header=header)
+			hdul = astropy.io.fits.HDUList([astropy.io.fits.PrimaryHDU(), hdu])
+			#initialize in-memory buffer w/ auto garbage collect
+			normed_skymap_bytes = BytesIO()
+ 			#write skymap fits file to the buffer
+			hdul.writeto(normed_skymap_bytes)
+			
+			#Note, with new healpy version, one can directly
+			#hp.write_map(normed_skymap_bytes, normed_skymap)
+			
+			#set file pointer to beginning of buffer for read
+			normed_skymap_bytes.seek(0)
+			#send file back as attachment
+			return send_file(
+				normed_skymap_bytes,
+				as_attachment=True,
+				#note in flask 2.0, this is download_name
+				#the following works for flask 1.0
+				attachment_filename="normed-skymap.fits",
+				mimetype='application/fits'
+			)
 	else:
+		#load cached contour
 		normed_contours_json = json.loads(cache_file)['contours_json']
-                
+
+	#read json and make detection overlay
 	normed_contours = pd.read_json(StringIO(normed_contours_json))
 	contour_geometry = []
 	for contour in normed_contours['features']:
@@ -1029,7 +1072,6 @@ def plot_renormalized_skymap():
 	payload = {'detection_overlays':detection_overlays}
         
 	end = time.time()
-
 	total = end-start
 	print('total time doing renormalize skymap: {}'.format(total))
         
