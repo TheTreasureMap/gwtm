@@ -27,7 +27,7 @@ Werkzeug==2.0.3
 WTForms
 WTForms-Components
 gunicorn
-boto3==1.26.90
+boto3
 pygcn
 MOCpy
 celery
@@ -37,5 +37,6 @@ emails
 gcn-kafka
 fsspec
 adlfs
-s3fs
+s3fs==2021.10.0
 markupsafe>=2.1.1
+flask_profiler
