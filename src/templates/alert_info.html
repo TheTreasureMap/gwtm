@@ -502,13 +502,14 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <br>
       
         <i> 
-	  Removes pointings from the GW skymap and calculates renormalized contours from the remaining probability mass, 
+	  Removes pointings from the GW skymap and renormalizes the remaining probability mass, 
           with choices to select particular sets of instruments, 
           and/or pointings that cover certain wavelengths or depth. All fields are optional, but cuts on depths must have an associated unit. 
-          If an empty form is submitted, all pointings regardless of depth or band are removed from the skymap to calculate renormalized contours. 
+          If an empty form is submitted, all pointings regardless of depth or band are removed from the skymap. 
           Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
-          when the same field is covered multiple times. After clicking Calculate, be patient, it may take up to 2 minutes 
-          to fully compute the renormalized contour.
+          when the same field is covered multiple times. After clicking Download, be patient, it may take up to 3 minutes 
+          to fully compute the renormalized skymap and download the HEALPIX fits file. 
+	  Click Visualize to replace the 50% and 90% localization contours in the figure above with ones calculated from the renormalized skymap.
         </i>
         <p style="color: red; font-size: small;">
           Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
