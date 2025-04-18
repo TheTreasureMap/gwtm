@@ -1,17 +1,20 @@
 # GW Treasure Map 
 Website environment
 
-## Requirements
+### Step-by-step installation
 
 ### Python:
  * Python Version 3.11
 
-### Python Libraries
-(that you will probably have to `pip3 install`)
-
-```
-python -m pip install -r requirements.txt
-```
+To install a local copy of Treasure Map, please follow these steps:
+1. Clone repository
+2. Create a `conda` environment with `conda create -n gwtm-dev python=3.11`
+3. Activate the `conda` environment with `conda activate gwtm-dev`
+4. Install the requirements file with `pip install -r requirements.txt`
+5. Run `source envars.sh` to activate environment variables, ask Sam for this file if needed.
+6. Start the server by running `python gwtm.wsgi`  (starts Flash application)
+7. Should be running on `127.0.0.1:5000/`, go to the webpage to check it out!
+8. You should be able to sign in with your pre-registered account info.
 
 ### Configuration
 Configuration is handled via environmental variables. At a minimum, the following env vars must be
@@ -37,7 +40,7 @@ export RECAPTCHA_PUBLIC_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).
 
-### Running the application and dependencies locally
+### Running the application and dependencies via Docker
 
 1. Build the docker image
 ```bash
