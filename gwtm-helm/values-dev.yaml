@@ -1,0 +1,60 @@
+# values-dev.yaml
+global:
+  environment: development
+  useGeneratedSecrets: true
+
+secrets:
+  # Database configuration
+  dbUser: "treasuremap"
+  dbPassword: "treasuremap"  # Will be randomly generated if not provided
+  dbName: "treasuremap"
+
+  # Mail configuration
+  mailPassword: "your-mail-password"  # Add actual password for dev environment
+  mailUsername: ""
+  mailDefaultSender: ""
+  mailServer: "smtp.gmail.com"
+  mailPort: "465"
+  admins: ""
+
+  # AWS credentials
+  awsAccessKeyId: "your-awsa-access-key-id"
+  awsSecretAccessKey: "your-aws-secret-key"
+  awsDefaultRegion: "us-east-2"
+  awsBucket: "gwtreasuremap"
+
+  # Azure storage
+  azureAccountName: "your-azure-account-name"
+  azureAccountKey: "your-azure-account-key"
+  storageBucketSource: "s3"
+
+  # reCAPTCHA keys
+  recaptchaPublicKey: "your-recaptcha-public-key"
+  recaptchaPrivateKey: "your-recaptcha-private-key"
+
+  # Zenodo access
+  zenodoAccessKey: "your-zenodo-access-key"
+
+  # Additional configuration
+  extraSecrets:
+    REDIS_URL: "redis://redis:6379/0"
+    DEBUG: "True"
+
+backend:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 150Mi
+  readinessProbe:
+    enabled: false
+
+frontend:
+  replicas: 1
+
+database:
+  persistence:
+    size: 1Gi

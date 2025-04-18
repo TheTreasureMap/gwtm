@@ -1,0 +1,102 @@
+# templates/database/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.database.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.database.name }}
+spec:
+  replicas: 1  # Database typically runs as a singleton
+  selector:
+    matchLabels:
+      app: {{ .Values.database.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.database.name }}
+    spec:
+      containers:
+      - name: postgres
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.database.service.port }}
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: db-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: db-password
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: db-name
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: "trust"
+        {{- if .Values.database.extraEnv }}
+        {{- toYaml .Values.database.extraEnv | nindent 8 }}
+        {{- end }}
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-config
+          mountPath: /etc/postgresql/postgresql.conf
+          subPath: postgresql.conf
+        {{- if .Values.database.initScripts.enabled }}
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        {{- end }}
+        resources:
+          {{- toYaml .Values.database.resources | nindent 12 }}
+        {{- if .Values.database.livenessProbe.enabled }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - PGPASSWORD=$POSTGRES_PASSWORD pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: {{ .Values.database.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.database.livenessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 5
+        {{- end }}
+        {{- if .Values.database.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - PGPASSWORD=$POSTGRES_PASSWORD pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: {{ .Values.database.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.database.readinessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 5
+        {{- end }}
+      securityContext:
+        fsGroup: 999  # postgres group id
+      volumes:
+      - name: postgres-config
+        configMap:
+          name: postgres-config
+      - name: postgres-data
+        {{- if .Values.database.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.database.name }}-pvc
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+      {{- if .Values.database.initScripts.enabled }}
+      - name: init-scripts
+        configMap:
+          name: {{ .Values.database.name }}-init-scripts
+      {{- end }}

@@ -1,0 +1,24 @@
+# templates/cache/pvc.yaml
+{{- if .Values.cache.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.cache.name }}-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.cache.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.cache.persistence.size }}
+  {{- if .Values.cache.persistence.storageClass }}
+  {{- if (eq "-" .Values.cache.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.cache.persistence.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}

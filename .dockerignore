@@ -1,3 +1,7 @@
 .git
 static/*.json
 static/*.fits.gz
+.venv/
+venv/
+.git/
+viz-example/

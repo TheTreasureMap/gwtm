@@ -1,0 +1,24 @@
+# templates/database/pvc.yaml
+{{- if .Values.database.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.database.name }}-pvc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.database.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.database.persistence.size }}
+  {{- if .Values.database.persistence.storageClass }}
+  {{- if (eq "-" .Values.database.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.database.persistence.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}

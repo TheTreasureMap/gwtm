@@ -1,0 +1,156 @@
+# templates/backend/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.backend.name }}
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.backend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.backend.name }}
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:14-alpine
+        command: ['sh', '-c', 'echo "Testing connection to ${DB_HOST}:${DB_PORT}...";
+                 until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}; do
+                 echo "$(date) - Waiting for database at ${DB_HOST}:${DB_PORT}...";
+                 echo "Trying to ping database...";
+                 nc -v -z -w2 ${DB_HOST} ${DB_PORT} || echo "Network connection failed";
+                 sleep 5;
+                 done;
+                 echo "Database is ready!"']
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+      containers:
+      - name: flask-app
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo "Starting Flask application..."
+            echo "Database settings: DB_HOST=$DB_HOST, DB_PORT=$DB_PORT, DB_USER=$DB_USER, DB_NAME=$DB_NAME"
+            echo "Redis URL: $REDIS_URL"
+            gunicorn -b 0.0.0.0:{{ .Values.backend.service.targetPort }} src.api_v1:app -t 1000 --log-level debug
+        ports:
+        - containerPort: {{ .Values.backend.service.targetPort }}
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-user
+        - name: DB_PWD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+        - name: REDIS_URL
+          value: "redis://{{ .Values.cache.name }}:{{ .Values.cache.service.port }}/0"
+        - name: MAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: mail-password
+        - name: RECAPTCHA_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-public-key
+        - name: RECAPTCHA_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-private-key
+        - name: ZENODO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: zenodo-access-key
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: aws-secret-access-key
+        - name: DEBUG
+          value: "True"
+        {{- if .Values.backend.extraEnv }}
+        {{- toYaml .Values.backend.extraEnv | nindent 8 }}
+        {{- end }}
+        {{- if .Values.backend.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        {{- end }}
+        {{- if .Values.backend.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        {{- end }}
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 12 }}
+      volumes:
+      - name: db-user
+        secret:
+          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+          items:
+          - key: db-user
+            path: db-user
