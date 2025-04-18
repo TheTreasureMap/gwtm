@@ -357,9 +357,12 @@ class AlertsForm(FlaskForm):
                 t=astropy.time.Time(self.selected_alert_info.time_of_signal,format='datetime',scale='utc')
                 self.selected_alert_info.sun_ra =  astropy.coordinates.get_sun(t).ra.deg
                 self.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
-                moon = astropy.coordinates.get_body('moon', t)
-                self.selected_alert_info.moon_ra = moon.ra.deg
-                self.selected_alert_info.moon_dec = moon.dec.deg
+                try:
+                    moon = astropy.coordinates.get_moon(t)
+                except AttributeError:
+                    moon = astropy.coordinates.get_body("moon", t)
+                self.selected_alert_info.moon_ra =  moon.ra.deg
+                self.selected_alert_info.moon_dec =  moon.dec.deg
             
             if self.selected_alert_info.prob_bns is not None:
                 self.selected_alert_info.prob_bns = round(self.selected_alert_info.prob_bns, 5)
