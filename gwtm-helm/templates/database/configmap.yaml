@@ -6,3 +6,4 @@ metadata:
 data:
   postgresql.conf: |
     log_statement = 'all'
+

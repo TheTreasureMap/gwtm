@@ -32,7 +32,7 @@ def service_status():
     }
     
     # Debug info
-    print("Checking database connection...")
+    app.logger.debug("Checking database connection...")
     
     # Check database connection with detailed info
     try:
@@ -53,13 +53,12 @@ def service_status():
         result = db.session.execute("SELECT 1").fetchone()
         if result and result[0] == 1:
             status["database_status"] = "connected"
-            print(f"Database connection successful: {db_host}:{db_port}/{db_name}")
+            app.logger.debug(f"Database connection successful: {db_host}:{db_port}/{db_name}")
         else:
             status["database_status"] = "disconnected"
-            print(f"Database query returned unexpected result: {result}")
+            app.logger.debug(f"Database query returned unexpected result: {result}")
     except Exception as e:
         app.logger.error(f"Database connection error: {str(e)}")
-        print(f"Database error: {str(e)}")
         status["database_status"] = "disconnected"
         status["details"]["database"]["error"] = str(e)
     
@@ -90,13 +89,12 @@ def service_status():
         redis_client = redis.from_url(redis_url)
         if redis_client.ping():
             status["redis_status"] = "connected"
-            print("Redis ping successful")
+            app.logger.debug("Redis ping successful")
         else:
             status["redis_status"] = "disconnected"
-            print("Redis ping failed")
+            app.logger.debug("Redis ping failed")
     except Exception as e:
         app.logger.error(f"Redis connection error: {str(e)}")
-        print(f"Redis error: {str(e)}")
         status["redis_status"] = "disconnected"
         status["details"]["redis"]["error"] = str(e)
     

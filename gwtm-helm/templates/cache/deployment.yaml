@@ -62,3 +62,4 @@ spec:
         persistentVolumeClaim:
           claimName: {{ .Values.cache.name }}-pvc
       {{- end }}
+
