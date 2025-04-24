@@ -1,0 +1,25 @@
+#!/bin/bash
+# Restore a database dump.
+set -x
+
+
+NAMESPACE=gwtm
+DUMP_FILE=${1:-./dump.sql}
+
+# Get postgres pod name
+POSTGRES_POD=$(kubectl get pods -n $NAMESPACE| grep postgres | cut -d' ' -f1)
+
+# Get password from Kubernetes secret
+DB_USER=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-user"' | base64 -d)
+DB_NAME=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-name"' | base64 -d)
+DB_PASSWORD=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-password"' | base64 -d)
+
+# Copy the dump file to the pod
+echo "Copying dump file to pod..."
+kubectl cp $DUMP_FILE $POSTGRES_POD:/tmp/dump.sql -n $NAMESPACE
+
+# Execute restore
+echo "Restoring database..."
+kubectl -n $NAMESPACE exec -it $POSTGRES_POD -- bash -c "PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -f /tmp/dump.sql -a" 
+
+echo "Restore completed!"

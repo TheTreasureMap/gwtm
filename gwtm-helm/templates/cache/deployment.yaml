@@ -1,0 +1,65 @@
+# templates/cache/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cache.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.cache.name }}
+spec:
+  replicas: {{ .Values.cache.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ .Values.cache.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cache.name }}
+    spec:
+      containers:
+      - name: redis
+        image: "{{ .Values.cache.image.repository }}:{{ .Values.cache.image.tag }}"
+        imagePullPolicy: {{ .Values.cache.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.cache.service.port }}
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: redis-password
+        {{- if .Values.cache.extraArgs }}
+        args:
+        {{- range .Values.cache.extraArgs }}
+        - {{ . }}
+        {{- end }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.cache.resources | nindent 12 }}
+        {{- if .Values.cache.livenessProbe.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.cache.service.port }}
+          initialDelaySeconds: {{ .Values.cache.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.cache.livenessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.cache.readinessProbe.enabled }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.cache.service.port }}
+          initialDelaySeconds: {{ .Values.cache.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.cache.readinessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.cache.persistence.enabled }}
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        {{- end }}
+      {{- if .Values.cache.persistence.enabled }}
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.cache.name }}-pvc
+      {{- end }}
+
