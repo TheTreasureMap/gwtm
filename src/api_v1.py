@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import request
+from flask import request, jsonify
 from sqlalchemy import func, or_
 from dateutil.parser import parse as date_parse
 import json
@@ -13,6 +13,92 @@ from . import function
 from . import models
 from . import enums
 from . import gwtm_io
+
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/service-status')
+def service_status():
+    import os
+    
+    status = {
+        "database_status": "unknown",
+        "redis_status": "unknown",
+        "details": {
+            "database": {},
+            "redis": {}
+        }
+    }
+    
+    # Debug info
+    app.logger.debug("Checking database connection...")
+    
+    # Check database connection with detailed info
+    try:
+        # Get connection parameters from environment
+        db_host = os.environ.get('DB_HOST', 'localhost')
+        db_port = os.environ.get('DB_PORT', '5432')
+        db_user = os.environ.get('DB_USER', 'unknown')
+        db_name = os.environ.get('DB_NAME', 'unknown')
+        
+        # Store connection info
+        status["details"]["database"] = {
+            "host": db_host,
+            "port": db_port,
+            "name": db_name
+        }
+        
+        # Test actual connection
+        result = db.session.execute("SELECT 1").fetchone()
+        if result and result[0] == 1:
+            status["database_status"] = "connected"
+            app.logger.debug(f"Database connection successful: {db_host}:{db_port}/{db_name}")
+        else:
+            status["database_status"] = "disconnected"
+            app.logger.debug(f"Database query returned unexpected result: {result}")
+    except Exception as e:
+        app.logger.error(f"Database connection error: {str(e)}")
+        status["database_status"] = "disconnected"
+        status["details"]["database"]["error"] = str(e)
+    
+    # Check Redis connection with detailed info
+    try:
+        import redis
+        
+        # Get Redis connection parameters
+        redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+        
+        # Parse the URL for debug info
+        if redis_url.startswith('redis://'):
+            redis_host = redis_url.split('redis://')[1].split(':')[0]
+            redis_port = redis_url.split(':')[-1].split('/')[0]
+        else:
+            redis_host = 'unknown'
+            redis_port = 'unknown'
+        
+        # Store connection info
+        status["details"]["redis"] = {
+            "host": redis_host,
+            "port": redis_port,
+            "url": redis_url
+        }
+        
+        # Test actual connection
+        print(f"Attempting Redis connection to {redis_url}...")
+        redis_client = redis.from_url(redis_url)
+        if redis_client.ping():
+            status["redis_status"] = "connected"
+            app.logger.debug("Redis ping successful")
+        else:
+            status["redis_status"] = "disconnected"
+            app.logger.debug("Redis ping failed")
+    except Exception as e:
+        app.logger.error(f"Redis connection error: {str(e)}")
+        status["redis_status"] = "disconnected"
+        status["details"]["redis"]["error"] = str(e)
+    
+    return jsonify(status)
 
 db = models.db
 
@@ -1019,7 +1105,7 @@ def get_gw_contours():
 		_file = gwtm_io.download_gwtm_file(filename=contourpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
 		return make_response(_file, 200)
 	except: # noqa: E722
-		return make_response(f'Error in retrieving Contour file: {contourpath}', 200)
+		return make_response(f'Error in retrieving Contour file: {contourpath}', 404)
 
 
 @app.route('/api/v1/gw_skymap', methods=['GET'])
@@ -1059,7 +1145,7 @@ def get_gw_skymap():
 		_file = gwtm_io.download_gwtm_file(filename=skymap_path, source=config.STORAGE_BUCKET_SOURCE, config=config, decode=False)
 		return make_response(_file, 200)
 	except: # noqa: E722
-		return make_response(f'Error in retrieving Contour file: {skymap_path}', 200)
+		return make_response(f'Error in retrieving Contour file: {skymap_path}', 404)
 
 
 @app.route('/api/v1/grb_moc_file', methods=['GET'])
@@ -1096,7 +1182,7 @@ def get_grbmoc_v1():
 		_file = gwtm_io.download_gwtm_file(filename=moc_filepath, source=config.STORAGE_BUCKET_SOURCE, config=config)
 		return make_response(_file, 200)
 	except: # noqa: E722 
-		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 200)
+		return make_response('MOC file for GW-Alert: \'{}\' and instrument: \'{}\' does not exist!'.format(gid, inst), 404)
 
 
 @app.route('/api/v1/post_alert', methods=['POST'])

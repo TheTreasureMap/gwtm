@@ -1,17 +1,20 @@
 # GW Treasure Map 
 Website environment
 
-## Requirements
+### Step-by-step installation
 
 ### Python:
  * Python Version 3.11
 
-### Python Libraries
-(that you will probably have to `pip3 install`)
-
-```
-python -m pip install -r requirements.txt
-```
+To install a local copy of Treasure Map, please follow these steps:
+1. Clone repository
+2. Create a `conda` environment with `conda create -n gwtm-dev python=3.11`
+3. Activate the `conda` environment with `conda activate gwtm-dev`
+4. Install the requirements file with `pip install -r requirements.txt`
+5. Run `source envars.sh` to activate environment variables, ask Sam for this file if needed.
+6. Start the server by running `python gwtm.wsgi`  (starts Flash application)
+7. Should be running on `127.0.0.1:5000/`, go to the webpage to check it out!
+8. You should be able to sign in with your pre-registered account info.
 
 ### Configuration
 Configuration is handled via environmental variables. At a minimum, the following env vars must be
@@ -37,22 +40,55 @@ export RECAPTCHA_PUBLIC_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).
 
-### Running the application and dependencies locally
+### Running the application and dependencies via Docker
 
-1. Build the docker image
+#### Using Skaffold with Kubernetes for Development
+
+For a more complete development environment with Kubernetes, you can use Skaffold with the Helm chart:
+
+1. Prerequisites:
+   - Install [Skaffold](https://skaffold.dev/docs/install/)
+   - Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+   - Have a Kubernetes cluster running (Minikube, Docker Desktop Kubernetes, etc.)
+
+2. Navigate to the Helm chart directory:
 ```bash
-docker build -t gwtm_web .
+cd gwtm-helm
 ```
-2. Set mimimum required environment variables: DB_USER, DB_PWD, DB_NAME.
-3. Run the docker image using docker-compose:
+
+3. Start the development environment:
 ```bash
-docker-compose up -d
+skaffold dev
 ```
-4. The application should now be running on localhost:8080.
+   This will:
+   - Build the Docker image
+   - Deploy the application to your Kubernetes cluster
+   - Set up port-forwarding (frontend: localhost:8081, backend: localhost:8080)
+   - Display logs in real-time
+   - Automatically redeploy when files change
 
-Note that the provided docker compose creates an empty database. 
+4. To restore sample data to the database:
+```bash
+cd gwtm-helm
+./restore-db /path/to/your/dump.sql
+```
+   This script copies the SQL dump to the database pod and executes it directly.
 
-**TO DO** - Add some sample data to the database before starting the app.
+5. Access the application:
+   - Frontend dashboard: http://localhost:8081
+   - Flask application: http://localhost:8080
+   - Specific endpoints like http://localhost:8080/reported_instruments
+
+6. When finished, stop Skaffold with Ctrl+C or run:
+```bash
+skaffold delete
+```
+
+This Kubernetes setup includes:
+- PostgreSQL database with PostGIS
+- Redis cache
+- Flask backend API
+- Frontend dashboard
 
 ### Running tests
 

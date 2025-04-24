@@ -1,0 +1,58 @@
+# templates/frontend/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.frontend.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.frontend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.frontend.name }}
+    spec:
+      containers:
+      - name: {{ .Values.frontend.name }}
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.frontend.service.targetPort }}
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
+        - name: html-content
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        env:
+        - name: MAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: mail-password
+        - name: RECAPTCHA_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-public-key
+        - name: RECAPTCHA_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-private-key
+        resources:
+          {{- toYaml .Values.frontend.resources | nindent 12 }}
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ .Values.frontend.name }}-nginx-config
+      - name: html-content
+        configMap:
+          name: {{ .Values.frontend.name }}-html
+

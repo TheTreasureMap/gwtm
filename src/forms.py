@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import time
 
+from astropy.coordinates import get_body
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import RecaptchaField
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, DateTimeField, IntegerField, DecimalField, TextAreaField, HiddenField
@@ -357,11 +358,11 @@ class AlertsForm(FlaskForm):
                 self.selected_alert_info.sun_ra =  astropy.coordinates.get_sun(t).ra.deg
                 self.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
                 try:
-                    self.selected_alert_info.moon_ra =  astropy.coordinates.get_moon(t).ra.deg
-                    self.selected_alert_info.moon_dec =  astropy.coordinates.get_moon(t).dec.deg
+                    moon = astropy.coordinates.get_moon(t)
                 except AttributeError:
-                    self.selected_alert_info.moon_ra =  astropy.coordinates.get_body("moon", t).ra.deg
-                    self.selected_alert_info.moon_dec =  astropy.coordinates.get_body("moon", t).dec.deg
+                    moon = astropy.coordinates.get_body("moon", t)
+                self.selected_alert_info.moon_ra =  moon.ra.deg
+                self.selected_alert_info.moon_dec =  moon.dec.deg
             
             if self.selected_alert_info.prob_bns is not None:
                 self.selected_alert_info.prob_bns = round(self.selected_alert_info.prob_bns, 5)

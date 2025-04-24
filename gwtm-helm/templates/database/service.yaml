@@ -1,0 +1,18 @@
+# templates/database/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.database.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.database.name }}
+spec:
+  ports:
+  - port: {{ .Values.database.service.port }}
+    targetPort: {{ .Values.database.service.port }}
+    protocol: TCP
+    name: postgres
+  selector:
+    app: {{ .Values.database.name }}
+

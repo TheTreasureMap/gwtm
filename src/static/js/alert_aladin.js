@@ -168,6 +168,9 @@ function aladin_setMarkers(
 /*
     Function that redraws the instrument contours based on the pointing time
     the slidervals come from the timeslider ui
+    Each contour with a distinct color is redrawn (not based on name)
+    since two insts should never have the same color but sometimes
+    two insts (same network) can have the same name.
 */
 function aladin_sliderRedrawContours(
     aladin, 
@@ -184,7 +187,7 @@ function aladin_sliderRedrawContours(
         var iter = 0
     
         for (j = 0; j < set_contour_list.length; j++) {
-            if (input_contour_list[i].name == set_contour_list[j].contour.name) {
+            if (input_contour_list[i].color == set_contour_list[j].tocolor) {
                 toshow = set_contour_list[j].toshow; 
                 tocolor = set_contour_list[j].tocolor; 
                 iter = j
@@ -217,7 +220,9 @@ function aladin_removeContour(
 }
 
 /*
-    Hides or shows an overlay from the checkbox
+    Hides or shows an overlay from the checkbox.
+    Checks color match: two insts should never have the same color,
+    but sometimes two insts (same network) can have the same name.
 */
 function aladin_overlayToggleOne(
     target,
@@ -226,7 +231,7 @@ function aladin_overlayToggleOne(
     var iter = 0
     for(var k=0; k<overlay_list.length; k++)
     {
-        if (target.id == overlay_list[k].contour.name) {
+        if (target.dataset.color == overlay_list[k].tocolor) {
             iter = k
         }
     }
@@ -378,7 +383,7 @@ function aladin_drawInstHTML(
             <li>\
                 <fieldset>\
                     <label for="' + cat.name + '" style="display: inline-block;">\
-                        <input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" checked="checked" style="display: inline-block;"> \
+                        <input id="' + cat.name + '" type="checkbox" value="' + cat.name + '" data-color="' + cat.color + '" checked="checked" style="display: inline-block;"> \
                             <div class="overlaycolorbox" style="background-color: '+cat.color+';"></div>\
                             <span> '+cat.name+'</span>\
                         </input>\
