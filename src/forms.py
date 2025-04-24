@@ -402,6 +402,7 @@ class AlertsForm(FlaskForm):
 
             #grab the pointings instrument ids
             instrumentids = [x.instrumentid for x in pointing_info]
+            unique_instrumentids = list(set(instrumentids))
 
             #filter and query for the relevant instruments
             instrumentinfo = db.session.query(
@@ -409,7 +410,7 @@ class AlertsForm(FlaskForm):
                 models.instrument.nickname,
                 models.instrument.id
             ).filter(
-                models.instrument.id.in_(instrumentids)
+                models.instrument.id.in_(unique_instrumentids)
             ).all()
 
             self.inst_cov = []
