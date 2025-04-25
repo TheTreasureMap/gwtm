@@ -4,8 +4,8 @@ bs4
 email-validator
 ephem
 Flask==2.1.1
-Flask-Login
-Flask-Mail
+Flask-Login==0.6.3
+Flask-Mail==0.10.0
 Flask-SQLAlchemy==2.5.1
 Flask-WTF
 GeoAlchemy2>=0.13.0
@@ -31,10 +31,10 @@ boto3==1.26.90
 pygcn
 MOCpy
 redis
-Flask-Caching
 emails
 gcn-kafka
 fsspec
 adlfs
-s3fs
+s3fs==0.6.0
 markupsafe>=2.1.1
+flask_profiler==1.8.1
