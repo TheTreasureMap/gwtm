@@ -1,0 +1,42 @@
+# templates/database/init-scripts-configmap.yaml
+{{- if .Values.database.initScripts.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.database.name }}-init-scripts
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.database.name }}
+data:
+  00-test-connection.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Testing PostgreSQL connection..."
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "SELECT 1;"
+    echo "Connection successful!"
+    
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create the extension PostGIS
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE SCHEMA postgis;
+      ALTER DATABASE "$POSTGRES_DB" SET search_path TO postgis, public;
+
+      DO \$\$
+      BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
+              CREATE EXTENSION postgis SCHEMA postgis;
+          END IF;
+      END
+      \$\$;
+      CREATE EXTENSION IF NOT EXISTS postgis_topology;
+    EOSQL
+
+    {{- if .Values.database.initScripts.additionalScripts }}
+    {{- .Values.database.initScripts.additionalScripts | nindent 4 }}
+    {{- end }}
+{{- end }}

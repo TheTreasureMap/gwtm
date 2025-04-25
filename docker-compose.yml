@@ -39,11 +39,27 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
+    command: [ 
+      "postgres",
+      "-c", "shared_preload_libraries=auto_explain",
+      "-c", "logging_collector=on",
+      "-c", "log_directory=logs",
+      "-c", "log_filename=slow.log",
+      "-c", "log_min_duration_statement=100",
+      "-c", "auto_explain.log_min_duration=100",
+      "-c", "auto_explain.log_analyze=true",
+      "-c", "auto_explain.log_buffers=true",
+      "-c", "auto_explain.log_timing=true",
+      "-c", "auto_explain.log_nested_statements=true",
+      "-c", "auto_explain.log_verbose=true",
+      "-c", "log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '",
+      "-c", "log_statement=all"
+    ]
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
-      interval: 60s
-      timeout: 65s
+      interval: 10s
+      timeout: 15s
       retries: 5
 
   redis:

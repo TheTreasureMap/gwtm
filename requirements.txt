@@ -30,7 +30,6 @@ gunicorn
 boto3==1.26.90
 pygcn
 MOCpy
-celery
 redis
 emails
 gcn-kafka

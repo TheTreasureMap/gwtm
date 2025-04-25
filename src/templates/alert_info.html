@@ -513,6 +513,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
       }
     ).done( function(payload){
       aladin.removeLayers()
+      aladin_setImage(aladin, 'static/sun-logo-100.png', 'Sun at GW T0', data.sun_ra, data.sun_dec)
+      aladin_setImage(aladin, 'static/moon-supersmall.png', 'Moon at GW T0', data.moon_ra, data.moon_dec)
+	
       data.inst_overlays = payload
       aladin_drawInstHTML(data.inst_overlays, 'alert_instruments_div')
       instoverlaylist = aladin_setContours(aladin, payload)
