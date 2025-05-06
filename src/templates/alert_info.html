@@ -1077,17 +1077,28 @@ text.info:hover span{ /*the span will display just on :hover state*/
 		  responseType: 'blob'
 	      }
           }
-        ).done(function (reply) 
+        ).done(function (reply, textStatus, jqXHR) 
           {
 	    if (reply instanceof Blob && reply.size > 0) {
 	      clearInterval(progressTimer)
 	      $('#renormdiv').find('i').text("Downloading fits file...")
-              $('#dl-progress-bar').val(90);
+	      $('#dl-progress-bar').val(90);
+
+              //parse filename of renormalized skymap from blob
+	      const cDisp = jqXHR.getResponseHeader('Content-Disposition');
+	      let dl_name = 'normed_skymap.fits'; //placeholder
+	      if (cDisp && cDisp.indexOf('filename=') !== -1) {
+		//OK, Content-Disposition and filename both exist
+		dl_name = cDisp
+                .split('filename=')[1] //extract content following "filename="
+                .split(';')[0]         //toss everything after filename field
+                .replace(/"/g, '');    //clean double quotes
+              }				  
 	      //download renormalized skymap
 	      const downloadUrl = URL.createObjectURL(reply);
 	      const tempa = document.createElement('a');
 	      tempa.href = downloadUrl;
-	      tempa.download = 'normed-skymap.fits';
+	      tempa.download = dl_name;
 	      tempa.click();
 	      //garbage cleanup
 	      URL.revokeObjectURL(downloadUrl);

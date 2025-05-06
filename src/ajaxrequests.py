@@ -992,7 +992,7 @@ def plot_renormalized_skymap():
 	).order_by(
 		models.pointing.time.asc()
 	).all()
-
+        
 	pointingids = [x.id for x in pointings_sorted]
 	if not len(pointingids):
 		return ""
@@ -1037,19 +1037,22 @@ def plot_renormalized_skymap():
 			normed_skymap_bytes = BytesIO()
  			#write skymap fits file to the buffer
 			hdul.writeto(normed_skymap_bytes)
-			
-			#Note, with new healpy version, one can directly
+
+			#Note, with a newer healpy version, one can directly
 			#hp.write_map(normed_skymap_bytes, normed_skymap)
 			
 			#set file pointer to beginning of buffer for read
 			normed_skymap_bytes.seek(0)
+			#unique filename for download
+			dl_name = f'normed_skymap_{graceid}_{approx_cov}_{hashpointingids}.fits'
+			
 			#send file back as attachment
 			return send_file(
 				normed_skymap_bytes,
 				as_attachment=True,
 				#note in flask 2.0, this is download_name
 				#the following works for flask 1.0
-				attachment_filename="normed-skymap.fits",
+				attachment_filename=dl_name,
 				mimetype='application/fits'
 			)
 	else:
