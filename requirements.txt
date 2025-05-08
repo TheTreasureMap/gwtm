@@ -9,6 +9,7 @@ Flask-Login==0.6.3
 Flask-Mail==0.10.0
 Flask-SQLAlchemy==2.5.1
 Flask-WTF
+flask-caching
 GeoAlchemy2>=0.13.0
 healpy
 pyjwt

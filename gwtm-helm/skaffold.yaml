@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta28
+apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: gwtm
@@ -8,8 +8,11 @@ build:
   artifacts:
   - image: gwtm
     context: ..
+    docker: {}
+  - image: gwtm-fastapi
+    context: ..
     docker:
-      dockerfile: Dockerfile
+      dockerfile: server/Dockerfile
 deploy:
   helm:
     releases:
@@ -21,22 +24,22 @@ deploy:
       setValues:
         global.namespace: gwtm
         global.createNamespace: true
-        
+
         # Database values
         database.initScripts.enabled: true
         database.livenessProbe.enabled: true
         database.readinessProbe.enabled: true
         database.persistence.enabled: false
-        
+
         # Cache values
         cache.livenessProbe.enabled: true
         cache.readinessProbe.enabled: true
         cache.persistence.enabled: false
-        
+
         # Backend values
         backend.readinessProbe.enabled: true
         backend.livenessProbe.enabled: true
-        
+
         # Image settings
         backend.image.repository: gwtm
         backend.image.tag: latest
@@ -50,10 +53,17 @@ portForward:
   port: 8080
   localPort: 8080
   address: 0.0.0.0
-# Frontend on local port 8081  
+# Frontend on local port 8081
 - resourceType: service
   resourceName: frontend
   namespace: gwtm
   port: 80
   localPort: 8081
+  address: 0.0.0.0
+# Alternative frontend on local port 8000
+- resourceType: service
+  resourceName: fastapi-backend
+  namespace: gwtm
+  port: 8000
+  localPort: 8000
   address: 0.0.0.0

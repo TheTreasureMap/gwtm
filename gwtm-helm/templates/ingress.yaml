@@ -27,6 +27,41 @@ spec:
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
+          - path: /redoc
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
+          - path: /openapi.json
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
           - path: /
             pathType: Prefix
             backend:
