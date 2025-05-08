@@ -29,3 +29,4 @@ environment_variables.sh
 test
 *.DS_Store
 deploy/
+*venv/
