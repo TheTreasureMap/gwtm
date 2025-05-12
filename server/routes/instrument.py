@@ -188,9 +188,13 @@ async def create_footprint(
         instrumentid=footprint.instrumentid,
         footprint=footprint.footprint  # WKT format
     )
-    
+
     db.add(new_footprint)
     db.commit()
     db.refresh(new_footprint)
-    
+
+    # Convert the footprint from WKB to WKT for the response
+    if isinstance(new_footprint.footprint, WKBElement):
+        new_footprint.footprint = str(wkb_loads(bytes(new_footprint.footprint.data)))
+
     return new_footprint
