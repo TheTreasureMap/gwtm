@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-import datetime
+from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 from server.db.models.pointing import Pointing
@@ -74,12 +74,18 @@ def validate_pointing(pointing, data, dbinsts, user_id, planned_pointings, other
     # Validate status
     if hasattr(data, 'status') and data.status:
         status_value = data.status
-        if status_value in ["planned", "completed", "cancelled"]:
+        if isinstance(status_value, str):
+            try:
+                status_value = pointing_status[status_value]  # Convert string to enum
+            except KeyError:
+                result.errors.append("Invalid status value")
+                return result
+        if status_value in [pointing_status.planned, pointing_status.completed, pointing_status.cancelled]:
             pointing.status = status_value
         else:
             result.errors.append("Invalid status value")
     elif not PLANNED:
-        pointing.status = "completed"
+        pointing.status = pointing_status.completed
 
     # Validate position (ra/dec)
     if not PLANNED:
@@ -291,7 +297,7 @@ async def add_pointings(
                 warnings.append(["Object: " + pointing.model_dump_json(), validation.warnings])
             db.add(mp)
         else:
-            errors.append(["Object: " + pointing.model_dump_json(), validation.errors])
+            errors.append(["Object: " + pointing, validation.errors])
 
     # Process multiple pointings
     elif pointings:
@@ -388,13 +394,13 @@ def get_pointings(
         statuses: Optional[str] = Query(None, description="Comma-separated list or JSON array of statuses"),
 
         # Time filters
-        completed_after: Optional[str] = Query(None,
+        completed_after: Optional[datetime] = Query(None,
                                                description="Filter for pointings completed after this time (ISO format)"),
-        completed_before: Optional[str] = Query(None,
+        completed_before: Optional[datetime] = Query(None,
                                                 description="Filter for pointings completed before this time (ISO format)"),
-        planned_after: Optional[str] = Query(None,
+        planned_after: Optional[datetime] = Query(None,
                                              description="Filter for pointings planned after this time (ISO format)"),
-        planned_before: Optional[str] = Query(None,
+        planned_before: Optional[datetime] = Query(None,
                                               description="Filter for pointings planned before this time (ISO format)"),
 
         # User filters
@@ -578,9 +584,8 @@ def get_pointings(
         # Handle time filters
         if completed_after:
             try:
-                time = datetime.fromisoformat(completed_after.replace('Z', '+00:00'))
                 filter_conditions.append(Pointing.status == pointing_status.completed)
-                filter_conditions.append(Pointing.time >= time)
+                filter_conditions.append(Pointing.time >= completed_after)
             except ValueError:
                 raise HTTPException(
                     status_code=400,
@@ -589,9 +594,8 @@ def get_pointings(
 
         if completed_before:
             try:
-                time = datetime.fromisoformat(completed_before.replace('Z', '+00:00'))
                 filter_conditions.append(Pointing.status == pointing_status.completed)
-                filter_conditions.append(Pointing.time <= time)
+                filter_conditions.append(Pointing.time <= completed_before)
             except ValueError:
                 raise HTTPException(
                     status_code=400,
@@ -600,9 +604,8 @@ def get_pointings(
 
         if planned_after:
             try:
-                time = datetime.fromisoformat(planned_after.replace('Z', '+00:00'))
                 filter_conditions.append(Pointing.status == pointing_status.planned)
-                filter_conditions.append(Pointing.time >= time)
+                filter_conditions.append(Pointing.time >= planned_after)
             except ValueError:
                 raise HTTPException(
                     status_code=400,
@@ -611,9 +614,8 @@ def get_pointings(
 
         if planned_before:
             try:
-                time = datetime.fromisoformat(planned_before.replace('Z', '+00:00'))
                 filter_conditions.append(Pointing.status == pointing_status.planned)
-                filter_conditions.append(Pointing.time <= time)
+                filter_conditions.append(Pointing.time <= planned_before)
             except ValueError:
                 raise HTTPException(
                     status_code=400,
@@ -975,8 +977,8 @@ async def request_doi(
         # Normalize the graceid
         graceid = GWAlert.graceidfromalternate(graceid)
         # Add the join condition
-        filter_conditions.append(Pointing.id == models.pointing_event.pointingid)
-        filter_conditions.append(models.pointing_event.graceid == graceid)
+        filter_conditions.append(Pointing.id == server.db.models.pointing_event.pointingid)
+        filter_conditions.append(server.db.models.pointing_event.graceid == graceid)
     
     # Handle id or ids
     if id:

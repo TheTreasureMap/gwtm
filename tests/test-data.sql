@@ -54,13 +54,16 @@ INSERT INTO public.gw_alert (id, graceid, alternateid, role, time_of_signal, tim
 VALUES
     (1, 'S190425z', 'G298048', 'observation', '2019-04-25 08:18:05', '2019-04-25 08:18:26', NOW(), 'Preliminary', 'O3', 9.11e-6, 156.0, 41.0, 0.72, 0.23, 0.05, 0.00, 1131.0, 3818.0),
     (2, 'S190426c', 'G298146', 'observation', '2019-04-26 15:21:55', '2019-04-26 15:22:16', NOW(), 'Initial', 'O3', 1.23e-6, 377.0, 100.0, 0.00, 0.56, 0.44, 0.00, 1033.0, 3502.0),
-    (3, 'MS230101a', NULL, 'test', '2023-01-01 00:00:00', '2023-01-01 00:01:00', NOW(), 'Preliminary', 'O4', 5.55e-8, 200.0, 50.0, 0.90, 0.05, 0.05, 0.00, 500.0, 1500.0);
+    (3, 'MS230101a', NULL, 'test', '2023-01-01 00:00:00', '2023-01-01 00:01:00', NOW(), 'Preliminary', 'O4', 5.55e-8, 200.0, 50.0, 0.90, 0.05, 0.05, 0.00, 500.0, 1500.0),
+    (4, 'GW190521', 'GW190521_074359', 'observation', '2020-05-21 07:43:59', '2020-05-21 07:43:35', NOW(), 'Initial', 'O3', 2.5e-7, 5300.0, 2600.0, 0.0, 0.0, 0.95, 0.04, 0.01, 0.0),
+    (5, 'MS190425a', 'MS190425a-v1', 'test', '2019-04-25 15:00:00', '2019-04-25 15:00:00', NOW(), 'Test', 'O3', 1.0e-5, 100.0, 50.0, 0.5, 0.2, 0.1, 0.1, 0.7, 0.3);
 
--- Insert test instruments
+-- Insert test instruments with proper enum values
+-- instrument_type: photometric, spectroscopic
 INSERT INTO public.instrument (id, instrument_name, nickname, instrument_type, datecreated, submitterid)
 VALUES
-    (1, 'Test Optical Telescope', 'TOT', 'photometric', NOW(), 1),  -- photometric
-    (2, 'Test X-ray Observatory', 'TXO', 'spectroscopic', NOW(), 1),  -- spectroscopic
+    (1, 'Test Optical Telescope', 'TOT', 'photometric', NOW(), 1),
+    (2, 'Test X-ray Observatory', 'TXO', 'spectroscopic', NOW(), 1),
     (3, 'Mock Radio Dish', 'MRD', 'photometric', NOW(), 2);
 
 -- Insert test footprint CCDs
@@ -70,13 +73,24 @@ VALUES
     (2, 2, ST_GeomFromText('POLYGON((-0.5 -0.5, 0.5 -0.5, 0.5 0.5, -0.5 0.5, -0.5 -0.5))', 4326)),
     (3, 3, ST_GeomFromText('POLYGON((-2 -2, 2 -2, 2 2, -2 2, -2 -2))', 4326));
 
--- Insert test pointings
+-- Insert test pointings with proper enum values
+-- status: planned, completed, cancelled
+-- depth_unit: ab_mag, vega_mag, flux_erg, flux_jy
+-- band: U, B, V, R, I, J, H, K, u, g, r, i, z, etc.
 INSERT INTO public.pointing (id, status, position, instrumentid, depth, depth_err, depth_unit, time, datecreated, dateupdated, submitterid, pos_angle, band, central_wave, bandwidth)
 VALUES
-    (1, 2, ST_GeomFromText('POINT(123.456 -12.345)', 4326), 1, 20.5, 0.1, 1, '2019-04-25 09:00:00', NOW(), NULL, 1, 0.0, 11, 6415.0, 1487.0),  -- completed, r band
-    (2, 1, ST_GeomFromText('POINT(234.567 -23.456)', 4326), 2, 21.0, 0.2, 1, '2019-04-25 10:00:00', NOW(), NULL, 2, 45.0, 10, 4730.0, 1503.0),  -- planned, g band
-    (3, 2, ST_GeomFromText('POINT(345.678 34.567)', 4326), 3, 19.8, 0.05, 1, '2019-04-26 16:00:00', NOW(), NULL, 3, 90.0, 12, 7836.0, 1468.0),  -- completed, i band
-    (4, 3, ST_GeomFromText('POINT(456.789 45.678)', 4326), 1, 0.0, 0.0, 1, '2019-04-26 18:00:00', NOW(), NOW(), 1, 0.0, 11, 6415.0, 1487.0);  -- cancelled
+    (1, 'completed', ST_GeomFromText('POINT(123.456 -12.345)', 4326), 1, 20.5, 0.1, 'ab_mag', '2019-04-25 09:00:00', NOW(), NULL, 1, 0.0, 'r', 6415.0, 1487.0),
+    (2, 'planned', ST_GeomFromText('POINT(234.567 -23.456)', 4326), 2, 21.0, 0.2, 'ab_mag', '2019-04-25 10:00:00', NOW(), NULL, 2, 45.0, 'g', 4730.0, 1503.0),
+    (3, 'completed', ST_GeomFromText('POINT(345.678 34.567)', 4326), 3, 19.8, 0.05, 'ab_mag', '2019-04-26 16:00:00', NOW(), NULL, 3, 90.0, 'i', 7836.0, 1468.0),
+    (4, 'cancelled', ST_GeomFromText('POINT(456.789 45.678)', 4326), 1, 22.0, 0.1, 'ab_mag', '2019-04-26 18:00:00', NOW(), NOW(), 1, 0.0, 'r', 6415.0, 1487.0),
+    (5, 'completed', ST_GeomFromText('POINT(150.0 -30.0)', 4326), 1, 20.5, 0.1, 'ab_mag', '2019-04-25 12:00:00', NOW(), NULL, 1, 45.0, 'V', 5338.0, 810.0),
+    (6, 'completed', ST_GeomFromText('POINT(151.0 -30.0)', 4326), 1, 21.0, 0.1, 'ab_mag', '2019-04-25 12:30:00', NOW(), NULL, 1, 45.0, 'r', 6415.0, 1487.0),
+    (7, 'completed', ST_GeomFromText('POINT(152.0 -30.0)', 4326), 1, 20.8, 0.1, 'ab_mag', '2019-04-25 13:00:00', NOW(), NULL, 1, 45.0, 'R', 6311.0, 1220.0),
+    -- Planned pointings for GW190521
+    (8, 'planned', ST_GeomFromText('POINT(134.0 35.0)', 4326), 1, 21.5, NULL, 'ab_mag', '2020-05-22 08:00:00', NOW(), NULL, 1, NULL, 'V', 5338.0, 810.0),
+    (9, 'planned', ST_GeomFromText('POINT(135.0 35.0)', 4326), 1, 21.5, NULL, 'ab_mag', '2020-05-22 09:00:00', NOW(), NULL, 1, NULL, 'r', 6415.0, 1487.0),
+    -- Cancelled pointing for MS190425a
+    (10, 'cancelled', ST_GeomFromText('POINT(0.0 0.0)', 4326), 1, 20.0, NULL, 'ab_mag', '2019-04-25 16:00:00', NOW(), NOW(), 1, NULL, 'V', 5338.0, 810.0);
 
 -- Insert pointing events (link pointings to GW events)
 INSERT INTO public.pointing_event (id, pointingid, graceid)
@@ -84,7 +98,13 @@ VALUES
     (1, 1, 'S190425z'),
     (2, 2, 'S190425z'),
     (3, 3, 'S190426c'),
-    (4, 4, 'S190426c');
+    (4, 4, 'S190426c'),
+    (5, 5, 'S190425z'),
+    (6, 6, 'S190425z'),
+    (7, 7, 'S190425z'),
+    (8, 8, 'GW190521'),
+    (9, 9, 'GW190521'),
+    (10, 10, 'MS190425a');
 
 -- Insert test GLADE galaxies
 INSERT INTO public.glade_2p3 (id, pgc_number, position, gwgc_name, _2mass_name, hyperleda_name, sdssdr12_name, distance, distance_error, redshift, bmag, bmag_err)
@@ -99,17 +119,19 @@ VALUES
     (1, 'S190425z', 1, 1, 'GLADE v2.3'),
     (2, 'S190425z', 1, 2, 'GLADE v2.3');
 
--- Insert test galaxy scores
+-- Insert test galaxy scores with proper enum values
+-- score_type: default
 INSERT INTO public.gw_galaxy_score (id, gw_galaxyid, score_type, score)
 VALUES
-    (1, 1, 1, 0.85),
-    (2, 2, 1, 0.72);
+    (1, 1, 'default', 0.85),
+    (2, 2, 'default', 0.72);
 
 -- Insert DOI author groups
 INSERT INTO public.doi_author_group (id, userid, name)
 VALUES
     (1, 1, 'LIGO-Virgo Collaboration'),
-    (2, 2, 'Test Observatory Team');
+    (2, 2, 'Test Observatory Team'),
+    (3, 1, 'Test Observatory Group');
 
 -- Insert DOI authors
 INSERT INTO public.doi_author (id, name, affiliation, orcid, gnd, pos_order, author_groupid)
@@ -143,11 +165,11 @@ VALUES
     (1, 1, NOW(), 0.0, 123.5, -12.3, 0.5, 0.05, 0.03, 0.5, 'circular'),
     (2, 2, NOW(), 30.0, 234.6, -23.4, 0.7, 0.12, 0.08, 0.3, 'elliptical');
 
--- Insert test GW candidates
+-- Insert test GW candidates with proper enum values
 INSERT INTO public.gw_candidate (id, datecreated, submitterid, graceid, candidate_name, tns_name, tns_url, position, discovery_date, discovery_magnitude, magnitude_central_wave, magnitude_bandwidth, magnitude_unit, magnitude_bandpass, associated_galaxy, associated_galaxy_redshift, associated_galaxy_distance)
 VALUES
-    (1, NOW(), 2, 'S190425z', 'AT2019abc', '2019abc', 'https://www.wis-tns.org/object/2019abc', ST_GeomFromText('POINT(122.0 -11.5)', 4326), '2019-04-25 10:30:00', 18.5, 6415.0, 1487.0, 1, 11, 'NGC1234', 0.033, 45.5),
-    (2, NOW(), 3, 'S190426c', 'AT2019def', '2019def', 'https://www.wis-tns.org/object/2019def', ST_GeomFromText('POINT(232.0 -21.5)', 4326), '2019-04-26 17:15:00', 19.2, 4730.0, 1503.0, 1, 10, NULL, NULL, NULL);
+    (1, NOW(), 2, 'S190425z', 'AT2019abc', '2019abc', 'https://www.wis-tns.org/object/2019abc', ST_GeomFromText('POINT(122.0 -11.5)', 4326), '2019-04-25 10:30:00', 18.5, 6415.0, 1487.0, 'ab_mag', 'r', 'NGC1234', 0.033, 45.5),
+    (2, NOW(), 3, 'S190426c', 'AT2019def', '2019def', 'https://www.wis-tns.org/object/2019def', ST_GeomFromText('POINT(232.0 -21.5)', 4326), '2019-04-26 17:15:00', 19.2, 4730.0, 1503.0, 'ab_mag', 'g', NULL, NULL, NULL);
 
 -- Insert test user actions
 INSERT INTO public.useractions (id, userid, ipaddress, url, time, jsonvals, method)
