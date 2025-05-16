@@ -26,6 +26,7 @@ __pycache__
 config
 scratch/
 environment_variables.sh
+envars.sh
 test
 *.DS_Store
 deploy/
