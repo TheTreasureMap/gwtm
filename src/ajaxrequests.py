@@ -827,6 +827,7 @@ def plot_renormalized_skymap():
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
+	inst_plan = request.args.get('inst_plan')
 	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
@@ -841,13 +842,31 @@ def plot_renormalized_skymap():
 	
 	pointing_filter = []
 	pointing_filter.append(models.pointing_event.graceid == graceid)
-	pointing_filter.append(models.pointing.status == 'completed')
 	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
 	pointing_filter.append(models.pointing.instrumentid != 49)
 
+	#take completed pointings if any selected
+	comp_mask = models.pointing.status == 'completed'
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
-		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
+		insts_cov = models.pointing.instrumentid.in_(insts_cov)
+		comp_mask &= comp_mask
+	#take planned pointings if any selected
+	if inst_plan != '':
+		plan_mask = models.pointing.status == 'planned'
+		insts_plan = [int(x) for x in inst_plan.split(',')]
+		insts_plan = models.pointing.instrumentid.in_(insts_plan)
+		plan_mask &= insts_plan
+		if inst_cov != '':
+			#take planned and completed
+			pointing_filter.append(comp_mask | plan_mask)
+		else:
+			#only planed pointings
+			pointing_filter.append(plan_mask)
+	else:
+		#default to all completed pointings
+		pointing_filter.append(comp_mask)          
+                
 	#if band_cov != '':
 	#	bands_cov = [x for x in band_cov.split(',')]
 	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
@@ -912,6 +931,7 @@ def plot_renormalized_skymap():
         
 	pointingids = [x.id for x in pointings_sorted]
 	if not len(pointingids):
+		#no pointings selected, early return
 		return ""
 	pointingids = sorted(pointingids)
 	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
@@ -928,7 +948,6 @@ def plot_renormalized_skymap():
 			pointings=pointings_sorted,
 			cache=True #retrieves/stores cached pointings
 		)
-		#normed_skymap = calc_renormalized_skymap(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 		
 		if cache_file is None:
 			#if not cached, then cache it
