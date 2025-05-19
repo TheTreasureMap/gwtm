@@ -362,7 +362,7 @@ class TestInstrumentAPIValidation:
             headers={"api_token": self.admin_token}
         )
         assert response.status_code == 422  # Validation error
-        assert "validation error" in response.json()["detail"][0]["type"]
+        assert "Input should be" in response.json()["detail"][0]["msg"]
 
     def test_missing_required_fields(self):
         """Test creating instrument with missing required fields."""
@@ -392,7 +392,8 @@ class TestInstrumentAPIValidation:
             headers={"api_token": self.admin_token}
         )
         # This should fail at the database level
-        assert response.status_code == 400
+        assert response.status_code == 422
+        assert "Invalid WKT format" in response.json()['detail'][0]['msg']
 
     def test_empty_name_filter(self):
         """Test behavior with empty name filter."""

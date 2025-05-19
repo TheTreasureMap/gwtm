@@ -40,3 +40,12 @@ class FootprintCCDCreate(BaseModel):
     instrumentid: int
     footprint: str = Field(..., description="WKT representation of the footprint")
 
+    @field_validator("footprint")
+    def validate_footprint(cls, value):
+        if value:
+            try:
+                from shapely.wkt import loads
+                loads(value)  # Attempt to parse the WKT
+            except Exception as e:
+                raise ValueError(f"Invalid WKT format: {e}")
+        return value

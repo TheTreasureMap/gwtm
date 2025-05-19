@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from server.db.database import get_db
+from server.db.models import UserGroups, Groups
 from server.db.models.users import Users
 from typing import Optional
 from datetime import datetime, timedelta
@@ -86,29 +87,29 @@ def get_current_user(api_token: str = Depends(api_key_header), db: Session = Dep
     
     return user
 
-def verify_admin(user: Users = Depends(get_current_user)) -> Users:
+def verify_admin(user: Users = Depends(get_current_user), db: Session = Depends(get_db)) -> Users:
     """
-    Check if the user has admin privileges
-    Currently checks for user ID 2 as per the original codebase
+    Check if the user belongs to the admin group.
     """
-    if user.id != 2:
+    admin_group = db.query(Groups).filter(Groups.name == "admin").first()
+    if not admin_group:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin group does not exist",
+        )
+
+    user_group = db.query(UserGroups).filter(
+        UserGroups.userid == user.id, UserGroups.groupid == admin_group.id
+    ).first()
+
+    if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can access this endpoint",
         )
+
     return user
 
-def get_admin_user(user: Users = Depends(get_current_user)) -> Users:
-    """
-    Check if the user has admin privileges and return user
-    Uses adminuser flag instead of hard-coded ID
-    """
-    if not user.adminuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can access this endpoint",
-        )
-    return user
 
 def log_user_action(user: Users, request_path: str, method: str, ip_address: str, json_data=None, db: Session = Depends(get_db)):
     """

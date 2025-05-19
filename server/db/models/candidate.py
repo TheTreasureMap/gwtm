@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum
+from server.core.enums.depth_unit import depth_unit as depth_unit_enum
 from geoalchemy2 import Geography
 from sqlalchemy.ext.hybrid import hybrid_property
 from ..database import Base
@@ -29,7 +30,7 @@ class GWCandidate(Base):
     discovery_magnitude = Column(Float)
     magnitude_central_wave = Column(Float)
     magnitude_bandwidth = Column(Float)
-    magnitude_unit = Column(String(20))
+    magnitude_unit = Column(Enum(depth_unit_enum), nullable=False)
     magnitude_bandpass = Column(String(50))
     associated_galaxy = Column(String(100))
     associated_galaxy_redshift = Column(Float)

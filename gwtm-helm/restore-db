@@ -20,6 +20,7 @@ kubectl cp $DUMP_FILE $POSTGRES_POD:/tmp/dump.sql -n $NAMESPACE
 
 # Execute restore
 echo "Restoring database..."
+
 kubectl -n $NAMESPACE exec -it $POSTGRES_POD -- bash -c "PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -f /tmp/dump.sql -a" 
 
 echo "Restore completed!"
