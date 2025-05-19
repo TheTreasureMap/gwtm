@@ -8,7 +8,7 @@ from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
 from server.db.models.candidate import GWCandidate
 from server.schemas.gw_alert import GWAlertSchema, GWCandidateSchema
-from server.auth.auth import get_current_user, get_admin_user
+from server.auth.auth import get_current_user
 
 router = APIRouter(tags=["Events"])
 
@@ -25,7 +25,8 @@ async def get_candidate_events(
         query = query.filter(GWCandidate.user_id == user_id)
     
     candidates = query.all()
-    return candidates
+    return [GWCandidateSchema.from_orm(candidate) for candidate in candidates]
+
 
 @router.post("/candidate/event")
 async def create_candidate_event(

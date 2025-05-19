@@ -4,7 +4,7 @@ from datetime import datetime
 from server.core.enums.gw_galaxy_score_type import gw_galaxy_score_type
 
 class GWAlertSchema(BaseModel):
-    id: int
+    id: Optional[int] = None
     datecreated: Optional[datetime] = None
     graceid: str
     alternateid: Optional[str] = None

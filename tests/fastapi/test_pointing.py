@@ -544,7 +544,6 @@ class TestPointingEndpoints:
         pointing_id = response.json()["pointing_ids"][0]
 
         # Now cancel it
-        url = f"{self.BASE_URL}/update_pointings"
         update_data = {
             "status": "cancelled",
             "ids": [pointing_id]
@@ -593,7 +592,7 @@ class TestPointingEndpoints:
         }
 
         response = requests.post(
-            self.get_url("/pointings"),
+            self.get_url("/cancel_all"),
             json=cancel_data,
             headers={"api_token": self.admin_token})
 
