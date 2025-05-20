@@ -35,7 +35,7 @@ app.config["flask_profiler"] = {
     "endpointRoot": config.PROFILER_ENDPOINT,
     "ignore": [
 	    "^/static/.*",
-	    "^/ajax_renormalize_skymap.*"
+	    "^/ajax_renormalize_skymap.*",
             "^/ajax_coverage_calculator.*"
 	]
 }
