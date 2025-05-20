@@ -36,6 +36,7 @@ app.config["flask_profiler"] = {
     "ignore": [
 	    "^/static/.*",
 	    "^/ajax_renormalize_skymap.*"
+            "^/ajax_coverage_calculator.*"
 	]
 }
 profiler.init_app(app)

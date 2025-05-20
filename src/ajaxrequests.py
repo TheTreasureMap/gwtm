@@ -12,9 +12,7 @@ import pandas as pd
 import tempfile
 import time
 import hashlib
-import ligo.skymap.postprocess
 from io import StringIO, BytesIO
-import os
 import gwtm_api
 
 import shapely.wkb
@@ -503,7 +501,7 @@ def ajax_request_doi():
 	return jsonify('')
 
 
-def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
+def calc_prob_coverage(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	approx_cov = True
 	ztfid = 47 
@@ -538,9 +536,6 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	#if band_cov != '':
-	#	bands_cov = [x for x in band_cov.split(',')]
-	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth is not None and function.isFloat(depth):
@@ -654,35 +649,6 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	return times, probs, areas
 
 
-def calc_renormalized_skymap_contours(normed_skymap):
-	#generate map of confidence levels from skymap
-	i = np.flipud(np.argsort(normed_skymap))
-	cumsum = np.cumsum(normed_skymap[i])
-	cls = np.empty_like(normed_skymap)
-	cls[i] = cumsum * 100 #convert probability to percent
-	#input ring-indexed healpix array to make ligo contours at 50%, 90%
-	paths = list(ligo.skymap.postprocess.contour(cls, [50, 90], nest=False, degrees=True, simplify=True))
-
-	#create json, where the "features" key holds a list of 2 contours
-	contours_json = json.dumps({
-		'type': 'FeatureCollection',
-		'features': [
-			{
-				'type': 'Feature',
-				'properties': {
-					'credible_level': contour
-				},
-				'geometry': {
-					'type': 'MultiLineString',
-					'coordinates': path
-				}
-			}
-			for contour, path in zip([50,90], paths)
-		]
-	})
-	return contours_json
-
-
 def generate_prob_plot(times, probs, areas):
 	fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -704,11 +670,9 @@ def generate_prob_plot(times, probs, areas):
 def plot_prob_coverage():
 	start = time.time()
 
-	debug = app.debug
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
-	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
@@ -728,9 +692,6 @@ def plot_prob_coverage():
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	#if band_cov != '':
-	#	bands_cov = [x for x in band_cov.split(',')]
-	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth is not None and function.isFloat(depth):
@@ -774,7 +735,7 @@ def plot_prob_coverage():
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
 	
 	if cache_file is None:
-		times, probs, areas = calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+		times, probs, areas = calc_prob_coverage(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 
 	else:
 		cov_result = json.loads(cache_file)
@@ -786,7 +747,7 @@ def plot_prob_coverage():
 		#areas = cache.get(f'{cache_key}_areas')
 
 	#if not all([times, probs, areas]):
-	#	result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+	#	result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 	#	return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
@@ -823,12 +784,9 @@ def plot_prob_coverage():
 def plot_renormalized_skymap():
 	start = time.time()
 
-	debug = app.debug
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
-	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
 	inst_plan = request.args.get('inst_plan')
-	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
@@ -867,9 +825,6 @@ def plot_renormalized_skymap():
 		#default to all completed pointings
 		pointing_filter.append(comp_mask)          
                 
-	#if band_cov != '':
-	#	bands_cov = [x for x in band_cov.split(',')]
-	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth is not None and function.isFloat(depth):
@@ -928,75 +883,80 @@ def plot_renormalized_skymap():
 			'band':p.band,
 			'status':p.status
 		}))
-        
 	pointingids = [x.id for x in pointings_sorted]
 	if not len(pointingids):
 		#no pointings selected, early return
 		return ""
 	pointingids = sorted(pointingids)
-	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 
-	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
-	#try to load a cached contour
-	cache_file = gwtm_io.get_cached_file(cache_key, config)
-	if cache_file is None or download:
+	#download the fits
+	if download:
 		#warning, this part is slow, so we only calculate this
-		#if not cached or need to download the fits
+		#if need to download the fits
 		normed_skymap = gwtm_api.event_tools.renormalize_skymap(
 			graceid=graceid,
-			api_token=os.environ.get('API_TOKEN'),
+			api_token=config.GWTM_API_TOKEN,
 			pointings=pointings_sorted,
 			cache=True #retrieves/stores cached pointings
 		)
+		end = time.time()
+		total = end-start
+		print('total time doing renormalize skymap: {}'.format(total))
+
+		#Old healpy: convert the skymap into a fits hdu
+		#Unfortunately must be done with astropy to write
+		#into in-memory buffer rather than an actual file.
+		#This avoids db blowing up w/ cached skymaps.
+		nside = hp.npix2nside(len(normed_skymap))
+		header = astropy.io.fits.Header()
+		header["PIXTYPE"] = "HEALPIX"
+		header["ORDERING"] = "RING"
+		header["NSIDE"] = nside
+		header["FIRSTPIX"] = 0
+		header["LASTPIX"] = len(normed_skymap) - 1
+		hdu = astropy.io.fits.BinTableHDU.from_columns([astropy.io.fits.Column(name='PROB', format='E', array=normed_skymap)], header=header)
+		hdul = astropy.io.fits.HDUList([astropy.io.fits.PrimaryHDU(), hdu])
+		#initialize in-memory buffer w/ auto garbage collect
+		normed_skymap_bytes = BytesIO()
+ 		#write skymap fits file to the buffer
+		hdul.writeto(normed_skymap_bytes)
+                
+		#Note, with a newer healpy version, one can directly
+		#hp.write_map(normed_skymap_bytes, normed_skymap)
 		
-		if cache_file is None:
-			#if not cached, then cache it
-			normed_contours_json = calc_renormalized_skymap_contours(normed_skymap)
-			cache_file = {
-				'contours_json': normed_contours_json,
-			}
-			gwtm_io.set_cached_file(cache_key, cache_file, config)
-		if download:
-			#if we just want the skymap for download
-			end = time.time()
-			total = end-start
-			print('total time doing renormalize skymap: {}'.format(total))
+		#set file pointer to beginning of buffer for read
+		normed_skymap_bytes.seek(0)
+		#unique filename for download
+		dl_name = f'normed_skymap_{graceid}_{approx_cov}_{hashpointingids}.fits'
+		
+		#send file back as attachment
+		return send_file(
+			normed_skymap_bytes,
+			as_attachment=True,
+			#note in flask 2.0, this is download_name
+			#the following works for flask 1.0
+			attachment_filename=dl_name,
+			mimetype='application/fits'
+		)
 
-			#Old healpy: convert the skymap into a fits hdu
-			#Unfortunately must be done with astropy to write
-			#into in-memory buffer rather than an actual file.
-			#This avoids db blowing up w/ cached skymaps.
-			nside = hp.npix2nside(len(normed_skymap))
-			header = astropy.io.fits.Header()
-			header["PIXTYPE"] = "HEALPIX"
-			header["ORDERING"] = "RING"
-			header["NSIDE"] = nside
-			header["FIRSTPIX"] = 0
-			header["LASTPIX"] = len(normed_skymap) - 1
-			hdu = astropy.io.fits.BinTableHDU.from_columns([astropy.io.fits.Column(name='PROB', format='E', array=normed_skymap)], header=header)
-			hdul = astropy.io.fits.HDUList([astropy.io.fits.PrimaryHDU(), hdu])
-			#initialize in-memory buffer w/ auto garbage collect
-			normed_skymap_bytes = BytesIO()
- 			#write skymap fits file to the buffer
-			hdul.writeto(normed_skymap_bytes)
-
-			#Note, with a newer healpy version, one can directly
-			#hp.write_map(normed_skymap_bytes, normed_skymap)
-			
-			#set file pointer to beginning of buffer for read
-			normed_skymap_bytes.seek(0)
-			#unique filename for download
-			dl_name = f'normed_skymap_{graceid}_{approx_cov}_{hashpointingids}.fits'
-			
-			#send file back as attachment
-			return send_file(
-				normed_skymap_bytes,
-				as_attachment=True,
-				#note in flask 2.0, this is download_name
-				#the following works for flask 1.0
-				attachment_filename=dl_name,
-				mimetype='application/fits'
-			)
+	#otherwise, look for a cached contour file
+	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
+	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
+	#try to load a cached contour
+	cache_file = gwtm_io.get_cached_file(cache_key, config)
+	if cache_file is None:
+		#warning, this part is slow
+		normed_contours_json = gwtm_api.event_tools.renormed_skymap_contours(
+			graceid=graceid,
+			api_token=config.GWTM_API_TOKEN,
+			pointings=pointings_sorted,
+			cache=True #retrieves/stores cached pointings
+		)
+		#cache the final result
+		cache_file = {
+			'contours_json': normed_contours_json,
+		}
+		gwtm_io.set_cached_file(cache_key, cache_file, config)
 	else:
 		#load cached contour
 		normed_contours_json = json.loads(cache_file)['contours_json']

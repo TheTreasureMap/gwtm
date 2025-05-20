@@ -566,7 +566,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
 	  <div style="display: inline-block; white-space: nowrap; margin-right: 1em;">
             <b>Band</b>
-            <select class="selectpicker" style="max-width: 60px;" multiple data-live-search="true" name=r_band_cov id=r_band_cov onchange="spectral_range_from_bandpasses()">
+            <select class="selectpicker" style="max-width: 60px;" multiple data-live-search="true" name=r_band_cov id=r_band_cov onchange="r_spectral_range_from_bandpasses()">
                 {% for a in form.band_cov %}
                   <option value={{ a['value'] }}>{{ a['name'] }}</option>
                 {% endfor %}
@@ -579,7 +579,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
               </span>
             </text></b>
             <b>Type: </b>
-            <select style="max-width: 60px;" class="selectpicker" name=r_spectral_range_type id=r_spectral_range_type onchange="spectral_units_dynammic_selector(this.value)">
+            <select style="max-width: 60px;" class="selectpicker" name=r_spectral_range_type id=r_spectral_range_type onchange="r_spectral_units_dynammic_selector(this.value)">
               <option value='wavelength' selected>Wavelength</option>
               <option value='energy'>Energy</option>
               <option value='frequency'>Frequency</option>
@@ -587,7 +587,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
             <b>Range: </b><input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="r_spectral_range_low" name="r_spectral_range_low"> -
               <input size="10" type="text" oninput="this.value=this.value.replace(/(?![0-9,.])./gmi,'')" id="r_spectral_range_high" name="r_spectral_range_high">
             <b>Unit</b>
-            <select id=r_spectral_range_unit onchange="spectral_range_from_bandpasses()">
+            <select id=r_spectral_range_unit onchange="r_spectral_range_from_bandpasses()">
       
             </select>
 	  </div>
@@ -655,6 +655,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
   window.onload = function(){
     $('#instrumentsHeader').text('...Loading...')
     spectral_units_dynammic_selector('wavelength')
+    r_spectral_units_dynammic_selector('wavelength')
     $.ajax(
       {
         url: '/ajax_alertinstruments_footprints',
@@ -731,6 +732,26 @@ text.info:hover span{ /*the span will display just on :hover state*/
     }
     spectral_range_from_bandpasses()
   }
+  function r_spectral_units_dynammic_selector(spectral_type) {
+    var spectral_type_units = JSON.parse('{{ form.spectral_type_units | tojson}}');
+    var type_units = spectral_type_units[spectral_type]
+    var unitselect = document.querySelector('#r_spectral_range_unit')
+    unitselect.options.length = 0
+
+    for (var k=0 ; k<type_units.length; k++) {
+      var selected = false
+      if (spectral_type == 'wavelength' && type_units[k] == 'angstrom') { selected = true}
+      if (spectral_type == 'energy' && type_units[k] == 'keV') { selected = true}
+      if (spectral_type == 'frequency' && type_units[k] == 'kHz') { selected = true}
+
+      var optiontest = document.createElement('option')
+      optiontest.selected = selected
+      optiontest.value = type_units[k]
+      optiontest.text = type_units[k]
+      unitselect.add(optiontest)
+    }
+    r_spectral_range_from_bandpasses()
+  }
 
   function spectral_range_from_bandpasses() {
       var band_cov = $('#band_cov').val()
@@ -748,6 +769,25 @@ text.info:hover span{ /*the span will display just on :hover state*/
           {
             $('#spectral_range_low').val(reply['total_min'])
             $('#spectral_range_high').val(reply['total_max'])
+          }
+        )
+  }
+  function r_spectral_range_from_bandpasses() {
+      var band_cov = $('#r_band_cov').val()
+      var spectral_type = $('#r_spectral_range_type').val()
+      var spectral_unit = $('#r_spectral_range_unit').val()
+      var spectral_range_low = $('#r_spectral_range_low').val()
+      var spectral_range_high = $('#r_spectral_range_high').val()
+
+      $.ajax(
+          {
+              url: '/ajax_update_spectral_range_from_selected_bands',
+              data: 'band_cov='+band_cov+'&spectral_type='+spectral_type+'&spectral_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
+          }
+        ).done(function (reply) 
+          {
+            $('#r_spectral_range_low').val(reply['total_min'])
+            $('#r_spectral_range_high').val(reply['total_max'])
           }
         )
   }
@@ -953,7 +993,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $('#calculate').prop('disabled', true)
         var btn = $(this).button('loading');
         var inst_cov = $('#inst_cov').val()
-        var band_cov = $('#band_cov').val()
         var depth_cov = $('#depth_cov').val()
         var depth_unit = $('#depth_unit').val()
         var approx_cov = $('#approx_cov').val()
@@ -965,7 +1004,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $.ajax(
           {
               url: '/ajax_coverage_calculator',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
           }
         ).done(function (reply) 
           {
@@ -992,7 +1031,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
 	$('#download-renorm').button('loading')
         var inst_cov = $('#r_inst_cov').val()
 	var inst_plan = $('#r_inst_plan').val()
-        var band_cov = $('#r_band_cov').val()
         var depth_cov = $('#r_depth_cov').val()
         var depth_unit = $('#r_depth_unit').val()
         var approx_cov = $('#r_approx_cov').val()
@@ -1004,7 +1042,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $.ajax(
           {
               url: '/ajax_renormalize_skymap',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
           }
         ).done(function (reply) 
           {
@@ -1050,7 +1088,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
 	$('#renorm-skymap').prop('disabled', true)
 	$('#renorm-skymap').button('loading')
         var inst_cov = $('#r_inst_cov').val()
-        var band_cov = $('#r_band_cov').val()
         var depth_cov = $('#r_depth_cov').val()
         var depth_unit = $('#r_depth_unit').val()
         var approx_cov = $('#r_approx_cov').val()
@@ -1079,7 +1116,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $.ajax(
           {
               url: '/ajax_renormalize_skymap',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&band_cov='+band_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
 	      xhrFields: {
 		  responseType: 'blob'
 	      }
