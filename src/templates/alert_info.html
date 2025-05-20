@@ -1088,6 +1088,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 	$('#renorm-skymap').prop('disabled', true)
 	$('#renorm-skymap').button('loading')
         var inst_cov = $('#r_inst_cov').val()
+	var inst_plan = $('#r_inst_plan').val()
         var depth_cov = $('#r_depth_cov').val()
         var depth_unit = $('#r_depth_unit').val()
         var approx_cov = $('#r_approx_cov').val()
@@ -1116,7 +1117,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $.ajax(
           {
               url: '/ajax_renormalize_skymap',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
 	      xhrFields: {
 		  responseType: 'blob'
 	      }
