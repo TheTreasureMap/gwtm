@@ -1,7 +1,6 @@
 
 from flask import Flask
 from flask_login import LoginManager
-from flask_caching import Cache
 from . import app_mail
 from .gwtmconfig import config
 from flask_profiler import Profiler
@@ -15,7 +14,6 @@ login.login_view = 'login'
 app.config.from_object(config)
 
 mail = app_mail.AppMail(config)
-cache = Cache(app)
 
 app.config["DEBUG"] = True
 
