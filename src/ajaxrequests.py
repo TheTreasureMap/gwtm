@@ -888,6 +888,7 @@ def plot_renormalized_skymap():
 		#no pointings selected, early return
 		return ""
 	pointingids = sorted(pointingids)
+	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 
 	#download the fits
 	if download:
@@ -940,7 +941,6 @@ def plot_renormalized_skymap():
 		)
 
 	#otherwise, look for a cached contour file
-	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
 	#try to load a cached contour
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
