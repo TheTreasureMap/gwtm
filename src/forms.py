@@ -419,7 +419,13 @@ class AlertsForm(FlaskForm):
 
             self.inst_cov = []
             for inst in [x for x in instrumentinfo if x.id != 49]:
-                self.inst_cov.append({'name':inst.nickname if inst.nickname is not None else inst.instrument_name, 'value':inst.id})
+                print(inst.nickname, inst.instrument_name, inst.id)
+                inst_name = inst.instrument_name
+                if inst.nickname is not None and inst.nickname != "":
+                    inst_name = inst.nickname
+                self.inst_cov.append({'name':inst_name, 'value':inst.id})
+
+            print(self.inst_cov)
 
             self.depth_unit=[]
             for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit is not None])):
