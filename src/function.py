@@ -560,7 +560,7 @@ def send_account_validation_email(user, notify=True):
 		"Treasure Map Account Verification",
 		[user.email],
 		"<p>Hello "+user.firstname+",<br><br> \
-		Thank you for registering for The Gravitational Wave Treasure Map Project! Please follow this <a href=\"http://treasuremap.space/login?verification_key="+user.verification_key+"\">address</a> to verify your account. <br>\
+		Thank you for registering for the Treasure Map Project! Please follow this <a href=\"http://treasuremap.space/login?verification_key="+user.verification_key+"\">address</a> to verify your account. <br>\
 		Please do not reply to this email<br><br> \
 		Cheers from the Treasure Map team </p>",
 	)

@@ -2,6 +2,7 @@ import astropy
 import pandas as pd
 import json
 import time
+from io import StringIO
 
 from astropy.coordinates import get_body
 from flask_wtf import FlaskForm
@@ -249,6 +250,9 @@ class AlertsForm(FlaskForm):
     GRBoverlays = []
     has_icecube = False
     has_candidate = False
+    calc_ids = ["calc-info",
+                "calc-coverage",
+                "calc-renorm-skymap"]
 
     def construct_alertform(self, args):
         
@@ -514,10 +518,12 @@ class AlertsForm(FlaskForm):
             self.avgra = self.selected_alert_info.avgra
             self.avgdec = self.selected_alert_info.avgdec
 
+            #load normal skymap
             contourpath = f'{s3path}/'+path_info+'-contours-smooth.json'
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:
+                
                 f = gwtm_io.download_gwtm_file(contourpath, config.STORAGE_BUCKET_SOURCE, config)
                 contours_data = pd.read_json(f)
                 contour_geometry = []
