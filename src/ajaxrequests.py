@@ -12,11 +12,13 @@ import pandas as pd
 import tempfile
 import time
 import hashlib
+from io import StringIO, BytesIO
+import gwtm_api
 
 import shapely.wkb
 from werkzeug.exceptions import HTTPException
 
-from flask import request, jsonify
+from flask import request, jsonify, send_file
 from flask_login import current_user
 from sqlalchemy import func, or_
 from plotly.subplots import make_subplots
@@ -499,7 +501,7 @@ def ajax_request_doi():
 	return jsonify('')
 
 
-def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
+def calc_prob_coverage(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, stype):
 
 	approx_cov = True
 	ztfid = 47 
@@ -534,9 +536,6 @@ def calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, d
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	#if band_cov != '':
-	#	bands_cov = [x for x in band_cov.split(',')]
-	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth is not None and function.isFloat(depth):
@@ -671,11 +670,9 @@ def generate_prob_plot(times, probs, areas):
 def plot_prob_coverage():
 	start = time.time()
 
-	debug = app.debug
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
 	mappathinfo = request.args.get('mappathinfo')
 	inst_cov = request.args.get('inst_cov')
-	band_cov = request.args.get('band_cov')
 	depth = request.args.get('depth_cov')
 	depth_unit = request.args.get('depth_unit')
 	approx_cov = int(request.args.get('approx_cov')) == 1
@@ -695,9 +692,6 @@ def plot_prob_coverage():
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		pointing_filter.append(models.pointing.instrumentid.in_(insts_cov))
-	#if band_cov != '':
-	#	bands_cov = [x for x in band_cov.split(',')]
-	#	pointing_filter.append(models.pointing.band.in_(bands_cov))
 	if depth_unit != 'None' and depth_unit != '':
 		pointing_filter.append(models.pointing.depth_unit == depth_unit)
 	if depth is not None and function.isFloat(depth):
@@ -741,7 +735,7 @@ def plot_prob_coverage():
 	cache_file = gwtm_io.get_cached_file(cache_key, config)
 	
 	if cache_file is None:
-		times, probs, areas = calc_prob_coverage(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+		times, probs, areas = calc_prob_coverage(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 
 	else:
 		cov_result = json.loads(cache_file)
@@ -753,7 +747,7 @@ def plot_prob_coverage():
 		#areas = cache.get(f'{cache_key}_areas')
 
 	#if not all([times, probs, areas]):
-	#	result = calc_prob_coverage.delay(debug, graceid, mappathinfo, inst_cov, band_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
+	#	result = calc_prob_coverage.delay(graceid, mappathinfo, inst_cov, depth, depth_unit, approx_cov, cache_key, slow, shigh, specenum)
 	#	return jsonify({'result_id': result.id})
 
 	coverage_div = generate_prob_plot(times, probs, areas)
@@ -784,6 +778,209 @@ def plot_prob_coverage():
 #		return generate_prob_plot(times, probs, areas)
 #	else:
 #		return 'false'
+
+
+@app.route("/ajax_renormalize_skymap", methods=['GET', 'POST'])
+def plot_renormalized_skymap():
+	start = time.time()
+
+	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
+	inst_cov = request.args.get('inst_cov')
+	inst_plan = request.args.get('inst_plan')
+	depth = request.args.get('depth_cov')
+	depth_unit = request.args.get('depth_unit')
+	approx_cov = int(request.args.get('approx_cov')) == 1
+	spec_range_type = request.args.get('spec_range_type')
+	spec_range_unit = request.args.get('spec_range_unit')
+	spec_range_low = request.args.get('spec_range_low')
+	spec_range_high = request.args.get('spec_range_high')
+	download = request.args.get('download', default='false') == 'true'
+	slow, shigh = None, None
+	specenum = None
+	
+	pointing_filter = []
+	pointing_filter.append(models.pointing_event.graceid == graceid)
+	pointing_filter.append(models.pointing_event.pointingid == models.pointing.id)
+	pointing_filter.append(models.pointing.instrumentid != 49)
+
+	#take completed pointings if any selected
+	comp_mask = models.pointing.status == 'completed'
+	if inst_cov != '':
+		insts_cov = [int(x) for x in inst_cov.split(',')]
+		insts_cov = models.pointing.instrumentid.in_(insts_cov)
+		comp_mask &= comp_mask
+	#take planned pointings if any selected
+	if inst_plan != '':
+		plan_mask = models.pointing.status == 'planned'
+		insts_plan = [int(x) for x in inst_plan.split(',')]
+		insts_plan = models.pointing.instrumentid.in_(insts_plan)
+		plan_mask &= insts_plan
+		if inst_cov != '':
+			#take planned and completed
+			pointing_filter.append(comp_mask | plan_mask)
+		else:
+			#only planed pointings
+			pointing_filter.append(plan_mask)
+	else:
+		#default to all completed pointings
+		pointing_filter.append(comp_mask)          
+                
+	if depth_unit != 'None' and depth_unit != '':
+		pointing_filter.append(models.pointing.depth_unit == depth_unit)
+	if depth is not None and function.isFloat(depth):
+		if 'mag' in depth_unit:
+			pointing_filter.append(models.pointing.depth >= float(depth))
+		elif 'flux' in depth_unit:
+			pointing_filter.append(models.pointing.depth <= float(depth))
+		else:
+			raise HTTPException('Unknown depth unit.')
+		
+	if spec_range_low not in ['', None] and spec_range_high not in ['', None]:
+		if spec_range_type == 'wavelength':
+			unit = [x for x in enums.wavelength_units if spec_range_unit == x.name][0]
+			scale = enums.wavelength_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+		if spec_range_type == 'energy':
+			unit = [x for x in enums.energy_units if spec_range_unit == x.name][0]
+			scale = enums.energy_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+		if spec_range_type == 'frequency':
+			unit = [x for x in enums.frequency_units if spec_range_unit == x.name][0]
+			scale = enums.frequency_units.get_scale(unit)
+			slow, shigh = float(spec_range_low)*scale, float(spec_range_high)*scale
+			
+		specenum = [x for x in models.SpectralRangeHandler.spectralrangetype if spec_range_type == x.name][0]
+		pointing_filter.append(models.pointing.inSpectralRange(slow, shigh, specenum))
+
+	pointings_raw = db.session.query(
+		models.pointing.id,
+		models.pointing.instrumentid,
+		models.pointing.pos_angle,
+		func.ST_AsText(models.pointing.position).label('position'),
+		models.pointing.time,
+		models.pointing.depth,
+		models.pointing.depth_unit,
+		models.pointing.band,
+		models.pointing.status
+	).filter(
+		*pointing_filter
+	).order_by(
+		models.pointing.time.asc()
+	).all()
+	#create new pointing object with ra,dec for gwtm_api
+	pointings_sorted = []
+	for p in pointings_raw:
+		ra, dec = function.sanatize_pointing(p.position)
+		pointings_sorted.append(gwtm_api.pointing.Pointing({
+			'id': p.id,
+			'instrumentid': p.instrumentid,
+			'pos_angle': p.pos_angle,
+			'ra': ra,
+			'dec': dec,
+			'time':p.time,
+			'depth':p.depth,
+			'depth_unit':p.depth_unit,
+			'band':p.band,
+			'status':p.status
+		}))
+	pointingids = [x.id for x in pointings_sorted]
+	if not len(pointingids):
+		#no pointings selected, early return
+		return ""
+	pointingids = sorted(pointingids)
+	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
+
+	#download the fits
+	if download:
+		#warning, this part is slow, so we only calculate this
+		#if need to download the fits
+		normed_skymap = gwtm_api.event_tools.renormalize_skymap(
+			graceid=graceid,
+			api_token=config.GWTM_API_TOKEN,
+			pointings=pointings_sorted,
+			cache=True #retrieves/stores cached pointings
+		)
+		end = time.time()
+		total = end-start
+		print('total time doing renormalize skymap: {}'.format(total))
+
+		#Old healpy: convert the skymap into a fits hdu
+		#Unfortunately must be done with astropy to write
+		#into in-memory buffer rather than an actual file.
+		#This avoids db blowing up w/ cached skymaps.
+		nside = hp.npix2nside(len(normed_skymap))
+		header = astropy.io.fits.Header()
+		header["PIXTYPE"] = "HEALPIX"
+		header["ORDERING"] = "RING"
+		header["NSIDE"] = nside
+		header["FIRSTPIX"] = 0
+		header["LASTPIX"] = len(normed_skymap) - 1
+		hdu = astropy.io.fits.BinTableHDU.from_columns([astropy.io.fits.Column(name='PROB', format='E', array=normed_skymap)], header=header)
+		hdul = astropy.io.fits.HDUList([astropy.io.fits.PrimaryHDU(), hdu])
+		#initialize in-memory buffer w/ auto garbage collect
+		normed_skymap_bytes = BytesIO()
+ 		#write skymap fits file to the buffer
+		hdul.writeto(normed_skymap_bytes)
+                
+		#Note, with a newer healpy version, one can directly
+		#hp.write_map(normed_skymap_bytes, normed_skymap)
+		
+		#set file pointer to beginning of buffer for read
+		normed_skymap_bytes.seek(0)
+		#unique filename for download
+		dl_name = f'normed_skymap_{graceid}_{approx_cov}_{hashpointingids}.fits'
+		
+		#send file back as attachment
+		return send_file(
+			normed_skymap_bytes,
+			as_attachment=True,
+			#note in flask 2.0, this is download_name
+			#the following works for flask 1.0
+			attachment_filename=dl_name,
+			mimetype='application/fits'
+		)
+
+	#otherwise, look for a cached contour file
+	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
+	#try to load a cached contour
+	cache_file = gwtm_io.get_cached_file(cache_key, config)
+	if cache_file is None:
+		#warning, this part is slow
+		normed_contours_json = gwtm_api.event_tools.renormed_skymap_contours(
+			graceid=graceid,
+			api_token=config.GWTM_API_TOKEN,
+			pointings=pointings_sorted,
+			cache=True #retrieves/stores cached pointings
+		)
+		#cache the final result
+		cache_file = {
+			'contours_json': normed_contours_json,
+		}
+		gwtm_io.set_cached_file(cache_key, cache_file, config)
+	else:
+		#load cached contour
+		normed_contours_json = json.loads(cache_file)['contours_json']
+
+	#read json and make detection overlay
+	normed_contours = pd.read_json(StringIO(normed_contours_json))
+	contour_geometry = []
+	for contour in normed_contours['features']:
+		contour_geometry.extend(contour['geometry']['coordinates'])
+
+	detection_overlays = []
+	detection_overlays.append({
+		"display":True,
+		"name":"GW Contour",
+		"color": '#e6194B',
+		"contours":function.polygons2footprints(contour_geometry, 0)
+	})
+	payload = {'detection_overlays':detection_overlays}
+        
+	end = time.time()
+	total = end-start
+	print('total time doing renormalize skymap: {}'.format(total))
+        
+	return payload
 
 
 @app.route('/ajax_preview_footprint', methods=['GET'])
