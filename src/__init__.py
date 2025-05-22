@@ -15,7 +15,7 @@ app.config.from_object(config)
 
 mail = app_mail.AppMail(config)
 
-app.config["DEBUG"] = True
+app.config["DEBUG"] = config.DEBUG
 
 # You need to declare necessary configuration to initialize
 # flask-profiler as follows:
