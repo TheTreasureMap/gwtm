@@ -10,6 +10,9 @@ import datetime
 from typing import Dict, Any, List, Optional
 import pytest
 
+from server.utils.error_handling import validation_exception
+from fastapi import status
+
 # Test configuration
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 API_V1_PREFIX = "/api/v1"
@@ -43,7 +46,7 @@ class TestPointingEndpoints:
             self.get_url("/pointings"),
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should return all pointings the user has access to
@@ -57,7 +60,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 2  # Should find pointings 1 and 2 linked to S190425z
@@ -70,7 +73,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 4  # Should find pointings from both events
@@ -83,7 +86,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 1
@@ -99,7 +102,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 2  # Should find pointings 1, 2, and 3
@@ -116,7 +119,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # All returned pointings should have completed status
@@ -132,7 +135,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # All returned pointings should have planned status
@@ -148,7 +151,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # All returned pointings should have cancelled status
@@ -164,7 +167,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should include both completed and planned pointings
@@ -180,7 +183,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings with r band (enum 11)
@@ -195,7 +198,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings with g band (enum 10)
@@ -210,7 +213,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings using instrument 1 (Test Optical Telescope)
@@ -225,7 +228,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings using the named instrument
@@ -238,7 +241,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings submitted by user 1 (admin)
@@ -253,7 +256,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings submitted by admin user
@@ -269,7 +272,7 @@ class TestPointingEndpoints:
             headers={"api_token": self.admin_token}
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings completed within this time range
@@ -285,7 +288,7 @@ class TestPointingEndpoints:
             },
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
         # Should find pointings within this depth range
@@ -317,7 +320,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "pointing_ids" in data
         assert len(data["pointing_ids"]) == 1
@@ -361,7 +364,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "pointing_ids" in data
         assert len(data["pointing_ids"]) == 2
@@ -390,7 +393,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "pointing_ids" in data
         assert len(data["pointing_ids"]) == 1
@@ -428,7 +431,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "pointing_ids" in data
         # Note: DOI creation might not be configured in test environment
@@ -443,7 +446,7 @@ class TestPointingEndpoints:
             json=params,
             headers={"api_token": self.admin_token})
 
-        if response.status_code == 200 and len(response.json()) > 0:
+        if response.status_code == status.HTTP_200_OK and len(response.json()) > 0:
             # Now update it to completed
             update_data = {
                 "graceid": "GW190521",
@@ -459,7 +462,7 @@ class TestPointingEndpoints:
                 json=update_data,
                 headers={"api_token": self.admin_token})
 
-            assert response.status_code == 200
+            assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert "pointing_ids" in data
             assert len(data["pointing_ids"]) == 1
@@ -487,8 +490,8 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 500
-        assert "Invalid graceid" in response.json().get("detail", "")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Invalid graceid" in response.json().get("message")
 
     def test_post_pointing_missing_required_fields(self):
         """Test posting pointing with missing required fields."""
@@ -511,7 +514,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data["ERRORS"]) > 0
         # Should indicate missing instrumentid
@@ -540,7 +543,7 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         pointing_id = response.json()["pointing_ids"][0]
 
         # Now cancel it
@@ -550,11 +553,11 @@ class TestPointingEndpoints:
         }
 
         response = requests.post(
-            self.get_url("/pointings"),
+            self.get_url("/update_pointings"),
             json=update_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "Updated" in data["message"]
         assert "1" in data["message"]  # Should update 1 pointing
@@ -565,7 +568,7 @@ class TestPointingEndpoints:
 
         for i in range(3):
             pointing_data = {
-                "graceid": "MS190425a",  # Known test graceid
+                "graceid": "S190425z",  # Known test graceid
                 "pointing": {
                     "ra": 10.0 + i,
                     "dec": 5.0 + i,
@@ -583,11 +586,11 @@ class TestPointingEndpoints:
                 json=pointing_data,
                 headers={"api_token": self.admin_token})
 
-            assert response.status_code == 200
+            assert response.status_code == status.HTTP_200_OK
 
         # Now cancel all for this graceid and instrument
         cancel_data = {
-            "graceid": "MS190425a",
+            "graceid": "S190425z",
             "instrumentid": 3
         }
 
@@ -596,7 +599,7 @@ class TestPointingEndpoints:
             json=cancel_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "Updated" in data["message"]
         assert "3" in data["message"]  # Should cancel 3 pointings
@@ -628,13 +631,39 @@ class TestPointingEndpoints:
                 json=pointing_data,
                 headers={"api_token": self.admin_token})
 
-            assert response.status_code == 200
+            assert response.status_code == status.HTTP_200_OK
             pointing_ids.extend(response.json()["pointing_ids"])
 
         # Now request DOI
         doi_data = {
             "graceid": "S190425z",
             "ids": pointing_ids,
+            "request_doi": True,
+            "creators": [
+                {
+                    "name": "Test Researcher",
+                    "affiliation": "Test University"
+                }
+            ]
+        }
+
+        # Now create new pointing with DOI request for all created pointings
+        doi_data = {
+            "graceid": "S190425z",
+            # Need a pointing or pointings parameter
+            "pointing": {
+                "ra": 175.0,
+                "dec": 45.0,
+                "instrumentid": 1,
+                "depth": 23.0,
+                "depth_unit": "ab_mag",
+                "time": "2019-04-25T20:00:00.000000",
+                "status": "completed",
+                "pos_angle": 0.0,
+                "band": "V"
+            },
+            # DOI-related parameters
+            "request_doi": True,
             "creators": [
                 {
                     "name": "Test Researcher",
@@ -648,48 +677,48 @@ class TestPointingEndpoints:
             json=doi_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert "DOI URL" in data
+        assert "DOI" in data
 
     def test_pointing_unauthorized_access(self):
         """Test that unauthorized requests are rejected."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
 
         # Request without API token
-        response = self.session.get(url)
-        assert response.status_code == 401
+        response = requests.get(url)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         # Request with invalid API token
         invalid_headers = {"api_token": "invalid_token"}
-        response = self.session.get(url, headers=invalid_headers)
-        assert response.status_code == 401
+        response = requests.get(url, headers=invalid_headers)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_pointings_with_existing_api_tokens(self):
         """Test with different valid API tokens from test data."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
 
         # Test with admin token
-        response = self.session.get(url, headers=self.admin_headers)
-        assert response.status_code == 200
+        response = requests.get(url, headers={"api_token": self.admin_token})
+        assert response.status_code == status.HTTP_200_OK
 
         # Test with scientist token
-        response = self.session.get(url, headers=self.sci_headers)
-        assert response.status_code == 200
+        response = requests.get(url, headers={"api_token": self.scientist_token})
+        assert response.status_code == status.HTTP_200_OK
 
         # Test with regular user token
-        response = self.session.get(url, headers=self.headers)
-        assert response.status_code == 200
+        response = requests.get(url, headers={"api_token": self.user_token})
+        assert response.status_code == status.HTTP_200_OK
 
     def test_get_pointings_by_specific_coordinates(self):
         """Test getting pointings near specific coordinates from test data."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
 
         # Test data has pointings around these coordinates
         params = {"ids": "[1]"}  # pointing 1 is at (123.456, -12.345)
-        response = self.session.get(url, params=params, headers=self.headers)
+        response = requests.get(url, json=params, headers={"api_token": self.admin_token})
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) > 0
         # Check that we get back the expected position
@@ -701,7 +730,11 @@ class TestPointingEndpoints:
 class TestPointingWithSpecificData:
     """Test pointing functionality using specific values from test data."""
 
-    BASE_URL = "http://localhost:8000/api/v1"
+    def get_url(self, endpoint):
+        """Get full URL for an endpoint."""
+        return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
+
+
     TEST_USER_API_TOKEN = "test_token_user_002"
 
     @classmethod
@@ -714,11 +747,11 @@ class TestPointingWithSpecificData:
 
     def test_get_specific_pointing_by_id(self):
         """Test getting pointing 1 specifically."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
         params = {"id": 1}
         response = self.session.get(url, params=params, headers=self.headers)
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
         pointing = data[0]
@@ -736,21 +769,21 @@ class TestPointingWithSpecificData:
 
     def test_get_specific_pointing_by_graceid_and_instrument(self):
         """Test getting pointings for S190425z with instrument 1."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
         params = {
             "graceid": "S190425z",
             "instrument": "1"
         }
         response = self.session.get(url, params=params, headers=self.headers)
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         # Should find pointings 1 and 2 which are linked to S190425z
         assert len(data) >= 1
 
     def test_create_pointing_for_existing_graceid(self):
         """Test creating a pointing for an existing graceid."""
-        url = f"{self.BASE_URL}/pointings"
+        url = self.get_url("/pointings")
 
         pointing_data = {
             "graceid": "MS230101a",  # Test graceid from test data
@@ -769,7 +802,7 @@ class TestPointingWithSpecificData:
 
         response = self.session.post(url, json=pointing_data, headers=self.headers)
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "pointing_ids" in data
         assert len(data["pointing_ids"]) == 1

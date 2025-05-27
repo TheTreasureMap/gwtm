@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from typing import Optional, List, Dict, Any, Union
-from datetime import datetime
+from dateutil.parser import parse as date_parse
 from server.core.enums.gw_galaxy_score_type import gw_galaxy_score_type
 
 
@@ -122,11 +122,11 @@ class PostEventGalaxiesRequest(BaseModel):
     @field_validator('timesent_stamp')
     @classmethod
     def validate_timestamp(cls, v: str) -> str:
-        """Validate that the timestamp is in the correct format."""
+        """Validate that the timestamp is in a valid ISO format."""
         try:
-            datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
+            date_parse(v)
             return v
-        except ValueError:
+        except Exception:
             raise ValueError("Time format must be %Y-%m-%dT%H:%M:%S.%f, e.g. 2019-05-01T12:00:00.00")
 
 

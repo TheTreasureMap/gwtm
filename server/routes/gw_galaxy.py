@@ -1,16 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, Depends, Query, Body
+from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
 from geoalchemy2.shape import to_shape
-from geoalchemy2 import Geography
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
-from sqlalchemy import func, or_
-import json
 import datetime
+from dateutil.parser import parse as date_parse
+
 
 from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
 from server.db.models.gw_galaxy import GWGalaxy, EventGalaxy, GWGalaxyScore, GWGalaxyList, GWGalaxyEntry
-from server.db.models.users import Users
 from server.auth.auth import get_current_user
 from server.schemas.gw_galaxy import (
     GWGalaxySchema,
@@ -48,11 +47,11 @@ async def get_event_galaxies(
 
     if timesent_stamp:
         try:
-            time = datetime.datetime.strptime(timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
+            time = date_parse(timesent_stamp)
         except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail="Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00"
+            raise validation_exception(
+                message="Error parsing date",
+                errors=[f"Timestamp should be in %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00"]
             )
 
         # Find the alert with the given time and graceid
@@ -63,9 +62,9 @@ async def get_event_galaxies(
         ).first()
 
         if not alert:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid 'timesent_stamp' for event\n Please visit http://treasuremap.space/alerts?graceids={graceid} for valid timesent stamps for this event"
+            raise validation_exception(
+                message=f"Invalid 'timesent_stamp' for event {graceid}",
+                errors=[f"Please visit http://treasuremap.space/alerts?graceids={graceid} for valid timesent stamps for this event"]
             )
 
         filter_conditions.append(GWGalaxyList.alertid == str(alert.id))
@@ -119,11 +118,12 @@ async def post_event_galaxies(
 
     # Parse timesent_stamp
     try:
-        time = datetime.datetime.strptime(request.timesent_stamp, "%Y-%m-%dT%H:%M:%S.%f")
+        print(f"Parsing timesent_stamp: {request.timesent_stamp}")
+        time = date_parse(request.timesent_stamp)
     except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Error parsing date. Should be %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00"
+        raise validation_exception(
+            message="Error parsing date",
+            errors=["Timestamp should be in %Y-%m-%dT%H:%M:%S.%f format. e.g. 2019-05-01T12:00:00.00"]
         )
 
     # Find the alert
@@ -134,9 +134,9 @@ async def post_event_galaxies(
     ).first()
 
     if not alert:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid 'timesent_stamp' for event\n Please visit http://treasuremap.space/alerts?graceids={graceid} for valid timesent stamps for this event"
+        raise validation_exception(
+            message=f"Invalid 'timesent_stamp' for event {graceid}",
+            errors=[f"Please visit http://treasuremap.space/alerts?graceids={graceid} for valid timesent stamps for this event"]
         )
 
     # Handle groupname - default to username if not provided
@@ -149,21 +149,30 @@ async def post_event_galaxies(
 
     if post_doi:
         if request.creators:
-            creators = request.creators
-            for c in creators:
-                if 'name' not in c or 'affiliation' not in c:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="name and affiliation are required for DOI creators json list"
+            creators = []
+            for c in request.creators:
+                # Since request.creators is List[DOICreator] from Pydantic,
+                # c is a DOICreator object, not a dict
+                if not c.name or not c.affiliation:
+                    raise validation_exception(
+                        message="Invalid DOI creator information",
+                        errors=["name and affiliation are required for each creator in the list"]
                     )
+                creator_dict = { 'name': c.name, 'affiliation': c.affiliation }
+                if c.orcid:
+                    creator_dict['orcid'] = c.orcid
+                if c.gnd:
+                    creator_dict['gnd'] = c.gnd
+                creators.append(creator_dict)
         elif request.doi_group_id:
-            from server.db.models.doi_author import doi_author
-            valid, creators = doi_author.construct_creators(request.doi_group_id, user.id)
+            from server.db.models.doi_author import DOIAuthor
+            valid, creators_list = DOIAuthor.construct_creators(request.doi_group_id, user.id, db)
             if not valid:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid doi_group_id. Make sure you are the User associated with the DOI group"
+                raise validation_exception(
+                    message="Invalid DOI group ID",
+                    errors=["Make sure you are the User associated with the DOI group"]
                 )
+            creators = creators_list
         else:
             creators = [{'name': f"{user.firstname} {user.lastname}", 'affiliation': ''}]
 
@@ -260,17 +269,11 @@ async def remove_event_galaxies(
     galaxy_list = db.query(GWGalaxyList).filter(GWGalaxyList.id == listid).first()
 
     if not galaxy_list:
-        raise HTTPException(
-            status_code=404,
-            detail='No galaxies with that listid'
-        )
+        raise not_found_exception("No galaxies found with that list ID")
 
     # Check permissions
     if user.id != galaxy_list.submitterid:
-        raise HTTPException(
-            status_code=403,
-            detail='You can only delete information related to your api_token! shame shame'
-        )
+        raise permission_exception("You can only delete information related to your API token")
 
     # Find and delete galaxy entries
     galaxy_entries = db.query(GWGalaxyEntry).filter(GWGalaxyEntry.listid == listid).all()

@@ -1,11 +1,16 @@
+import os
+
 from fastapi import FastAPI, Request, status, Depends, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 import datetime
 import uvicorn
 import logging
+import redis
 
 from server.config import settings
 from server.db.database import get_db
@@ -21,6 +26,7 @@ from server.routes.icecube import router as icecube_router
 from server.routes.admin import router as admin_router
 from server.routes.ui import router as ui_router
 from contextlib import asynccontextmanager
+from server.utils.error_handling import ErrorDetail
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -59,7 +65,7 @@ async def lifespan_middleware(request: Request, call_next):
         if response is None:
             # Create a default error response
             response = JSONResponse(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"detail": "Internal server error"}
             )
         return response
@@ -73,16 +79,84 @@ async def lifespan_context():
         logger.error(f"An error occurred: {e}")
     finally:
         logger.info("Application is shutting down...")
-    
 
-    
-# Exception handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    error_detail = str(exc)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle Pydantic validation errors"""
+    errors = []
+    for error in exc.errors():
+        errors.append(
+            ErrorDetail(
+                message=error["msg"],
+                code="validation_error",
+                params={
+                    "field": ".".join(str(x) for x in error["loc"]) if error["loc"] else None,
+                    "type": error["type"]
+                }
+            ).to_dict()
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "message": "Request validation error",
+            "errors": errors
+        }
+    )
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    """Handle SQLAlchemy errors"""
+    # Log the exception details for debugging
+    logger.error(f"Database error: {str(exc)}")
+
+    # Don't expose internal details to the client
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": error_detail},
+        content={"message": "A database error occurred"}
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_exception_handler(request: Request, exc: IntegrityError):
+    """Handle database integrity errors"""
+    logger.error(f"Integrity error: {str(exc)}")
+
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"message": "The request conflicts with database constraints"}
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Custom handler for HTTPException to ensure consistent format"""
+    content = exc.detail
+
+    # Ensure consistent format if detail is just a string
+    if isinstance(content, str):
+        content = {"message": content}
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        headers=exc.headers,
+        content=content
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Catch-all handler for unhandled exceptions"""
+    # Log the full exception details for debugging
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+
+    # Don't expose internal details to the client
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"message": "An unexpected error occurred"}
     )
 
 # API health check
@@ -90,7 +164,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health():
     return {
         "status": "ok",
-        "time": datetime.datetime.now().isoformat(),
+        "time": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
 
 
@@ -156,11 +230,15 @@ async def service_status(db: Session = Depends(get_db)):
         }
 
         # Test actual connection
-        redis_client = redis.from_url(redis_url)
-        if redis_client.ping():
-            status["redis_status"] = "connected"
-        else:
+        try:
+            redis_client = redis.from_url(redis_url)
+            if redis_client.ping():
+                status["redis_status"] = "connected"
+            else:
+                status["redis_status"] = "disconnected"
+        except redis.exceptions.ConnectionError:
             status["redis_status"] = "disconnected"
+            status["details"]["redis"]["error"] = "Connection refused"
     except Exception as e:
         status["redis_status"] = "disconnected"
         status["details"]["redis"]["error"] = str(e)

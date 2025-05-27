@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, Response, Body
+from fastapi import APIRouter, Depends, Request, Response, Body
+from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 
@@ -63,7 +64,10 @@ async def request_doi(
         filter_conditions.append(Pointing.id.in_(ids))
 
     if len(filter_conditions) == 1:  # Only the user filter
-        raise HTTPException(status_code=400, detail="Insufficient filter parameters")
+        raise validation_exception(
+            message="Insufficient filter parameters",
+            errors=["Please provide either graceid, id, or ids parameter"]
+        )
 
     # Query the pointings
     points = db.query(Pointing).filter(*filter_conditions).all()
@@ -79,7 +83,10 @@ async def request_doi(
             warnings.append(f"Invalid doi request for pointing: {p.id}")
 
     if len(doi_points) == 0:
-        raise HTTPException(status_code=400, detail="No pointings to give DOI")
+        raise validation_exception(
+            message="No valid pointings found for DOI request",
+            errors=["All pointings must be completed, owned by you, and not already have a DOI"]
+        )
 
     # Get the instruments
     insts = db.query(Instrument).filter(Instrument.id.in_([x.instrumentid for x in doi_points]))
@@ -91,7 +98,10 @@ async def request_doi(
     )]))
 
     if len(gids) > 1:
-        raise HTTPException(status_code=400, detail="Pointings must be only for a single GW event")
+        raise validation_exception(
+            message="Multiple events detected", 
+            errors=["Pointings must be only for a single GW event for a DOI request"]
+        )
 
     gid = gids[0]
 
@@ -100,9 +110,9 @@ async def request_doi(
         if doi_group_id:
             valid, creators_list = DOIAuthor.construct_creators(doi_group_id, user.id, db)
             if not valid:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid doi_group_id. Make sure you are the User associated with the DOI group"
+                raise validation_exception(
+                    message="Invalid DOI group ID",
+                    errors=["Make sure you are the User associated with the DOI group"]
                 )
             creators = creators_list
         else:
@@ -113,9 +123,9 @@ async def request_doi(
         # Validate creators
         for c in creators:
             if "name" not in c or "affiliation" not in c:
-                raise HTTPException(
-                    status_code=400,
-                    detail="name and affiliation are required for DOI creators json list"
+                raise validation_exception(
+                    message="Invalid DOI creator information",
+                    errors=["name and affiliation are required for each creator in the list"]
                 )
 
     # Create or use provided DOI
@@ -214,10 +224,7 @@ async def get_doi_authors(
     ).first()
 
     if not group:
-        raise HTTPException(
-            status_code=403,
-            detail="You don't have permission to access this DOI author group"
-        )
+        raise permission_exception("You don't have permission to access this DOI author group")
 
     authors = db.query(DOIAuthor).filter(DOIAuthor.author_groupid == group_id).all()
     return authors

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, HTTPException, Depends, status
 from geoalchemy2 import WKBElement
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -18,6 +18,7 @@ from server.schemas.instrument import (
     FootprintCCDCreate
 )
 from server.auth.auth import get_current_user
+from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
 
 router = APIRouter(tags=["instruments"])
 
@@ -56,7 +57,7 @@ async def get_instruments(
                 ids_list = ids
             filter_conditions.append(Instrument.id.in_(ids_list))
         except:
-            raise HTTPException(status_code=400, detail="Invalid ids format. Must be a JSON array.")
+            raise validation_exception("Invalid ids format. Must be a JSON array.")
     
     if name:
         filter_conditions.append(Instrument.instrument_name.contains(name))
@@ -75,7 +76,7 @@ async def get_instruments(
             filter_conditions.append(or_(*or_conditions))
             filter_conditions.append(Instrument.id == Pointing.instrumentid)
         except:
-            raise HTTPException(status_code=400, detail="Invalid names format. Must be a JSON array.")
+            raise validation_exception("Invalid names format. Must be a JSON array.")
     
     if type:
         filter_conditions.append(Instrument.instrument_type == type)
@@ -174,14 +175,11 @@ async def create_footprint(
     # Check if the instrument exists
     instrument = db.query(Instrument).filter(Instrument.id == footprint.instrumentid).first()
     if not instrument:
-        raise HTTPException(status_code=404, detail=f"Instrument with ID {footprint.instrumentid} not found")
+        raise not_found_exception(f"Instrument with ID {footprint.instrumentid} not found")
     
     # Check permissions (only the instrument submitter can add footprints)
     if instrument.submitterid != user.id:
-        raise HTTPException(
-            status_code=403, 
-            detail="You don't have permission to add footprints to this instrument"
-        )
+        raise permission_exception("You don't have permission to add footprints to this instrument")
     
     # Create a new footprint
     new_footprint = FootprintCCD(
