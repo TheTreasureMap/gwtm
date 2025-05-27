@@ -13,7 +13,8 @@ import requests
 
 from server import config
 from server.core.enums import pointing_status
-
+from server.db.models.pointing import Pointing
+from server.schemas.pointing import PointingSchema
 
 def isInt(s) -> bool:
     """Check if a value can be converted to an integer."""
@@ -362,7 +363,7 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 
 
 def create_doi(payload):
-    ACCESS_TOKEN = config['ZENODO_ACCESS_KEY']
+    ACCESS_TOKEN = config.settings.ZENODO_ACCESS_KEY
     data = payload['data']
     data_file = payload['data_file']
     files = payload['files']
@@ -370,6 +371,10 @@ def create_doi(payload):
 
     r = requests.post('https://zenodo.org/api/deposit/depositions', params={'access_token': ACCESS_TOKEN}, json={},
                       headers=headers)
+
+    if r.status_code == 403:
+        return None, None
+
     d_id = r.json()['id']
     r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id,
                       params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
@@ -387,7 +392,7 @@ def create_doi(payload):
 
 
 def create_pointing_doi(
-        points: List[Any],
+        points: List[Pointing],
         graceid: str,
         creators: List[Dict[str, str]],
         instrument_names: List[str]
@@ -409,7 +414,7 @@ def create_pointing_doi(
 
     for p in points:
         if p.status == pointing_status.completed:
-            points_json.append(p.parse)
+            points_json.append(PointingSchema.from_orm(p))
 
     if len(instrument_names) > 1:
         inst_str = "These observations were taken on the"
@@ -435,7 +440,7 @@ def create_pointing_doi(
                 }
             },
             'data_file': {'name': 'completed_pointings_' + graceid + '.json'},
-            'files': {'file': io.StringIO(json.dumps(points_json))},
+            'files': {'file': json.dumps([p.model_dump(mode="json") for p in points_json])},
             'headers': {"Content-Type": "application/json"},
         }
 

@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, Depends, Query, Body, HTTPException
+from server.utils.error_handling import validation_exception, not_found_exception, permission_exception, server_exception
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+from typing import List
 from dateutil.parser import parse as date_parse
 import shapely.wkb
-import json
 
 from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
@@ -136,7 +135,7 @@ async def post_gw_candidates(
     valid_alerts = db.query(GWAlert).filter(GWAlert.graceid == post_request.graceid).all()
     if len(valid_alerts) == 0:
         raise HTTPException(
-            status_code=400,
+            status_code=HTTPException.HTTP_400_BAD_REQUEST,
             detail="Invalid 'graceid'. Visit https://treasuremap.space/alert_select for valid alerts"
         )
 
@@ -155,8 +154,6 @@ async def post_gw_candidates(
             valid_candidates.append(candidate)
 
     for candidate in valid_candidates:
-        print(f"Candidate {candidate}")
-        print(f"Candidate ra {candidate.ra} dec {candidate.dec}")
 
         # Validate the candidate
         new_candidate = GWCandidate(
@@ -207,17 +204,11 @@ async def update_candidate(
     candidate = db.query(GWCandidate).filter(GWCandidate.id == request.id).first()
 
     if not candidate:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No candidate found with 'id': {id}"
-        )
+        raise not_found_exception(f"No candidate found with id: {request.id}")
 
     # Check permissions
     if candidate.submitterid != user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Error: Unauthorized. Unable to alter other user's records"
-        )
+        raise permission_exception("Unable to alter other user's candidate records")
 
     update = request.candidate.dict(exclude_unset=True)
     # Copy values from the Pydantic schema to the SQLAlchemy model
@@ -296,13 +287,13 @@ async def delete_candidates(
         candidate = db.query(GWCandidate).filter(GWCandidate.id == delete_params.id).first()
         if not candidate:
             raise HTTPException(
-                status_code=404,
+                status_code=HTTPException.HTTP_404_NOT_FOUND,
                 detail=f"No candidate found with 'id': {delete_params.id}"
             )
 
         if candidate.submitterid != user.id:
             raise HTTPException(
-                status_code=403,
+                status_code=HTTPException.HTTP_403_FORBIDDEN,
                 detail="Error: Unauthorized. Unable to alter other user's records"
             )
 
@@ -314,10 +305,7 @@ async def delete_candidates(
         candidates = db.query(GWCandidate).filter(GWCandidate.id.in_(query_ids)).all()
 
         if len(candidates) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="No candidates found with input 'ids'"
-            )
+            raise not_found_exception("No candidates found with provided 'ids'")
 
         # Filter candidates the user is allowed to delete
         candidates_to_delete.extend([x for x in candidates if x.submitterid == user.id])
@@ -325,9 +313,9 @@ async def delete_candidates(
             warnings.append("Some entries were not deleted. You cannot delete candidates you didn't submit")
 
     else:
-        raise HTTPException(
-            status_code=400,
-            detail="Either 'id' or 'ids' parameter is required"
+        raise validation_exception(
+            message="Missing required parameter", 
+            errors=["Either 'id' or 'ids' parameter is required"]
         )
 
     # Delete the candidates

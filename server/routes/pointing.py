@@ -1,215 +1,38 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+# server/routes/pointing.py
+from fastapi import APIRouter, Depends, Query, Body, HTTPException
+from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
+import json
 
+from server.db.database import get_db
 from server.db.models.pointing import Pointing
 from server.db.models.instrument import Instrument
-from server.schemas.doi import DOIAuthorSchema
-from server.schemas.pointing import PointingSchema, PointingResponse, PointingCreate
-from server.db.database import get_db
-from server.auth.auth import get_current_user
-from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing_event import PointingEvent
-import shapely.wkb
-from server.utils.function import isFloat, isInt, create_pointing_doi
-from server.core.enums.wavelength_units import wavelength_units
-from server.core.enums.frequency_units import frequency_units
-from server.core.enums.energy_units import energy_units
-from server.core.enums.bandpass import bandpass
-from server.core.enums.depth_unit import depth_unit as depth_unit_enum
-from server.core.enums.pointing_status import pointing_status
+from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
-from sqlalchemy import or_
+from server.schemas.pointing import (
+    PointingSchema,
+    PointingResponse,
+    PointingUpdate
+)
+from server.auth.auth import get_current_user
+from server.utils.function import pointing_crossmatch, create_pointing_doi
+from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+from server.core.enums.depth_unit import depth_unit as depth_unit_enum
+from server.core.enums.bandpass import bandpass as bandpass_enum
 
 
 router = APIRouter(tags=["pointings"])
 
 
-class ValidationResult:
-    """Helper class for validation results."""
-
-    def __init__(self):
-        self.valid = False
-        self.errors = []
-        self.warnings = []
-
-
-def validate_pointing(pointing, data, dbinsts, user_id, planned_pointings, otherpointings, db):
-    """
-    Validate pointing data.
-    This is a helper function to separate validation logic from model methods.
-    """
-    # Create validation result
-    result = ValidationResult()
-
-    # Check for planned pointing (update case)
-    PLANNED = False
-    if hasattr(data, 'id') and data.id is not None and isInt(data.id):
-        PLANNED = True
-        pointing_id = int(data.id)
-
-        if str(pointing_id) not in planned_pointings:
-            result.errors.append(f"Pointing with ID {pointing_id} not found or not owned by you")
-            return result
-
-        planned_pointing = planned_pointings[str(pointing_id)]
-
-        if planned_pointing.status in ["completed", "cancelled"]:
-            result.errors.append(f"This pointing has already been {planned_pointing.status}")
-            return result
-
-        # Copy data from planned pointing
-        pointing.position = planned_pointing.position
-        pointing.depth = planned_pointing.depth
-        pointing.depth_err = planned_pointing.depth_err
-        pointing.depth_unit = planned_pointing.depth_unit
-        pointing.status = "completed"
-        pointing.band = planned_pointing.band
-        pointing.central_wave = planned_pointing.central_wave
-        pointing.bandwidth = planned_pointing.bandwidth
-        pointing.instrumentid = planned_pointing.instrumentid
-        pointing.pos_angle = planned_pointing.pos_angle
-
-    # Validate status
-    if hasattr(data, 'status') and data.status:
-        status_value = data.status
-        if isinstance(status_value, str):
-            try:
-                status_value = pointing_status[status_value]  # Convert string to enum
-            except KeyError:
-                result.errors.append("Invalid status value")
-                return result
-        if status_value in [pointing_status.planned, pointing_status.completed, pointing_status.cancelled]:
-            pointing.status = status_value
-        else:
-            result.errors.append("Invalid status value")
-    elif not PLANNED:
-        pointing.status = pointing_status.completed
-
-    # Validate position (ra/dec)
-    if not PLANNED:
-        if hasattr(data, 'position') and data.position:
-            pos = data.position
-            if pos and all(x in pos for x in ["POINT", "(", ")", " "]) and "," not in pos:
-                pointing.position = data.position
-            else:
-                result.errors.append(
-                    "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
-        elif hasattr(data, 'ra') and hasattr(data, 'dec') and data.ra is not None and data.dec is not None:
-            ra, dec = data.ra, data.dec
-
-            if not isFloat(ra) or not isFloat(dec):
-                result.errors.append(
-                    "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
-            else:
-                pointing.position = f"POINT({ra} {dec})"
-        else:
-            result.errors.append("Position information required (either position string or ra/dec coordinates)")
-
-    # Validate instrument
-    if hasattr(data, 'instrumentid') and data.instrumentid and not PLANNED:
-        inst = data.instrumentid
-        valid_inst = False
-
-        if isInt(inst):
-            insts = [x for x in dbinsts if x.id == int(inst)]
-            if insts:
-                pointing.instrumentid = inst
-                valid_inst = True
-        else:
-            insts = [x for x in dbinsts if x.instrument_name == inst]
-            if insts:
-                pointing.instrumentid = insts[0].id
-                valid_inst = True
-
-        if not valid_inst:
-            result.errors.append("Invalid instrumentid. Can be id or name of instrument")
-    elif not PLANNED:
-        result.errors.append("Field instrumentid is required")
-
-    # Validate depth
-    if hasattr(data, 'depth') and data.depth is not None:
-        if isFloat(data.depth):
-            pointing.depth = float(data.depth)
-        else:
-            result.errors.append("Invalid depth. Must be decimal")
-    elif pointing.status == "completed" and not PLANNED:
-        result.errors.append("depth is required for completed observations")
-
-    # Validate depth unit
-    if hasattr(data, 'depth_unit') and data.depth_unit:
-        pointing.depth_unit = data.depth_unit
-    else:
-        result.errors.append("depth_unit is required")
-
-    # Validate depth error
-    if hasattr(data, 'depth_err') and data.depth_err is not None:
-        if isFloat(data.depth_err):
-            pointing.depth_err = float(data.depth_err)
-        else:
-            result.errors.append("Invalid depth_err. Must be decimal")
-
-    # Validate position angle
-    if hasattr(data, 'pos_angle') and data.pos_angle is not None:
-        if isFloat(data.pos_angle):
-            pointing.pos_angle = float(data.pos_angle)
-        else:
-            result.errors.append("Invalid pos_angle. Must be decimal")
-    elif pointing.status == "completed" and pointing.pos_angle is None and not PLANNED:
-        result.errors.append("pos_angle is required for completed observations")
-
-    # Validate time
-    if hasattr(data, 'time') and data.time:
-        pointing.time = data.time
-    elif pointing.status == "planned":
-        result.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
-    elif pointing.status == "completed":
-        result.errors.append('Field \"time\" is required for the observed pointing')
-
-    # Validate band/spectral information
-    if hasattr(data, 'band') and data.band and not PLANNED:
-        pointing.band = data.band
-
-    # Set basic fields
-    pointing.submitterid = user_id
-    pointing.datecreated = datetime.now()
-
-    # Check for duplicate pointing
-    from server.utils.function import pointing_crossmatch
-    if pointing_crossmatch(pointing, otherpointings):
-        result.errors.append("Pointing already submitted")
-
-    # Set validation result
-    result.valid = len(result.errors) == 0
-    return result
-
-
-def get_pointings_from_ids(ids, filter_conditions, db):
-    """Get pointings from a list of IDs with filter conditions."""
-    from sqlalchemy import and_
-
-    # Add ID filter to conditions
-    filter_copy = list(filter_conditions)
-    filter_copy.append(Pointing.id.in_(ids))
-
-    # Query pointings
-    pointings = db.query(Pointing).filter(*filter_copy).all()
-
-    # Format results
-    pointing_dict = {}
-    for p in pointings:
-        pointing_dict[str(p.id)] = p
-
-    return pointing_dict
-
-
 @router.post("/pointings", response_model=PointingResponse)
 async def add_pointings(
         graceid: str = Body(..., description="Grace ID of the GW event"),
-        pointing: Optional[PointingCreate] = Body(None, description="Single pointing object"),
-        pointings: Optional[List[PointingCreate]] = Body(None, description="List of pointing objects"),
+        pointing: Optional[Dict[str, Any]] = Body(None, description="Single pointing object"),
+        pointings: Optional[List[Dict[str, Any]]] = Body(None, description="List of pointing objects"),
         request_doi: Optional[bool] = Body(False, description="Whether to request a DOI"),
         creators: Optional[List[Dict[str, str]]] = Body(None, description="List of creators for the DOI"),
         doi_group_id: Optional[str] = Body(None, description="DOI author group ID"),
@@ -241,9 +64,9 @@ async def add_pointings(
     # First check if the graceid exists
     valid_alerts = db.query(GWAlert).filter(GWAlert.graceid == graceid).all()
     if len(valid_alerts) == 0:
-        raise HTTPException(
-            status_code=500,
-            detail="Invalid graceid"
+        raise validation_exception(
+            message="Invalid graceid",
+            errors=[f"The graceid '{graceid}' does not exist in the database"]
         )
 
     # Handle DOI creators
@@ -251,18 +74,18 @@ async def add_pointings(
         if creators:
             for c in creators:
                 if 'name' not in c or 'affiliation' not in c:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="name and affiliation are required for DOI creators json list"
+                    raise validation_exception(
+                        message="Invalid DOI creator information",
+                        errors=["name and affiliation are required for each creator in the list"]
                     )
         elif doi_group_id:
             # Import here to avoid circular imports
             from server.db.models.doi_author import DOIAuthor
             valid, creators_list = DOIAuthor.construct_creators(doi_group_id, user.id, db)
             if not valid:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Invalid doi_group_id. Make sure you are the User associated with the DOI group"
+                raise validation_exception(
+                    message="Invalid DOI group ID",
+                    errors=["Make sure you are the User associated with the DOI group"]
                 )
             creators = creators_list
         else:
@@ -270,9 +93,6 @@ async def add_pointings(
 
     # Get instrument list
     dbinsts = db.query(Instrument.instrument_name, Instrument.id).all()
-
-    # Set up filter for user's pointings
-    filter_conditions = [Pointing.submitterid == user.id]
 
     # Get other pointings for this event to check for duplicates
     otherpointings = db.query(Pointing).filter(
@@ -282,49 +102,29 @@ async def add_pointings(
 
     # Process a single pointing
     if pointing:
-        # For planned pointings that are being updated
-        planned_pointings = {}
-        if pointing.id is not None and isInt(pointing.id):
-            planned_ids = [int(pointing.id)]
-            planned_pointings = get_pointings_from_ids(planned_ids, filter_conditions, db)
+        # Handle pointing validation
+        validation_result = validate_pointing(pointing, dbinsts, user.id, db, otherpointings)
 
-        # Create and validate pointing
-        mp = Pointing()
-        validation = validate_pointing(mp, pointing, dbinsts, user.id, planned_pointings, otherpointings, db)
-
-        if validation.valid:
-            points.append(mp)
-            if validation.warnings:
-                warnings.append(["Object: " + pointing.model_dump_json(), validation.warnings])
-            db.add(mp)
+        if validation_result.valid:
+            points.append(validation_result.pointing)
+            if validation_result.warnings:
+                warnings.append(["Object: " + str(pointing), validation_result.warnings])
+            db.add(validation_result.pointing)
         else:
-            errors.append(["Object: " + pointing, validation.errors])
+            errors.append(["Errors validating pointing: ", validation_result.errors])
 
     # Process multiple pointings
     elif pointings:
-        # Extract planned pointing IDs
-        planned_ids = []
         for p in pointings:
-            if p.id is not None and isInt(p.id):
-                planned_ids.append(int(p.id))
+            validation_result = validate_pointing(p, dbinsts, user.id, db, otherpointings)
 
-        # Get planned pointings
-        planned_pointings = {}
-        if planned_ids:
-            planned_pointings = get_pointings_from_ids(planned_ids, filter_conditions, db)
-
-        # Process each pointing
-        for p in pointings:
-            mp = Pointing()
-            validation = validate_pointing(mp, p, dbinsts, user.id, planned_pointings, otherpointings, db)
-
-            if validation.valid:
-                points.append(mp)
-                if validation.warnings:
-                    warnings.append(["Object: " + p.model_dump_json(), validation.warnings])
-                db.add(mp)
+            if validation_result.valid:
+                points.append(validation_result.pointing)
+                if validation_result.warnings:
+                    warnings.append(["Object: " + str(p), validation_result.warnings])
+                db.add(validation_result.pointing)
             else:
-                errors.append(["Object: " + p.model_dump_json(), validation.errors])
+                errors.append(["Object: " + str(p), validation_result.errors])
 
     else:
         raise HTTPException(
@@ -382,6 +182,228 @@ async def add_pointings(
     )
 
 
+class ValidationResult:
+    """Helper class for validation results."""
+
+    def __init__(self):
+        self.valid = False
+        self.pointing = None
+        self.errors = []
+        self.warnings = []
+
+
+def validate_pointing(data, dbinsts, user_id, db, otherpointings):
+    """
+    Validate pointing data.
+    This is a helper function to separate validation logic from model methods.
+    """
+    # Create validation result
+    result = ValidationResult()
+
+    # Create a new pointing
+    pointing = Pointing()
+
+    # Check for planned pointing (update case)
+    PLANNED = False
+    if 'id' in data and data['id'] is not None and isinstance(data['id'], int):
+        PLANNED = True
+        pointing_id = int(data['id'])
+
+        # Find the planned pointing
+        planned_pointing = db.query(Pointing).filter(
+            Pointing.id == pointing_id,
+            Pointing.submitterid == user_id
+        ).first()
+
+        if not planned_pointing:
+            result.errors.append(f"Pointing with ID {pointing_id} not found or not owned by you")
+            return result
+
+        if planned_pointing.status in [pointing_status_enum.completed, pointing_status_enum.cancelled]:
+            result.errors.append(f"This pointing has already been {planned_pointing.status.name}")
+            return result
+
+        # Copy data from planned pointing
+        pointing.position = planned_pointing.position
+        pointing.depth = planned_pointing.depth
+        pointing.depth_err = planned_pointing.depth_err
+        pointing.depth_unit = planned_pointing.depth_unit
+        pointing.status = pointing_status_enum.completed  # Set to completed
+        pointing.band = planned_pointing.band
+        pointing.central_wave = planned_pointing.central_wave
+        pointing.bandwidth = planned_pointing.bandwidth
+        pointing.instrumentid = planned_pointing.instrumentid
+        pointing.pos_angle = planned_pointing.pos_angle
+
+        # Update fields if provided
+        if 'time' in data and data['time']:
+            pointing.time = data['time']
+        else:
+            pointing.time = planned_pointing.time
+
+        if 'pos_angle' in data and data['pos_angle'] is not None:
+            pointing.pos_angle = data['pos_angle']
+
+        pointing.submitterid = user_id
+        pointing.datecreated = datetime.now()
+        pointing.dateupdated = datetime.now()
+
+        # Mark as valid
+        result.valid = True
+        result.pointing = pointing
+        return result
+
+    # Validate status
+    if 'status' in data and data['status']:
+        status_value = data['status']
+        if isinstance(status_value, str):
+            try:
+                status_value = pointing_status_enum[status_value]  # Convert string to enum
+            except KeyError:
+                result.errors.append("Invalid status value")
+                return result
+        if status_value in [pointing_status_enum.planned, pointing_status_enum.completed, pointing_status_enum.cancelled]:
+            pointing.status = status_value
+        else:
+            result.errors.append("Invalid status value")
+            return result
+    else:
+        pointing.status = pointing_status_enum.completed
+
+    # Validate position (ra/dec)
+    if 'position' in data and data['position']:
+        pos = data['position']
+        if pos and all(x in pos for x in ["POINT", "(", ")", " "]) and "," not in pos:
+            pointing.position = data['position']
+        else:
+            result.errors.append(
+                "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
+            return result
+    elif 'ra' in data and 'dec' in data and data['ra'] is not None and data['dec'] is not None:
+        ra, dec = data['ra'], data['dec']
+
+        if not isinstance(ra, (int, float)) or not isinstance(dec, (int, float)):
+            result.errors.append(
+                "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
+            return result
+        else:
+            pointing.position = f"POINT({ra} {dec})"
+    else:
+        result.errors.append("Position information required (either position string or ra/dec coordinates)")
+        return result
+
+    # Validate instrument
+    if 'instrumentid' in data and data['instrumentid']:
+        inst = data['instrumentid']
+        valid_inst = False
+
+        if isinstance(inst, int):
+            insts = [x for x in dbinsts if x.id == int(inst)]
+            if insts:
+                pointing.instrumentid = inst
+                valid_inst = True
+        else:
+            insts = [x for x in dbinsts if x.instrument_name == inst]
+            if insts:
+                pointing.instrumentid = insts[0].id
+                valid_inst = True
+
+        if not valid_inst:
+            result.errors.append("Invalid instrumentid. Can be id or name of instrument")
+            return result
+    else:
+        result.errors.append("Field instrumentid is required")
+        return result
+
+    # Validate depth
+    if 'depth' in data and data['depth'] is not None:
+        if isinstance(data['depth'], (int, float)):
+            pointing.depth = float(data['depth'])
+        else:
+            result.errors.append("Invalid depth. Must be decimal")
+            return result
+    elif pointing.status == pointing_status_enum.completed:
+        result.errors.append("depth is required for completed observations")
+        return result
+
+    # Validate depth unit
+    if 'depth_unit' in data and data['depth_unit']:
+        unit_value = data['depth_unit']
+        if isinstance(unit_value, str):
+            try:
+                unit_value = depth_unit_enum[unit_value]  # Convert string to enum
+            except KeyError:
+                result.errors.append(f"Invalid depth_unit value: {unit_value}")
+                return result
+        pointing.depth_unit = unit_value
+    elif pointing.status == pointing_status_enum.completed:
+        result.errors.append("depth_unit is required for completed observations")
+        return result
+
+    # Validate depth error
+    if 'depth_err' in data and data['depth_err'] is not None:
+        if isinstance(data['depth_err'], (int, float)):
+            pointing.depth_err = float(data['depth_err'])
+        else:
+            result.errors.append("Invalid depth_err. Must be decimal")
+            return result
+
+    # Validate position angle
+    if 'pos_angle' in data and data['pos_angle'] is not None:
+        if isinstance(data['pos_angle'], (int, float)):
+            pointing.pos_angle = float(data['pos_angle'])
+        else:
+            result.errors.append("Invalid pos_angle. Must be decimal")
+            return result
+    elif pointing.status == pointing_status_enum.completed and pointing.pos_angle is None:
+        result.errors.append("pos_angle is required for completed observations")
+        return result
+
+    # Validate time
+    if 'time' in data and data['time']:
+        pointing.time = data['time']
+    elif pointing.status == pointing_status_enum.planned:
+        result.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
+        return result
+    elif pointing.status == pointing_status_enum.completed:
+        result.errors.append('Field \"time\" is required for the observed pointing')
+        return result
+
+    # Validate band/spectral information
+    if 'band' in data and data['band']:
+        band_value = data['band']
+        if isinstance(band_value, str):
+            try:
+                band_value = bandpass_enum[band_value]  # Convert string to enum
+            except KeyError:
+                result.errors.append(f"Invalid band value: {band_value}")
+                return result
+        pointing.band = band_value
+    elif pointing.status == pointing_status_enum.completed:
+        result.errors.append("band is required for completed observations")
+        return result
+
+    # Set basic fields
+    pointing.submitterid = user_id
+    pointing.datecreated = datetime.now()
+
+    # Set central_wave and bandwidth if provided
+    if 'central_wave' in data and data['central_wave'] is not None:
+        pointing.central_wave = data['central_wave']
+    if 'bandwidth' in data and data['bandwidth'] is not None:
+        pointing.bandwidth = data['bandwidth']
+
+    # Check for duplicate pointing
+    if pointing_crossmatch(pointing, otherpointings):
+        result.errors.append("Pointing already submitted")
+        return result
+
+    # Set validation result
+    result.valid = True
+    result.pointing = pointing
+    return result
+
+
 @router.get("/pointings", response_model=List[PointingSchema])
 def get_pointings(
         # Basic filters
@@ -396,13 +418,13 @@ def get_pointings(
 
         # Time filters
         completed_after: Optional[datetime] = Query(None,
-                                               description="Filter for pointings completed after this time (ISO format)"),
+                                                    description="Filter for pointings completed after this time (ISO format)"),
         completed_before: Optional[datetime] = Query(None,
-                                                description="Filter for pointings completed before this time (ISO format)"),
+                                                     description="Filter for pointings completed before this time (ISO format)"),
         planned_after: Optional[datetime] = Query(None,
-                                             description="Filter for pointings planned after this time (ISO format)"),
+                                                  description="Filter for pointings planned after this time (ISO format)"),
         planned_before: Optional[datetime] = Query(None,
-                                              description="Filter for pointings planned before this time (ISO format)"),
+                                                   description="Filter for pointings planned before this time (ISO format)"),
 
         # User filters
         user: Optional[str] = Query(None, description="Filter by username, first name, or last name"),
@@ -437,7 +459,12 @@ def get_pointings(
     """
     Retrieve pointings from the database with optional filters.
     """
-
+    from server.utils.function import isInt, isFloat
+    from server.core.enums.wavelength_units import wavelength_units
+    from server.core.enums.frequency_units import frequency_units
+    from server.core.enums.energy_units import energy_units
+    from server.core.enums.bandpass import bandpass
+    from server.core.enums.depth_unit import depth_unit as depth_unit_enum
 
     try:
         # Build the filter conditions
@@ -468,9 +495,9 @@ def get_pointings(
                 filter_conditions.append(PointingEvent.graceid.in_(normalized_gids))
                 filter_conditions.append(PointingEvent.pointingid == Pointing.id)
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'graceids'. Required format is a list: '[graceid1, graceid2...]'"
+                raise validation_exception(
+                    message="Error parsing 'graceids'",
+                    errors=[f"Required format is a list: '[graceid1, graceid2...]'", str(e)]
                 )
 
         # Handle ID filters
@@ -478,7 +505,7 @@ def get_pointings(
             if isInt(id):
                 filter_conditions.append(Pointing.id == int(id))
             else:
-                raise HTTPException(status_code=400, detail="ID must be an integer")
+                raise validation_exception(message="Invalid ID format", errors=["ID must be an integer"])
 
         if ids:
             try:
@@ -495,9 +522,9 @@ def get_pointings(
 
                 filter_conditions.append(Pointing.id.in_(id_list))
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'ids'. Required format is a list: '[id1, id2...]'"
+                raise validation_exception(
+                    message="Error parsing 'ids'",
+                    errors=[f"Required format is a list: '[id1, id2...]'", str(e)]
                 )
 
         # Handle band filters
@@ -507,7 +534,7 @@ def get_pointings(
                     filter_conditions.append(Pointing.band == b)
                     break
             else:
-                raise HTTPException(status_code=400, detail=f"Invalid band: {band}")
+                raise validation_exception(message="Invalid band", errors=[f"The band '{band}' is not valid"])
 
         if bands:
             try:
@@ -530,25 +557,26 @@ def get_pointings(
                 if valid_bands:
                     filter_conditions.append(Pointing.band.in_(valid_bands))
                 else:
-                    raise HTTPException(status_code=400, detail="No valid bands specified")
+                    raise validation_exception(message="No valid bands", errors=["No valid bands were specified"])
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'bands'. Required format is a list: '[band1, band2...]'"
+                raise validation_exception(
+                    message="Error parsing bands",
+                    errors=[f"Invalid format for 'bands' parameter. Required format is a list: '[band1, band2...]'",
+                            str(e)]
                 )
 
         # Handle status filters
         if status:
             if status == "planned":
-                filter_conditions.append(Pointing.status == pointing_status.planned)
+                filter_conditions.append(Pointing.status == pointing_status_enum.planned)
             elif status == "completed":
-                filter_conditions.append(Pointing.status == pointing_status.completed)
+                filter_conditions.append(Pointing.status == pointing_status_enum.completed)
             elif status == "cancelled":
-                filter_conditions.append(Pointing.status == pointing_status.cancelled)
+                filter_conditions.append(Pointing.status == pointing_status_enum.cancelled)
             else:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid status: {status}. Only 'completed', 'planned', and 'cancelled' are valid."
+                raise validation_exception(
+                    message=f"Invalid status: {status}",
+                    errors=["Only 'completed', 'planned', and 'cancelled' are valid."]
                 )
 
         if statuses:
@@ -566,64 +594,67 @@ def get_pointings(
 
                 valid_statuses = []
                 if "planned" in status_list:
-                    valid_statuses.append(pointing_status.planned)
+                    valid_statuses.append(pointing_status_enum.planned)
                 if "completed" in status_list:
-                    valid_statuses.append(pointing_status.completed)
+                    valid_statuses.append(pointing_status_enum.completed)
                 if "cancelled" in status_list:
-                    valid_statuses.append(pointing_status.cancelled)
+                    valid_statuses.append(pointing_status_enum.cancelled)
 
                 if valid_statuses:
                     filter_conditions.append(Pointing.status.in_(valid_statuses))
                 else:
-                    raise HTTPException(status_code=400, detail="No valid statuses specified")
+                    raise validation_exception(message="No valid statuses",
+                                               errors=["No valid status values were specified"])
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'statuses'. Required format is a list: '[status1, status2...]'"
+                raise validation_exception(
+                    message="Error parsing statuses",
+                    errors=[
+                        f"Invalid format for 'statuses' parameter. Required format is a list: '[status1, status2...]'",
+                        str(e)]
                 )
 
         # Handle time filters
         if completed_after:
             try:
-                filter_conditions.append(Pointing.status == pointing_status.completed)
+                filter_conditions.append(Pointing.status == pointing_status_enum.completed)
                 filter_conditions.append(Pointing.time >= completed_after)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Error parsing date. Should be ISO format, e.g. 2019-05-01T12:00:00.00"
+                raise validation_exception(
+                    message="Error parsing date",
+                    errors=["Should be ISO format, e.g. 2019-05-01T12:00:00.00"]
                 )
 
         if completed_before:
             try:
-                filter_conditions.append(Pointing.status == pointing_status.completed)
+                filter_conditions.append(Pointing.status == pointing_status_enum.completed)
                 filter_conditions.append(Pointing.time <= completed_before)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Error parsing date. Should be ISO format, e.g. 2019-05-01T12:00:00.00"
+                raise validation_exception(
+                    message="Error parsing date",
+                    errors=["Should be ISO format, e.g. 2019-05-01T12:00:00.00"]
                 )
 
         if planned_after:
             try:
-                filter_conditions.append(Pointing.status == pointing_status.planned)
+                filter_conditions.append(Pointing.status == pointing_status_enum.planned)
                 filter_conditions.append(Pointing.time >= planned_after)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Error parsing date. Should be ISO format, e.g. 2019-05-01T12:00:00.00"
+                raise validation_exception(
+                    message="Error parsing date",
+                    errors=["Should be ISO format, e.g. 2019-05-01T12:00:00.00"]
                 )
 
         if planned_before:
             try:
-                filter_conditions.append(Pointing.status == pointing_status.planned)
+                filter_conditions.append(Pointing.status == pointing_status_enum.planned)
                 filter_conditions.append(Pointing.time <= planned_before)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Error parsing date. Should be ISO format, e.g. 2019-05-01T12:00:00.00"
+                raise validation_exception(
+                    message="Error parsing date",
+                    errors=["Should be ISO format, e.g. 2019-05-01T12:00:00.00"]
                 )
 
-        # Handle user filters
+            # Handle user filters
         if user:
             if isInt(user):
                 filter_conditions.append(Pointing.submitterid == int(user))
@@ -659,12 +690,12 @@ def get_pointings(
                 filter_conditions.append(or_(*or_conditions))
                 filter_conditions.append(Users.id == Pointing.submitterid)
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'users'. Required format is a list: '[user1, user2...]'"
+                raise validation_exception(
+                    message="Error parsing 'users'",
+                    errors=[f"Required format is a list: '[user1, user2...]'", str(e)]
                 )
 
-        # Handle instrument filters
+            # Handle instrument filters
         if instrument:
             if isInt(instrument):
                 filter_conditions.append(Pointing.instrumentid == int(instrument))
@@ -695,12 +726,12 @@ def get_pointings(
                 filter_conditions.append(or_(*or_conditions))
                 filter_conditions.append(Instrument.id == Pointing.instrumentid)
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'instruments'. Required format is a list: '[inst1, inst2...]'"
+                raise validation_exception(
+                    message="Error parsing 'instruments'",
+                    errors=[f"Required format is a list: '[inst1, inst2...]'", str(e)]
                 )
 
-        # Handle spectral filters
+            # Handle spectral filters
         if wavelength_regime and wavelength_unit:
             try:
                 if isinstance(wavelength_regime, str):
@@ -729,14 +760,14 @@ def get_pointings(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.wavelength
                     ))
                 except (IndexError, ValueError):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Invalid wavelength_unit. Valid units are 'angstrom', 'nanometer', and 'micron'"
+                    raise validation_exception(
+                        message="Invalid wavelength_unit",
+                        errors=["Valid units are 'angstrom', 'nanometer', and 'micron'"]
                     )
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'wavelength_regime'. Required format is a list: '[low, high]'"
+                raise validation_exception(
+                    message="Error parsing 'wavelength_regime'",
+                    errors=[f"Required format is a list: '[low, high]'", str(e)]
                 )
 
         if frequency_regime and frequency_unit:
@@ -767,14 +798,14 @@ def get_pointings(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.frequency
                     ))
                 except (IndexError, ValueError):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Invalid frequency_unit. Valid units are 'Hz', 'kHz', 'MHz', 'GHz', and 'THz'"
+                    raise validation_exception(
+                        message="Invalid frequency_unit",
+                        errors=["Valid units are 'Hz', 'kHz', 'MHz', 'GHz', and 'THz'"]
                     )
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'frequency_regime'. Required format is a list: '[low, high]'"
+                raise validation_exception(
+                    message="Error parsing 'frequency_regime'",
+                    errors=[f"Required format is a list: '[low, high]'", str(e)]
                 )
 
         if energy_regime and energy_unit:
@@ -805,17 +836,17 @@ def get_pointings(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.energy
                     ))
                 except (IndexError, ValueError):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Invalid energy_unit. Valid units are 'eV', 'keV', 'MeV', 'GeV', and 'TeV'"
+                    raise validation_exception(
+                        message="Invalid energy_unit",
+                        errors=["Valid units are 'eV', 'keV', 'MeV', 'GeV', and 'TeV'"]
                     )
             except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Error parsing 'energy_regime'. Required format is a list: '[low, high]'"
+                raise validation_exception(
+                    message="Error parsing 'energy_regime'",
+                    errors=[f"Required format is a list: '[low, high]'", str(e)]
                 )
 
-        # Handle depth filters
+            # Handle depth filters
         if depth_gt is not None or depth_lt is not None:
             # Determine depth unit
             depth_unit_value = depth_unit or "ab_mag"  # Default to ab_mag if not specified
@@ -842,222 +873,222 @@ def get_pointings(
                     # For flux, lower values are dimmer
                     filter_conditions.append(Pointing.depth <= float(depth_lt))
 
-        # Query the database
+            # Query the database
         pointings = db.query(Pointing).filter(*filter_conditions).all()
 
-        # Process the position field
-        for pointing in pointings:
-            if pointing.position:
-                import shapely.wkb
-                position = shapely.wkb.loads(bytes(pointing.position.data))
-                pointing.position = str(position)
-
+        # Let Pydantic handle the conversion of SQLAlchemy models to JSON
+        # The field_serializer methods in PointingSchema will take care of enum translations
         return pointings
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise validation_exception(message="Invalid request", errors=[str(e)])
 
-@router.post("/update_pointings")
-async def update_pointings(
-    status: str, 
-    ids: List[int], 
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
-):
-    """
-    Update the status of planned pointings.
-    
-    Parameters:
-    - status: The new status for the pointings (only "cancelled" is currently supported)
-    - ids: List of pointing IDs to update
-    
-    Returns:
-    - Message with the number of updated pointings
-    """
-    if status != "cancelled":
-        raise HTTPException(status_code=400, detail="Only 'cancelled' status is allowed.")
-    try:
-        # Add a filter to ensure user can only update their own pointings
-        pointings = db.query(Pointing).filter(
-            Pointing.id.in_(ids),
+    @router.post("/update_pointings")
+    async def update_pointings(
+            update_pointing: PointingUpdate,
+            db: Session = Depends(get_db),
+            user=Depends(get_current_user)
+    ):
+        """
+        Update the status of planned pointings.
+
+        Parameters:
+        - status: The new status for the pointings (only "cancelled" is currently supported)
+        - ids: List of pointing IDs to update
+
+        Returns:
+        - Message with the number of updated pointings
+        """
+        try:
+            # Add a filter to ensure user can only update their own pointings
+            pointings = db.query(Pointing).filter(
+                Pointing.id.in_(update_pointing.ids),
+                Pointing.submitterid == user.id,
+                Pointing.status == pointing_status_enum.planned  # Only planned pointings can be cancelled
+            ).all()
+
+            for pointing in pointings:
+                pointing.status = update_pointing.status
+                pointing.dateupdated = datetime.now()
+
+            db.commit()
+            return {"message": f"Updated {len(pointings)} pointings successfully."}
+        except Exception as e:
+            db.rollback()
+            raise validation_exception(message="Invalid request", errors=[str(e)])
+
+    @router.post("/cancel_all")
+    async def cancel_all(
+            graceid: str = Body(..., description="Grace ID of the GW event"),
+            instrumentid: int = Body(..., description="Instrument ID to cancel pointings for"),
+            db: Session = Depends(get_db),
+            user=Depends(get_current_user)
+    ):
+        """
+        Cancel all planned pointings for a specific GW event and instrument.
+
+        Parameters:
+        - graceid: Grace ID of the GW event
+        - instrumentid: Instrument ID to cancel pointings for
+
+        Returns:
+        - Message with the number of cancelled pointings
+        """
+        # Validate instrumentid
+        instrument = db.query(Instrument).filter(Instrument.id == instrumentid).first()
+        if not instrument:
+            raise not_found_exception(f"Instrument with ID {instrumentid} not found")
+
+        # Build the filter
+        filter_conditions = [
+            Pointing.status == pointing_status_enum.planned,
             Pointing.submitterid == user.id,
-            Pointing.status == "planned"  # Only planned pointings can be cancelled
-        ).all()
-        
+            Pointing.instrumentid == instrumentid
+        ]
+
+        # Add GW event filter using pointing_event relation
+        if graceid:
+            # Normalize the graceid
+            graceid = GWAlert.graceidfromalternate(graceid)
+            # Add the join condition
+            filter_conditions.append(Pointing.id == PointingEvent.pointingid)
+            filter_conditions.append(PointingEvent.graceid == graceid)
+
+        # Query the pointings
+        pointings = db.query(Pointing).filter(*filter_conditions)
+        pointing_count = pointings.count()
+
+        # Update the status
         for pointing in pointings:
-            pointing.status = status
-            pointing.dateupdated = datetime.datetime.now()
-            
-        db.commit()
-        return {"message": f"Updated {len(pointings)} pointings successfully."}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+            pointing.status = pointing_status_enum.cancelled
+            pointing.dateupdated = datetime.now()
 
-@router.post("/cancel_all")
-async def cancel_all(
-    graceid: str = Body(..., description="Grace ID of the GW event"),
-    instrumentid: int = Body(..., description="Instrument ID to cancel pointings for"),
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
-):
-    """
-    Cancel all planned pointings for a specific GW event and instrument.
-    
-    Parameters:
-    - graceid: Grace ID of the GW event
-    - instrumentid: Instrument ID to cancel pointings for
-    
-    Returns:
-    - Message with the number of cancelled pointings
-    """
-    # Validate instrumentid
-    instrument = db.query(Instrument).filter(Instrument.id == instrumentid).first()
-    if not instrument:
-        raise HTTPException(status_code=404, detail=f"Instrument with ID {instrumentid} not found")
-    
-    # Build the filter
-    filter_conditions = [
-        Pointing.status == "planned",
-        Pointing.submitterid == user.id,
-        Pointing.instrumentid == instrumentid
-    ]
-    
-    # Add GW event filter using pointing_event relation
-    if graceid:
-        from server.db.models.gw_alert import GWAlert
-        # Normalize the graceid
-        graceid = GWAlert.graceidfromalternate(graceid)
-        # Add the join condition
-        filter_conditions.append(Pointing.id == PointingEvent.pointingid)
-        filter_conditions.append(PointingEvent.graceid == graceid)
-    
-    # Query the pointings
-    pointings = db.query(Pointing).filter(*filter_conditions)
-    pointing_count = pointings.count()
-    
-    # Update the status
-    for pointing in pointings:
-        pointing.status = "cancelled"
-        pointing.dateupdated = datetime.datetime.now()
-    
-    db.commit()
-    
-    return {"message": f"Updated {pointing_count} Pointings successfully"}
-
-@router.post("/request_doi")
-async def request_doi(
-    graceid: Optional[str] = Body(None, description="Grace ID of the GW event"),
-    id: Optional[int] = Body(None, description="Pointing ID"),
-    ids: Optional[List[int]] = Body(None, description="List of pointing IDs"),
-    doi_group_id: Optional[int] = Body(None, description="DOI author group ID"),
-    creators: Optional[List[Dict[str, str]]] = Body(None, description="List of creators for the DOI"),
-    doi_url: Optional[str] = Body(None, description="Optional DOI URL if already exists"),
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
-):
-    """
-    Request a DOI for completed pointings.
-    
-    Parameters:
-    - graceid: Grace ID of the GW event
-    - id: Single pointing ID
-    - ids: List of pointing IDs
-    - doi_group_id: DOI author group ID
-    - creators: List of creators for the DOI
-    - doi_url: Optional DOI URL if already exists
-    
-    Returns:
-    - DOI URL and warnings
-    """
-    # Build the filter for pointings
-    filter_conditions = [Pointing.submitterid == user.id]
-    
-    # Handle graceid
-    if graceid:
-        from server.db.models.gw_alert import GWAlert
-        # Normalize the graceid
-        graceid = GWAlert.graceidfromalternate(graceid)
-        # Add the join condition
-        filter_conditions.append(Pointing.id == server.db.models.pointing_event.pointingid)
-        filter_conditions.append(server.db.models.pointing_event.graceid == graceid)
-    
-    # Handle id or ids
-    if id:
-        filter_conditions.append(Pointing.id == id)
-    elif ids:
-        filter_conditions.append(Pointing.id.in_(ids))
-    
-    if len(filter_conditions) == 1:
-        raise HTTPException(status_code=400, detail="Insufficient filter parameters")
-    
-    # Query the pointings
-    points = db.query(Pointing).filter(*filter_conditions).all()
-    
-    # Validate and prepare for DOI request
-    warnings = []
-    doi_points = []
-    
-    for p in points:
-        if p.status == "completed" and p.submitterid == user.id and p.doi_id is None:
-            doi_points.append(p)
-        else:
-            warnings.append(f"Invalid doi request for pointing: {p.id}")
-    
-    if len(doi_points) == 0:
-        raise HTTPException(status_code=400, detail="No pointings to give DOI")
-    
-    # Get the instruments
-    insts = db.query(Instrument).filter(Instrument.id.in_([x.instrumentid for x in doi_points]))
-    inst_set = list(set([x.instrument_name for x in insts]))
-    
-    # Get the GW event IDs
-    gids = list(set([x.graceid for x in db.query(models.pointing_event).filter(
-        models.pointing_event.pointingid.in_([x.id for x in doi_points])
-    )]))
-    
-    if len(gids) > 1:
-        raise HTTPException(status_code=400, detail="Pointings must be only for a single GW event")
-    
-    gid = gids[0]
-    
-    # Handle DOI creators
-    if not creators:
-        if doi_group_id:
-            # Using the construct_creators function from the user model
-            valid, creators = DOIAuthor.construct_creators(doi_group_id, user.id, db)
-            if not valid:
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Invalid doi_group_id. Make sure you are the User associated with the DOI group"
-                )
-        else:
-            # Default to user as creator
-            creators = [{"name": f"{user.firstname} {user.lastname}"}]
-    else:
-        # Validate creators
-        for c in creators:
-            if "name" not in c.keys() or "affiliation" not in c.keys():
-                raise HTTPException(
-                    status_code=400,
-                    detail="name and affiliation are required for DOI creators json list"
-                )
-    
-    # Create or use provided DOI
-    if doi_url:
-        doi_id, doi_url = 0, doi_url
-    else:
-        # Get the alternate form of the graceid
-        gid = models.gw_alert.alternatefromgraceid(gid)
-        # Create the DOI
-        from server.utils.function import create_pointing_doi
-        doi_id, doi_url = create_pointing_doi(doi_points, gid, creators, inst_set)
-    
-    # Update pointing records with DOI information
-    if doi_id is not None:
-        for p in doi_points:
-            p.doi_url = doi_url
-            p.doi_id = doi_id
-        
         db.commit()
-    
-    return {"DOI URL": doi_url, "WARNINGS": warnings}
+
+        return {"message": f"Updated {pointing_count} Pointings successfully"}
+
+    @router.post("/request_doi")
+    async def request_doi(
+            graceid: Optional[str] = Body(None, description="Grace ID of the GW event"),
+            id: Optional[int] = Body(None, description="Pointing ID"),
+            ids: Optional[List[int]] = Body(None, description="List of pointing IDs"),
+            doi_group_id: Optional[int] = Body(None, description="DOI author group ID"),
+            creators: Optional[List[Dict[str, str]]] = Body(None, description="List of creators for the DOI"),
+            doi_url: Optional[str] = Body(None, description="Optional DOI URL if already exists"),
+            db: Session = Depends(get_db),
+            user=Depends(get_current_user)
+    ):
+        """
+        Request a DOI for completed pointings.
+
+        Parameters:
+        - graceid: Grace ID of the GW event
+        - id: Single pointing ID
+        - ids: List of pointing IDs
+        - doi_group_id: DOI author group ID
+        - creators: List of creators for the DOI
+        - doi_url: Optional DOI URL if already exists
+
+        Returns:
+        - DOI URL and warnings
+        """
+        # Build the filter for pointings
+        filter_conditions = [Pointing.submitterid == user.id]
+
+        # Handle graceid
+        if graceid:
+            # Normalize the graceid
+            graceid = GWAlert.graceidfromalternate(graceid)
+            # Add the join condition
+            filter_conditions.append(Pointing.id == PointingEvent.pointingid)
+            filter_conditions.append(PointingEvent.graceid == graceid)
+
+        # Handle id or ids
+        if id:
+            filter_conditions.append(Pointing.id == id)
+        elif ids:
+            filter_conditions.append(Pointing.id.in_(ids))
+
+        if len(filter_conditions) == 1:  # Only the user filter
+            raise validation_exception(
+                message="Insufficient filter parameters",
+                errors=["Please provide either graceid, id, or ids parameter"]
+            )
+
+        # Query the pointings
+        points = db.query(Pointing).filter(*filter_conditions).all()
+
+        # Validate and prepare for DOI request
+        warnings = []
+        doi_points = []
+
+        for p in points:
+            if p.status == pointing_status_enum.completed and p.submitterid == user.id and p.doi_id is None:
+                doi_points.append(p)
+            else:
+                warnings.append(f"Invalid doi request for pointing: {p.id}")
+
+        if len(doi_points) == 0:
+            raise validation_exception(
+                message="No valid pointings found for DOI request",
+                errors=["All pointings must be completed, owned by you, and not already have a DOI"]
+            )
+
+        # Get the instruments
+        insts = db.query(Instrument).filter(Instrument.id.in_([x.instrumentid for x in doi_points]))
+        inst_set = list(set([x.instrument_name for x in insts]))
+
+        # Get the GW event IDs
+        gids = list(set([x.graceid for x in db.query(PointingEvent).filter(
+            PointingEvent.pointingid.in_([x.id for x in doi_points])
+        )]))
+
+        if len(gids) > 1:
+            raise validation_exception(
+                message="Multiple events detected",
+                errors=["Pointings must be only for a single GW event for a DOI request"]
+            )
+
+        gid = gids[0]
+
+        # Handle DOI creators
+        if not creators:
+            if doi_group_id:
+                # Using the construct_creators function from the DOIAuthor model
+                from server.db.models.doi_author import DOIAuthor
+                valid, creators = DOIAuthor.construct_creators(doi_group_id, user.id, db)
+                if not valid:
+                    raise validation_exception(
+                        message="Invalid DOI group ID",
+                        errors=["Make sure you are the User associated with the DOI group"]
+                    )
+            else:
+                # Default to user as creator
+                creators = [{"name": f"{user.firstname} {user.lastname}", "affiliation": ""}]
+        else:
+            # Validate creators
+            for c in creators:
+                if "name" not in c or "affiliation" not in c:
+                    raise validation_exception(
+                        message="Invalid DOI creator information",
+                        errors=["name and affiliation are required for each creator in the list"]
+                    )
+
+        # Create or use provided DOI
+        if doi_url:
+            doi_id, doi_url = 0, doi_url
+        else:
+            # Get the alternate form of the graceid
+            gid = GWAlert.alternatefromgraceid(gid)
+            # Create the DOI
+            doi_id, doi_url = create_pointing_doi(doi_points, gid, creators, inst_set)
+
+        # Update pointing records with DOI information
+        if doi_id is not None:
+            for p in doi_points:
+                p.doi_url = doi_url
+                p.doi_id = doi_id
+
+            db.commit()
+
+        return {"DOI_URL": doi_url, "WARNINGS": warnings}
+

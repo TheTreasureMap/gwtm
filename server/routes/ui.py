@@ -250,7 +250,7 @@ async def resend_verification_email(
     # If email is provided, find that user (admin function)
     # Otherwise use the current user
     if email:
-        user = db.query(User).filter(User.email == email).first()
+        user = db.query(Users).filter(Users.email == email).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -732,7 +732,7 @@ async def ajax_scimma_xrt(
     
     try:
         response = requests.get(url)
-        if response.status_code == 200:
+        if response.status_code == status.HTTP_200_OK:
             package = response.json()['results']
             for p in package:
                 markers.append({
@@ -823,7 +823,7 @@ async def ajax_request_doi(
     ).all()
     
     # Get user information
-    user = db.query(User).filter(User.id == current_user.id).first()
+    user = db.query(Users).filter(Users.id == current_user.id).first()
     
     # Set up creators list
     if doi_group_id:
