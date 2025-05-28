@@ -199,20 +199,27 @@ def polygons2footprints(polygons: List[List[List[float]]], time: float = 0) -> L
 def sanatize_gal_info(galaxy_entry, galaxy_list) -> Dict[str, Any]:
     """
     Format galaxy information for display.
-    
+
     Args:
         galaxy_entry: A galaxy entry object
         galaxy_list: The parent galaxy list object
-    
+
     Returns:
         Formatted galaxy information as a dictionary
     """
     info_dict = {}
 
     if hasattr(galaxy_entry, 'info') and galaxy_entry.info:
-        try:
-            info_dict = json.loads(galaxy_entry.info)
-        except json.JSONDecodeError:
+        # Check if info is already a dict (SQLAlchemy JSON column) or a string
+        if isinstance(galaxy_entry.info, dict):
+            info_dict = galaxy_entry.info.copy()
+        elif isinstance(galaxy_entry.info, str):
+            try:
+                info_dict = json.loads(galaxy_entry.info)
+            except json.JSONDecodeError:
+                info_dict = {}
+        else:
+            # Handle other types by converting to empty dict
             info_dict = {}
 
     # Add galaxy list information
@@ -221,7 +228,6 @@ def sanatize_gal_info(galaxy_entry, galaxy_list) -> Dict[str, Any]:
     info_dict["Rank"] = galaxy_entry.rank if hasattr(galaxy_entry, 'rank') else ""
 
     return info_dict
-
 
 def sanatize_icecube_event(event, notice) -> Dict[str, Any]:
     """

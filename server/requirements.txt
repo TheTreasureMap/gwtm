@@ -34,3 +34,6 @@ pytest>=7.3.1
 httpx>=0.24.1
 Werkzeug==2.0.3
 ephem
+plotly>=5.15.0
+kaleido>=0.2.1
+

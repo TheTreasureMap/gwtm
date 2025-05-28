@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Body, HTTPException
+from fastapi import APIRouter, Depends, Body
 from server.utils.error_handling import validation_exception, not_found_exception, permission_exception, server_exception
 from sqlalchemy.orm import Session
 from typing import List
@@ -134,10 +134,7 @@ async def post_gw_candidates(
     # Validate that the graceid exists
     valid_alerts = db.query(GWAlert).filter(GWAlert.graceid == post_request.graceid).all()
     if len(valid_alerts) == 0:
-        raise HTTPException(
-            status_code=HTTPException.HTTP_400_BAD_REQUEST,
-            detail="Invalid 'graceid'. Visit https://treasuremap.space/alert_select for valid alerts"
-        )
+        raise validation_exception("Invalid 'graceid'. Visit https://treasuremap.space/alert_select for valid alerts")
 
     errors = []
     warnings = []
@@ -286,16 +283,10 @@ async def delete_candidates(
     if delete_params.id is not None:
         candidate = db.query(GWCandidate).filter(GWCandidate.id == delete_params.id).first()
         if not candidate:
-            raise HTTPException(
-                status_code=HTTPException.HTTP_404_NOT_FOUND,
-                detail=f"No candidate found with 'id': {delete_params.id}"
-            )
+            raise not_found_exception(f"No candidate found with 'id': {delete_params.id}")
 
         if candidate.submitterid != user.id:
-            raise HTTPException(
-                status_code=HTTPException.HTTP_403_FORBIDDEN,
-                detail="Error: Unauthorized. Unable to alter other user's records"
-            )
+            raise permission_exception("Error: Unauthorized. Unable to alter other user's records")
 
         candidates_to_delete.append(candidate)
 

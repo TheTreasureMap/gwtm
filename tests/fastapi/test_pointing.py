@@ -5,12 +5,7 @@ Tests use specific data from test-data.sql.
 import os
 
 import requests
-import json
-import datetime
-from typing import Dict, Any, List, Optional
-import pytest
 
-from server.utils.error_handling import validation_exception
 from fastapi import status
 
 # Test configuration
