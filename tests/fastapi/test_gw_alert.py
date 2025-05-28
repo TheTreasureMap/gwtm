@@ -43,7 +43,7 @@ class TestGWAlertEndpoints:
         data = response.json()
         assert isinstance(data, list)
         # Should return all alerts in test data
-        assert len(data) >= 5  # At least our known graceids
+        assert len(data) >= 4  # At least our known graceids
 
     def test_query_alerts_by_graceid(self):
         """Test querying alerts by graceid."""

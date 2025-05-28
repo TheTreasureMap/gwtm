@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import json
-import shapely.wkb
 
 from server.db.database import get_db
-from server.db.models.gw_alert import GWAlert
 from server.db.models.candidate import GWCandidate
-from server.schemas.gw_alert import GWAlertSchema, GWCandidateSchema, GWCandidateCreate
+from server.schemas.gw_alert import GWCandidateSchema, GWCandidateCreate
 from server.core.enums.depth_unit import depth_unit as depth_unit_enum
 from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
 from server.auth.auth import get_current_user

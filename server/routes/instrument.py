@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends
 from geoalchemy2 import WKBElement
 from sqlalchemy.orm import Session
 from typing import List, Optional

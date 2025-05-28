@@ -9,6 +9,8 @@ from server.db.models.instrument import Instrument
 from server.db.models.pointing import Pointing
 from server.db.models.users import Users
 from server.db.models.gw_alert import GWAlert
+from server.db.models.gw_galaxy import GWGalaxyList, GWGalaxyEntry  # Fixed import
+from server.db.models.candidate import GWCandidate  # Fixed import
 from server.schemas.instrument import InstrumentSchema
 from server.schemas.pointing import PointingSchema
 from server.auth.auth import get_current_user
@@ -24,10 +26,12 @@ async def get_alert_instruments_footprints(
 ):
     """Get footprints of instruments that observed a specific alert."""
     from server.utils.function import sanatize_pointing, project_footprint, sanatize_footprint_ccds
+    from server.db.models.footprint_ccd import FootprintCCD  # Import if needed
     import json
     import hashlib
     from server.utils.gwtm_io import get_cached_file, set_cached_file
     from server.config import settings
+    from sqlalchemy import func, or_
     
     # First find the alert by graceid
     alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
@@ -38,9 +42,11 @@ async def get_alert_instruments_footprints(
     if pointing_status is None:
         pointing_status = "completed"
     
-    # Build pointing filter
+    # Build pointing filter - need to join with PointingEvent to get alert association
+    from server.db.models.pointing_event import PointingEvent
     pointing_filter = []
-    pointing_filter.append(Pointing.alert_id == alert.id)
+    pointing_filter.append(PointingEvent.graceid == graceid)
+    pointing_filter.append(PointingEvent.pointingid == Pointing.id)
     
     # Status filtering
     if pointing_status == 'pandc':
@@ -48,12 +54,18 @@ async def get_alert_instruments_footprints(
             or_(Pointing.status == "completed", Pointing.status == "planned")
         )
     elif pointing_status not in ['all', '']:
-        pointing_filter.append(Pointing.status == pointing_status)
+        from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+        if pointing_status == "completed":
+            pointing_filter.append(Pointing.status == pointing_status_enum.completed)
+        elif pointing_status == "planned":
+            pointing_filter.append(Pointing.status == pointing_status_enum.planned)
+        elif pointing_status == "cancelled":
+            pointing_filter.append(Pointing.status == pointing_status_enum.cancelled)
     
     # Get pointing info
     pointing_info = db.query(
         Pointing.id,
-        Pointing.instrument_id,
+        Pointing.instrumentid,
         Pointing.pos_angle,
         Pointing.time,
         func.ST_AsText(Pointing.position).label('position'),
@@ -61,7 +73,7 @@ async def get_alert_instruments_footprints(
         Pointing.depth,
         Pointing.depth_unit,
         Pointing.status
-    ).filter(*pointing_filter).all()
+    ).join(PointingEvent, PointingEvent.pointingid == Pointing.id).filter(*pointing_filter).all()
     
     # Cache key based on pointing IDs
     pointing_ids = [p.id for p in pointing_info]
@@ -75,7 +87,7 @@ async def get_alert_instruments_footprints(
         return json.loads(cached_overlays)
     
     # Not in cache, generate fresh data
-    instrument_ids = [p.instrument_id for p in pointing_info]
+    instrument_ids = [p.instrumentid for p in pointing_info]
     
     # Get instrument info
     instrumentinfo = db.query(
@@ -87,11 +99,12 @@ async def get_alert_instruments_footprints(
     ).all()
     
     # Get footprint info
+    from server.db.models.instrument import FootprintCCD
     footprintinfo = db.query(
-        func.ST_AsText(Instrument.footprint).label('footprint'),
-        Instrument.id.label('instrumentid')
+        func.ST_AsText(FootprintCCD.footprint).label('footprint'),
+        FootprintCCD.instrumentid
     ).filter(
-        Instrument.id.in_(instrument_ids)
+        FootprintCCD.instrumentid.in_(instrument_ids)
     ).all()
     
     # Prepare colors
@@ -114,7 +127,7 @@ async def get_alert_instruments_footprints(
         
         footprint_ccds = [x.footprint for x in footprintinfo if x.instrumentid == inst.id]
         sanatized_ccds = sanatize_footprint_ccds(footprint_ccds)
-        inst_pointings = [x for x in pointing_info if x.instrument_id == inst.id]
+        inst_pointings = [x for x in pointing_info if x.instrumentid == inst.id]
         pointing_geometries = []
         
         for p in inst_pointings:
@@ -255,8 +268,16 @@ async def resend_verification_email(
             raise HTTPException(status_code=404, detail="User not found")
         
         # Only allow admins to send verification emails to other users
-        if not current_user.adminuser:
-            raise HTTPException(status_code=403, detail="Not authorized")
+        # Note: Need to check if user is admin
+        from server.db.models.users import UserGroups, Groups
+        admin_group = db.query(Groups).filter(Groups.name == "admin").first()
+        if admin_group:
+            user_group = db.query(UserGroups).filter(
+                UserGroups.userid == current_user.id,
+                UserGroups.groupid == admin_group.id
+            ).first()
+            if not user_group:
+                raise HTTPException(status_code=403, detail="Not authorized")
     else:
         user = current_user
     
@@ -286,6 +307,7 @@ async def coverage_calculator(
     import tempfile
     from datetime import datetime
     from sqlalchemy import func, or_
+    from server.db.models.pointing_event import PointingEvent
     
     data = await request.json()
     
@@ -307,15 +329,23 @@ async def coverage_calculator(
     
     # Get all pointings that match the filter criteria
     pointing_filter = []
-    pointing_filter.append(Pointing.alert_id == graceid)
-    pointing_filter.append(Pointing.status == "completed")
+    pointing_filter.append(PointingEvent.graceid == graceid)
+    pointing_filter.append(PointingEvent.pointingid == Pointing.id)
+    
+    from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+    pointing_filter.append(Pointing.status == pointing_status_enum.completed)
     
     if inst_cov:
         insts_cov = [int(x) for x in inst_cov.split(',')]
-        pointing_filter.append(Pointing.instrument_id.in_(insts_cov))
+        pointing_filter.append(Pointing.instrumentid.in_(insts_cov))
     
     if depth_unit and depth_unit != 'None':
-        pointing_filter.append(Pointing.depth_unit == depth_unit)
+        from server.core.enums.depth_unit import depth_unit as depth_unit_enum
+        try:
+            unit_enum = depth_unit_enum[depth_unit]
+            pointing_filter.append(Pointing.depth_unit == unit_enum)
+        except KeyError:
+            pass
         
     if depth and depth.replace('.', '', 1).isdigit():
         depth_val = float(depth)
@@ -333,12 +363,14 @@ async def coverage_calculator(
     # Get the pointings
     pointings_sorted = db.query(
         Pointing.id,
-        Pointing.instrument_id,
+        Pointing.instrumentid,
         Pointing.pos_angle,
         func.ST_AsText(Pointing.position).label('position'),
         Pointing.band,
         Pointing.depth,
         Pointing.time
+    ).join(
+        PointingEvent, PointingEvent.pointingid == Pointing.id
     ).filter(
         *pointing_filter
     ).order_by(
@@ -346,23 +378,24 @@ async def coverage_calculator(
     ).all()
     
     # Get the instrument footprints
-    instrumentids = [p.instrument_id for p in pointings_sorted]
+    instrumentids = [p.instrumentid for p in pointings_sorted]
     
     # This would account for approximations
     # For simplicity, we're skipping this part for now
     
+    from server.db.models.instrument import FootprintCCD
     footprintinfo = db.query(
-        func.ST_AsText(Instrument.footprint).label('footprint'),
-        Instrument.id
+        func.ST_AsText(FootprintCCD.footprint).label('footprint'),
+        FootprintCCD.instrumentid
     ).filter(
-        Instrument.id.in_(instrumentids)
+        FootprintCCD.instrumentid.in_(instrumentids)
     ).all()
     
     # Get the time of the GW alert
     time_of_signal = db.query(
         GWAlert.time_of_signal
     ).filter(
-        GWAlert.id == graceid
+        GWAlert.graceid == graceid
     ).first()
     
     if not time_of_signal or time_of_signal[0] is None:
@@ -501,6 +534,8 @@ async def get_pointing_fromID(
     """Get pointing details by ID for the current user's planned pointings."""
     from server.utils.function import isInt
     from server.db.models.gw_alert import GWAlert
+    from server.db.models.pointing_event import PointingEvent
+    from server.core.enums.pointing_status import pointing_status as pointing_status_enum
     
     if not id or not isInt(id):
         return {}
@@ -510,8 +545,8 @@ async def get_pointing_fromID(
     
     # Query pointings with filter conditions
     filters = [
-        Pointing.submitter_id == current_user.id,
-        Pointing.status == "planned",
+        Pointing.submitterid == current_user.id,
+        Pointing.status == pointing_status_enum.planned,
         Pointing.id == pointing_id
     ]
     
@@ -521,14 +556,17 @@ async def get_pointing_fromID(
         return {}
     
     # Get the alert for this pointing
-    alert = db.query(GWAlert).filter(GWAlert.id == pointing.alert_id).first()
+    pointing_event = db.query(PointingEvent).filter(PointingEvent.pointingid == pointing.id).first()
+    if not pointing_event:
+        return {}
     
+    alert = db.query(GWAlert).filter(GWAlert.graceid == pointing_event.graceid).first()
     if not alert:
         return {}
     
     # Extract position
-    position_str = func.ST_AsText(pointing.position).label('position')
-    position_result = db.query(position_str).filter(Pointing.id == pointing_id).first()
+    from sqlalchemy import func
+    position_result = db.query(func.ST_AsText(Pointing.position)).filter(Pointing.id == pointing_id).first()
     
     if not position_result or not position_result[0]:
         return {}
@@ -538,15 +576,15 @@ async def get_pointing_fromID(
     dec = position.split('POINT(')[1].split(' ')[1].split(')')[0]
     
     # Get instrument details
-    instrument = db.query(Instrument).filter(Instrument.id == pointing.instrument_id).first()
+    instrument = db.query(Instrument).filter(Instrument.id == pointing.instrumentid).first()
     
     # Prepare response
     pointing_json = {
         'ra': ra,
         'dec': dec,
-        'graceid': alert.graceid,
-        'instrument': f"{pointing.instrument_id}_{instrument.instrument_type if instrument else ''}",
-        'band': pointing.band,
+        'graceid': pointing_event.graceid,
+        'instrument': f"{pointing.instrumentid}_{instrument.instrument_type.name if instrument else ''}",
+        'band': pointing.band.name if pointing.band else '',
         'depth': pointing.depth,
         'depth_err': pointing.depth_err
     }
@@ -642,9 +680,7 @@ async def ajax_event_galaxies(
 ):
     """Get galaxies associated with an event."""
     from server.utils.function import sanatize_pointing, sanatize_gal_info
-    
-    # Get the galaxy lists for this alert
-    from server.db.models.gw_alert import GWGalaxyList, GWGalaxyEntry
+    from sqlalchemy import func
     
     event_galaxies = []
     
@@ -732,7 +768,7 @@ async def ajax_scimma_xrt(
     
     try:
         response = requests.get(url)
-        if response.status_code == status.HTTP_200_OK:
+        if response.status_code == 200:
             package = response.json()['results']
             for p in package:
                 markers.append({
@@ -760,7 +796,7 @@ async def ajax_candidate_fetch(
 ):
     """Get candidates associated with a GW event."""
     from server.utils.function import sanatize_pointing, sanatize_candidate_info
-    from server.db.models.gw_alert import GWAlert, GWCandidate
+    from server.db.models.gw_alert import GWAlert
     import shapely.wkb
     
     # Normalize the graceid - maintain backward compatibility
@@ -806,6 +842,7 @@ async def ajax_request_doi(
     """Request a DOI for a set of pointings."""
     from server.utils.function import create_pointing_doi
     from server.db.models.gw_alert import GWAlert
+    from server.db.models.pointing_event import PointingEvent
     
     # Normalize the graceid - maintain backward compatibility
     normalized_graceid = GWAlert.alternatefromgraceid(graceid)
@@ -816,10 +853,12 @@ async def ajax_request_doi(
     # Convert IDs to list of integers
     pointing_ids = [int(x) for x in ids.split(',')]
     
-    # Get all pointings with these IDs
-    points = db.query(Pointing).filter(
+    # Get all pointings with these IDs that are associated with the graceid
+    points = db.query(Pointing).join(
+        PointingEvent, PointingEvent.pointingid == Pointing.id
+    ).filter(
         Pointing.id.in_(pointing_ids),
-        Pointing.alert_id == db.query(GWAlert.id).filter(GWAlert.graceid == normalized_graceid).scalar_subquery()
+        PointingEvent.graceid == normalized_graceid
     ).all()
     
     # Get user information
@@ -835,7 +874,7 @@ async def ajax_request_doi(
     
     # Get instrument names
     insts = db.query(Instrument).filter(
-        Instrument.id.in_([p.instrument_id for p in points])
+        Instrument.id.in_([p.instrumentid for p in points])
     ).all()
     
     inst_set = list(set([i.instrument_name for i in insts]))
@@ -850,7 +889,7 @@ async def ajax_request_doi(
     for p in points:
         p.doi_url = doi_url
         p.doi_id = doi_id
-        p.submitter_id = current_user.id  # Ensure submitter is set
+        p.submitterid = current_user.id  # Ensure submitter is set
     
     db.commit()
     

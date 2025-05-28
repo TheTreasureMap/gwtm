@@ -70,7 +70,7 @@ class DOIPointingsResponse(BaseModel):
 
 class DOIRequestResponse(BaseModel):
     """Schema for DOI request response."""
-    DOI_URL: str
+    DOI_URL: Optional[str] = None
     WARNINGS: List[Any] = []
 
 

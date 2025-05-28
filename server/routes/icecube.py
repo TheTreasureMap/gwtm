@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
-import json
 from datetime import datetime
 
 from server.db.database import get_db
