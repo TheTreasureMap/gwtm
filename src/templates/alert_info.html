@@ -7,7 +7,6 @@
 }
 
 .slider {
-  -webkit-appearance: none;
   width: 100%;
   height: 25px;
   background: #d3d3d3;
@@ -878,9 +877,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
         var actives = document.getElementsByClassName('nav-link active')
         var thisEl = document.getElementById(event.target.id)
         for(i = 0; i<actives.length; i++){
-	  if (!{{form.calc_ids|tojson}}.includes(actives[i].id)) {
-            actives[i].classList.remove('active')
-	  }
+          if (!'{{ form.calc_ids | tojson }}'.includes(actives[i].id)) {
+                  actives[i].classList.remove('active')
+          }
         }
         thisEl.classList.add('active')
 
@@ -966,27 +965,26 @@ text.info:hover span{ /*the span will display just on :hover state*/
   $(document).ready( function() {
     $('#calcnav').click(function(event) {
       if (event.target.id != 'calcnav' && event.target.id != 'calc-title') {
-	// Update tab style on click
-	var actives = document.getElementsByClassName('nav-link active')
+	      // Update tab style on click
+	      var actives = document.getElementsByClassName('nav-link active')
         var thisEl = document.getElementById(event.target.id)
         for(i = 0; i<actives.length; i++){
-	  if ({{form.calc_ids|tojson}}.includes(actives[i].id)) {
+          if ('{{ form.calc_ids | tojson }}'.includes(actives[i].id)) {
             actives[i].classList.remove('active')
-	  }
+	        }
         }
         thisEl.classList.add('active')
 
-	// Toggle tab content
-	actives = document.getElementsByClassName('tab-pane active')
-	thisEl = document.getElementById(event.target.dataset.tab)
-	for(i = 0; i<actives.length; i++){
-          actives[i].classList.remove('active')
-        }
+	      // Toggle tab content
+        actives = document.getElementsByClassName('tab-pane active')
+        thisEl = document.getElementById(event.target.dataset.tab)
+        for(i = 0; i<actives.length; i++){
+            actives[i].classList.remove('active')
+          }
         thisEl.classList.add('active')
       }
-    })
-  })
-  
+    });
+  });
   //Function that creates the Coverage plot
   $(document).ready( function() {
       $('#calculate').click(function() {
@@ -1027,10 +1025,10 @@ text.info:hover span{ /*the span will display just on :hover state*/
       $('#renorm-skymap').click(function() {
         $('#renorm-skymap').prop('disabled', true)
         var btn = $(this).button('loading');
-	$('#download-renorm').prop('disabled', true)
-	$('#download-renorm').button('loading')
+	      $('#download-renorm').prop('disabled', true)
+	      $('#download-renorm').button('loading')
         var inst_cov = $('#r_inst_cov').val()
-	var inst_plan = $('#r_inst_plan').val()
+	      var inst_plan = $('#r_inst_plan').val()
         var depth_cov = $('#r_depth_cov').val()
         var depth_unit = $('#r_depth_unit').val()
         var approx_cov = $('#r_approx_cov').val()
@@ -1038,45 +1036,42 @@ text.info:hover span{ /*the span will display just on :hover state*/
         var spectral_unit = $('#r_spectral_range_unit').val()
         var spectral_range_low = $('#r_spectral_range_low').val()
         var spectral_range_high = $('#r_spectral_range_high').val()
+        var alertid = document.getElementById('hidden_alertid').value;
 
         $.ajax(
           {
               url: '/ajax_renormalize_skymap',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&alert_id='+alertid+'+&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
           }
-        ).done(function (reply) 
-          {
-	    if (reply) {
-	      //reload aladin with the normed skymap contour
-	      aladin.removeLayers()
-              data.detection_overlays = reply.detection_overlays;
-              d = overlayInit(aladin, data)
-              detectionoverlaylist = d.detectionoverlaylist
-              instoverlaylist = d.instoverlaylist
-              grboverlaylist = d.grboverlaylist
+        ).done(function (reply) {
+	        if (reply) {
+            //reload aladin with the normed skymap contour
+            aladin.removeLayers()
+            data.detection_overlays = reply.detection_overlays;
+            d = overlayInit(aladin, data)
+            detectionoverlaylist = d.detectionoverlaylist
+            instoverlaylist = d.instoverlaylist
+            grboverlaylist = d.grboverlaylist
 	    
-	      $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
-	      btn.prop('disabled', false)
-              btn.button('reset')
-	      $('#download-renorm').prop('disabled', false)
-              $('#download-renorm').button('reset')
-	    } else {
-	      $('#renormdiv').html("<i><font color='#e6194B'>Done! No pointings selected.</font></i>")
-	      btn.prop('disabled', false)
-              btn.button('reset')
-              $('#download-renorm').prop('disabled', false)
-              $('#download-renorm').button('reset')
-            }
+	          $('#renormdiv').html("<i><font color='#e6194B'>The Skymap has been Renormalized (~ look up! ~)</font></i>")
+	          btn.prop('disabled', false)
+            btn.button('reset')
+	          $('#download-renorm').prop('disabled', false)
+            $('#download-renorm').button('reset')
+	        } else {
+	          $('#renormdiv').html("<i><font color='#e6194B'>Done! No pointings selected.</font></i>")
+	          btn.prop('disabled', false)
+            btn.button('reset')
+            $('#download-renorm').prop('disabled', false)
+            $('#download-renorm').button('reset')
           }
-        ).fail(function(jqXHR, textStatus)
-          {
+        }).fail(function(jqXHR, textStatus) {
             $('#renorm-skymap').prop('disabled', false)
-	    $('#download-renorm').prop('disabled', false)
+	          $('#download-renorm').prop('disabled', false)
             $('#renormdiv').html("<i><font color='red'>Error in Renormalize Skymap</font></i>")
             btn.button('reset')
             $('#download-renorm').button('reset')
-          }
-      );
+        });
     });
   });
 
@@ -1085,10 +1080,10 @@ text.info:hover span{ /*the span will display just on :hover state*/
       $('#download-renorm').click(function() {
         $('#download-renorm').prop('disabled', true)
         var btn = $(this).button('loading');
-	$('#renorm-skymap').prop('disabled', true)
-	$('#renorm-skymap').button('loading')
+        $('#renorm-skymap').prop('disabled', true)
+        $('#renorm-skymap').button('loading')
         var inst_cov = $('#r_inst_cov').val()
-	var inst_plan = $('#r_inst_plan').val()
+	      var inst_plan = $('#r_inst_plan').val()
         var depth_cov = $('#r_depth_cov').val()
         var depth_unit = $('#r_depth_unit').val()
         var approx_cov = $('#r_approx_cov').val()
@@ -1097,9 +1092,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
         var spectral_range_low = $('#r_spectral_range_low').val()
         var spectral_range_high = $('#r_spectral_range_high').val()
 	
-	$('#renormdiv').html(`
-          <i>Generating fits file...</i>
-          <progress id="dl-progress-bar" value="0" max="100" style="width: 100%;"></progress>`);
+        $('#renormdiv').html(`
+                <i>Generating fits file...</i>
+                <progress id="dl-progress-bar" value="0" max="100" style="width: 100%;"></progress>`);
 
 	//animate progress bar from 0% to 90% over 300s
 	let progressVal = 0;
@@ -1118,9 +1113,9 @@ text.info:hover span{ /*the span will display just on :hover state*/
           {
               url: '/ajax_renormalize_skymap',
               data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high+'&download=true&_ts='+Date.now(),
-	      xhrFields: {
-		  responseType: 'blob'
-	      }
+              xhrFields: {
+                responseType: 'blob'
+              }
           }
         ).done(function (reply, textStatus, jqXHR) 
           {
@@ -1129,16 +1124,16 @@ text.info:hover span{ /*the span will display just on :hover state*/
 	      $('#renormdiv').find('i').text("Downloading fits file...")
 	      $('#dl-progress-bar').val(90);
 
-              //parse filename of renormalized skymap from blob
+        //parse filename of renormalized skymap from blob
 	      const cDisp = jqXHR.getResponseHeader('Content-Disposition');
 	      let dl_name = 'normed_skymap.fits'; //placeholder
-	      if (cDisp && cDisp.indexOf('filename=') !== -1) {
-		//OK, Content-Disposition and filename both exist
-		dl_name = cDisp
-                .split('filename=')[1] //extract content following "filename="
-                .split(';')[0]         //toss everything after filename field
-                .replace(/"/g, '');    //clean double quotes
-              }				  
+        if (cDisp && cDisp.indexOf('filename=') !== -1) {
+          //OK, Content-Disposition and filename both exist
+          dl_name = cDisp
+          .split('filename=')[1] //extract content following "filename="
+          .split(';')[0]         //toss everything after filename field
+          .replace(/"/g, '');    //clean double quotes
+        }				  
 	      //download renormalized skymap
 	      const downloadUrl = URL.createObjectURL(reply);
 	      const tempa = document.createElement('a');
@@ -1167,10 +1162,10 @@ text.info:hover span{ /*the span will display just on :hover state*/
         ).fail(function(jqXHR, textStatus)
           {
             $('#download-renorm').prop('disabled', false)
-	    $('#renorm-skymap').prop('disabled', false)
+	          $('#renorm-skymap').prop('disabled', false)
             $('#renormdiv').html("<i><font color='red'>Error Downloading Renormalized Skymap</font></i>")
             btn.button('reset')
-	    $('#renorm-skymap').button('reset')
+	          $('#renorm-skymap').button('reset')
           }
       );
     });
