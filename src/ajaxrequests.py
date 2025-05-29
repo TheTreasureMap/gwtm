@@ -784,6 +784,7 @@ def plot_renormalized_skymap():
 	start = time.time()
 
 	graceid = models.gw_alert.graceidfromalternate(request.args.get('graceid'))
+	alert_id = request.args.get('alert_id')
 	inst_cov = request.args.get('inst_cov')
 	inst_plan = request.args.get('inst_plan')
 	depth = request.args.get('depth_cov')
@@ -807,7 +808,7 @@ def plot_renormalized_skymap():
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		insts_cov = models.pointing.instrumentid.in_(insts_cov)
-		comp_mask &= comp_mask
+		comp_mask &= insts_cov
 	#take planned pointings if any selected
 	if inst_plan != '':
 		plan_mask = models.pointing.status == 'planned'
@@ -889,6 +890,7 @@ def plot_renormalized_skymap():
 	pointingids = sorted(pointingids)
 	hashpointingids =  hashlib.sha1(json.dumps(pointingids).encode()).hexdigest()
 
+	cache_key = f"normed_skymap_{graceid}_{alert_id}_{approx_cov}_{hashpointingids}"
 	#download the fits
 	if download:
 		#warning, this part is slow, so we only calculate this
@@ -927,7 +929,7 @@ def plot_renormalized_skymap():
 		#set file pointer to beginning of buffer for read
 		normed_skymap_bytes.seek(0)
 		#unique filename for download
-		dl_name = f'normed_skymap_{graceid}_{approx_cov}_{hashpointingids}.fits'
+		dl_name = f'{cache_key}.fits'
 		
 		#send file back as attachment
 		return send_file(
@@ -940,10 +942,12 @@ def plot_renormalized_skymap():
 		)
 
 	#otherwise, look for a cached contour file
-	cache_key = f'cache/normed_contours_{graceid}_{approx_cov}_{hashpointingids}'
+	cache_key_path = f'cache/{cache_key}'
+	print(cache_key_path)
 	#try to load a cached contour
-	cache_file = gwtm_io.get_cached_file(cache_key, config)
+	cache_file = gwtm_io.get_cached_file(cache_key_path, config)
 	if cache_file is None:
+		print('No cached contour found, calculating...')
 		#warning, this part is slow
 		normed_contours_json = gwtm_api.event_tools.renormed_skymap_contours(
 			graceid=graceid,
@@ -955,9 +959,10 @@ def plot_renormalized_skymap():
 		cache_file = {
 			'contours_json': normed_contours_json,
 		}
-		gwtm_io.set_cached_file(cache_key, cache_file, config)
+		gwtm_io.set_cached_file(cache_key_path, cache_file, config)
 	else:
 		#load cached contour
+		print('Using cached contour file')
 		normed_contours_json = json.loads(cache_file)['contours_json']
 
 	#read json and make detection overlay
