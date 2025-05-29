@@ -315,7 +315,7 @@ class AlertsForm(FlaskForm):
             for at in alert_info:
                 typetabs = [x['type'] for x in self.alert_type_tabs]
                 if at.alert_type in typetabs:
-                    num = len([x for x in typetabs if at.alert_type in x])
+                    num = len([x for x in typetabs if at.alert_type in x.split()])
                     self.alert_type_tabs.append({
                         'type': at.alert_type + ' ' + str(num),
                         'timesent':at.timesent,
