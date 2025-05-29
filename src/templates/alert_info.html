@@ -1041,7 +1041,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         $.ajax(
           {
               url: '/ajax_renormalize_skymap',
-              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&alert_id='+alertid+'+&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
+              data: 'graceid={{ form.graceid }}&mappathinfo={{ form.mappathinfo }}&alert_id='+alertid+'&inst_cov='+inst_cov+'&inst_plan='+inst_plan+'&depth_cov='+depth_cov+'&depth_unit='+depth_unit+'&approx_cov='+approx_cov+'&spec_range_type='+spectral_type+'&spec_range_unit='+spectral_unit+'&spec_range_low='+spectral_range_low+'&spec_range_high='+spectral_range_high
           }
         ).done(function (reply) {
 	        if (reply) {

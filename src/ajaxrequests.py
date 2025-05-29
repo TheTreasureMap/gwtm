@@ -808,7 +808,7 @@ def plot_renormalized_skymap():
 	if inst_cov != '':
 		insts_cov = [int(x) for x in inst_cov.split(',')]
 		insts_cov = models.pointing.instrumentid.in_(insts_cov)
-		comp_mask &= comp_mask
+		comp_mask &= insts_cov
 	#take planned pointings if any selected
 	if inst_plan != '':
 		plan_mask = models.pointing.status == 'planned'
