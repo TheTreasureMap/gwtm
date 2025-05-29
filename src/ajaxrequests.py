@@ -236,9 +236,8 @@ def ajax_get_eventcontour():
 	
 	contourpath = f'{s3path}/'+path_info+'-contours-smooth.json'
 	try:
-		print(contourpath)
 		_f = gwtm_io.download_gwtm_file(contourpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
-		contours_data = pd.read_json(_f)
+		contours_data = json.loads(_f)
 		contour_geometry = []
 		for contour in contours_data['features']:
 			contour_geometry.extend(contour['geometry']['coordinates'])

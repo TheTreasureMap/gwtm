@@ -1,8 +1,6 @@
 import astropy
-import pandas as pd
 import json
 import time
-from io import StringIO
 
 from astropy.coordinates import get_body
 from flask_wtf import FlaskForm
@@ -359,12 +357,10 @@ class AlertsForm(FlaskForm):
 
             if self.selected_alert_info.time_of_signal is not None:
                 t=astropy.time.Time(self.selected_alert_info.time_of_signal,format='datetime',scale='utc')
-                self.selected_alert_info.sun_ra =  astropy.coordinates.get_sun(t).ra.deg
-                self.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
-                try:
-                    moon = astropy.coordinates.get_moon(t)
-                except AttributeError:
-                    moon = astropy.coordinates.get_body("moon", t)
+                sun = get_body("sun", t)
+                self.selected_alert_info.sun_ra =  sun.ra.deg
+                self.selected_alert_info.sun_dec =  sun.dec.deg
+                moon = get_body("moon", t)
                 self.selected_alert_info.moon_ra =  moon.ra.deg
                 self.selected_alert_info.moon_dec =  moon.dec.deg
             
@@ -419,13 +415,10 @@ class AlertsForm(FlaskForm):
 
             self.inst_cov = []
             for inst in [x for x in instrumentinfo if x.id != 49]:
-                print(inst.nickname, inst.instrument_name, inst.id)
                 inst_name = inst.instrument_name
                 if inst.nickname is not None and inst.nickname != "":
                     inst_name = inst.nickname
                 self.inst_cov.append({'name':inst_name, 'value':inst.id})
-
-            print(self.inst_cov)
 
             self.depth_unit=[]
             for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit is not None])):
@@ -457,9 +450,6 @@ class AlertsForm(FlaskForm):
                 self.mintime = 0
                 self.maxtime = 0
                 self.step = 0
-
-            #iterate over each instrument and grab their pointings
-            #rotate and project the footprint and then add it to the overlay list
 
             #do BAT stuff
             #BAT instrumentid == 49
@@ -529,9 +519,8 @@ class AlertsForm(FlaskForm):
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:
-                
                 f = gwtm_io.download_gwtm_file(contourpath, config.STORAGE_BUCKET_SOURCE, config)
-                contours_data = pd.read_json(f)
+                contours_data = json.loads(f)
                 contour_geometry = []
                 for contour in contours_data['features']:
                     contour_geometry.extend(contour['geometry']['coordinates'])

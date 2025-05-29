@@ -93,12 +93,9 @@ def delete_gwtm_files(keys, source="s3", config=None):
 
 def get_cached_file(key, config):
     source = config.STORAGE_BUCKET_SOURCE
-    cached_files = list_gwtm_bucket('cache', source, config)
-
-    if key in cached_files:
-        print(f"found cached file {key}")
+    try:
         return download_gwtm_file(key, source, config)
-    else:
+    except Exception:
         return None
 
 def set_cached_file(key, contents, config):
@@ -143,7 +140,7 @@ if __name__ == '__main__':
     # assert s3_content==abfs_content
     alerts = ['S230621ad', 'S230620z']
     base_url = 'https://treasuremap.space'
-    abfs_content = list_gwtm_bucket("fit", "abfs", config)
+    abfs_content = list_gwtm_bucket("test", "abfs", config)
     # for a in alerts:
     #     filtered_content = [x for x in abfs_content if a in x and 'alert.json' in x]
     #     for f in filtered_content:
