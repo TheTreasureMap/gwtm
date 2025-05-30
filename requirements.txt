@@ -38,4 +38,4 @@ fsspec
 adlfs
 s3fs==0.6.0
 markupsafe>=2.1.1
-flask_profiler==1.8.1
+git+https://github.com/muatik/flask-profiler.git@6a36526184ad3a903c2d50b3e208ed276d3404f6 # Fixed version from master
