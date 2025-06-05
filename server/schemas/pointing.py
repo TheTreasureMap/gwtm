@@ -145,15 +145,165 @@ class PointingSchema(PointingBase):
     )
 
 
+class PointingCreate(PointingBase):
+    """Schema for creating a new pointing with comprehensive validation."""
+    id: Optional[int] = None  # For planned pointing updates
+    
+    @model_validator(mode='after')
+    def validate_pointing_data(self):
+        """Comprehensive validation for pointing creation."""
+        errors = []
+        
+        # Skip most validation for planned pointing updates (when id is present)
+        if self.id is not None:
+            # For planned pointing updates, only validate provided fields
+            if self.depth is not None and not isinstance(self.depth, (int, float)):
+                errors.append("Invalid depth. Must be decimal")
+            
+            if self.depth_err is not None and not isinstance(self.depth_err, (int, float)):
+                errors.append("Invalid depth_err. Must be decimal")
+                
+            if self.pos_angle is not None and not isinstance(self.pos_angle, (int, float)):
+                errors.append("Invalid pos_angle. Must be decimal")
+                
+            if self.ra is not None and self.dec is not None:
+                if not isinstance(self.ra, (int, float)) or not isinstance(self.dec, (int, float)):
+                    errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC")
+                else:
+                    self.position = f"POINT({self.ra} {self.dec})"
+                    
+            if errors:
+                raise ValueError("; ".join(errors))
+            return self
+        
+        # Full validation for new pointings
+        # Validate required fields based on status
+        if self.status == pointing_status_enum.completed:
+            if not self.depth:
+                errors.append("depth is required for completed observations")
+            if not self.depth_unit:
+                errors.append("depth_unit is required for completed observations")
+            if not self.band:
+                errors.append("band is required for completed observations")
+            if not self.time:
+                errors.append("time is required for completed observations")
+                
+        elif self.status == pointing_status_enum.planned:
+            if not self.time:
+                errors.append("time is required for planned observations")
+        
+        # Validate position (ra/dec or position string)
+        if not self.position and not (self.ra is not None and self.dec is not None):
+            errors.append("Position information required (either position string or ra/dec coordinates)")
+        
+        # Validate position format if provided as string
+        if self.position and not (self.position and all(x in self.position for x in ["POINT", "(", ")", " "]) and "," not in self.position):
+            errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
+        
+        # Convert ra/dec to position if provided
+        if self.ra is not None and self.dec is not None:
+            if not isinstance(self.ra, (int, float)) or not isinstance(self.dec, (int, float)):
+                errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC")
+            else:
+                self.position = f"POINT({self.ra} {self.dec})"
+        
+        # Validate numeric fields
+        if self.depth is not None and not isinstance(self.depth, (int, float)):
+            errors.append("Invalid depth. Must be decimal")
+        
+        if self.depth_err is not None and not isinstance(self.depth_err, (int, float)):
+            errors.append("Invalid depth_err. Must be decimal")
+            
+        if self.pos_angle is not None and not isinstance(self.pos_angle, (int, float)):
+            errors.append("Invalid pos_angle. Must be decimal")
+        
+        if errors:
+            raise ValueError("; ".join(errors))
+            
+        return self
+
+
+class PointingCreateRequest(BaseModel):
+    """Schema for the complete pointing creation request."""
+    graceid: str = Field(..., description="Grace ID of the GW event")
+    pointing: Optional[PointingCreate] = Field(None, description="Single pointing object")
+    pointings: Optional[List[PointingCreate]] = Field(None, description="List of pointing objects")
+    request_doi: Optional[bool] = Field(False, description="Whether to request a DOI")
+    creators: Optional[List[Dict[str, str]]] = Field(None, description="List of creators for the DOI")
+    doi_group_id: Optional[int] = Field(None, description="DOI author group ID")
+    doi_url: Optional[str] = Field(None, description="Optional DOI URL if already exists")
+    
+    @model_validator(mode='after')
+    def validate_request(self):
+        """Validate the request has either pointing or pointings."""
+        if not self.pointing and not self.pointings:
+            raise ValueError("Either pointing or pointings must be provided")
+        
+        if self.pointing and self.pointings:
+            raise ValueError("Cannot provide both pointing and pointings")
+            
+        # Validate DOI creators if request_doi is True
+        if self.request_doi and self.creators:
+            for creator in self.creators:
+                if 'name' not in creator or 'affiliation' not in creator:
+                    raise ValueError("name and affiliation are required for each creator in the list")
+                    
+        return self
+
+
 class PointingUpdate(BaseModel):
     """Schema for updating a pointing."""
-    status: Optional[Union[pointing_status_enum, str]] = None
-    ids: Optional[List[int]] = None
+    status: Union[pointing_status_enum, str] = Field(..., description="New status for the pointings")
+    ids: List[int] = Field(..., description="List of pointing IDs to update")
 
     @field_validator("status", mode="before")
     @classmethod
     def validate_status(cls, value):
-        if isinstance(value, pointing_status_enum):
-            return value.value  # Convert enum to its name (e.g., "completed")
+        if isinstance(value, str):
+            try:
+                return pointing_status_enum[value]
+            except KeyError:
+                raise ValueError(f"Invalid status: {value}. Valid values are: {[s.name for s in pointing_status_enum]}")
         return value
+    
+    @model_validator(mode='after')
+    def validate_update(self):
+        """Validate update request."""
+        if not self.ids:
+            raise ValueError("At least one pointing ID must be provided")
+        
+        # Currently only support cancelling
+        if self.status != pointing_status_enum.cancelled:
+            raise ValueError("Only 'cancelled' status updates are currently supported")
+            
+        return self
+
+
+class CancelAllRequest(BaseModel):
+    """Schema for cancelling all pointings."""
+    graceid: str = Field(..., description="Grace ID of the GW event")
+    instrumentid: int = Field(..., description="Instrument ID to cancel pointings for")
+
+
+class DOIRequest(BaseModel):
+    """Schema for requesting a DOI."""
+    graceid: Optional[str] = Field(None, description="Grace ID of the GW event")
+    id: Optional[int] = Field(None, description="Pointing ID")
+    ids: Optional[List[int]] = Field(None, description="List of pointing IDs")
+    doi_group_id: Optional[str] = Field(None, description="DOI author group ID")
+    creators: Optional[List[Dict[str, str]]] = Field(None, description="List of creators for the DOI")
+    doi_url: Optional[str] = Field(None, description="Optional DOI URL if already exists")
+    
+    @model_validator(mode='after')
+    def validate_doi_request(self):
+        """Validate DOI request parameters."""
+        if not self.graceid and not self.id and not self.ids:
+            raise ValueError("Please provide either graceid, id, or ids parameter")
+            
+        if self.creators:
+            for creator in self.creators:
+                if 'name' not in creator or 'affiliation' not in creator:
+                    raise ValueError("name and affiliation are required for each creator in the list")
+                    
+        return self
 

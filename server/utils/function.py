@@ -12,7 +12,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import requests
 
 from server import config
-from server.core.enums import pointing_status
+from server.core.enums.pointing_status import pointing_status
 from server.db.models.pointing import Pointing
 from server.schemas.pointing import PointingSchema
 
@@ -337,9 +337,9 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
     if dist_thresh is None:
 
         filtered_pointings = [x for x in otherpointings if (
-                x.status.name == pointing.status and \
+                x.status == pointing.status and \
                 x.instrumentid == int(pointing.instrumentid) and \
-                x.band.name == pointing.band and \
+                x.band == pointing.band and \
                 x.time == pointing.time and \
                 x.pos_angle == floatNone(pointing.pos_angle)
         )]
@@ -354,9 +354,9 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
         p_ra, p_dec = sanatize_pointing(pointing.position)
 
         filtered_pointings = [x for x in otherpointings if (
-                x.status.name == pointing.status and \
+                x.status == pointing.status and \
                 x.instrumentid == int(pointing.instrumentid) and \
-                x.band.name == pointing.band
+                x.band == pointing.band
         )]
 
         for p in filtered_pointings:
@@ -415,7 +415,6 @@ def create_pointing_doi(
     Returns:
         Tuple of (doi_id, doi_url)
     """
-
     points_json = []
 
     for p in points:
