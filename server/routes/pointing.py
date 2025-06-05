@@ -18,7 +18,10 @@ from server.db.models.users import Users
 from server.schemas.pointing import (
     PointingSchema,
     PointingResponse,
-    PointingUpdate
+    PointingUpdate,
+    PointingCreateRequest,
+    CancelAllRequest,
+    DOIRequest
 )
 from server.schemas.doi import DOIRequestResponse
 from server.auth.auth import get_current_user
@@ -26,6 +29,7 @@ from server.utils.function import pointing_crossmatch, create_pointing_doi
 from server.core.enums.pointing_status import pointing_status as pointing_status_enum
 from server.core.enums.depth_unit import depth_unit as depth_unit_enum
 from server.core.enums.bandpass import bandpass as bandpass_enum
+from server.services.pointing_service import PointingService
 
 
 router = APIRouter(tags=["pointings"])
@@ -33,134 +37,98 @@ router = APIRouter(tags=["pointings"])
 
 @router.post("/pointings", response_model=PointingResponse)
 async def add_pointings(
-        graceid: str = Body(..., description="Grace ID of the GW event"),
-        pointing: Optional[Dict[str, Any]] = Body(None, description="Single pointing object"),
-        pointings: Optional[List[Dict[str, Any]]] = Body(None, description="List of pointing objects"),
-        request_doi: Optional[bool] = Body(False, description="Whether to request a DOI"),
-        creators: Optional[List[Dict[str, str]]] = Body(None, description="List of creators for the DOI"),
-        doi_group_id: Optional[int] = Body(None, description="DOI author group ID"),
-        doi_url: Optional[str] = Body(None, description="Optional DOI URL if already exists"),
+        request: PointingCreateRequest,
         db: Session = Depends(get_db),
         user=Depends(get_current_user)
 ):
     """
     Add new pointings to the database.
-
-    Parameters:
-    - graceid: Grace ID of the GW event
-    - pointing: Single pointing object
-    - pointings: List of pointing objects
-    - request_doi: Whether to request a DOI
-    - creators: List of creators for the DOI
-    - doi_group_id: DOI author group ID
-    - doi_url: Optional DOI URL if already exists
-
-    Returns pointing IDs, errors, and warnings
     """
     # Initialize variables
     points = []
     errors = []
     warnings = []
-    post_doi = request_doi
 
-    # Validate graceid
-    # First check if the graceid exists
-    valid_alerts = db.query(GWAlert).filter(GWAlert.graceid == graceid).all()
-    if len(valid_alerts) == 0:
-        raise validation_exception(
-            message="Invalid graceid",
-            errors=[f"The graceid '{graceid}' does not exist in the database"]
+    # Validate graceid exists
+    PointingService.validate_graceid(request.graceid, db)
+
+    # Prepare DOI creators if DOI is requested
+    creators = None
+    if request.request_doi:
+        creators = PointingService.prepare_doi_creators(
+            request.creators, request.doi_group_id, user, db
         )
 
-    # Handle DOI creators
-    if post_doi:
-        if creators:
-            for c in creators:
-                if 'name' not in c or 'affiliation' not in c:
-                    raise validation_exception(
-                        message="Invalid DOI creator information",
-                        errors=["name and affiliation are required for each creator in the list"]
-                    )
-        elif doi_group_id:
-            # Import here to avoid circular imports
-            from server.db.models.doi_author import DOIAuthor
-            valid, creators_list = DOIAuthor.construct_creators(doi_group_id, user.id, db)
-            if not valid:
-                raise validation_exception(
-                    message="Invalid DOI group ID",
-                    errors=["Make sure you are the User associated with the DOI group"]
-                )
-            creators = creators_list
-        else:
-            creators = [{'name': f"{user.firstname} {user.lastname}", 'affiliation': ''}]
+    # Get instruments for validation
+    instruments_dict = PointingService.get_instruments_dict(db)
 
-    # Get instrument list
-    dbinsts = db.query(Instrument.instrument_name, Instrument.id).all()
-
-    # Get other pointings for this event to check for duplicates
-    otherpointings = db.query(Pointing).filter(
+    # Get existing pointings for duplicate check
+    existing_pointings = db.query(Pointing).filter(
         Pointing.id == PointingEvent.pointingid,
-        PointingEvent.graceid == graceid
+        PointingEvent.graceid == request.graceid
     ).all()
 
-    # Process a single pointing
-    if pointing:
-        # Handle pointing validation
-        validation_result = validate_pointing(pointing, dbinsts, user.id, db, otherpointings)
+    # Process pointings (either single or multiple)
+    pointings_to_process = []
+    if request.pointing:
+        pointings_to_process = [request.pointing]
+    elif request.pointings:
+        pointings_to_process = request.pointings
 
-        if validation_result.valid:
-            points.append(validation_result.pointing)
-            if validation_result.warnings:
-                warnings.append(["Object: " + str(pointing), validation_result.warnings])
-            db.add(validation_result.pointing)
-        else:
-            errors.append(["Errors validating pointing: ", validation_result.errors])
-
-    # Process multiple pointings
-    elif pointings:
-        for p in pointings:
-            validation_result = validate_pointing(p, dbinsts, user.id, db, otherpointings)
-
-            if validation_result.valid:
-                points.append(validation_result.pointing)
-                if validation_result.warnings:
-                    warnings.append(["Object: " + str(p), validation_result.warnings])
-                db.add(validation_result.pointing)
+    for pointing_data in pointings_to_process:
+        try:
+            # Check if this is an update to a planned pointing
+            if hasattr(pointing_data, 'id') and pointing_data.id:
+                # Handle planned pointing update
+                pointing_obj = PointingService.handle_planned_pointing_update(
+                    pointing_data, user.id, db
+                )
             else:
-                errors.append(["Object: " + str(p), validation_result.errors])
+                # Validate and resolve instrument reference
+                instrument_id = PointingService.validate_instrument_reference(
+                    pointing_data, instruments_dict
+                )
+                
+                # Create new pointing object
+                pointing_obj = PointingService.create_pointing_from_schema(
+                    pointing_data, user.id, instrument_id
+                )
+                
+                # Check for duplicates
+                if PointingService.check_duplicate_pointing(pointing_obj, existing_pointings):
+                    errors.append([f"Object: {pointing_data.dict()}", ["Pointing already submitted"]])
+                    continue
 
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail="Invalid request: json pointing or json list of pointings are required"
-        )
+            points.append(pointing_obj)
+            db.add(pointing_obj)
+
+        except Exception as e:
+            errors.append([f"Object: {pointing_data.model_dump()}", [str(e)]])
 
     # Flush to get pointing IDs
     db.flush()
 
-    # Create pointing events
-    for p in points:
-        pointing_event = PointingEvent(
-            pointingid=p.id,
-            graceid=graceid
-        )
-        db.add(pointing_event)
+    # Create pointing events (this should always happen when we have valid points and graceid)
+    if points:  # Only create pointing events if we have valid points
+        for p in points:
+            pointing_event = PointingEvent(
+                pointingid=p.id,
+                graceid=request.graceid
+            )
+            db.add(pointing_event)
 
     db.flush()
     db.commit()
 
     # Handle DOI creation if requested
-    if post_doi and points:
-        insts = db.query(Instrument).filter(
-            Instrument.id.in_([p.instrumentid for p in points])
-        )
-        inst_set = list(set([i.instrument_name for i in insts]))
-
-        if doi_url:
-            doi_id, doi_url = 0, doi_url
+    doi_url = None
+    if request.request_doi and points:
+        if request.doi_url:
+            doi_id, doi_url = 0, request.doi_url
         else:
-            normalized_gid = GWAlert.alternatefromgraceid(graceid)
-            doi_id, doi_url = create_pointing_doi(points, normalized_gid, creators, inst_set)
+            doi_id, doi_url = PointingService.create_doi_for_pointings(
+                points, request.graceid, creators, db
+            )
 
         if doi_id is not None:
             for p in points:
@@ -170,241 +138,14 @@ async def add_pointings(
             db.flush()
             db.commit()
 
-            return PointingResponse(
-                pointing_ids=[p.id for p in points],
-                ERRORS=errors,
-                WARNINGS=warnings,
-                DOI=doi_url
-            )
-
-    # Return response without DOI
+    # Return response
     return PointingResponse(
         pointing_ids=[p.id for p in points],
         ERRORS=errors,
-        WARNINGS=warnings
+        WARNINGS=warnings,
+        DOI=doi_url
     )
 
-
-class ValidationResult:
-    """Helper class for validation results."""
-
-    def __init__(self):
-        self.valid = False
-        self.pointing = None
-        self.errors = []
-        self.warnings = []
-
-
-def validate_pointing(data, dbinsts, user_id, db, otherpointings):
-    """
-    Validate pointing data.
-    This is a helper function to separate validation logic from model methods.
-    """
-    # Create validation result
-    result = ValidationResult()
-
-    # Create a new pointing
-    pointing = Pointing()
-
-    # Check for planned pointing (update case)
-    PLANNED = False
-    if 'id' in data and data['id'] is not None and isinstance(data['id'], int):
-        PLANNED = True
-        pointing_id = int(data['id'])
-
-        # Find the planned pointing
-        planned_pointing = db.query(Pointing).filter(
-            Pointing.id == pointing_id,
-            Pointing.submitterid == user_id
-        ).first()
-
-        if not planned_pointing:
-            result.errors.append(f"Pointing with ID {pointing_id} not found or not owned by you")
-            return result
-
-        if planned_pointing.status in [pointing_status_enum.completed, pointing_status_enum.cancelled]:
-            result.errors.append(f"This pointing has already been {planned_pointing.status.name}")
-            return result
-
-        # Copy data from planned pointing
-        pointing.position = planned_pointing.position
-        pointing.depth = planned_pointing.depth
-        pointing.depth_err = planned_pointing.depth_err
-        pointing.depth_unit = planned_pointing.depth_unit
-        pointing.status = pointing_status_enum.completed  # Set to completed
-        pointing.band = planned_pointing.band
-        pointing.central_wave = planned_pointing.central_wave
-        pointing.bandwidth = planned_pointing.bandwidth
-        pointing.instrumentid = planned_pointing.instrumentid
-        pointing.pos_angle = planned_pointing.pos_angle
-
-        # Update fields if provided
-        if 'time' in data and data['time']:
-            pointing.time = data['time']
-        else:
-            pointing.time = planned_pointing.time
-
-        if 'pos_angle' in data and data['pos_angle'] is not None:
-            pointing.pos_angle = data['pos_angle']
-
-        pointing.submitterid = user_id
-        pointing.datecreated = datetime.now()
-        pointing.dateupdated = datetime.now()
-
-        # Mark as valid
-        result.valid = True
-        result.pointing = pointing
-        return result
-
-    # Validate status
-    if 'status' in data and data['status']:
-        status_value = data['status']
-        if isinstance(status_value, str):
-            try:
-                status_value = pointing_status_enum[status_value]  # Convert string to enum
-            except KeyError:
-                result.errors.append("Invalid status value")
-                return result
-        if status_value in [pointing_status_enum.planned, pointing_status_enum.completed, pointing_status_enum.cancelled]:
-            pointing.status = status_value
-        else:
-            result.errors.append("Invalid status value")
-            return result
-    else:
-        pointing.status = pointing_status_enum.completed
-
-    # Validate position (ra/dec)
-    if 'position' in data and data['position']:
-        pos = data['position']
-        if pos and all(x in pos for x in ["POINT", "(", ")", " "]) and "," not in pos:
-            pointing.position = data['position']
-        else:
-            result.errors.append(
-                "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
-            return result
-    elif 'ra' in data and 'dec' in data and data['ra'] is not None and data['dec'] is not None:
-        ra, dec = data['ra'], data['dec']
-
-        if not isinstance(ra, (int, float)) or not isinstance(dec, (int, float)):
-            result.errors.append(
-                "Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
-            return result
-        else:
-            pointing.position = f"POINT({ra} {dec})"
-    else:
-        result.errors.append("Position information required (either position string or ra/dec coordinates)")
-        return result
-
-    # Validate instrument
-    if 'instrumentid' in data and data['instrumentid']:
-        inst = data['instrumentid']
-        valid_inst = False
-
-        if isinstance(inst, int):
-            insts = [x for x in dbinsts if x.id == int(inst)]
-            if insts:
-                pointing.instrumentid = inst
-                valid_inst = True
-        else:
-            insts = [x for x in dbinsts if x.instrument_name == inst]
-            if insts:
-                pointing.instrumentid = insts[0].id
-                valid_inst = True
-
-        if not valid_inst:
-            result.errors.append("Invalid instrumentid. Can be id or name of instrument")
-            return result
-    else:
-        result.errors.append("Field instrumentid is required")
-        return result
-
-    # Validate depth
-    if 'depth' in data and data['depth'] is not None:
-        if isinstance(data['depth'], (int, float)):
-            pointing.depth = float(data['depth'])
-        else:
-            result.errors.append("Invalid depth. Must be decimal")
-            return result
-    elif pointing.status == pointing_status_enum.completed:
-        result.errors.append("depth is required for completed observations")
-        return result
-
-    # Validate depth unit
-    if 'depth_unit' in data and data['depth_unit']:
-        unit_value = data['depth_unit']
-        if isinstance(unit_value, str):
-            try:
-                unit_value = depth_unit_enum[unit_value]  # Convert string to enum
-            except KeyError:
-                result.errors.append(f"Invalid depth_unit value: {unit_value}")
-                return result
-        pointing.depth_unit = unit_value
-    elif pointing.status == pointing_status_enum.completed:
-        result.errors.append("depth_unit is required for completed observations")
-        return result
-
-    # Validate depth error
-    if 'depth_err' in data and data['depth_err'] is not None:
-        if isinstance(data['depth_err'], (int, float)):
-            pointing.depth_err = float(data['depth_err'])
-        else:
-            result.errors.append("Invalid depth_err. Must be decimal")
-            return result
-
-    # Validate position angle
-    if 'pos_angle' in data and data['pos_angle'] is not None:
-        if isinstance(data['pos_angle'], (int, float)):
-            pointing.pos_angle = float(data['pos_angle'])
-        else:
-            result.errors.append("Invalid pos_angle. Must be decimal")
-            return result
-    elif pointing.status == pointing_status_enum.completed and pointing.pos_angle is None:
-        result.errors.append("pos_angle is required for completed observations")
-        return result
-
-    # Validate time
-    if 'time' in data and data['time']:
-        pointing.time = data['time']
-    elif pointing.status == pointing_status_enum.planned:
-        result.errors.append("Field \"time\" is required for when the pointing is planned to be observed")
-        return result
-    elif pointing.status == pointing_status_enum.completed:
-        result.errors.append('Field \"time\" is required for the observed pointing')
-        return result
-
-    # Validate band/spectral information
-    if 'band' in data and data['band']:
-        band_value = data['band']
-        if isinstance(band_value, str):
-            try:
-                band_value = bandpass_enum[band_value]  # Convert string to enum
-            except KeyError:
-                result.errors.append(f"Invalid band value: {band_value}")
-                return result
-        pointing.band = band_value
-    elif pointing.status == pointing_status_enum.completed:
-        result.errors.append("band is required for completed observations")
-        return result
-
-    # Set basic fields
-    pointing.submitterid = user_id
-    pointing.datecreated = datetime.now()
-
-    # Set central_wave and bandwidth if provided
-    if 'central_wave' in data and data['central_wave'] is not None:
-        pointing.central_wave = data['central_wave']
-    if 'bandwidth' in data and data['bandwidth'] is not None:
-        pointing.bandwidth = data['bandwidth']
-
-    # Check for duplicate pointing
-    if pointing_crossmatch(pointing, otherpointings):
-        result.errors.append("Pointing already submitted")
-        return result
-
-    # Set validation result
-    result.valid = True
-    result.pointing = pointing
-    return result
 
 
 @router.get("/pointings", response_model=List[PointingSchema])
@@ -885,229 +626,175 @@ def get_pointings(
     except Exception as e:
         raise validation_exception(message="Invalid request", errors=[str(e)])
 
-    @router.post("/update_pointings")
-    async def update_pointings(
-            update_pointing: PointingUpdate,
-            db: Session = Depends(get_db),
-            user=Depends(get_current_user)
-    ):
-        """
-        Update the status of planned pointings.
 
-        Parameters:
-        - status: The new status for the pointings (only "cancelled" is currently supported)
-        - ids: List of pointing IDs to update
+@router.post("/update_pointings")
+async def update_pointings(
+        update_pointing: PointingUpdate,
+        db: Session = Depends(get_db),
+        user=Depends(get_current_user)
+):
+    """
+    Update the status of planned pointings.
 
-        Returns:
-        - Message with the number of updated pointings
-        """
-        try:
-            # Add a filter to ensure user can only update their own pointings
-            pointings = db.query(Pointing).filter(
-                Pointing.id.in_(update_pointing.ids),
-                Pointing.submitterid == user.id,
-                Pointing.status == pointing_status_enum.planned  # Only planned pointings can be cancelled
-            ).all()
+    Parameters:
+    - status: The new status for the pointings (only "cancelled" is currently supported)
+    - ids: List of pointing IDs to update
 
-            for pointing in pointings:
-                pointing.status = update_pointing.status
-                pointing.dateupdated = datetime.now()
-
-            db.commit()
-            return {"message": f"Updated {len(pointings)} pointings successfully."}
-        except Exception as e:
-            db.rollback()
-            raise validation_exception(message="Invalid request", errors=[str(e)])
-
-    @router.post("/cancel_all")
-    async def cancel_all(
-            graceid: str = Body(..., description="Grace ID of the GW event"),
-            instrumentid: int = Body(..., description="Instrument ID to cancel pointings for"),
-            db: Session = Depends(get_db),
-            user=Depends(get_current_user)
-    ):
-        """
-        Cancel all planned pointings for a specific GW event and instrument.
-
-        Parameters:
-        - graceid: Grace ID of the GW event
-        - instrumentid: Instrument ID to cancel pointings for
-
-        Returns:
-        - Message with the number of cancelled pointings
-        """
-        # Validate instrumentid
-        instrument = db.query(Instrument).filter(Instrument.id == instrumentid).first()
-        if not instrument:
-            raise not_found_exception(f"Instrument with ID {instrumentid} not found")
-
-        # Build the filter
-        filter_conditions = [
-            Pointing.status == pointing_status_enum.planned,
+    Returns:
+    - Message with the number of updated pointings
+    """
+    try:
+        # Add a filter to ensure user can only update their own pointings
+        pointings = db.query(Pointing).filter(
+            Pointing.id.in_(update_pointing.ids),
             Pointing.submitterid == user.id,
-            Pointing.instrumentid == instrumentid
-        ]
+            Pointing.status == pointing_status_enum.planned  # Only planned pointings can be cancelled
+        ).all()
 
-        # Add GW event filter using pointing_event relation
-        if graceid:
-            # Normalize the graceid
-            graceid = GWAlert.graceidfromalternate(graceid)
-            # Add the join condition
-            filter_conditions.append(Pointing.id == PointingEvent.pointingid)
-            filter_conditions.append(PointingEvent.graceid == graceid)
-
-        # Query the pointings
-        pointings = db.query(Pointing).filter(*filter_conditions)
-        pointing_count = pointings.count()
-
-        # Update the status
         for pointing in pointings:
-            pointing.status = pointing_status_enum.cancelled
+            pointing.status = update_pointing.status
             pointing.dateupdated = datetime.now()
 
         db.commit()
+        return {"message": f"Updated {len(pointings)} pointings successfully."}
+    except Exception as e:
+        db.rollback()
+        raise validation_exception(message="Invalid request", errors=[str(e)])
 
-        return {"message": f"Updated {pointing_count} Pointings successfully"}
 
-    @router.post("/request_doi", response_model=DOIRequestResponse)
-    async def request_doi(
-            graceid: Optional[str] = Body(None, description="Grace ID of the GW event"),
-            id: Optional[int] = Body(None, description="Pointing ID"),
-            ids: Optional[List[int]] = Body(None, description="List of pointing IDs"),
-            doi_group_id: Optional[str] = Body(None, description="DOI author group ID"),
-            creators: Optional[List[Dict[str, str]]] = Body(None, description="List of creators for the DOI"),
-            doi_url: Optional[str] = Body(None, description="Optional DOI URL if already exists"),
-            db: Session = Depends(get_db),
-            user=Depends(get_current_user)
-    ):
-        """
-        Request a DOI for completed pointings.
+@router.post("/cancel_all")
+async def cancel_all(
+        request: CancelAllRequest,
+        db: Session = Depends(get_db),
+        user=Depends(get_current_user)
+):
+    """
+    Cancel all planned pointings for a specific GW event and instrument.
+    """
+    # Validate instrument exists
+    PointingService.validate_instrument(request.instrumentid, db)
 
-        Parameters:
-        - graceid: Grace ID of the GW event
-        - id: Single pointing ID
-        - ids: List of pointing IDs
-        - doi_group_id: DOI author group ID
-        - creators: List of creators for the DOI
-        - doi_url: Optional DOI URL if already exists
+    # Validate graceid exists
+    normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
 
-        Returns:
-        - DOI URL and warnings
-        """
-        # Build the filter for pointings - always join with PointingEvent
-        filter_conditions = [
-            Pointing.submitterid == user.id,
-            Pointing.id == PointingEvent.pointingid  # Always join with PointingEvent
-        ]
+    # Build the filter
+    filter_conditions = [
+        Pointing.status == pointing_status_enum.planned,
+        Pointing.submitterid == user.id,
+        Pointing.instrumentid == request.instrumentid,
+        Pointing.id == PointingEvent.pointingid,
+        PointingEvent.graceid == normalized_graceid
+    ]
 
-        # Handle graceid
-        if graceid:
-            graceid = GWAlert.graceidfromalternate(graceid)
-            filter_conditions.append(PointingEvent.graceid == graceid)
+    # Query the pointings
+    pointings = db.query(Pointing).filter(*filter_conditions)
+    pointing_count = pointings.count()
 
-        # Handle id or ids
-        if id:
-            filter_conditions.append(Pointing.id == id)
-        elif ids:
-            filter_conditions.append(Pointing.id.in_(ids))
+    # Update the status
+    for pointing in pointings:
+        pointing.status = pointing_status_enum.cancelled
+        pointing.dateupdated = datetime.now()
 
-        # Check if we have sufficient filtering parameters
-        has_graceid_filter = any('graceid' in str(f) for f in filter_conditions)
-        has_id_filter = any('Pointing.id ==' in str(f) or 'Pointing.id.in_' in str(f) for f in filter_conditions)
+    db.commit()
 
-        if not has_graceid_filter and not has_id_filter:
-            raise validation_exception(
-                message="Insufficient filter parameters",
-                errors=["Please provide either graceid, id, or ids parameter"]
-            )
+    return {"message": f"Updated {pointing_count} Pointings successfully"}
 
+
+@router.post("/request_doi", response_model=DOIRequestResponse)
+async def request_doi(
+        request: DOIRequest,
+        db: Session = Depends(get_db),
+        user=Depends(get_current_user)
+):
+    """
+    Request a DOI for completed pointings.
+    """
+    # Build the filter for pointings
+    filter_conditions = [
+        Pointing.submitterid == user.id
+    ]
+
+    # Handle id or ids (these don't require PointingEvent join)
+    if request.id:
+        filter_conditions.append(Pointing.id == request.id)
+    elif request.ids:
+        filter_conditions.append(Pointing.id.in_(request.ids))
+
+    # Only join with PointingEvent if graceid is specified
+    if request.graceid:
+        normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
         # Query the pointings with explicit join
         points = db.query(Pointing).join(
             PointingEvent, Pointing.id == PointingEvent.pointingid
-        ).filter(*filter_conditions).all()
-
-        # Validate and prepare for DOI request
-        warnings = []
-        doi_points = []
-
-        for p in points:
-            # Check if pointing is completed, owned by user, and doesn't already have a DOI
-            if p.status == pointing_status_enum.completed and p.submitterid == user.id and p.doi_id is None:
-                doi_points.append(p)
-            else:
-                warning_msg = f"Invalid doi request for pointing: {p.id}"
-                if p.status != pointing_status_enum.completed:
-                    warning_msg += f" (status: {p.status})"
-                if p.submitterid != user.id:
-                    warning_msg += " (not owned by user)"
-                if p.doi_id is not None:
-                    warning_msg += " (already has DOI)"
-                warnings.append(warning_msg)
-
-        if len(doi_points) == 0:
-            raise validation_exception(
-                message="No valid pointings found for DOI request",
-                errors=["All pointings must be completed, owned by you, and not already have a DOI"]
-            )
-
-        # Get the instruments
-        insts = db.query(Instrument).filter(Instrument.id.in_([x.instrumentid for x in doi_points])).all()
-        inst_set = list(set([x.instrument_name for x in insts]))
-
-        # Get the GW event IDs - this should now work since we joined with PointingEvent
-        pointing_events = db.query(PointingEvent).filter(
-            PointingEvent.pointingid.in_([x.id for x in doi_points])
+        ).filter(
+            *filter_conditions,
+            PointingEvent.graceid == normalized_graceid
         ).all()
-        gids = list(set([pe.graceid for pe in pointing_events]))
+    else:
+        # Query without join when only using ID filters
+        points = db.query(Pointing).filter(*filter_conditions).all()
 
-        if len(gids) > 1:
-            raise validation_exception(
-                message="Multiple events detected",
-                errors=["Pointings must be only for a single GW event for a DOI request"]
-            )
+    # Validate and prepare for DOI request
+    warnings = []
+    doi_points = []
 
-        gid = gids[0]
-
-        # Handle DOI creators
-        if not creators:
-            if doi_group_id:
-                valid, creators_list = DOIAuthor.construct_creators(doi_group_id, user.id, db)
-                if not valid:
-                    raise validation_exception(
-                        message="Invalid DOI group ID",
-                        errors=["Make sure you are the User associated with the DOI group"]
-                    )
-                creators = creators_list
-            else:
-                # Default to user as creator
-                user_record = db.query(Users).filter(Users.id == user.id).first()
-                creators = [{"name": f"{user_record.firstname} {user_record.lastname}", "affiliation": ""}]
+    for p in points:
+        # Check if pointing is completed and doesn't already have a DOI
+        if p.status == pointing_status_enum.completed and p.doi_id is None:
+            doi_points.append(p)
         else:
-            # Validate creators
-            for c in creators:
-                if "name" not in c or "affiliation" not in c:
-                    raise validation_exception(
-                        message="Invalid DOI creator information",
-                        errors=["name and affiliation are required for each creator in the list"]
-                    )
+            warning_msg = f"Invalid doi request for pointing: {p.id}"
+            if p.status != pointing_status_enum.completed:
+                warning_msg += f" (status: {p.status})"
+            if p.doi_id is not None:
+                warning_msg += " (already has DOI)"
+            warnings.append(warning_msg)
 
-        # Create or use provided DOI
-        if doi_url:
-            doi_id, doi_url = 0, doi_url
-        else:
-            # Get the alternate form of the graceid
-            gid = GWAlert.alternatefromgraceid(gid)
-            # Create the DOI
-            doi_id, doi_url = create_pointing_doi(doi_points, gid, creators, inst_set)
+    if len(doi_points) == 0:
+        raise validation_exception(
+            message="No valid pointings found for DOI request",
+            errors=["All pointings must be completed and not already have a DOI"]
+        )
 
-        # Update pointing records with DOI information
-        if doi_id is not None:
-            for p in doi_points:
-                p.doi_url = doi_url
-                p.doi_id = doi_id
+    # Get the GW event IDs from the pointings
+    pointing_events = db.query(PointingEvent).filter(
+        PointingEvent.pointingid.in_([x.id for x in doi_points])
+    ).all()
+    gids = list(set([pe.graceid for pe in pointing_events]))
 
-            db.commit()
+    if len(gids) > 1:
+        raise validation_exception(
+            message="Multiple events detected",
+            errors=["Pointings must be only for a single GW event for a DOI request"]
+        )
 
-        # Import the response model
-        from server.schemas.doi import DOIRequestResponse
-        return DOIRequestResponse(DOI_URL=doi_url, WARNINGS=warnings)
+    gid = gids[0]
+
+    # Prepare DOI creators
+    creators = PointingService.prepare_doi_creators(
+        request.creators, request.doi_group_id, user, db
+    )
+
+    # Create or use provided DOI
+    if request.doi_url:
+        doi_id, doi_url = 0, request.doi_url
+    else:
+        doi_id, doi_url = PointingService.create_doi_for_pointings(
+            doi_points, gid, creators, db
+        )
+
+    # Update pointing records with DOI information
+    if doi_id is not None:
+        for p in doi_points:
+            p.doi_url = doi_url
+            p.doi_id = doi_id
+
+        db.commit()
+
+    return DOIRequestResponse(DOI_URL=doi_url, WARNINGS=warnings)
+
+
+@router.get("/test_refactoring")
+async def test_refactoring():
+    """Test endpoint to verify refactored code is active."""
+    return {"message": "Refactored pointing routes are active"}

@@ -496,7 +496,7 @@ class TestPointingEndpoints:
             "pointing": {
                 "ra": 123.456,
                 "dec": -45.678,
-                # Missing instrumentid
+                # Missing instrumentid and band (required for completed observations)
                 "depth": 22.5,
                 "depth_unit": "ab_mag",
                 "time": "2019-04-25T12:00:00.000000",
@@ -509,11 +509,12 @@ class TestPointingEndpoints:
             json=pointing_data,
             headers={"api_token": self.admin_token})
 
-        assert response.status_code == status.HTTP_200_OK
+        # With improved Pydantic validation, we now get proper HTTP 400 status codes
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert len(data["ERRORS"]) > 0
-        # Should indicate missing instrumentid
-        assert any("instrumentid" in str(error) for error in data["ERRORS"])
+        assert "validation error" in data.get("message", "").lower()
+        # Should indicate missing required field (band is caught first by Pydantic)
+        assert "band is required" in str(data)
 
     def test_update_pointing_cancel(self):
         """Test updating pointing status to cancelled."""

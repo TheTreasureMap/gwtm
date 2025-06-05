@@ -6,6 +6,7 @@ import os
 import requests
 import json
 import datetime
+import uuid
 from typing import Dict, Any, List, Optional
 import pytest
 from fastapi import status
@@ -31,8 +32,7 @@ class TestIceCubeEndpoints:
     def test_post_icecube_notice_as_admin(self):
         """Test posting an IceCube notice as admin."""
         # Generate a unique reference ID
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z",  # Use a known GraceID from test data
@@ -92,8 +92,8 @@ class TestIceCubeEndpoints:
 
     def test_post_icecube_notice_as_non_admin(self):
         """Test that only admin can post IceCube notices."""
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z",
@@ -123,8 +123,8 @@ class TestIceCubeEndpoints:
     def test_post_duplicate_icecube_notice(self):
         """Test posting a duplicate IceCube notice."""
         # First post a notice
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z",
@@ -202,8 +202,8 @@ class TestIceCubeEndpoints:
     def test_post_icecube_notice_missing_fields(self):
         """Test posting an IceCube notice with missing required fields."""
         # Post with minimal required fields according to schema
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z"
@@ -231,8 +231,8 @@ class TestIceCubeEndpoints:
 
     def test_post_icecube_notice_without_auth(self):
         """Test that authentication is required."""
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z"
@@ -254,8 +254,8 @@ class TestIceCubeEndpoints:
 
     def test_post_icecube_notice_with_invalid_token(self):
         """Test with invalid API token."""
-        ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+        ref_id = f"IceCube-{uuid.uuid4()}"
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z"
