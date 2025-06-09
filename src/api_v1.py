@@ -39,7 +39,7 @@ def service_status():
         # Get connection parameters from environment
         db_host = os.environ.get('DB_HOST', 'localhost')
         db_port = os.environ.get('DB_PORT', '5432')
-        db_user = os.environ.get('DB_USER', 'unknown')
+        #db_user = os.environ.get('DB_USER', 'unknown')
         db_name = os.environ.get('DB_NAME', 'unknown')
         
         # Store connection info
@@ -297,7 +297,9 @@ def post_event_galaxies_v1():
 		alert = db.session.query(models.gw_alert).filter(
 			models.gw_alert.timesent < time_sent + datetime.timedelta(seconds=15),
 			models.gw_alert.timesent > time_sent - datetime.timedelta(seconds=15),
-			models.gw_alert.graceid == args['graceid']).first()
+			models.gw_alert.graceid == args['graceid'],
+			~models.gw_alert.alert_type.contains("ExtCoinc")
+		).order_by(models.gw_alert.datecreated.desc()).first()
 		if alert is None:
 			return make_response(
 				'Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(
@@ -1318,7 +1320,7 @@ def del_test_alerts_v1():
 
 	objects = gwtm_io.list_gwtm_bucket(container="test", source=config.STORAGE_BUCKET_SOURCE, config=config)
 	objects_to_delete = [
-		o for o in objects if not any(t in o for t in testids) and 'alert.json' not in o and o != 'test/'
+		o for o in objects if not any(t in o for t in testids) and o != 'test/'
 	]
 
 	if len(objects_to_delete):

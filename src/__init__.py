@@ -1,7 +1,6 @@
 
 from flask import Flask
 from flask_login import LoginManager
-from flask_caching import Cache
 from . import app_mail
 from .gwtmconfig import config
 from flask_profiler import Profiler
@@ -15,9 +14,8 @@ login.login_view = 'login'
 app.config.from_object(config)
 
 mail = app_mail.AppMail(config)
-cache = Cache(app)
 
-app.config["DEBUG"] = True
+app.config["DEBUG"] = config.DEBUG
 
 # You need to declare necessary configuration to initialize
 # flask-profiler as follows:
@@ -34,7 +32,9 @@ app.config["flask_profiler"] = {
     },
     "endpointRoot": config.PROFILER_ENDPOINT,
     "ignore": [
-	    "^/static/.*"
+	    "^/static/.*",
+	    "^/ajax_renormalize_skymap.*",
+            "^/ajax_coverage_calculator.*"
 	]
 }
 profiler.init_app(app)

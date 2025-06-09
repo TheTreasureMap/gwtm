@@ -1,5 +1,4 @@
 import astropy
-import pandas as pd
 import json
 import time
 
@@ -249,6 +248,9 @@ class AlertsForm(FlaskForm):
     GRBoverlays = []
     has_icecube = False
     has_candidate = False
+    calc_ids = ["calc-info",
+                "calc-coverage",
+                "calc-renorm-skymap"]
 
     def construct_alertform(self, args):
         
@@ -313,7 +315,7 @@ class AlertsForm(FlaskForm):
             for at in alert_info:
                 typetabs = [x['type'] for x in self.alert_type_tabs]
                 if at.alert_type in typetabs:
-                    num = len([x for x in typetabs if at.alert_type in x])
+                    num = len([x for x in typetabs if at.alert_type in x.split()])
                     self.alert_type_tabs.append({
                         'type': at.alert_type + ' ' + str(num),
                         'timesent':at.timesent,
@@ -355,12 +357,10 @@ class AlertsForm(FlaskForm):
 
             if self.selected_alert_info.time_of_signal is not None:
                 t=astropy.time.Time(self.selected_alert_info.time_of_signal,format='datetime',scale='utc')
-                self.selected_alert_info.sun_ra =  astropy.coordinates.get_sun(t).ra.deg
-                self.selected_alert_info.sun_dec =  astropy.coordinates.get_sun(t).dec.deg
-                try:
-                    moon = astropy.coordinates.get_moon(t)
-                except AttributeError:
-                    moon = astropy.coordinates.get_body("moon", t)
+                sun = get_body("sun", t)
+                self.selected_alert_info.sun_ra =  sun.ra.deg
+                self.selected_alert_info.sun_dec =  sun.dec.deg
+                moon = get_body("moon", t)
                 self.selected_alert_info.moon_ra =  moon.ra.deg
                 self.selected_alert_info.moon_dec =  moon.dec.deg
             
@@ -415,7 +415,10 @@ class AlertsForm(FlaskForm):
 
             self.inst_cov = []
             for inst in [x for x in instrumentinfo if x.id != 49]:
-                self.inst_cov.append({'name':inst.nickname if inst.nickname is not None else inst.instrument_name, 'value':inst.id})
+                inst_name = inst.instrument_name
+                if inst.nickname is not None and inst.nickname != "":
+                    inst_name = inst.nickname
+                self.inst_cov.append({'name':inst_name, 'value':inst.id})
 
             self.depth_unit=[]
             for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit is not None])):
@@ -447,9 +450,6 @@ class AlertsForm(FlaskForm):
                 self.mintime = 0
                 self.maxtime = 0
                 self.step = 0
-
-            #iterate over each instrument and grab their pointings
-            #rotate and project the footprint and then add it to the overlay list
 
             #do BAT stuff
             #BAT instrumentid == 49
@@ -514,12 +514,13 @@ class AlertsForm(FlaskForm):
             self.avgra = self.selected_alert_info.avgra
             self.avgdec = self.selected_alert_info.avgdec
 
+            #load normal skymap
             contourpath = f'{s3path}/'+path_info+'-contours-smooth.json'
             self.mappathinfo = mappathinfo
             #if it exists, add it to the overlay list
             try:
                 f = gwtm_io.download_gwtm_file(contourpath, config.STORAGE_BUCKET_SOURCE, config)
-                contours_data = pd.read_json(f)
+                contours_data = json.loads(f)
                 contour_geometry = []
                 for contour in contours_data['features']:
                     contour_geometry.extend(contour['geometry']['coordinates'])

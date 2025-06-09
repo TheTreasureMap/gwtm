@@ -208,7 +208,9 @@ def post_event_galaxies():
 		alert = db.session.query(models.gw_alert).filter(
 			models.gw_alert.timesent < time + datetime.timedelta(seconds=15),
 			models.gw_alert.timesent > time - datetime.timedelta(seconds=15),
-			models.gw_alert.graceid == graceid).first()
+			models.gw_alert.graceid == args['graceid'],
+			~models.gw_alert.alert_type.contains("ExtCoinc")
+		).order_by(models.gw_alert.datecreated.desc()).first()
 		if alert is None:
 			return make_response('Invalid \'timesent_stamp\' for event\n Please visit http://treasuremap.space/alerts?graceids={} for valid timesent stamps for this event'.format(graceid), 500)
 	else:
@@ -1135,7 +1137,7 @@ def del_test_alerts():
 
 	objects = gwtm_io.list_gwtm_bucket(container="test", source=config.STORAGE_BUCKET_SOURCE, config=config)
 	objects_to_delete = [
-		o for o in objects if not any(t in o for t in testids) and 'alert.json' not in o and o != 'test/'
+		o for o in objects if not any(t in o for t in testids) and o != 'test/'
 	]
 
 	if len(objects_to_delete):

@@ -2,22 +2,12 @@
 import unittest
 # Use requests library for HTTP requests
 import requests
-# Parse/split a url link
-import urllib.parse
 # Working with JSON data
-import os, sys, json
-# Utilize a familiar format: dataframes
-import pandas as pd
-# Binning for histograms
-import numpy as np
-# Plotting
-import matplotlib.pyplot as plt
-# Handling date and time information
-import datetime
+import os
 
 class TestAPI(unittest.TestCase):
-  BASE = 'http://treasuremap.space/api/v1' # Base address
-  API_TOKEN = os.environ.get('api_token', '') # API token
+  BASE = 'http://127.0.0.1:5000/api/v1' # Base address
+  API_TOKEN = os.environ.get('GWTM_API_TOKEN', '') # API token
   TARGET_POINTINGS = "pointings"
   TARGET_FOOTPRINTS = "footprints"
   TARGET_EVENT_GALAXIES = "event_galaxies"
@@ -28,7 +18,7 @@ class TestAPI(unittest.TestCase):
   INSTRUMENT_NAME = "Sinistro"
   INSTRUMENT_ID = 9
   GRACE_ID = "GW190814"
-  MS_GRACE_ID = "MS230615e"
+  MS_GRACE_ID = "MS250529q"
   TARGET_GALAXY = "event_galaxies"
   TARGET_GALAXY_REMOVE = "remove_event_galaxies"
   TARGET_DOI = "request_doi"
@@ -156,8 +146,35 @@ class TestAPI(unittest.TestCase):
   def test_post_event_galaxy(self):
     json_params = {
         "api_token": self.API_TOKEN,
-        "id" : self.INSTRUMENT_ID,
-        "timesent_stamp":"2019-05-22T12:33:59"
+        "graceid" : self.MS_GRACE_ID,
+        "timesent_stamp":"2025-05-29T16:28:35.0",
+        "galaxies":[
+          {
+            "position":"POINT(24.0 41.0)",
+            "score":19.5,
+            "rank":1,
+            "name":"test galaxy",
+            "info":{
+                "param1":"value1",
+                "param2":"value2",
+                "param3":"value3",
+                "param4":"value4"
+            }
+        },
+        {
+            "position":"POINT(25.0 41.0)",
+            "score":19.5,
+            "rank":2,
+            "name":"test galaxy2",
+            "info":{
+                "param1":"value1",
+                "param2":"value2",
+                "param3":"value3",
+                "param4":"value4"
+            }
+        },
+        ]
+
     }
 
     url = "{}/{}".format(self.BASE, self.TARGET_GALAXY)
@@ -290,21 +307,22 @@ class TestAPI(unittest.TestCase):
 if __name__ == "__main__":
 
   tester = TestAPI()
+  print(tester.API_TOKEN)
 
   # GET Requests
-  tester.test_get_pointings()
-  tester.test_footprints()
-  tester.test_get_event_galaxy()
-  tester.test_glade()
-  tester.test_instrument()
-  tester.test_moc()
-  tester.test_query()
+  # tester.test_get_pointings()
+  # tester.test_footprints()
+  # tester.test_get_event_galaxy()
+  # tester.test_glade()
+  # tester.test_instrument()
+  # tester.test_moc()
+  # tester.test_query()
 
   # POST Requests
   tester.test_post_event_galaxy()
-  tester.test_remove_event_galaxy()
-  tester.test_post_pointings()
-  tester.test_request_doi()
-  tester.test_update_pointings()
-  tester.test_cancel_pointings()
-  tester.test_fix_data()
+  # tester.test_remove_event_galaxy()
+  # tester.test_post_pointings()
+  # tester.test_request_doi()
+  # tester.test_update_pointings()
+  # tester.test_cancel_pointings()
+  # tester.test_fix_data()
