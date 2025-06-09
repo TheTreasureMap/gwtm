@@ -1,0 +1,1 @@
+"""UI route module."""

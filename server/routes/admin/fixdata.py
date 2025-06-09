@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+"""Fix data endpoint for admin users."""
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import Dict
 
 from server.db.database import get_db
 from server.auth.auth import verify_admin

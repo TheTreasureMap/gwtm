@@ -4,12 +4,13 @@ from datetime import datetime
 from server.core.enums.instrument_type import instrument_type as instrument_type_enum
 
 class InstrumentSchema(BaseModel):
-    id: int
-    instrument_name: str
-    nickname: Optional[str] = None
-    instrument_type: instrument_type_enum
-    datecreated: Optional[datetime] = None
-    submitterid: Optional[int] = None
+    """Schema for returning an instrument."""
+    id: int = Field(..., description="Unique identifier for the instrument")
+    instrument_name: str = Field(..., description="Name of the instrument")
+    nickname: Optional[str] = Field(None, description="Nickname or short name for the instrument")
+    instrument_type: instrument_type_enum = Field(..., description="Type of the instrument")
+    datecreated: Optional[datetime] = Field(None, description="Date when the instrument was created")
+    submitterid: Optional[int] = Field(None, description="ID of the user who submitted the instrument")
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=False)
 
@@ -20,24 +21,28 @@ class InstrumentSchema(BaseModel):
         return value
 
 class InstrumentCreate(BaseModel):
-    instrument_name: str
-    nickname: Optional[str] = None
-    instrument_type: instrument_type_enum
+    """Schema for creating a new instrument."""
+    instrument_name: str = Field(..., description="Name of the instrument")
+    nickname: Optional[str] = Field(None, description="Nickname or short name for the instrument")
+    instrument_type: instrument_type_enum = Field(..., description="Type of the instrument")
 
 class InstrumentUpdate(BaseModel):
-    instrument_name: Optional[str] = None
-    nickname: Optional[str] = None
-    instrument_type: Optional[instrument_type_enum] = None
+    """Schema for updating an instrument."""
+    instrument_name: Optional[str] = Field(None, description="Updated name of the instrument")
+    nickname: Optional[str] = Field(None, description="Updated nickname or short name for the instrument")
+    instrument_type: Optional[instrument_type_enum] = Field(None, description="Updated type of the instrument")
 
 class FootprintCCDSchema(BaseModel):
-    id: int
-    instrumentid: int
+    """Schema for returning a footprint CCD."""
+    id: int = Field(..., description="Unique identifier for the footprint")
+    instrumentid: int = Field(..., description="ID of the associated instrument")
     footprint: Optional[str] = Field(None, description="WKT representation of the footprint")
 
     model_config = ConfigDict(from_attributes=True)
 
 class FootprintCCDCreate(BaseModel):
-    instrumentid: int
+    """Schema for creating a new footprint CCD."""
+    instrumentid: int = Field(..., description="ID of the associated instrument")
     footprint: str = Field(..., description="WKT representation of the footprint")
 
     @field_validator("footprint")

@@ -234,3 +234,56 @@ class DeleteCandidateParams(BaseModel):
     id: Optional[int] = None
     ids: Optional[List[int]] = None
 
+
+# Base schema with common fields
+class GWCandidateBase(BaseModel):
+    """Base schema for GW candidate data."""
+    graceid: str = Field(..., description="Grace ID of the GW event")
+    candidate_name: str = Field(..., description="Name of the candidate")
+    submitterid: Optional[int] = Field(None, description="ID of the user who submitted the candidate")
+    datecreated: Optional[datetime] = Field(None, description="Date when the candidate was created")
+    tns_name: Optional[str] = Field(None, description="TNS name of the candidate")
+    tns_url: Optional[str] = Field(None, description="TNS URL of the candidate")
+    discovery_date: Optional[datetime] = Field(None, description="Date of discovery")
+    discovery_magnitude: Optional[float] = Field(None, description="Magnitude at discovery")
+    magnitude_central_wave: Optional[float] = Field(None, description="Central wavelength for magnitude")
+    magnitude_bandwidth: Optional[float] = Field(None, description="Bandwidth for magnitude measurement")
+    magnitude_unit: Optional[str] = Field(None, description="Unit of magnitude measurement")
+    magnitude_bandpass: Optional[str] = Field(None, description="Bandpass filter used")
+    associated_galaxy: Optional[str] = Field(None, description="Associated galaxy name")
+    associated_galaxy_redshift: Optional[float] = Field(None, description="Redshift of associated galaxy")
+    associated_galaxy_distance: Optional[float] = Field(None, description="Distance to associated galaxy")
+
+
+# Request schema with validation
+class GWCandidateCreate(GWCandidateBase):
+    """Schema for creating/updating candidates with coordinate validation."""
+    ra: Optional[float] = Field(None, ge=0.0, le=360.0, description="Right ascension in degrees (0-360)")
+    dec: Optional[float] = Field(None, ge=-90.0, le=90.0, description="Declination in degrees (-90 to +90)")
+
+    @field_validator('ra')
+    @classmethod
+    def validate_ra(cls, v):
+        """Validate right ascension is within valid range."""
+        if v is not None and (v < 0.0 or v > 360.0):
+            raise ValueError('Right ascension must be between 0 and 360 degrees')
+        return v
+
+    @field_validator('dec')
+    @classmethod
+    def validate_dec(cls, v):
+        """Validate declination is within valid range."""
+        if v is not None and (v < -90.0 or v > 90.0):
+            raise ValueError('Declination must be between -90 and +90 degrees')
+        return v
+
+
+# Response schema without strict validation (for existing data)
+class GWCandidateSchema(GWCandidateBase):
+    """Schema for returning candidates without strict coordinate validation."""
+    id: Optional[int] = Field(None, description="Unique identifier for the candidate")
+    ra: Optional[float] = Field(None, description="Right ascension in degrees")
+    dec: Optional[float] = Field(None, description="Declination in degrees")
+
+    model_config = ConfigDict(from_attributes=True)
+

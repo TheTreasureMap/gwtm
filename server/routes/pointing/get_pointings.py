@@ -1,12 +1,10 @@
-# server/routes/pointing.py
-from fastapi import APIRouter, Depends, Query, Body, HTTPException
+"""Get pointings endpoint with comprehensive filtering."""
 
-from server.db.models.doi_author import DOIAuthor
-from server.utils.error_handling import validation_exception, not_found_exception, permission_exception
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional
 import json
 
 from server.db.database import get_db
@@ -15,137 +13,18 @@ from server.db.models.instrument import Instrument
 from server.db.models.pointing_event import PointingEvent
 from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
-from server.schemas.pointing import (
-    PointingSchema,
-    PointingResponse,
-    PointingUpdate,
-    PointingCreateRequest,
-    CancelAllRequest,
-    DOIRequest
-)
-from server.schemas.doi import DOIRequestResponse
+from server.schemas.pointing import PointingSchema
 from server.auth.auth import get_current_user
-from server.utils.function import pointing_crossmatch, create_pointing_doi
+from server.utils.error_handling import validation_exception
 from server.core.enums.pointing_status import pointing_status as pointing_status_enum
 from server.core.enums.depth_unit import depth_unit as depth_unit_enum
-from server.core.enums.bandpass import bandpass as bandpass_enum
-from server.services.pointing_service import PointingService
-
+from server.core.enums.bandpass import bandpass
+from server.core.enums.wavelength_units import wavelength_units
+from server.core.enums.frequency_units import frequency_units
+from server.core.enums.energy_units import energy_units
+from server.utils.function import isInt, isFloat
 
 router = APIRouter(tags=["pointings"])
-
-
-@router.post("/pointings", response_model=PointingResponse)
-async def add_pointings(
-        request: PointingCreateRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
-):
-    """
-    Add new pointings to the database.
-    """
-    # Initialize variables
-    points = []
-    errors = []
-    warnings = []
-
-    # Validate graceid exists
-    PointingService.validate_graceid(request.graceid, db)
-
-    # Prepare DOI creators if DOI is requested
-    creators = None
-    if request.request_doi:
-        creators = PointingService.prepare_doi_creators(
-            request.creators, request.doi_group_id, user, db
-        )
-
-    # Get instruments for validation
-    instruments_dict = PointingService.get_instruments_dict(db)
-
-    # Get existing pointings for duplicate check
-    existing_pointings = db.query(Pointing).filter(
-        Pointing.id == PointingEvent.pointingid,
-        PointingEvent.graceid == request.graceid
-    ).all()
-
-    # Process pointings (either single or multiple)
-    pointings_to_process = []
-    if request.pointing:
-        pointings_to_process = [request.pointing]
-    elif request.pointings:
-        pointings_to_process = request.pointings
-
-    for pointing_data in pointings_to_process:
-        try:
-            # Check if this is an update to a planned pointing
-            if hasattr(pointing_data, 'id') and pointing_data.id:
-                # Handle planned pointing update
-                pointing_obj = PointingService.handle_planned_pointing_update(
-                    pointing_data, user.id, db
-                )
-            else:
-                # Validate and resolve instrument reference
-                instrument_id = PointingService.validate_instrument_reference(
-                    pointing_data, instruments_dict
-                )
-                
-                # Create new pointing object
-                pointing_obj = PointingService.create_pointing_from_schema(
-                    pointing_data, user.id, instrument_id
-                )
-                
-                # Check for duplicates
-                if PointingService.check_duplicate_pointing(pointing_obj, existing_pointings):
-                    errors.append([f"Object: {pointing_data.dict()}", ["Pointing already submitted"]])
-                    continue
-
-            points.append(pointing_obj)
-            db.add(pointing_obj)
-
-        except Exception as e:
-            errors.append([f"Object: {pointing_data.model_dump()}", [str(e)]])
-
-    # Flush to get pointing IDs
-    db.flush()
-
-    # Create pointing events (this should always happen when we have valid points and graceid)
-    if points:  # Only create pointing events if we have valid points
-        for p in points:
-            pointing_event = PointingEvent(
-                pointingid=p.id,
-                graceid=request.graceid
-            )
-            db.add(pointing_event)
-
-    db.flush()
-    db.commit()
-
-    # Handle DOI creation if requested
-    doi_url = None
-    if request.request_doi and points:
-        if request.doi_url:
-            doi_id, doi_url = 0, request.doi_url
-        else:
-            doi_id, doi_url = PointingService.create_doi_for_pointings(
-                points, request.graceid, creators, db
-            )
-
-        if doi_id is not None:
-            for p in points:
-                p.doi_url = doi_url
-                p.doi_id = doi_id
-
-            db.flush()
-            db.commit()
-
-    # Return response
-    return PointingResponse(
-        pointing_ids=[p.id for p in points],
-        ERRORS=errors,
-        WARNINGS=warnings,
-        DOI=doi_url
-    )
-
 
 
 @router.get("/pointings", response_model=List[PointingSchema])
@@ -203,13 +82,6 @@ def get_pointings(
     """
     Retrieve pointings from the database with optional filters.
     """
-    from server.utils.function import isInt, isFloat
-    from server.core.enums.wavelength_units import wavelength_units
-    from server.core.enums.frequency_units import frequency_units
-    from server.core.enums.energy_units import energy_units
-    from server.core.enums.bandpass import bandpass
-    from server.core.enums.depth_unit import depth_unit as depth_unit_enum
-
     try:
         # Build the filter conditions
         filter_conditions = []
@@ -398,7 +270,7 @@ def get_pointings(
                     errors=["Should be ISO format, e.g. 2019-05-01T12:00:00.00"]
                 )
 
-            # Handle user filters
+        # Handle user filters
         if user:
             if isInt(user):
                 filter_conditions.append(Pointing.submitterid == int(user))
@@ -439,7 +311,7 @@ def get_pointings(
                     errors=[f"Required format is a list: '[user1, user2...]'", str(e)]
                 )
 
-            # Handle instrument filters
+        # Handle instrument filters
         if instrument:
             if isInt(instrument):
                 filter_conditions.append(Pointing.instrumentid == int(instrument))
@@ -475,7 +347,7 @@ def get_pointings(
                     errors=[f"Required format is a list: '[inst1, inst2...]'", str(e)]
                 )
 
-            # Handle spectral filters
+        # Handle spectral filters
         if wavelength_regime and wavelength_unit:
             try:
                 if isinstance(wavelength_regime, str):
@@ -499,7 +371,7 @@ def get_pointings(
                     specmax = specmax * scale
 
                     # Import the spectral handler
-                    from server.db.models.pointing import SpectralRangeHandler
+                    from server.utils.spectral import SpectralRangeHandler
                     filter_conditions.append(Pointing.inSpectralRange(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.wavelength
                     ))
@@ -537,7 +409,7 @@ def get_pointings(
                     specmax = specmax * scale
 
                     # Import the spectral handler
-                    from server.db.models.pointing import SpectralRangeHandler
+                    from server.utils.spectral import SpectralRangeHandler
                     filter_conditions.append(Pointing.inSpectralRange(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.frequency
                     ))
@@ -575,7 +447,7 @@ def get_pointings(
                     specmax = specmax * scale
 
                     # Import the spectral handler
-                    from server.db.models.pointing import SpectralRangeHandler
+                    from server.utils.spectral import SpectralRangeHandler
                     filter_conditions.append(Pointing.inSpectralRange(
                         specmin, specmax, SpectralRangeHandler.spectralrangetype.energy
                     ))
@@ -590,7 +462,7 @@ def get_pointings(
                     errors=[f"Required format is a list: '[low, high]'", str(e)]
                 )
 
-            # Handle depth filters
+        # Handle depth filters
         if depth_gt is not None or depth_lt is not None:
             # Determine depth unit
             depth_unit_value = depth_unit or "ab_mag"  # Default to ab_mag if not specified
@@ -617,7 +489,7 @@ def get_pointings(
                     # For flux, lower values are dimmer
                     filter_conditions.append(Pointing.depth <= float(depth_lt))
 
-            # Query the database
+        # Query the database
         pointings = db.query(Pointing).filter(*filter_conditions).all()
 
         # Let Pydantic handle the conversion of SQLAlchemy models to JSON
@@ -625,176 +497,3 @@ def get_pointings(
         return pointings
     except Exception as e:
         raise validation_exception(message="Invalid request", errors=[str(e)])
-
-
-@router.post("/update_pointings")
-async def update_pointings(
-        update_pointing: PointingUpdate,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
-):
-    """
-    Update the status of planned pointings.
-
-    Parameters:
-    - status: The new status for the pointings (only "cancelled" is currently supported)
-    - ids: List of pointing IDs to update
-
-    Returns:
-    - Message with the number of updated pointings
-    """
-    try:
-        # Add a filter to ensure user can only update their own pointings
-        pointings = db.query(Pointing).filter(
-            Pointing.id.in_(update_pointing.ids),
-            Pointing.submitterid == user.id,
-            Pointing.status == pointing_status_enum.planned  # Only planned pointings can be cancelled
-        ).all()
-
-        for pointing in pointings:
-            pointing.status = update_pointing.status
-            pointing.dateupdated = datetime.now()
-
-        db.commit()
-        return {"message": f"Updated {len(pointings)} pointings successfully."}
-    except Exception as e:
-        db.rollback()
-        raise validation_exception(message="Invalid request", errors=[str(e)])
-
-
-@router.post("/cancel_all")
-async def cancel_all(
-        request: CancelAllRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
-):
-    """
-    Cancel all planned pointings for a specific GW event and instrument.
-    """
-    # Validate instrument exists
-    PointingService.validate_instrument(request.instrumentid, db)
-
-    # Validate graceid exists
-    normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
-
-    # Build the filter
-    filter_conditions = [
-        Pointing.status == pointing_status_enum.planned,
-        Pointing.submitterid == user.id,
-        Pointing.instrumentid == request.instrumentid,
-        Pointing.id == PointingEvent.pointingid,
-        PointingEvent.graceid == normalized_graceid
-    ]
-
-    # Query the pointings
-    pointings = db.query(Pointing).filter(*filter_conditions)
-    pointing_count = pointings.count()
-
-    # Update the status
-    for pointing in pointings:
-        pointing.status = pointing_status_enum.cancelled
-        pointing.dateupdated = datetime.now()
-
-    db.commit()
-
-    return {"message": f"Updated {pointing_count} Pointings successfully"}
-
-
-@router.post("/request_doi", response_model=DOIRequestResponse)
-async def request_doi(
-        request: DOIRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
-):
-    """
-    Request a DOI for completed pointings.
-    """
-    # Build the filter for pointings
-    filter_conditions = [
-        Pointing.submitterid == user.id
-    ]
-
-    # Handle id or ids (these don't require PointingEvent join)
-    if request.id:
-        filter_conditions.append(Pointing.id == request.id)
-    elif request.ids:
-        filter_conditions.append(Pointing.id.in_(request.ids))
-
-    # Only join with PointingEvent if graceid is specified
-    if request.graceid:
-        normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
-        # Query the pointings with explicit join
-        points = db.query(Pointing).join(
-            PointingEvent, Pointing.id == PointingEvent.pointingid
-        ).filter(
-            *filter_conditions,
-            PointingEvent.graceid == normalized_graceid
-        ).all()
-    else:
-        # Query without join when only using ID filters
-        points = db.query(Pointing).filter(*filter_conditions).all()
-
-    # Validate and prepare for DOI request
-    warnings = []
-    doi_points = []
-
-    for p in points:
-        # Check if pointing is completed and doesn't already have a DOI
-        if p.status == pointing_status_enum.completed and p.doi_id is None:
-            doi_points.append(p)
-        else:
-            warning_msg = f"Invalid doi request for pointing: {p.id}"
-            if p.status != pointing_status_enum.completed:
-                warning_msg += f" (status: {p.status})"
-            if p.doi_id is not None:
-                warning_msg += " (already has DOI)"
-            warnings.append(warning_msg)
-
-    if len(doi_points) == 0:
-        raise validation_exception(
-            message="No valid pointings found for DOI request",
-            errors=["All pointings must be completed and not already have a DOI"]
-        )
-
-    # Get the GW event IDs from the pointings
-    pointing_events = db.query(PointingEvent).filter(
-        PointingEvent.pointingid.in_([x.id for x in doi_points])
-    ).all()
-    gids = list(set([pe.graceid for pe in pointing_events]))
-
-    if len(gids) > 1:
-        raise validation_exception(
-            message="Multiple events detected",
-            errors=["Pointings must be only for a single GW event for a DOI request"]
-        )
-
-    gid = gids[0]
-
-    # Prepare DOI creators
-    creators = PointingService.prepare_doi_creators(
-        request.creators, request.doi_group_id, user, db
-    )
-
-    # Create or use provided DOI
-    if request.doi_url:
-        doi_id, doi_url = 0, request.doi_url
-    else:
-        doi_id, doi_url = PointingService.create_doi_for_pointings(
-            doi_points, gid, creators, db
-        )
-
-    # Update pointing records with DOI information
-    if doi_id is not None:
-        for p in doi_points:
-            p.doi_url = doi_url
-            p.doi_id = doi_id
-
-        db.commit()
-
-    return DOIRequestResponse(DOI_URL=doi_url, WARNINGS=warnings)
-
-
-@router.get("/test_refactoring")
-async def test_refactoring():
-    """Test endpoint to verify refactored code is active."""
-    return {"message": "Refactored pointing routes are active"}
