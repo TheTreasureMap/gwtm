@@ -7,11 +7,166 @@ like wavelength, frequency, and energy.
 from typing import Tuple, Optional
 import numpy as np
 from server.core.enums.bandpass import bandpass
+from enum import IntEnum
 
 # Constants
 SPEED_OF_LIGHT = 299792458  # m/s
 PLANCK_CONSTANT = 6.62607015e-34  # J*s
 ELECTRON_VOLT = 1.602176634e-19  # J
+
+
+class SpectralRangeHandler:
+    """
+    Values for the central wave and bandwidth were taken from:
+        http://svo2.cab.inta-csic.es/theory/fps/index.php?mode=browse
+        notated by the 'source' field in the following dictionary
+        for central_wavelength I used the lam_cen
+        for bandwidth I used the FWHM
+
+    Our base for the central wavelengths and bandwidths will be stored in
+        Angstroms
+
+    There are following static methods to convert the Angstrom values into ranges for
+        frequency in Hz
+        energy in eV
+    """
+
+    class spectralrangetype(IntEnum):
+        wavelength = 1
+        energy = 2
+        frequency = 3
+
+    # Bandpass wavelength dictionary with central wavelengths and bandwidths in Angstroms
+    bandpass_wavelength_dictionary = {
+        bandpass.U: {
+            'source': 'CTIO/SOI.bessel_U',
+            'central_wave': 3614.82,
+            'bandwidth': 617.24
+        },
+        bandpass.B: {
+            'source': 'CTIO/SOI.bessel_B',
+            'central_wave': 4317.0,
+            'bandwidth': 991.48
+        },
+        bandpass.V: {
+            'source': 'CTIO/SOI.bessel_V',
+            'central_wave': 5338.65,
+            'bandwidth': 810.65
+        },
+        bandpass.R: {
+            'source': 'CTIO/SOI.bessel_R',
+            'central_wave': 6311.86,
+            'bandwidth': 1220.89
+        },
+        bandpass.I: {
+            'source': 'CTIO/SOI.bessel_I',
+            'central_wave': 8748.91,
+            'bandwidth': 2940.57
+        },
+        bandpass.J: {
+            'source': 'CTIO/ANDICAM/J',
+            'central_wave': 12457.00,
+            'bandwidth': 1608.86
+        },
+        bandpass.H: {
+            'source': 'CTIO/ANDICAM/H',
+            'central_wave': 16333.11,
+            'bandwidth': 2969.21
+        },
+        bandpass.K: {
+            'source': 'CTIO/ANDICAM/K',
+            'central_wave': 21401.72,
+            'bandwidth': 2894.54
+        },
+        bandpass.u: {
+            'source': 'CTIO/DECam.u_filter',
+            'central_wave': 3552.98,
+            'bandwidth': 885.05
+        },
+        bandpass.g: {
+            'source': 'CTIO/DECam.g_filter',
+            'central_wave': 4730.50,
+            'bandwidth': 1503.06
+        },
+        bandpass.r: {
+            'source': 'CTIO/DECam.r_filter',
+            'central_wave': 6415.40,
+            'bandwidth': 1487.58
+        },
+        bandpass.i: {
+            'source': 'CTIO/DECam.i_filter',
+            'central_wave': 7836.21,
+            'bandwidth': 1468.29
+        },
+        bandpass.z: {
+            'source': 'CTIO/DECam.z_filter',
+            'central_wave': 9258.37,
+            'bandwidth': 1521.09
+        },
+        bandpass.UVW1: {
+            'source': 'Swift/UVOT.UVW1',
+            'central_wave': 2629.35,
+            'bandwidth': 656.60
+        },
+        bandpass.UVW2: {
+            'source': 'Swift/UVOT.UVW2',
+            'central_wave': 2089.16,
+            'bandwidth': 498.25
+        },
+        bandpass.UVM2: {
+            'source': 'Swift/UVOT.UVM2',
+            'central_wave': 2245.78,
+            'bandwidth': 498.25
+        },
+        bandpass.clear: {
+            'source': 'Generic/clear',
+            'central_wave': 2634.44,
+            'bandwidth': 3230.16
+        },
+        bandpass.open: {
+            'source': 'Generic/open',
+            'central_wave': 5500.0,
+            'bandwidth': 8000.0
+        },
+        bandpass.other: {
+            'source': 'Generic/other',
+            'central_wave': 5500.0,
+            'bandwidth': 8000.0
+        }
+    }
+
+    @staticmethod
+    def wavetoWaveRange(central_wave=None, bandwidth=None, bandpass_enum=None):
+        """Method that returns the wavelength range from the central_wave and bandwidth, or bandpass"""
+        if central_wave is None and bandwidth is None and bandpass_enum is not None:
+            bp = SpectralRangeHandler.bandpass_wavelength_dictionary[bandpass_enum]
+            central_wave = bp['central_wave']
+            bandwidth = bp['bandwidth']
+
+        wave_min = central_wave - (bandwidth / 2.0)
+        wave_max = central_wave + (bandwidth / 2.0)
+
+        return wave_min, wave_max
+
+    @staticmethod
+    def wavetoEnergy(central_wave=None, bandwidth=None, bandpass_enum=None):
+        """Method that returns the corresponding wave range to energy in eV"""
+        wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass_enum)
+
+        ev_max = 12398 / wave_min
+        ev_min = 12398 / wave_max
+
+        return ev_min, ev_max
+
+    @staticmethod
+    def wavetoFrequency(central_wave=None, bandwidth=None, bandpass_enum=None):
+        """Method that returns the corresponding wave range to frequency in Hz"""
+        wave_min, wave_max = SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass_enum)
+
+        freq_max = 2997924580000000000.0 / wave_min
+        freq_min = 2997924580000000000.0 / wave_max
+
+        return freq_min, freq_max
 
 def waveToFreq(wave: float) -> float:
     """
@@ -95,79 +250,44 @@ def energyToFreq(energy: float) -> float:
     energy_J = energy * ELECTRON_VOLT  # Convert to Joules
     return energy_J / PLANCK_CONSTANT  # Calculate frequency
 
-def wavetoWaveRange(bandpass: bandpass) -> Tuple[float, float]:
+def wavetoWaveRange(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
-    Get the wavelength range for a specific bandpass.
+    Get the wavelength range for a specific bandpass using SpectralRangeHandler.
     
     Args:
-        bandpass: Bandpass enum value
+        bandpass_enum: Bandpass enum value
+        central_wave: Central wavelength in Angstroms (alternative to bandpass)
+        bandwidth: Bandwidth in Angstroms (alternative to bandpass)
     
     Returns:
         Tuple of (min_wavelength, max_wavelength) in Angstroms
     """
-    # Define wavelength ranges for common bandpass filters
-    bandpass_ranges = {
-        'U': (3000, 4000),      # U band: ~300-400 nm
-        'B': (3800, 5000),      # B band: ~380-500 nm
-        'V': (5000, 6000),      # V band: ~500-600 nm
-        'R': (5700, 7000),      # R band: ~570-700 nm
-        'I': (7000, 9000),      # I band: ~700-900 nm
-        'J': (11000, 14000),    # J band: ~1.1-1.4 μm
-        'H': (15000, 18000),    # H band: ~1.5-1.8 μm
-        'K': (20000, 24000),    # K band: ~2.0-2.4 μm
-        'g': (4000, 5500),      # g band: ~400-550 nm
-        'r': (5500, 7000),      # r band: ~550-700 nm
-        'i': (7000, 8500),      # i band: ~700-850 nm
-        'z': (8500, 9500),      # z band: ~850-950 nm
-        'y': (9500, 10700),     # y band: ~950-1070 nm
-        'X-ray': (0.1, 100),    # X-ray: ~0.01-10 nm
-        'UV': (1000, 4000),     # UV: ~100-400 nm
-        'Optical': (4000, 7000), # Optical: ~400-700 nm
-        'IR': (7000, 300000),   # IR: ~0.7-30 μm
-        'Radio': (1e9, 1e12)    # Radio: ~0.1-100 m (in Angstroms)
-    }
-    
-    band_name = bandpass.name
-    if band_name in bandpass_ranges:
-        return bandpass_ranges[band_name]
-    
-    # Return a default range if band not found
-    return (4000, 7000)  # Default to optical range
+    return SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass_enum)
 
-def wavetoEnergy(bandpass: bandpass) -> Tuple[float, float]:
+def wavetoEnergy(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
-    Get the energy range for a specific bandpass.
+    Get the energy range for a specific bandpass using SpectralRangeHandler.
     
     Args:
-        bandpass: Bandpass enum value
+        bandpass_enum: Bandpass enum value
+        central_wave: Central wavelength in Angstroms (alternative to bandpass)
+        bandwidth: Bandwidth in Angstroms (alternative to bandpass)
     
     Returns:
         Tuple of (min_energy, max_energy) in eV
     """
-    # Get wavelength range in Angstroms
-    wave_min, wave_max = wavetoWaveRange(bandpass)
-    
-    # Convert to energy (shorter wavelength = higher energy)
-    energy_max = waveToEnergy(wave_min)
-    energy_min = waveToEnergy(wave_max)
-    
-    return (energy_min, energy_max)
+    return SpectralRangeHandler.wavetoEnergy(central_wave, bandwidth, bandpass_enum)
 
-def wavetoFrequency(bandpass: bandpass) -> Tuple[float, float]:
+def wavetoFrequency(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
-    Get the frequency range for a specific bandpass.
+    Get the frequency range for a specific bandpass using SpectralRangeHandler.
     
     Args:
-        bandpass: Bandpass enum value
+        bandpass_enum: Bandpass enum value
+        central_wave: Central wavelength in Angstroms (alternative to bandpass)
+        bandwidth: Bandwidth in Angstroms (alternative to bandpass)
     
     Returns:
         Tuple of (min_frequency, max_frequency) in Hz
     """
-    # Get wavelength range in Angstroms
-    wave_min, wave_max = wavetoWaveRange(bandpass)
-    
-    # Convert to frequency (shorter wavelength = higher frequency)
-    freq_max = waveToFreq(wave_min)
-    freq_min = waveToFreq(wave_max)
-    
-    return (freq_min, freq_max)
+    return SpectralRangeHandler.wavetoFrequency(central_wave, bandwidth, bandpass_enum)

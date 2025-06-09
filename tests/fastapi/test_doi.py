@@ -2,7 +2,6 @@ import os
 import requests
 import datetime
 import pytest
-from unittest.mock import patch
 from fastapi import status
 
 # Test configuration

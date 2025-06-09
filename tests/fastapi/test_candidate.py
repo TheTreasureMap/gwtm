@@ -6,7 +6,6 @@ import os
 import requests
 import json
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 import pytest
 from fastapi import status
 

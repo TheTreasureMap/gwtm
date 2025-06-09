@@ -4,10 +4,8 @@ Tests use specific data from test-data.sql.
 """
 import os
 import requests
-import json
 import datetime
 import uuid
-from typing import Dict, Any, List, Optional
 import pytest
 from fastapi import status
 

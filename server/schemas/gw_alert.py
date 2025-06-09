@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime
-from server.core.enums.gw_galaxy_score_type import gw_galaxy_score_type
 
 class GWAlertSchema(BaseModel):
     id: Optional[int] = None
@@ -70,73 +69,3 @@ class GWAlertSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class GWGalaxySchema(BaseModel):
-    id: int
-    graceid: str
-    galaxy_catalog: Optional[int] = None
-    galaxy_catalogID: Optional[int] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-class EventGalaxySchema(BaseModel):
-    id: int
-    graceid: str
-    galaxy_catalog: Optional[int] = None
-    galaxy_catalogID: Optional[int] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-class GWGalaxyScoreSchema(BaseModel):
-    id: int
-    gw_galaxyID: int
-    score_type: Optional[gw_galaxy_score_type] = None
-    score: Optional[float] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-# Base schema with common fields
-class GWCandidateBase(BaseModel):
-    graceid: str
-    candidate_name: str
-    submitterid: Optional[int] = None
-    datecreated: Optional[datetime] = None
-    tns_name: Optional[str] = None
-    tns_url: Optional[str] = None
-    discovery_date: Optional[datetime] = None
-    discovery_magnitude: Optional[float] = None
-    magnitude_central_wave: Optional[float] = None
-    magnitude_bandwidth: Optional[float] = None
-    magnitude_unit: Optional[str] = None
-    magnitude_bandpass: Optional[str] = None
-    associated_galaxy: Optional[str] = None
-    associated_galaxy_redshift: Optional[float] = None
-    associated_galaxy_distance: Optional[float] = None
-
-# Request schema with validation
-class GWCandidateCreate(GWCandidateBase):
-    """Schema for creating/updating candidates with coordinate validation."""
-    ra: Optional[float] = Field(None, ge=0.0, le=360.0, description="Right ascension in degrees (0-360)")
-    dec: Optional[float] = Field(None, ge=-90.0, le=90.0, description="Declination in degrees (-90 to +90)")
-
-    @field_validator('ra')
-    @classmethod
-    def validate_ra(cls, v):
-        if v is not None and (v < 0.0 or v > 360.0):
-            raise ValueError('Right ascension must be between 0 and 360 degrees')
-        return v
-
-    @field_validator('dec')
-    @classmethod
-    def validate_dec(cls, v):
-        if v is not None and (v < -90.0 or v > 90.0):
-            raise ValueError('Declination must be between -90 and +90 degrees')
-        return v
-
-# Response schema without strict validation (for existing data)
-class GWCandidateSchema(GWCandidateBase):
-    """Schema for returning candidates without strict coordinate validation."""
-    id: Optional[int] = None
-    ra: Optional[float] = None
-    dec: Optional[float] = None
-
-    model_config = ConfigDict(from_attributes=True)

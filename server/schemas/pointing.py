@@ -147,67 +147,56 @@ class PointingSchema(PointingBase):
 
 class PointingCreate(PointingBase):
     """Schema for creating a new pointing with comprehensive validation."""
-    id: Optional[int] = None  # For planned pointing updates
+    id: Optional[int] = Field(None, description="ID for updating an existing pointing")
     
     @model_validator(mode='after')
     def validate_pointing_data(self):
-        """Comprehensive validation for pointing creation."""
+        """Comprehensive validation for pointing creation or update."""
         errors = []
-        
-        # Skip most validation for planned pointing updates (when id is present)
-        if self.id is not None:
-            # For planned pointing updates, only validate provided fields
-            if self.depth is not None and not isinstance(self.depth, (int, float)):
-                errors.append("Invalid depth. Must be decimal")
+        is_update = self.id is not None
+
+        # For updates, we're more lenient with validation
+        if not is_update:
+            # Full validation for new pointings
             
-            if self.depth_err is not None and not isinstance(self.depth_err, (int, float)):
-                errors.append("Invalid depth_err. Must be decimal")
-                
-            if self.pos_angle is not None and not isinstance(self.pos_angle, (int, float)):
-                errors.append("Invalid pos_angle. Must be decimal")
-                
-            if self.ra is not None and self.dec is not None:
-                if not isinstance(self.ra, (int, float)) or not isinstance(self.dec, (int, float)):
-                    errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC")
-                else:
-                    self.position = f"POINT({self.ra} {self.dec})"
+            # Validate required fields based on status
+            if self.status == pointing_status_enum.completed:
+                if not self.depth:
+                    errors.append("depth is required for completed observations")
+                if not self.depth_unit:
+                    errors.append("depth_unit is required for completed observations")
+                if not self.band:
+                    errors.append("band is required for completed observations")
+                if not self.time:
+                    errors.append("time is required for completed observations")
                     
-            if errors:
-                raise ValueError("; ".join(errors))
-            return self
+            elif self.status == pointing_status_enum.planned:
+                if not self.time:
+                    errors.append("time is required for planned observations")
+            
+            # Validate position (ra/dec or position string) - required for new pointings
+            if not self.position and not (self.ra is not None and self.dec is not None):
+                errors.append("Position information required (either position string or ra/dec coordinates)")
         
-        # Full validation for new pointings
-        # Validate required fields based on status
-        if self.status == pointing_status_enum.completed:
-            if not self.depth:
-                errors.append("depth is required for completed observations")
-            if not self.depth_unit:
-                errors.append("depth_unit is required for completed observations")
-            if not self.band:
-                errors.append("band is required for completed observations")
-            if not self.time:
-                errors.append("time is required for completed observations")
-                
-        elif self.status == pointing_status_enum.planned:
-            if not self.time:
-                errors.append("time is required for planned observations")
+        else:
+            # For updates, only validate fields if they're being changed to completed status
+            if self.status == pointing_status_enum.completed:
+                # Only require these fields if they're not already set in the database
+                # The service layer will handle checking existing values
+                pass
         
-        # Validate position (ra/dec or position string)
-        if not self.position and not (self.ra is not None and self.dec is not None):
-            errors.append("Position information required (either position string or ra/dec coordinates)")
-        
-        # Validate position format if provided as string
+        # Validate position format if provided as string (for both new and updates)
         if self.position and not (self.position and all(x in self.position for x in ["POINT", "(", ")", " "]) and "," not in self.position):
             errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type \"POINT(RA DEC)\"")
         
-        # Convert ra/dec to position if provided
+        # Convert ra/dec to position if provided (for both new and updates)
         if self.ra is not None and self.dec is not None:
             if not isinstance(self.ra, (int, float)) or not isinstance(self.dec, (int, float)):
                 errors.append("Invalid position argument. Must be decimal format ra/RA, dec/DEC")
             else:
                 self.position = f"POINT({self.ra} {self.dec})"
         
-        # Validate numeric fields
+        # Validate numeric fields (for both new and updates)
         if self.depth is not None and not isinstance(self.depth, (int, float)):
             errors.append("Invalid depth. Must be decimal")
         

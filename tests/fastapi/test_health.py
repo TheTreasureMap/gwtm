@@ -3,7 +3,6 @@ Test health check endpoints with real requests to the FastAPI application.
 """
 import os
 import requests
-import json
 import datetime
 import pytest
 from fastapi import status

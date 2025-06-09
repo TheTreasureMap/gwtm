@@ -4,9 +4,7 @@ These tests hit the actual API endpoints running on the server.
 """
 import pytest
 import requests
-import json
 import os
-from datetime import datetime
 from server.core.enums.instrument_type import instrument_type
 from fastapi import status
 

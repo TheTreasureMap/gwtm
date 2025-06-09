@@ -15,16 +15,17 @@ import redis
 from server.config import settings
 from server.db.database import get_db
 
-from server.routes.pointing import router as pointing_router
-from server.routes.gw_alert import router as gw_alert_router
-from server.routes.doi import router as doi_router
-from server.routes.event import router as event
-from server.routes.candidate import router as candidate_router
-from server.routes.instrument import router as instrument_router
-from server.routes.gw_galaxy import router as galaxy_router
-from server.routes.icecube import router as icecube_router
-from server.routes.admin import router as admin_router
-from server.routes.ui import router as ui_router
+from server.routes.pointing.router import router as pointing_router
+from server.routes.instrument.router import router as instrument_router
+from server.routes.admin.router import router as admin_router
+from server.routes.candidate.router import router as candidate_router
+from server.routes.doi.router import router as doi_router
+from server.routes.gw_alert.router import router as gw_alert_router
+from server.routes.gw_galaxy.router import router as galaxy_router
+from server.routes.icecube.router import router as icecube_router
+from server.routes.event.router import router as event
+from server.routes.ui.router import router as ui_router
+
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
 

@@ -1,6 +1,8 @@
+"""Post IceCube notice endpoint."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import Dict, Any
 from datetime import datetime
 
 from server.db.database import get_db
@@ -10,9 +12,10 @@ from server.schemas.icecube import (
     IceCubeNoticeCoincEventSchema,
     IceCubeNoticeRequestSchema
 )
-from server.auth.auth import get_current_user, verify_admin
+from server.auth.auth import verify_admin
 
 router = APIRouter(tags=["icecube"])
+
 
 @router.post("/post_icecube_notice", response_model=Dict[str, Any])
 async def post_icecube_notice(
