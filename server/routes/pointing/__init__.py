@@ -1,0 +1,1 @@
+"""Pointing-related routes."""
