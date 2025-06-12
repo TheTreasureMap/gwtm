@@ -11,6 +11,26 @@ build:
       context: ..
       docker:
         dockerfile: server/Dockerfile
+      sync:
+        manual:
+          - src: "server/routes/**/*.py"
+            dest: "/app/server/routes/"
+          - src: "server/db/**/*.py"
+            dest: "/app/server/db/"
+          - src: "server/schemas/**/*.py"
+            dest: "/app/server/schemas/"
+          - src: "server/services/**/*.py"
+            dest: "/app/server/services/"
+          - src: "server/utils/**/*.py"
+            dest: "/app/server/utils/"
+          - src: "server/auth/**/*.py"
+            dest: "/app/server/auth/"
+          - src: "server/core/**/*.py"
+            dest: "/app/server/core/"
+          - src: "server/main.py"
+            dest: "/app/server/"
+          - src: "server/config.py"
+            dest: "/app/server/"
   local:
     push: false
 manifests:

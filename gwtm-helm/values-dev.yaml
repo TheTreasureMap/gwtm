@@ -70,4 +70,7 @@ frontend:
 
 database:
   persistence:
+    enabled: false
     size: 1Gi
+  initScripts:
+    enabled: true
