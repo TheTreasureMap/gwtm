@@ -187,49 +187,73 @@ The FastAPI application includes comprehensive tests to ensure functionality and
 
 ### Prerequisites for Testing
 
-**Important:** Tests require the test data to be loaded into the database before running. The tests use specific data from `tests/test-data.sql`.
-
-### Running Tests with Skaffold (Recommended)
-
-If using the Skaffold development setup:
-
-1. **Ensure test data is loaded:**
+1. **Install test dependencies:**
    ```bash
-   kubectl exec -it deployment/database -- psql -U treasuremap -d treasuremap_dev -f /docker-entrypoint-initdb.d/test-data.sql
+   pip install -r tests/requirements.txt
    ```
 
-2. **Run the test suite:**
+2. **Ensure FastAPI server is running:**
+   - Using Skaffold: `skaffold dev` (FastAPI available at http://localhost:8000)
+   - Using local setup: `uvicorn main:app --reload` (from server directory)
+
+3. **Load test data:** Tests automatically load fresh test data before running, but you can also load manually:
    ```bash
-   # From the project root directory
-   python -m pytest tests/fastapi/ -v
-   ```
-
-   Or run specific test modules:
-   ```bash
-   # Test specific functionality
-   python -m pytest tests/fastapi/test_pointing.py -v
-   python -m pytest tests/fastapi/test_instrument.py -v
-   python -m pytest tests/fastapi/test_ui.py -v
-   ```
-
-### Running Tests with Local Setup
-
-If running locally without Skaffold:
-
-1. **Load test data into your local database:**
-   ```bash
+   # Using Skaffold/Kubernetes
+   gwtm-helm/restore-db tests/test-data.sql
+   
+   # Using local database
    psql -U treasuremap -d treasuremap_dev -f tests/test-data.sql
    ```
 
-2. **Set the API base URL environment variable:**
-   ```bash
-   export API_BASE_URL="http://localhost:8000"
-   ```
+### Running Tests
 
-3. **Run the tests:**
-   ```bash
-   python -m pytest tests/fastapi/ -v
-   ```
+**From the project root directory:**
+
+```bash
+# Run all FastAPI tests
+python -m pytest tests/fastapi/ -v --disable-warnings
+
+# Run specific test modules
+python -m pytest tests/fastapi/test_pointing.py -v
+python -m pytest tests/fastapi/test_instrument.py -v
+python -m pytest tests/fastapi/test_ui.py -v
+
+# Run with more verbose output
+python -m pytest tests/fastapi/ -vv
+
+# Run with coverage reporting
+python -m pytest tests/fastapi/ -v --cov=server
+```
+
+**Using the test script:**
+
+```bash
+# Run all tests
+./gwtm-helm/run-module-tests.sh
+
+# Run specific module (e.g., pointing tests)
+./gwtm-helm/run-module-tests.sh pointing
+```
+
+### Test Configuration
+
+Tests are configured in `tests/fastapi/conftest.py` which:
+- Automatically waits for the FastAPI server to be ready
+- Loads fresh test data before running tests
+- Provides common fixtures for API URLs, headers, and test tokens
+
+### Environment Variables
+
+Set these environment variables if your setup differs from defaults:
+
+```bash
+export API_BASE_URL="http://localhost:8000"  # FastAPI server URL
+export DB_HOST="localhost"                   # Database host
+export DB_PORT="5432"                        # Database port
+export DB_NAME="treasuremap"                 # Database name
+export DB_USER="treasuremap"                 # Database user
+export DB_PWD="treasuremap"                  # Database password
+```
 
 ### Test Categories
 
