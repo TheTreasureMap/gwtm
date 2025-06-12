@@ -229,10 +229,10 @@ python -m pytest tests/fastapi/ -v --cov=server
 
 ```bash
 # Run all tests
-./gwtm-helm/run-module-tests.sh
+./tests/run--fastapi-tests.sh
 
 # Run specific module (e.g., pointing tests)
-./gwtm-helm/run-module-tests.sh pointing
+./tests/run-fastapi:-tests.sh pointing
 ```
 
 ### Test Configuration
