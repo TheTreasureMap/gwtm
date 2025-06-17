@@ -14,7 +14,6 @@ from server.db.models.pointing_event import PointingEvent
 from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
 from server.schemas.pointing import PointingSchema
-from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
 from server.core.enums.pointing_status import pointing_status as pointing_status_enum
 from server.core.enums.depth_unit import depth_unit as depth_unit_enum
@@ -76,8 +75,7 @@ def get_pointings(
         depth_unit: Optional[str] = Query(None, description="Depth unit (ab_mag, vega_mag, flux_erg, flux_jy)"),
 
         # DB access
-        db: Session = Depends(get_db),
-        user_auth=Depends(get_current_user)
+        db: Session = Depends(get_db)
 ):
     """
     Retrieve pointings from the database with optional filters.
@@ -490,7 +488,15 @@ def get_pointings(
                     filter_conditions.append(Pointing.depth <= float(depth_lt))
 
         # Query the database
-        pointings = db.query(Pointing).filter(*filter_conditions).all()
+        # Check if we need to join PointingEvent table (when graceid filters are used)
+        has_graceid_filters = graceid or graceids
+        
+        if has_graceid_filters:
+            # Join with PointingEvent table when filtering by graceid
+            pointings = db.query(Pointing).join(PointingEvent, Pointing.id == PointingEvent.pointingid).filter(*filter_conditions).all()
+        else:
+            # Direct query on Pointing table for other filters
+            pointings = db.query(Pointing).filter(*filter_conditions).all()
 
         # Let Pydantic handle the conversion of SQLAlchemy models to JSON
         # The field_serializer methods in PointingSchema will take care of enum translations

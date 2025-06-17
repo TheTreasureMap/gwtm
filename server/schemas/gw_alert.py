@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class GWAlertSchema(BaseModel):
@@ -42,6 +42,7 @@ class GWAlertSchema(BaseModel):
     time_coincidence_far: Optional[float] = None
     time_sky_position_coincidence_far: Optional[float] = None
     time_difference: Optional[float] = None
+    pointing_count: Optional[int] = Field(None, description="Number of completed pointings for this alert")
 
     @field_validator('far')
     @classmethod
@@ -54,18 +55,37 @@ class GWAlertSchema(BaseModel):
     @field_validator('distance')
     @classmethod
     def validate_distance(cls, v):
-        """Validate distance is positive."""
+        """Validate distance is positive or convert negative sentinel values to None."""
         if v is not None and v < 0:
-            raise ValueError('Distance must be positive')
+            # Convert negative sentinel values (like -999.9) to None
+            return None
         return v
 
     @field_validator('distance_error')
     @classmethod
     def validate_distance_error(cls, v):
-        """Validate distance error is positive."""
+        """Validate distance error is positive or convert negative sentinel values to None."""
         if v is not None and v < 0:
-            raise ValueError('Distance error must be positive')
+            # Convert negative sentinel values (like -999.9) to None
+            return None
         return v
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GWAlertQueryResponse(BaseModel):
+    """Response schema for paginated GW alert queries."""
+    alerts: List[GWAlertSchema]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+class GWAlertFilterOptionsResponse(BaseModel):
+    """Response schema for available filter options."""
+    observing_runs: List[str]
+    roles: List[str]
+    alert_types: List[str]
 

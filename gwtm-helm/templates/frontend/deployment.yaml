@@ -23,36 +23,23 @@ spec:
         imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.frontend.service.targetPort }}
-        volumeMounts:
-        - name: nginx-config
-          mountPath: /etc/nginx/conf.d/default.conf
-          subPath: nginx.conf
-        - name: html-content
-          mountPath: /usr/share/nginx/html/index.html
-          subPath: index.html
         env:
-        - name: MAIL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
-              key: mail-password
-        - name: RECAPTCHA_PUBLIC_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
-              key: recaptcha-public-key
-        - name: RECAPTCHA_PRIVATE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
-              key: recaptcha-private-key
+        - name: NODE_ENV
+          value: "development"
+        - name: PUBLIC_API_BASE_URL
+          value: "http://localhost:8000"
         resources:
           {{- toYaml .Values.frontend.resources | nindent 12 }}
-      volumes:
-      - name: nginx-config
-        configMap:
-          name: {{ .Values.frontend.name }}-nginx-config
-      - name: html-content
-        configMap:
-          name: {{ .Values.frontend.name }}-html
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.frontend.service.targetPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.frontend.service.targetPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 15
 

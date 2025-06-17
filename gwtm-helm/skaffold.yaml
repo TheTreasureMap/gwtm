@@ -31,6 +31,21 @@ build:
             dest: "/app/server/"
           - src: "server/config.py"
             dest: "/app/server/"
+    - image: gwtm-frontend
+      context: ../frontend
+      docker:
+        dockerfile: Dockerfile
+        target: development
+      sync:
+        manual:
+          - src: "src/**/*"
+            dest: "/app/src/"
+          - src: "*.js"
+            dest: "/app/"
+          - src: "*.ts"
+            dest: "/app/"
+          - src: "*.json"
+            dest: "/app/"
   local:
     push: false
 manifests:
@@ -52,6 +67,8 @@ manifests:
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          frontend.image.repository: gwtm-frontend
+          frontend.image.tag: latest
           global.createNamespace: "true"
           global.namespace: gwtm
         createNamespace: true
@@ -76,6 +93,8 @@ deploy:
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          frontend.image.repository: gwtm-frontend
+          frontend.image.tag: latest
           global.createNamespace: "true"
           global.namespace: gwtm
         createNamespace: true
@@ -91,9 +110,9 @@ portForward:
   - resourceType: service
     resourceName: frontend
     namespace: gwtm
-    port: 80
+    port: 3000
     address: 0.0.0.0
-    localPort: 8081
+    localPort: 3000
   - resourceType: service
     resourceName: fastapi-backend
     namespace: gwtm

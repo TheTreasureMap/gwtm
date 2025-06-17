@@ -37,22 +37,19 @@ class TestPointingEndpoints:
 
     def test_get_pointings_no_params(self):
         """Test getting pointings without any parameters."""
-        response = requests.get(
-            self.get_url("/pointings"),
-            headers={"api_token": self.admin_token})
+        response = requests.get(self.get_url("/pointings"))
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
-        # Should return all pointings the user has access to
+        # Should return all pointings
         assert len(data) >= 5  # We have at least 5 pointings from user 1
 
     def test_get_pointings_by_graceid_s190425z(self):
         """Test getting pointings filtered by graceid S190425z."""
         response = requests.get(
             self.get_url("/pointings"),
-            params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            params={"graceid": "S190425z"}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -64,8 +61,7 @@ class TestPointingEndpoints:
         """Test getting pointings filtered by multiple graceids."""
         response = requests.get(
             self.get_url("/pointings"),
-            params={"graceids": "S190425z,S190426c"},
-            headers={"api_token": self.admin_token}
+            params={"graceids": "S190425z,S190426c"}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -677,33 +673,30 @@ class TestPointingEndpoints:
         data = response.json()
         assert "DOI" in data
 
-    def test_pointing_unauthorized_access(self):
-        """Test that unauthorized requests are rejected."""
+    def test_pointing_public_access(self):
+        """Test that GET pointings endpoint is publicly accessible."""
         url = self.get_url("/pointings")
 
-        # Request without API token
+        # Request without API token should work
         response = requests.get(url)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert isinstance(data, list)
 
-        # Request with invalid API token
-        invalid_headers = {"api_token": "invalid_token"}
-        response = requests.get(url, headers=invalid_headers)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-    def test_get_pointings_with_existing_api_tokens(self):
-        """Test with different valid API tokens from test data."""
+    def test_get_pointings_no_auth_required(self):
+        """Test that GET pointings works without authentication."""
         url = self.get_url("/pointings")
 
-        # Test with admin token
-        response = requests.get(url, headers={"api_token": self.admin_token})
+        # All these should work without authentication
+        response = requests.get(url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Test with scientist token
-        response = requests.get(url, headers={"api_token": self.scientist_token})
+        # Test with graceid filter
+        response = requests.get(url, params={"graceid": "S190425z"})
         assert response.status_code == status.HTTP_200_OK
 
-        # Test with regular user token
-        response = requests.get(url, headers={"api_token": self.user_token})
+        # Test with status filter
+        response = requests.get(url, params={"status": "completed"})
         assert response.status_code == status.HTTP_200_OK
 
     def test_get_pointings_by_specific_coordinates(self):
@@ -712,7 +705,7 @@ class TestPointingEndpoints:
 
         # Test data has pointings around these coordinates
         params = {"ids": "[1]"}  # pointing 1 is at (123.456, -12.345)
-        response = requests.get(url, json=params, headers={"api_token": self.admin_token})
+        response = requests.get(url, params=params)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

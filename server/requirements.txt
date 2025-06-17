@@ -8,6 +8,7 @@ geoalchemy2>=0.13.0
 alembic>=1.12.0
 psycopg2-binary>=2.9.0
 python-jose[cryptography]>=3.3.0
+PyJWT>=2.6.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 jinja2>=3.1.2

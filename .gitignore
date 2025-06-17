@@ -31,3 +31,14 @@ test
 *.DS_Store
 deploy/
 *venv/
+
+# Frontend build artifacts and dependencies
+frontend/node_modules/
+frontend/build/
+frontend/.svelte-kit/
+frontend/dist/
+frontend/.env
+
+# Editor directories
+.vscode/
+.idea/
