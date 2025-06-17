@@ -826,7 +826,7 @@ class pointing(db.Model):
             self.position = planned_pointing.position
             self.depth = planned_pointing.depth
             self.depth_err = planned_pointing.depth_err
-            self.depth_unit = planned_pointing.depth_unit
+            self.depth_unit = planned_pointing.DepthUnit
             self.status = enums.pointing_status.completed
             self.band = planned_pointing.band
             self.central_wave = planned_pointing.central_wave

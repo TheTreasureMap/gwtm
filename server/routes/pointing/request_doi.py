@@ -11,7 +11,7 @@ from server.schemas.pointing import DOIRequest
 from server.schemas.doi import DOIRequestResponse
 from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 from server.utils import pointing as pointing_utils
 
 router = APIRouter(tags=["pointings"])

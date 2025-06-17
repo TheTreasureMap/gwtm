@@ -6,7 +6,7 @@ like wavelength, frequency, and energy.
 
 from typing import Tuple, Optional
 import numpy as np
-from server.core.enums.bandpass import bandpass
+from server.core.enums.bandpass import Bandpass
 from enum import IntEnum
 
 # Constants
@@ -38,97 +38,97 @@ class SpectralRangeHandler:
 
     # Bandpass wavelength dictionary with central wavelengths and bandwidths in Angstroms
     bandpass_wavelength_dictionary = {
-        bandpass.U: {
+        Bandpass.U: {
             'source': 'CTIO/SOI.bessel_U',
             'central_wave': 3614.82,
             'bandwidth': 617.24
         },
-        bandpass.B: {
+        Bandpass.B: {
             'source': 'CTIO/SOI.bessel_B',
             'central_wave': 4317.0,
             'bandwidth': 991.48
         },
-        bandpass.V: {
+        Bandpass.V: {
             'source': 'CTIO/SOI.bessel_V',
             'central_wave': 5338.65,
             'bandwidth': 810.65
         },
-        bandpass.R: {
+        Bandpass.R: {
             'source': 'CTIO/SOI.bessel_R',
             'central_wave': 6311.86,
             'bandwidth': 1220.89
         },
-        bandpass.I: {
+        Bandpass.I: {
             'source': 'CTIO/SOI.bessel_I',
             'central_wave': 8748.91,
             'bandwidth': 2940.57
         },
-        bandpass.J: {
+        Bandpass.J: {
             'source': 'CTIO/ANDICAM/J',
             'central_wave': 12457.00,
             'bandwidth': 1608.86
         },
-        bandpass.H: {
+        Bandpass.H: {
             'source': 'CTIO/ANDICAM/H',
             'central_wave': 16333.11,
             'bandwidth': 2969.21
         },
-        bandpass.K: {
+        Bandpass.K: {
             'source': 'CTIO/ANDICAM/K',
             'central_wave': 21401.72,
             'bandwidth': 2894.54
         },
-        bandpass.u: {
+        Bandpass.u: {
             'source': 'CTIO/DECam.u_filter',
             'central_wave': 3552.98,
             'bandwidth': 885.05
         },
-        bandpass.g: {
+        Bandpass.g: {
             'source': 'CTIO/DECam.g_filter',
             'central_wave': 4730.50,
             'bandwidth': 1503.06
         },
-        bandpass.r: {
+        Bandpass.r: {
             'source': 'CTIO/DECam.r_filter',
             'central_wave': 6415.40,
             'bandwidth': 1487.58
         },
-        bandpass.i: {
+        Bandpass.i: {
             'source': 'CTIO/DECam.i_filter',
             'central_wave': 7836.21,
             'bandwidth': 1468.29
         },
-        bandpass.z: {
+        Bandpass.z: {
             'source': 'CTIO/DECam.z_filter',
             'central_wave': 9258.37,
             'bandwidth': 1521.09
         },
-        bandpass.UVW1: {
+        Bandpass.UVW1: {
             'source': 'Swift/UVOT.UVW1',
             'central_wave': 2629.35,
             'bandwidth': 656.60
         },
-        bandpass.UVW2: {
+        Bandpass.UVW2: {
             'source': 'Swift/UVOT.UVW2',
             'central_wave': 2089.16,
             'bandwidth': 498.25
         },
-        bandpass.UVM2: {
+        Bandpass.UVM2: {
             'source': 'Swift/UVOT.UVM2',
             'central_wave': 2245.78,
             'bandwidth': 498.25
         },
-        bandpass.clear: {
+        Bandpass.clear: {
             'source': 'Generic/clear',
             'central_wave': 2634.44,
             'bandwidth': 3230.16
         },
-        bandpass.open: {
+        Bandpass.open: {
             'source': 'Generic/open',
             'central_wave': 5500.0,
             'bandwidth': 8000.0
         },
-        bandpass.other: {
+        Bandpass.other: {
             'source': 'Generic/other',
             'central_wave': 5500.0,
             'bandwidth': 8000.0
@@ -250,7 +250,7 @@ def energyToFreq(energy: float) -> float:
     energy_J = energy * ELECTRON_VOLT  # Convert to Joules
     return energy_J / PLANCK_CONSTANT  # Calculate frequency
 
-def wavetoWaveRange(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
+def wavetoWaveRange(bandpass_enum: Bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
     Get the wavelength range for a specific bandpass using SpectralRangeHandler.
     
@@ -264,7 +264,7 @@ def wavetoWaveRange(bandpass_enum: bandpass = None, central_wave: float = None, 
     """
     return SpectralRangeHandler.wavetoWaveRange(central_wave, bandwidth, bandpass_enum)
 
-def wavetoEnergy(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
+def wavetoEnergy(bandpass_enum: Bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
     Get the energy range for a specific bandpass using SpectralRangeHandler.
     
@@ -278,7 +278,7 @@ def wavetoEnergy(bandpass_enum: bandpass = None, central_wave: float = None, ban
     """
     return SpectralRangeHandler.wavetoEnergy(central_wave, bandwidth, bandpass_enum)
 
-def wavetoFrequency(bandpass_enum: bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
+def wavetoFrequency(bandpass_enum: Bandpass = None, central_wave: float = None, bandwidth: float = None) -> Tuple[float, float]:
     """
     Get the frequency range for a specific bandpass using SpectralRangeHandler.
     

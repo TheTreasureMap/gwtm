@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-class instrument_type(IntEnum):
+class InstrumentType(IntEnum):
     """Enumeration for instrument types."""
     photometric = 1
     spectroscopic = 2

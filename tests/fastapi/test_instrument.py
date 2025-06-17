@@ -5,7 +5,7 @@ These tests hit the actual API endpoints running on the server.
 import pytest
 import requests
 import os
-from server.core.enums.instrument_type import instrument_type
+from server.core.enums.instrumenttype import InstrumentType
 from fastapi import status
 
 # Test configuration
@@ -78,14 +78,14 @@ class TestInstrumentAPI:
     def test_get_instruments_by_type(self):
         """Test getting instruments by type."""
         response = requests.get(
-            self.get_url(f"/instruments?type={instrument_type.photometric.value}"),
+            self.get_url(f"/instruments?type={InstrumentType.photometric.value}"),
             headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
         # We have 2 photometric instruments
         assert len(instruments) == 2
-        assert all(inst["instrument_type"] == instrument_type.photometric.value for inst in instruments)
+        assert all(inst["instrument_type"] == InstrumentType.photometric.value for inst in instruments)
 
     def test_get_instruments_with_invalid_ids_format(self):
         """Test error handling for invalid IDs format."""
@@ -153,7 +153,7 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "New Test Telescope",
             "nickname": "NTT",
-            "instrument_type": instrument_type.photometric.value
+            "instrument_type": InstrumentType.photometric.value
         }
         response = requests.post(
             self.get_url("/instruments"),
@@ -177,7 +177,7 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "User Test Telescope",
             "nickname": "UTT",
-            "instrument_type": instrument_type.spectroscopic.value
+            "instrument_type": InstrumentType.spectroscopic.value
         }
         response = requests.post(
             self.get_url("/instruments"),
@@ -193,7 +193,7 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "Unauthorized Telescope",
             "nickname": "UT",
-            "instrument_type": instrument_type.photometric.value
+            "instrument_type": InstrumentType.photometric.value
         }
         response = requests.post(
             self.get_url("/instruments"),
@@ -207,7 +207,7 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "Footprint Test Telescope 5535",
             "nickname": "FTT 5535",
-            "instrument_type": instrument_type.photometric.value
+            "instrument_type": InstrumentType.photometric.value
         }
         inst_response = requests.post(
             self.get_url("/instruments"),
@@ -278,7 +278,7 @@ class TestInstrumentAPI:
         # First create some test data
         photometric_instruments = [
             {"instrument_name": f"Photometric {i}", "nickname": f"P{i}",
-             "instrument_type": instrument_type.photometric.value}
+             "instrument_type": InstrumentType.photometric.value}
             for i in range(2)
         ]
         for inst in photometric_instruments:
@@ -286,7 +286,7 @@ class TestInstrumentAPI:
 
         # Query by type and name pattern
         response = requests.get(
-            self.get_url(f"/instruments?type={instrument_type.photometric.value}&name=Photometric"),
+            self.get_url(f"/instruments?type={InstrumentType.photometric.value}&name=Photometric"),
             headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
@@ -441,7 +441,7 @@ class TestInstrumentAPIPermissions:
             instrument = {
                 "instrument_name": f"User{i} Telescope",
                 "nickname": f"U{i}T",
-                "instrument_type": instrument_type.photometric.value
+                "instrument_type": InstrumentType.photometric.value
             }
             response = requests.post(
                 self.get_url("/instruments"),
@@ -456,7 +456,7 @@ class TestInstrumentAPIPermissions:
         instrument = {
             "instrument_name": "User Owned Telescope",
             "nickname": "UOT",
-            "instrument_type": instrument_type.photometric.value
+            "instrument_type": InstrumentType.photometric.value
         }
         response = requests.post(
             self.get_url("/instruments"),
@@ -502,7 +502,7 @@ class TestInstrumentAPIIntegration:
         new_instrument = {
             "instrument_name": "Integration Test Telescope",
             "nickname": "ITT",
-            "instrument_type": instrument_type.photometric.value
+            "instrument_type": InstrumentType.photometric.value
         }
         response = requests.post(
             self.get_url("/instruments"),
@@ -551,11 +551,11 @@ class TestInstrumentAPIIntegration:
         # Create test instruments
         test_instruments = [
             {"instrument_name": "Multi Test Optical 1", "nickname": "MTO1",
-             "instrument_type": instrument_type.photometric.value},
+             "instrument_type": InstrumentType.photometric.value},
             {"instrument_name": "Multi Test Optical 2", "nickname": "MTO2",
-             "instrument_type": instrument_type.photometric.value},
+             "instrument_type": InstrumentType.photometric.value},
             {"instrument_name": "Multi Test Spectro", "nickname": "MTS",
-             "instrument_type": instrument_type.spectroscopic.value}
+             "instrument_type": InstrumentType.spectroscopic.value}
         ]
 
         created_ids = []
@@ -570,7 +570,7 @@ class TestInstrumentAPIIntegration:
 
         # Query by type
         response = requests.get(
-            self.get_url(f"/instruments?type={instrument_type.photometric.value}"),
+            self.get_url(f"/instruments?type={InstrumentType.photometric.value}"),
             headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK

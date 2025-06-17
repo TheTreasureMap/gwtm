@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, Float, String, DateTime, JSON, Enum
 from geoalchemy2 import Geography
 from ..database import Base
 import datetime
-from server.core.enums.gw_galaxy_score_type import gw_galaxy_score_type
+from server.core.enums.gwgalaxyscoretype import GwGalaxyScoreType
 
 
 class GWGalaxy(Base):
@@ -44,7 +44,7 @@ class GWGalaxyScore(Base):
 
     id = Column(Integer, primary_key=True)
     gw_galaxyid = Column(Integer)
-    score_type = Column(Enum(gw_galaxy_score_type))
+    score_type = Column(Enum(GwGalaxyScoreType, name='gwgalaxyscoretype'))
     score = Column(Float)
 
 

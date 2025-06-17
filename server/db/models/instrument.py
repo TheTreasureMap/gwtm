@@ -3,7 +3,7 @@ from geoalchemy2 import Geography
 import shapely.wkb
 from sqlalchemy.ext.hybrid import hybrid_property
 from ..database import Base
-from server.core.enums.instrument_type import instrument_type
+from server.core.enums.instrumenttype import InstrumentType
 import datetime
 
 class Instrument(Base):
@@ -13,7 +13,7 @@ class Instrument(Base):
     id = Column(Integer, primary_key=True)
     instrument_name = Column(String(25))
     nickname = Column(String(25))
-    instrument_type = Column(Enum(instrument_type))
+    instrument_type = Column(Enum(InstrumentType, name='instrumenttype'))
     datecreated = Column(DateTime)
     submitterid = Column(Integer)
 

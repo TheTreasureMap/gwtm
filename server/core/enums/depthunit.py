@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-class depth_unit(IntEnum):
+class DepthUnit(IntEnum):
     """Enumeration for depth units."""
     ab_mag = 1
     vega_mag = 2

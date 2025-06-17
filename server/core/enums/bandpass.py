@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-class bandpass(IntEnum):
+class Bandpass(IntEnum):
     """Enumeration for bandpasses."""
     U = 1
     B = 2

@@ -2,9 +2,9 @@ from sqlalchemy import Column, Integer, Float, DateTime, Enum, String, and_
 from sqlalchemy.ext.hybrid import hybrid_method
 from geoalchemy2 import Geography
 from ..database import Base
-from server.core.enums.bandpass import bandpass
-from server.core.enums.depth_unit import depth_unit
-from server.core.enums.pointing_status import pointing_status
+from server.core.enums.bandpass import Bandpass
+from server.core.enums.depthunit import DepthUnit
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 from server.utils.spectral import SpectralRangeHandler
 
 
@@ -13,20 +13,20 @@ class Pointing(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True)
-    status = Column(Enum(pointing_status))
+    status = Column(Enum(pointing_status_enum, name='pointing_status'))
     position = Column(Geography('POINT', srid=4326))
     galaxy_catalog = Column(Integer)
     galaxy_catalogid = Column(Integer)
     instrumentid = Column(Integer)
     depth = Column(Float)
     depth_err = Column(Float)
-    depth_unit = Column(Enum(depth_unit))
+    depth_unit = Column(Enum(DepthUnit, name='depth_unit'))
     time = Column(DateTime)
     datecreated = Column(DateTime)
     dateupdated = Column(DateTime)
     submitterid = Column(Integer)
     pos_angle = Column(Float)
-    band = Column(Enum(bandpass))
+    band = Column(Enum(Bandpass, name='bandpass'))
     doi_url = Column(String(100))
     doi_id = Column(Integer)
     central_wave = Column(Float)

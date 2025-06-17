@@ -12,7 +12,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import requests
 
 from server import config
-from server.core.enums.pointing_status import pointing_status
+from server.core.enums.pointingstatus import PointingStatus
 from server.db.models.pointing import Pointing
 from server.schemas.pointing import PointingSchema
 
@@ -418,7 +418,7 @@ def create_pointing_doi(
     points_json = []
 
     for p in points:
-        if p.status == pointing_status.completed:
+        if p.status == PointingStatus.completed:
             points_json.append(PointingSchema.from_orm(p))
 
     if len(instrument_names) > 1:

@@ -9,7 +9,7 @@ from server.db.models.pointing import Pointing
 from server.schemas.pointing import PointingUpdate
 from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 
 router = APIRouter(tags=["pointings"])
 

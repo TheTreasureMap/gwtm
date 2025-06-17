@@ -1,7 +1,8 @@
 import os
+import json
 from functools import lru_cache
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -31,8 +32,8 @@ class Settings(BaseSettings):
     ADMINS: str = Field("gwtreasuremap@gmail.com", env="ADMINS")
     
     # Security settings
-    SECRET_KEY: str = Field(os.urandom(16).hex(), env="SECRET_KEY")
-    JWT_SECRET_KEY: str = Field(os.urandom(16).hex(), env="JWT_SECRET_KEY")
+    SECRET_KEY: str = Field(default_factory=lambda: os.urandom(16).hex(), env="SECRET_KEY")
+    JWT_SECRET_KEY: str = Field(default_factory=lambda: os.urandom(16).hex(), env="JWT_SECRET_KEY")
     JWT_ALGORITHM: str = Field("HS256", env="JWT_ALGORITHM")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
     
@@ -62,6 +63,19 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["*"]
     CORS_METHODS: List[str] = ["*"]
     CORS_HEADERS: List[str] = ["*"]
+    
+    @field_validator('CORS_ORIGINS', 'CORS_METHODS', 'CORS_HEADERS', mode='before')
+    @classmethod
+    def parse_cors_list(cls, v):
+        """Parse CORS settings from JSON string or return as-is if already a list."""
+        if isinstance(v, str):
+            try:
+                # Try to parse as JSON array
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If JSON parsing fails, treat as comma-separated string
+                return [item.strip() for item in v.split(',') if item.strip()]
+        return v
     
     # Database URL
     @property

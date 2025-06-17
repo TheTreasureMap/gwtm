@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from typing import Optional, List, Dict, Any, Union
 from dateutil.parser import parse as date_parse
-from server.core.enums.gw_galaxy_score_type import gw_galaxy_score_type
+from server.core.enums.gwgalaxyscoretype import GwGalaxyScoreType
 
 
 class GWGalaxySchema(BaseModel):
@@ -29,7 +29,7 @@ class GWGalaxyScoreSchema(BaseModel):
     """Pydantic schema for GWGalaxyScore model."""
     id: Optional[int] = None
     gw_galaxyid: int
-    score_type: Optional[gw_galaxy_score_type] = None
+    score_type: Optional[GwGalaxyScoreType] = None
     score: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
