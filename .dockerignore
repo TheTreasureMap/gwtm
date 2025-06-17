@@ -5,3 +5,13 @@ static/*.fits.gz
 venv/
 .git/
 viz-example/
+tests/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+.idea/
+.vscode/
+*.egg-info/

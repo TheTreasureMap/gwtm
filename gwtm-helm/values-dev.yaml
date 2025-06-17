@@ -52,9 +52,25 @@ backend:
   readinessProbe:
     enabled: false
 
+fastapi:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 200m
+      memory: 300Mi
+  readinessProbe:
+    enabled: false
+  workers: 1
+
 frontend:
   replicas: 1
 
 database:
   persistence:
+    enabled: false
     size: 1Gi
+  initScripts:
+    enabled: true
