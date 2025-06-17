@@ -2,9 +2,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator, field_valida
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 
-from server.core.enums import bandpass as bandpass_enum
-from server.core.enums import depth_unit as depth_unit_enum
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+from server.core.enums import Bandpass as bandpass_enum
+from server.core.enums import DepthUnit as depth_unit_enum
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 
 class PointingBase(BaseModel):
     """Base schema for pointing data."""

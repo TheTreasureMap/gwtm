@@ -15,7 +15,7 @@ from server.db.models.pointing_event import PointingEvent
 from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
 from server.db.models.doi_author import DOIAuthor
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 from server.utils.error_handling import validation_exception, not_found_exception
 from server.utils.function import pointing_crossmatch, create_pointing_doi
 

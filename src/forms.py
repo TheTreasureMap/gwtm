@@ -220,7 +220,7 @@ class SubmitPointingForm(FlaskForm):
         query = models.instrument.query.all()
         self.instruments.choices = [(None, 'Select')]
         for a in query:
-            self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
+            self.instruments.choices.append((str(a.id) +"_" + a.InstrumentType.name, a.instrument_name))
 
     def populate_creator_groups(self, current_userid):
         dag = models.doi_author_group.query.filter_by(userid=current_userid).all()
@@ -421,7 +421,7 @@ class AlertsForm(FlaskForm):
                 self.inst_cov.append({'name':inst_name, 'value':inst.id})
 
             self.depth_unit=[]
-            for dp in list(set([x.depth_unit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.depth_unit is not None])):
+            for dp in list(set([x.DepthUnit for x in pointing_info if x.status == enums.pointing_status.completed and x.instrumentid != 49 and x.DepthUnit is not None])):
                 self.depth_unit.append({'name':str(dp), 'value':dp.name})
 
 

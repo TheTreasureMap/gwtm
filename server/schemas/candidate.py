@@ -3,7 +3,7 @@ from typing import Optional, List, Any, Literal, Dict, Union
 from datetime import datetime
 from geoalchemy2.types import WKBElement
 from typing_extensions import Annotated
-from server.core.enums.depth_unit import depth_unit as depth_unit_enum
+from server.core.enums.depthunit import DepthUnit as depth_unit_enum
 
 class CandidateSchema(BaseModel):
     id: int

@@ -12,7 +12,7 @@ from server.db.models.pointing import Pointing
 from server.schemas.instrument import InstrumentSchema
 from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
-from server.core.enums.instrument_type import instrument_type
+from server.core.enums.instrumenttype import InstrumentType
 
 router = APIRouter(tags=["instruments"])
 
@@ -23,7 +23,7 @@ async def get_instruments(
     ids: Optional[str] = None,
     name: Optional[str] = None,
     names: Optional[str] = None,
-    type: Optional[instrument_type] = None,
+    type: Optional[InstrumentType] = None,
     db: Session = Depends(get_db),
     user = Depends(get_current_user)
 ):

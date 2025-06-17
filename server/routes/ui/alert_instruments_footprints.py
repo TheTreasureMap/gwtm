@@ -49,7 +49,7 @@ async def get_alert_instruments_footprints(
             or_(Pointing.status == "completed", Pointing.status == "planned")
         )
     elif pointing_status not in ['all', '']:
-        from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+        from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
         if pointing_status == "completed":
             pointing_filter.append(Pointing.status == pointing_status_enum.completed)
         elif pointing_status == "planned":

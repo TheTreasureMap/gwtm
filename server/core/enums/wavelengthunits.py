@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-class wavelength_units(IntEnum):
+class WavelengthUnits(IntEnum):
     """Enumeration for wavelength units."""
     nanometer = 1
     angstrom = 2
@@ -9,9 +9,9 @@ class wavelength_units(IntEnum):
     @staticmethod
     def get_scale(unit):
         """Return the scale factor for the given wavelength unit."""
-        if unit == wavelength_units.nanometer:
+        if unit == WavelengthUnits.nanometer:
             return 10.0
-        if unit == wavelength_units.angstrom:
+        if unit == WavelengthUnits.angstrom:
             return 1.0
-        if unit == wavelength_units.micron:
+        if unit == WavelengthUnits.micron:
             return 10000.0

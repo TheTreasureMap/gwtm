@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-class frequency_units(IntEnum):
+class FrequencyUnits(IntEnum):
     """Enumeration for frequency units."""
     Hz = 1
     kHz = 2
@@ -11,13 +11,13 @@ class frequency_units(IntEnum):
     @staticmethod
     def get_scale(unit):
         """Return the scale factor for the given frequency unit."""
-        if unit == frequency_units.Hz:
+        if unit == FrequencyUnits.Hz:
             return 1.0
-        if unit == frequency_units.kHz:
+        if unit == FrequencyUnits.kHz:
             return 1000.0
-        if unit == frequency_units.MHz:
+        if unit == FrequencyUnits.MHz:
             return 1000000.0
-        if unit == frequency_units.GHz:
+        if unit == FrequencyUnits.GHz:
             return 1000000000.0
-        if unit == frequency_units.THz:
+        if unit == FrequencyUnits.THz:
             return 1000000000000.0

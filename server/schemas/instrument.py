@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List, Tuple
 from datetime import datetime
-from server.core.enums.instrument_type import instrument_type as instrument_type_enum
+from server.core.enums.instrumenttype import InstrumentType as instrument_type_enum
 
 class InstrumentSchema(BaseModel):
     """Schema for returning an instrument."""

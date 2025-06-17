@@ -22,7 +22,7 @@ async def get_pointing_fromID(
     from server.utils.function import isInt
     from server.db.models.gw_alert import GWAlert
     from server.db.models.pointing_event import PointingEvent
-    from server.core.enums.pointing_status import pointing_status as pointing_status_enum
+    from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
     
     if not id or not isInt(id):
         return {}
@@ -69,7 +69,7 @@ async def get_pointing_fromID(
         'ra': ra,
         'dec': dec,
         'graceid': pointing_event.graceid,
-        'instrument': f"{pointing.instrumentid}_{instrument.instrument_type.name if instrument else ''}",
+        'instrument': f"{pointing.instrumentid}_{instrument.InstrumentType.name if instrument else ''}",
         'band': pointing.band.name if pointing.band else '',
         'depth': pointing.depth,
         'depth_err': pointing.depth_err

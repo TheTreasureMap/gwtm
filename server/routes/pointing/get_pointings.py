@@ -16,12 +16,12 @@ from server.db.models.users import Users
 from server.schemas.pointing import PointingSchema
 from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
-from server.core.enums.depth_unit import depth_unit as depth_unit_enum
-from server.core.enums.bandpass import bandpass
-from server.core.enums.wavelength_units import wavelength_units
-from server.core.enums.frequency_units import frequency_units
-from server.core.enums.energy_units import energy_units
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
+from server.core.enums.depthunit import DepthUnit as depth_unit_enum
+from server.core.enums.bandpass import Bandpass
+from server.core.enums.wavelengthunits import WavelengthUnits
+from server.core.enums.frequencyunits import FrequencyUnits as frequency_units
+from server.core.enums.energyunits import EnergyUnits as energy_units
 from server.utils.function import isInt, isFloat
 
 router = APIRouter(tags=["pointings"])
@@ -145,7 +145,7 @@ def get_pointings(
 
         # Handle band filters
         if band:
-            for b in bandpass:
+            for b in Bandpass:
                 if b.name == band:
                     filter_conditions.append(Pointing.band == b)
                     break
@@ -166,7 +166,7 @@ def get_pointings(
                     band_list = bands  # Already a list
 
                 valid_bands = []
-                for b in bandpass:
+                for b in Bandpass:
                     if b.name in band_list:
                         valid_bands.append(b)
 
@@ -365,8 +365,8 @@ def get_pointings(
                 # Get unit and scale
                 unit_value = wavelength_unit
                 try:
-                    unit = [w for w in wavelength_units if int(w) == unit_value or str(w.name) == unit_value][0]
-                    scale = wavelength_units.get_scale(unit)
+                    unit = [w for w in WavelengthUnits if int(w) == unit_value or str(w.name) == unit_value][0]
+                    scale = WavelengthUnits.get_scale(unit)
                     specmin = specmin * scale
                     specmax = specmax * scale
 

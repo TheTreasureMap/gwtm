@@ -16,10 +16,10 @@ async def spectral_range_from_selected_bands(
     db: Session = Depends(get_db)
 ):
     """Calculate spectral range based on selected bands."""
-    from server.core.enums.wavelength_units import wavelength_units
-    from server.core.enums.energy_units import energy_units
-    from server.core.enums.frequency_units import frequency_units
-    from server.core.enums.bandpass import bandpass
+    from server.core.enums.wavelengthunits import WavelengthUnits
+    from server.core.enums.energyunits import EnergyUnits
+    from server.core.enums.frequencyunits import FrequencyUnits
+    from server.core.enums.bandpass import Bandpass
     
     if not band_cov or band_cov == 'null':
         return {
@@ -34,7 +34,7 @@ async def spectral_range_from_selected_bands(
     for b in bands:
         try:
             # Find the bandpass enum value
-            band_enum = [x for x in bandpass if b == x.name][0]
+            band_enum = [x for x in Bandpass if b == x.name][0]
             band_min, band_max = None, None
             
             # Handle different spectral types
@@ -47,24 +47,24 @@ async def spectral_range_from_selected_bands(
                 unit_name = spectral_unit
                 if spectral_unit == "nm":
                     unit_name = "nanometer"
-                unit = [x for x in wavelength_units if unit_name == x.name][0]
-                scale = wavelength_units.get_scale(unit)
+                unit = [x for x in WavelengthUnits if unit_name == x.name][0]
+                scale = WavelengthUnits.get_scale(unit)
             
             elif spectral_type == 'energy':
                 # Get energy range for this band
                 from server.utils.spectral import wavetoEnergy
                 band_min, band_max = wavetoEnergy(bandpass_enum=band_enum)
                 # Get the scale factor for the requested unit
-                unit = [x for x in energy_units if spectral_unit == x.name][0]
-                scale = energy_units.get_scale(unit)
+                unit = [x for x in EnergyUnits if spectral_unit == x.name][0]
+                scale = EnergyUnits.get_scale(unit)
             
             elif spectral_type == 'frequency':
                 # Get frequency range for this band
                 from server.utils.spectral import wavetoFrequency
                 band_min, band_max = wavetoFrequency(bandpass_enum=band_enum)
                 # Get the scale factor for the requested unit
-                unit = [x for x in frequency_units if spectral_unit == x.name][0]
-                scale = frequency_units.get_scale(unit)
+                unit = [x for x in FrequencyUnits if spectral_unit == x.name][0]
+                scale = FrequencyUnits.get_scale(unit)
             
             # If we got valid values, append them to our lists
             if band_min is not None and band_max is not None:
