@@ -28,86 +28,54 @@ router = APIRouter(tags=["pointings"])
 
 @router.get("/pointings", response_model=List[PointingSchema])
 def get_pointings(
-    # Basic filters
-    graceid: Optional[str] = Query(None, description="Grace ID of the GW event"),
-    graceids: Optional[str] = Query(
-        None, description="Comma-separated list or JSON array of Grace IDs"
-    ),
-    id: Optional[int] = Query(None, description="Filter by pointing ID"),
-    ids: Optional[str] = Query(
-        None, description="Comma-separated list or JSON array of pointing IDs"
-    ),
-    # Status filters
-    status: Optional[str] = Query(
-        None, description="Filter by status (planned, completed, cancelled)"
-    ),
-    statuses: Optional[str] = Query(
-        None, description="Comma-separated list or JSON array of statuses"
-    ),
-    # Time filters
-    completed_after: Optional[datetime] = Query(
-        None, description="Filter for pointings completed after this time (ISO format)"
-    ),
-    completed_before: Optional[datetime] = Query(
-        None, description="Filter for pointings completed before this time (ISO format)"
-    ),
-    planned_after: Optional[datetime] = Query(
-        None, description="Filter for pointings planned after this time (ISO format)"
-    ),
-    planned_before: Optional[datetime] = Query(
-        None, description="Filter for pointings planned before this time (ISO format)"
-    ),
-    # User filters
-    user: Optional[str] = Query(
-        None, description="Filter by username, first name, or last name"
-    ),
-    users: Optional[str] = Query(
-        None, description="Comma-separated list or JSON array of usernames"
-    ),
-    # Instrument filters
-    instrument: Optional[str] = Query(
-        None, description="Filter by instrument ID or name"
-    ),
-    instruments: Optional[str] = Query(
-        None,
-        description="Comma-separated list or JSON array of instrument IDs or names",
-    ),
-    # Band filters
-    band: Optional[str] = Query(None, description="Filter by band"),
-    bands: Optional[str] = Query(
-        None, description="Comma-separated list or JSON array of bands"
-    ),
-    # Spectral filters
-    wavelength_regime: Optional[str] = Query(
-        None, description="Filter by wavelength regime [min, max]"
-    ),
-    wavelength_unit: Optional[str] = Query(
-        None, description="Wavelength unit (angstrom, nanometer, micron)"
-    ),
-    frequency_regime: Optional[str] = Query(
-        None, description="Filter by frequency regime [min, max]"
-    ),
-    frequency_unit: Optional[str] = Query(
-        None, description="Frequency unit (Hz, kHz, MHz, GHz, THz)"
-    ),
-    energy_regime: Optional[str] = Query(
-        None, description="Filter by energy regime [min, max]"
-    ),
-    energy_unit: Optional[str] = Query(
-        None, description="Energy unit (eV, keV, MeV, GeV, TeV)"
-    ),
-    # Depth filters
-    depth_gt: Optional[float] = Query(
-        None, description="Filter by depth greater than this value"
-    ),
-    depth_lt: Optional[float] = Query(
-        None, description="Filter by depth less than this value"
-    ),
-    depth_unit: Optional[str] = Query(
-        None, description="Depth unit (ab_mag, vega_mag, flux_erg, flux_jy)"
-    ),
-    # DB access
-    db: Session = Depends(get_db),
+        # Basic filters
+        graceid: Optional[str] = Query(None, description="Grace ID of the GW event"),
+        graceids: Optional[str] = Query(None, description="Comma-separated list or JSON array of Grace IDs"),
+        id: Optional[int] = Query(None, description="Filter by pointing ID"),
+        ids: Optional[str] = Query(None, description="Comma-separated list or JSON array of pointing IDs"),
+
+        # Status filters
+        status: Optional[str] = Query(None, description="Filter by status (planned, completed, cancelled)"),
+        statuses: Optional[str] = Query(None, description="Comma-separated list or JSON array of statuses"),
+
+        # Time filters
+        completed_after: Optional[datetime] = Query(None,
+                                                    description="Filter for pointings completed after this time (ISO format)"),
+        completed_before: Optional[datetime] = Query(None,
+                                                     description="Filter for pointings completed before this time (ISO format)"),
+        planned_after: Optional[datetime] = Query(None,
+                                                  description="Filter for pointings planned after this time (ISO format)"),
+        planned_before: Optional[datetime] = Query(None,
+                                                   description="Filter for pointings planned before this time (ISO format)"),
+
+        # User filters
+        user: Optional[str] = Query(None, description="Filter by username, first name, or last name"),
+        users: Optional[str] = Query(None, description="Comma-separated list or JSON array of usernames"),
+
+        # Instrument filters
+        instrument: Optional[str] = Query(None, description="Filter by instrument ID or name"),
+        instruments: Optional[str] = Query(None,
+                                           description="Comma-separated list or JSON array of instrument IDs or names"),
+
+        # Band filters
+        band: Optional[str] = Query(None, description="Filter by band"),
+        bands: Optional[str] = Query(None, description="Comma-separated list or JSON array of bands"),
+
+        # Spectral filters
+        wavelength_regime: Optional[str] = Query(None, description="Filter by wavelength regime [min, max]"),
+        wavelength_unit: Optional[str] = Query(None, description="Wavelength unit (angstrom, nanometer, micron)"),
+        frequency_regime: Optional[str] = Query(None, description="Filter by frequency regime [min, max]"),
+        frequency_unit: Optional[str] = Query(None, description="Frequency unit (Hz, kHz, MHz, GHz, THz)"),
+        energy_regime: Optional[str] = Query(None, description="Filter by energy regime [min, max]"),
+        energy_unit: Optional[str] = Query(None, description="Energy unit (eV, keV, MeV, GeV, TeV)"),
+
+        # Depth filters
+        depth_gt: Optional[float] = Query(None, description="Filter by depth greater than this value"),
+        depth_lt: Optional[float] = Query(None, description="Filter by depth less than this value"),
+        depth_unit: Optional[str] = Query(None, description="Depth unit (ab_mag, vega_mag, flux_erg, flux_jy)"),
+
+        # DB access
+        db: Session = Depends(get_db)
 ):
     """
     Retrieve pointings from the database with optional filters.
@@ -605,82 +573,19 @@ def get_pointings(
                     # For flux, lower values are dimmer
                     filter_conditions.append(Pointing.depth <= float(depth_lt))
 
-        # Query the database with explicit joins and field selection (like Flask version)
+        # Query the database
         # Check if we need to join PointingEvent table (when graceid filters are used)
         has_graceid_filters = graceid or graceids
-
-        # Build query with explicit field selection and joins (matches Flask approach)
-        from sqlalchemy import func
-
-        # Select specific fields including joined ones
-        base_query = (
-            db.query(
-                Pointing.id,
-                func.ST_AsText(Pointing.position).label("position"),
-                Pointing.instrumentid,
-                Pointing.band,
-                Pointing.pos_angle,
-                Pointing.depth,
-                Pointing.depth_err,
-                Pointing.depth_unit,
-                Pointing.time,
-                Pointing.status,
-                Pointing.doi_url,
-                Pointing.doi_id,
-                Pointing.submitterid,
-                Pointing.datecreated,
-                Pointing.dateupdated,
-                Pointing.central_wave,
-                Pointing.bandwidth,
-                Instrument.instrument_name,
-                Instrument.nickname.label("instrument_nickname"),
-                Users.username,
-            )
-            .join(Instrument, Pointing.instrumentid == Instrument.id)
-            .outerjoin(Users, Pointing.submitterid == Users.id)
-        )
-
+        
         if has_graceid_filters:
             # Join with PointingEvent table when filtering by graceid
-            base_query = base_query.join(
-                PointingEvent, Pointing.id == PointingEvent.pointingid
-            )
+            pointings = db.query(Pointing).join(PointingEvent, Pointing.id == PointingEvent.pointingid).filter(*filter_conditions).all()
+        else:
+            # Direct query on Pointing table for other filters
+            pointings = db.query(Pointing).filter(*filter_conditions).all()
 
-        # Apply filters and execute query
-        results = base_query.filter(*filter_conditions).all()
-
-        # Convert to list of dictionaries with proper field handling
-        pointings_data = []
-        for row in results:
-            pointing_dict = {
-                "id": row.id,
-                "position": row.position,
-                "instrumentid": row.instrumentid,
-                "band": row.band.name if row.band else None,
-                "pos_angle": row.pos_angle,
-                "depth": row.depth,
-                "depth_err": row.depth_err,
-                "depth_unit": row.depth_unit.name if row.depth_unit else None,
-                "time": row.time,
-                "status": row.status.name if row.status else None,
-                "doi_url": row.doi_url,
-                "doi_id": row.doi_id,
-                "submitterid": row.submitterid,
-                "datecreated": row.datecreated,
-                "dateupdated": row.dateupdated,
-                "central_wave": row.central_wave,
-                "bandwidth": row.bandwidth,
-                # Use nickname if available, otherwise fall back to instrument_name (like Flask)
-                "instrument_name": (
-                    row.instrument_nickname
-                    if row.instrument_nickname
-                    else row.instrument_name
-                ),
-                "username": row.username,
-            }
-            pointings_data.append(pointing_dict)
-
-        # Convert to PointingSchema objects for proper serialization
-        return [PointingSchema.model_validate(p) for p in pointings_data]
+        # Let Pydantic handle the conversion of SQLAlchemy models to JSON
+        # The field_serializer methods in PointingSchema will take care of enum translations
+        return pointings
     except Exception as e:
         raise validation_exception(message="Invalid request", errors=[str(e)])

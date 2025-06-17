@@ -26,13 +26,19 @@ TRUNCATE TABLE public.users CASCADE;
 TRUNCATE TABLE public.gw_alert CASCADE;
 TRUNCATE TABLE public.glade_2p3 CASCADE;
 
+-- ===========================================
+-- IMPORTANT: TEST USER PASSWORDS ARE:
+--   admin@test.com / admin123
+--   test@test.com / test123
+--   science@test.com / science123
+-- ===========================================
 -- Insert test users with working passwords
--- Password hashes generated with werkzeug.security.generate_password_hash()
+-- Password hashes generated with PBKDF2-SHA256
 INSERT INTO public.users (id, username, firstname, lastname, password_hash, datecreated, email, verified, api_token)
 VALUES 
-    (1, 'admin', 'Admin', 'User', 'pbkdf2:sha256:260000$RjdGk7VP$5f8a2b1d8e4c3a6f9b2e5c8b1f4a7d0e3c6a9f2b5e8d1c4a7b0e3f6c9a2d5b8e1', NOW(), 'admin@test.com', true, 'test_token_admin_001'),
-    (2, 'testuser', 'Test', 'User', 'pbkdf2:sha256:260000$SkfHl8WQ$6a9b3c2e5d7f0a4b8e1c5a9d2f6b0c4e7a1d5c8b2e6a0d3f7c1e5b9a3f6d0c4', NOW(), 'test@test.com', true, 'test_token_user_002'),
-    (3, 'scientist', 'Science', 'User', 'pbkdf2:sha256:260000$TlgIm9XR$7b0c4d3f6e8a1c5b9f2e6d0a3c7a2d5b8e1f4c7a0e3d6b9c2f5e8a1d4c7b0f3', NOW(), 'science@test.com', true, 'test_token_sci_003');
+    (1, 'admin', 'Admin', 'User', 'pbkdf2:sha256:100000$39a855b4095fbe6511426f8075bb12ea$30fb8a9603e081d7ea73f3886bda84f7b6b0a01e365e27e809976325d0b4e6b4', NOW(), 'admin@test.com', true, 'test_token_admin_001'),
+    (2, 'testuser', 'Test', 'User', 'pbkdf2:sha256:100000$9023eca0628e0d47c2a3fc84299725f4$ee4c6d17f211a7c314bc26cb72c2417a2adc2841fc648f6dec6de545fc85615f', NOW(), 'test@test.com', true, 'test_token_user_002'),
+    (3, 'scientist', 'Science', 'User', 'pbkdf2:sha256:100000$f3cd94c185e376ef3ccdb4336da4bba7$314583fd6b4f2d7da6d5f46d7dc07985ce455a1cbdebdec56fbf2de941c2cc51', NOW(), 'science@test.com', true, 'test_token_sci_003');
 
 -- Insert test groups
 INSERT INTO public.groups (id, name, datecreated)
