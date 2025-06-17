@@ -8,7 +8,7 @@ This frontend provides a modern web interface for managing gravitational wave ob
 
 - **GW Alerts Management**: Browse and filter gravitational wave events ✅
 - **Telescope Pointings**: View observation data and statistics 🚧
-- **Real-time Data**: Live updates from LIGO/Virgo detectors 🚧
+- **Other Features**: Instruments, candidates, and more in development 🚧
 - **Responsive Design**: Works on desktop and mobile devices ✅
 
 **Current Status**: Basic GW alerts functionality implemented. Additional features being migrated from Flask templates.
@@ -94,9 +94,7 @@ The frontend uses a multi-stage Dockerfile:
 - **Additional Pages**: Instruments, candidates, etc.
 
 ### 📋 Planned Features
-- **Real-time Updates**: WebSocket integration
 - **Data Visualisation**: Charts and maps
-- **Export Functions**: Data download capabilities
 - **Advanced Filtering**: Complex query builder
 
 ## Project Structure
