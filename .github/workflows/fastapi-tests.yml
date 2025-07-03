@@ -1,0 +1,80 @@
+name: FastAPI Tests
+
+on:
+  push:
+    branches: [ master, fastapi ]
+  pull_request:
+    branches: [ master, fastapi ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+        
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+        
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'v3.12.0'
+        
+    - name: Install Skaffold
+      run: |
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        sudo install skaffold /usr/local/bin/
+        
+    - name: Start minikube
+      uses: medyagh/setup-minikube@master
+      with:
+        minikube-version: 1.31.0
+        kubernetes-version: v1.28.0
+        
+    - name: Deploy application with Skaffold
+      run: |
+        cd gwtm-helm
+        # Run skaffold and wait for deployment
+        skaffold run --default-repo=local --wait-for-deployments-timeout=10m
+        
+    - name: Wait for services to be ready
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/database
+        kubectl wait --for=condition=available --timeout=300s deployment/fastapi-server
+        
+    - name: Port forward services
+      run: |
+        kubectl port-forward deployment/fastapi-server 8000:8000 &
+        kubectl port-forward deployment/database 5432:5432 &
+        sleep 10
+        
+    - name: Load test data
+      run: |
+        # Wait for database to be ready
+        until kubectl exec deployment/database -- pg_isready -U treasuremap; do
+          echo "Waiting for database..."
+          sleep 5
+        done
+        
+        # Load test data
+        kubectl exec -i deployment/database -- psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
+        
+    - name: Wait for FastAPI server to be ready
+      run: |
+        timeout 300 bash -c 'until curl -f http://localhost:8000/docs; do sleep 5; done'
+        
+    - name: Run FastAPI tests in container
+      run: |
+        # Run tests inside the FastAPI container
+        kubectl exec deployment/fastapi-server -- python -m pytest /app/tests/fastapi/ -v --disable-warnings
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        cd gwtm-helm
+        skaffold delete || true
