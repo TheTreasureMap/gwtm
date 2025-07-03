@@ -642,7 +642,7 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center space-x-2">
                       <div class="text-sm font-medium text-blue-600">
-                        <a href="/alerts/detail/{groupedAlert.alertname}" class="hover:text-blue-800">
+                        <a href="/alerts?graceids={groupedAlert.alertname}" class="hover:text-blue-800">
                           {groupedAlert.alertname}
                         </a>
                       </div>

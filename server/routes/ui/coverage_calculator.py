@@ -11,7 +11,10 @@ router = APIRouter(tags=["UI"])
 
 
 @router.post("/ajax_coverage_calculator")
-async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
+async def coverage_calculator(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """Calculate coverage statistics for an alert using real HEALPix implementation."""
     import numpy as np
     import healpy as hp

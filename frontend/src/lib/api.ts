@@ -689,11 +689,11 @@ class GWTMApiService {
     }
 
     async getGWContour(graceid: string): Promise<any> {
-        return this.get<any>('/api/v1/gw_contour', { graceid });
+        return this.get<any>('/gw_contour', { graceid });
     }
 
     async getGRBMOCFile(graceid: string, instrument: string): Promise<any> {
-        return this.get<any>('/api/v1/grb_moc_file', { graceid, instrument });
+        return this.getPublic<any>('/api/v1/grb_moc_file', { graceid, instrument });
     }
 
     async deleteTestAlerts(): Promise<{ message: string }> {
@@ -835,8 +835,18 @@ class GWTMApiService {
         return this.post<any, {}>('/ajax_resend_verification_email', {}, { params: { email } });
     }
 
-    async coverageCalculator(): Promise<any> {
-        return this.post<any, {}>('/ajax_coverage_calculator', {});
+    async coverageCalculator(params: {
+        graceid: string;
+        mappathinfo?: string;
+        inst_cov?: string;
+        band_cov?: string;
+        depth_cov?: number;
+        depth_unit?: string;
+        approx_cov?: number;
+        spec_range_type?: string;
+        spec_range_unit?: string;
+    }): Promise<any> {
+        return this.post<any, typeof params>('/ajax_coverage_calculator', params);
     }
 
     async spectralRangeFromSelectedBands(band_cov: string, spectral_type: string, spectral_unit: string): Promise<any> {
