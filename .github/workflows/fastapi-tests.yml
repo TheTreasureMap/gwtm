@@ -44,19 +44,19 @@ jobs:
         
     - name: Start database with Docker Compose
       run: |
-        docker-compose up -d db redis
+        docker compose up -d db redis
         
     - name: Wait for database to be ready
       run: |
-        timeout 120 bash -c 'until docker-compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
+        timeout 120 bash -c 'until docker compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
         
     - name: Initialize database schema
       run: |
-        docker-compose run --rm db_init
+        docker compose run --rm db_init
         
     - name: Load test data
       run: |
-        docker-compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
+        docker compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
         
     - name: Start FastAPI server
       run: |
@@ -90,4 +90,4 @@ jobs:
       run: |
         docker stop fastapi-server || true
         docker rm fastapi-server || true
-        docker-compose down -v
+        docker compose down -v
