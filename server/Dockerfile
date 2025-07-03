@@ -14,7 +14,7 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-#ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Copy requirements and install dependencies
 COPY server/requirements.txt /app/requirements.txt
