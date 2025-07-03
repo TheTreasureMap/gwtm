@@ -20,7 +20,7 @@ shapely>=2.0.0
 pytz>=2023.3
 requests>=2.31.0
 validators>=0.20.0
-boto3==1.17.112
+boto3==1.20.106
 redis>=4.6.0
 mocpy>=0.12.0
 pygcn>=0.1.8
@@ -28,8 +28,9 @@ pygcn>=0.1.8
 fsspec>=2021.10.1,<2023.0.0
 adlfs>=0.7.9,<2023.0.0
 s3fs==0.6.0
-# Pin aiobotocore to avoid long dependency resolution
+# Pin aiobotocore and botocore to avoid long dependency resolution
 aiobotocore==1.4.2
+botocore==1.20.106
 python-dotenv>=1.0.0
 aiofiles>=0.8.0
 pytest>=7.3.1
