@@ -23,29 +23,27 @@ def create_database_tables():
         # Use the default engine from FastAPI database configuration
         engine = default_engine
     
-    # PostGIS setup - create extension in public schema for FastAPI table creation
+    # PostGIS setup - work with existing PostGIS extension
     with engine.connect() as conn:
-        # Drop existing PostGIS extension if it exists (from init scripts)
-        conn.execute(text("""
-            DO $$
-            BEGIN
-                IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
-                    DROP EXTENSION postgis CASCADE;
-                END IF;
-            END
-            $$;
-        """))
-        # Create PostGIS extension in public schema so geography types are accessible
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
-        conn.execute(text("SET search_path TO public;"))
+        # PostGIS is already installed, just ensure we can use geography types
+        # Set search path to include both public and postgis schemas
+        conn.execute(text("SET search_path TO public, postgis;"))
         conn.commit()
     
-    # Create all tables using FastAPI models (equivalent to Flask's db.create_all())
-    Base.metadata.create_all(bind=engine)
+    # Use an engine with PostGIS search path for table creation
+    from sqlalchemy.pool import StaticPool
+    engine_with_postgis = create_engine(
+        database_url, 
+        connect_args={'options': '-csearch_path=public,postgis'},
+        poolclass=StaticPool
+    )
     
-    # Create additional indexes (matching Flask setup)
+    # Create all tables using FastAPI models (equivalent to Flask's db.create_all())
+    Base.metadata.create_all(bind=engine_with_postgis)
+    
+    # Create additional indexes (exactly matching Flask setup)
     with engine.connect() as conn:
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_pointing_status_id ON public.pointing(status, id);"))
+        conn.execute(text("CREATE INDEX idx_pointing_status_id ON public.pointing(status, id);"))
         conn.commit()
     
     print("FastAPI database schema created successfully")
