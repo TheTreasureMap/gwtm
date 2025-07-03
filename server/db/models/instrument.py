@@ -12,7 +12,7 @@ class Instrument(Base):
     __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True)
-    instrument_name = Column(String(25))
+    instrument_name = Column(String(64))
     nickname = Column(String(25))
     instrument_type = Column(Enum(InstrumentType, name="instrumenttype"))
     datecreated = Column(DateTime)
