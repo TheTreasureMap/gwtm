@@ -6,6 +6,18 @@
 		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon.png" />
 		<link rel="shortcut icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<!-- jQuery - required by Aladin -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+		
+		<!-- Aladin Lite CSS and JS -->
+		<link rel="stylesheet" href="https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
+		<link href="https://aladin.u-strasbg.fr/AladinLite/css/style.css" rel="stylesheet" />
+		<script type="text/javascript" src="https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>
+		
+		<!-- Plotly JS - using a recent stable version -->
+		<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+		
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
