@@ -8,8 +8,13 @@ class Glade2P3(Base):
     __tablename__ = "glade_2p3"
     __table_args__ = {"schema": "public"}
 
-    pgc_number = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    pgc_number = Column(Integer)
     distance = Column(Float)
+    distance_error = Column(Float)
+    redshift = Column(Float)
+    bmag = Column(Float)
+    bmag_err = Column(Float)
     position = Column(Geography("POINT", srid=4326))
     _2mass_name = Column(String)
     gwgc_name = Column(String)
