@@ -50,10 +50,14 @@ jobs:
       run: |
         timeout 120 bash -c 'until docker compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
         
-    - name: Enable PostGIS extension
+    - name: Enable PostGIS extension and verify
       run: |
         # Enable PostGIS extension needed for geometry columns
         docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        # Verify PostGIS is working
+        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT PostGIS_Version();"
+        # Test basic geometry functions
+        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT ST_Point(1,2);"
         
     - name: Initialize database schema with FastAPI models
       run: |
@@ -71,6 +75,9 @@ jobs:
       run: |
         # Load test data directly into database (replaces Kubernetes restore-db script)
         docker compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
+        # Verify GLADE data was loaded
+        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT COUNT(*) FROM glade_2p3;"
+        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT id, pgc_number, gwgc_name FROM glade_2p3 LIMIT 3;"
         
     - name: Start FastAPI server
       run: |
@@ -84,6 +91,13 @@ jobs:
           -p 8000:8000 \
           gwtm_fastapi:latest
           
+    - name: Test FastAPI container dependencies
+      run: |
+        # Test if Shapely and geometry libraries are available in FastAPI container
+        docker run --rm gwtm_fastapi:latest python -c "import shapely; print(f'Shapely version: {shapely.__version__}')"
+        docker run --rm gwtm_fastapi:latest python -c "from shapely.wkt import loads; print('WKT parsing works')"
+        docker run --rm gwtm_fastapi:latest python -c "from geoalchemy2 import Geography; print('GeoAlchemy2 works')"
+        
     - name: Wait for FastAPI server to be ready
       run: |
         timeout 120 bash -c 'until curl -f http://localhost:8000/health; do echo "Waiting for FastAPI..."; sleep 5; done'
