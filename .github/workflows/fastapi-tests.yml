@@ -81,7 +81,7 @@ jobs:
           
     - name: Wait for FastAPI server to be ready
       run: |
-        timeout 120 bash -c 'until curl -f http://localhost:8000/docs; do sleep 5; done'
+        timeout 120 bash -c 'until curl -f http://localhost:8000/health; do echo "Waiting for FastAPI..."; sleep 5; done'
         
     - name: Run FastAPI tests
       run: |
