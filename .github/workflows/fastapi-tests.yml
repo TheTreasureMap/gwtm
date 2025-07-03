@@ -14,67 +14,80 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-        
-    - name: Install kubectl
-      uses: azure/setup-kubectl@v3
+      
+    - name: Set up Python for test dependencies
+      uses: actions/setup-python@v4
       with:
-        version: 'v1.28.0'
+        python-version: '3.11'
         
-    - name: Install Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: 'v3.12.0'
-        
-    - name: Install Skaffold
+    - name: Install test dependencies
       run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
-        sudo install skaffold /usr/local/bin/
+        python -m pip install --upgrade pip
+        pip install -r tests/requirements.txt
         
-    - name: Start minikube
-      uses: medyagh/setup-minikube@master
-      with:
-        minikube-version: 1.31.0
-        kubernetes-version: v1.28.0
-        
-    - name: Deploy application with Skaffold
+    - name: Set up environment variables
       run: |
-        cd gwtm-helm
-        # Run skaffold and wait for deployment
-        skaffold run --default-repo=local
+        echo "DB_USER=treasuremap" >> $GITHUB_ENV
+        echo "DB_PWD=treasuremap" >> $GITHUB_ENV
+        echo "DB_NAME=treasuremap_dev" >> $GITHUB_ENV
+        echo "MAIL_PASSWORD=dummy" >> $GITHUB_ENV
+        echo "RECAPTCHA_PUBLIC_KEY=dummy" >> $GITHUB_ENV
+        echo "RECAPTCHA_PRIVATE_KEY=dummy" >> $GITHUB_ENV
+        echo "ZENODO_ACCESS_KEY=dummy" >> $GITHUB_ENV
+        echo "AWS_ACCESS_KEY_ID=dummy" >> $GITHUB_ENV
+        echo "AWS_SECRET_ACCESS_KEY=dummy" >> $GITHUB_ENV
         
-    - name: Wait for services to be ready
+    - name: Build Docker images
       run: |
-        kubectl wait --for=condition=available --timeout=300s deployment/database
-        kubectl wait --for=condition=available --timeout=300s deployment/fastapi-server
+        docker build -t gwtm_web:latest .
+        docker build -f server/Dockerfile -t gwtm_fastapi:latest .
         
-    - name: Port forward services
+    - name: Start database with Docker Compose
       run: |
-        kubectl port-forward deployment/fastapi-server 8000:8000 &
-        kubectl port-forward deployment/database 5432:5432 &
-        sleep 10
+        docker-compose up -d db redis
+        
+    - name: Wait for database to be ready
+      run: |
+        timeout 120 bash -c 'until docker-compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
+        
+    - name: Initialize database schema
+      run: |
+        docker-compose run --rm db_init
         
     - name: Load test data
       run: |
-        # Wait for database to be ready
-        until kubectl exec deployment/database -- pg_isready -U treasuremap; do
-          echo "Waiting for database..."
-          sleep 5
-        done
+        docker-compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
         
-        # Load test data
-        kubectl exec -i deployment/database -- psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
-        
+    - name: Start FastAPI server
+      run: |
+        docker run -d --name fastapi-server \
+          --network gwtm_default \
+          -e DB_USER=treasuremap \
+          -e DB_PWD=treasuremap \
+          -e DB_NAME=treasuremap_dev \
+          -e DB_HOST=gwtm_db \
+          -e DB_PORT=5432 \
+          -p 8000:8000 \
+          gwtm_fastapi:latest
+          
     - name: Wait for FastAPI server to be ready
       run: |
-        timeout 300 bash -c 'until curl -f http://localhost:8000/docs; do sleep 5; done'
+        timeout 120 bash -c 'until curl -f http://localhost:8000/docs; do sleep 5; done'
         
-    - name: Run FastAPI tests in container
+    - name: Run FastAPI tests
       run: |
-        # Run tests inside the FastAPI container
-        kubectl exec deployment/fastapi-server -- python -m pytest /app/tests/fastapi/ -v --disable-warnings
+        python -m pytest tests/fastapi/ -v --disable-warnings
+      env:
+        API_BASE_URL: http://localhost:8000
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: treasuremap_dev
+        DB_USER: treasuremap
+        DB_PWD: treasuremap
         
     - name: Cleanup
       if: always()
       run: |
-        cd gwtm-helm
-        skaffold delete || true
+        docker stop fastapi-server || true
+        docker rm fastapi-server || true
+        docker-compose down -v
