@@ -37,14 +37,13 @@ jobs:
         echo "AWS_ACCESS_KEY_ID=dummy" >> $GITHUB_ENV
         echo "AWS_SECRET_ACCESS_KEY=dummy" >> $GITHUB_ENV
         
-    - name: Build Docker images
+    - name: Build FastAPI Docker image
       run: |
-        docker build -t gwtm_web:latest .
         docker build -f server/Dockerfile -t gwtm_fastapi:latest .
         
     - name: Start database with Docker Compose
       run: |
-        docker compose up -d db redis
+        docker compose up -d db
         
     - name: Wait for database to be ready
       run: |
