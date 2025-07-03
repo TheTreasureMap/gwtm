@@ -1,0 +1,203 @@
+# templates/fastapi/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.fastapi.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.fastapi.name }}
+spec:
+  replicas: {{ .Values.fastapi.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.fastapi.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.fastapi.name }}
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:14-alpine
+        command: ['sh', '-c', 'echo "Testing connection to ${DB_HOST}:${DB_PORT}...";
+                 export PGPASSWORD=${DB_PWD};
+                 until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}; do
+                 echo "$(date) - Waiting for database at ${DB_HOST}:${DB_PORT}...";
+                 echo "Trying to ping database...";
+                 nc -v -z -w2 ${DB_HOST} ${DB_PORT} || echo "Network connection failed";
+                 sleep 5;
+                 done;
+                 echo "Database is ready!"']
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-user
+        - name: DB_PWD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+      containers:
+      - name: fastapi-app
+        image: "{{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}"
+        imagePullPolicy: {{ .Values.fastapi.image.pullPolicy }}
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo "Starting FastAPI application..."
+            echo "Database settings: DB_HOST=$DB_HOST, DB_PORT=$DB_PORT, DB_USER=$DB_USER, DB_NAME=$DB_NAME"
+            echo "Redis URL: $REDIS_URL"
+            cd /app
+            uvicorn server.main:app --host 0.0.0.0 --port {{ .Values.fastapi.service.targetPort }} --workers {{ .Values.fastapi.workers }}
+        ports:
+        - containerPort: {{ .Values.fastapi.service.targetPort }}
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-user
+        - name: DB_PWD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+        - name: REDIS_URL
+          value: "redis://{{ .Values.cache.name }}:{{ .Values.cache.service.port }}/0"
+        - name: MAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: mail-password
+        - name: MAIL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: MAIL_USERNAME
+        - name: MAIL_DEFAULT_SENDER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: MAIL_DEFAULT_SENDER
+        - name: MAIL_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: MAIL_SERVER
+        - name: MAIL_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: MAIL_PORT
+        - name: RECAPTCHA_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-public-key
+        - name: RECAPTCHA_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: recaptcha-private-key
+        - name: ZENODO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: zenodo-access-key
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: aws-secret-access-key
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: AWS_DEFAULT_REGION
+        - name: AWS_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: AWS_BUCKET
+        - name: AZURE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: AZURE_ACCOUNT_NAME
+        - name: AZURE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: AZURE_ACCOUNT_KEY
+        - name: STORAGE_BUCKET_SOURCE
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              key: STORAGE_BUCKET_SOURCE
+        - name: DEBUG
+          value: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
+        {{- if .Values.fastapi.extraEnv }}
+        {{- toYaml .Values.fastapi.extraEnv | nindent 8 }}
+        {{- end }}
+        {{- if .Values.fastapi.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.fastapi.readinessProbe.path }}
+            port: {{ .Values.fastapi.service.targetPort }}
+          initialDelaySeconds: {{ .Values.fastapi.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.fastapi.readinessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        {{- end }}
+        {{- if .Values.fastapi.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.fastapi.livenessProbe.path }}
+            port: {{ .Values.fastapi.service.targetPort }}
+          initialDelaySeconds: {{ .Values.fastapi.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.fastapi.livenessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        {{- end }}
+        resources:
+          {{- toYaml .Values.fastapi.resources | nindent 12 }}
+      volumes:
+      - name: db-user
+        secret:
+          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+          items:
+          - key: db-user
+            path: db-user

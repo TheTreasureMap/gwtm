@@ -1,6 +1,23 @@
 # GW Treasure Map 
 Website environment
 
+## Quick Start
+
+**For the modern FastAPI backend (recommended):**
+The FastAPI application requires database and cache services. Use Skaffold for the complete development environment:
+```bash
+cd gwtm-helm
+skaffold dev    # Starts full stack including FastAPI, database, and cache
+```
+FastAPI will be available at http://localhost:8000 with API docs at http://localhost:8000/docs
+
+See the [FastAPI README](server/README.md) for detailed setup instructions and testing.
+
+**For the legacy Flask application:**
+```bash
+python gwtm.wsgi            # Development server on :5000
+```
+
 ### Step-by-step installation
 
 ### Python:

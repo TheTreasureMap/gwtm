@@ -879,7 +879,7 @@ def plot_renormalized_skymap():
 			'dec': dec,
 			'time':p.time,
 			'depth':p.depth,
-			'depth_unit':p.depth_unit,
+			'depth_unit':p.DepthUnit,
 			'band':p.band,
 			'status':p.status
 		}))
@@ -1062,7 +1062,7 @@ def get_pointing_fromID():
 			pointing_json['ra'] = ra
 			pointing_json['dec'] = dec
 			pointing_json['graceid'] = pointing.graceid
-			pointing_json['instrument'] = str(pointing.instrumentid)+'_'+enums.instrument_type(pointing.instrument_type).name
+			pointing_json['instrument'] = str(pointing.instrumentid)+'_'+enums.instrument_type(pointing.InstrumentType).name
 			pointing_json['band'] = pointing.band.name
 			pointing_json['depth'] = pointing.depth
 			pointing_json['depth_err'] = pointing.depth_err

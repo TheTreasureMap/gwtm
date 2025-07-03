@@ -1,0 +1,15 @@
+# templates/fastapi/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.fastapi.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.fastapi.name }}
+spec:
+  selector:
+    app: {{ .Values.fastapi.name }}
+  ports:
+  - port: {{ .Values.fastapi.service.port }}
+    targetPort: {{ .Values.fastapi.service.targetPort }}
