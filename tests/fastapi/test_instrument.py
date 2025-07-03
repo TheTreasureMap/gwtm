@@ -2,6 +2,7 @@
 Instrument API tests using regular HTTP requests.
 These tests hit the actual API endpoints running on the server.
 """
+
 import pytest
 import requests
 import os
@@ -29,8 +30,7 @@ class TestInstrumentAPI:
     def test_get_all_instruments(self):
         """Test getting all instruments without filters."""
         response = requests.get(
-            self.get_url("/instruments"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/instruments"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
@@ -41,8 +41,7 @@ class TestInstrumentAPI:
     def test_get_instrument_by_id(self):
         """Test getting a specific instrument by ID."""
         response = requests.get(
-            self.get_url("/instruments?id=1"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/instruments?id=1"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
@@ -55,7 +54,7 @@ class TestInstrumentAPI:
         """Test getting multiple instruments by IDs."""
         response = requests.get(
             self.get_url("/instruments?ids=[1,2]"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
@@ -68,7 +67,7 @@ class TestInstrumentAPI:
         """Test getting instruments by name filter."""
         response = requests.get(
             self.get_url("/instruments?name=Optical"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
@@ -79,19 +78,22 @@ class TestInstrumentAPI:
         """Test getting instruments by type."""
         response = requests.get(
             self.get_url(f"/instruments?type={InstrumentType.photometric.value}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
         # We have 2 photometric instruments
         assert len(instruments) == 2
-        assert all(inst["instrument_type"] == InstrumentType.photometric.value for inst in instruments)
+        assert all(
+            inst["instrument_type"] == InstrumentType.photometric.value
+            for inst in instruments
+        )
 
     def test_get_instruments_with_invalid_ids_format(self):
         """Test error handling for invalid IDs format."""
         response = requests.get(
             self.get_url("/instruments?ids=invalid"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Invalid ids format" in response.json()["message"]
@@ -105,8 +107,7 @@ class TestInstrumentAPI:
     def test_get_instruments_with_invalid_token(self):
         """Test with invalid API token."""
         response = requests.get(
-            self.get_url("/instruments"),
-            headers={"api_token": self.invalid_token}
+            self.get_url("/instruments"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid API token" in response.json()["message"]
@@ -114,8 +115,7 @@ class TestInstrumentAPI:
     def test_get_footprints_all(self):
         """Test getting all footprints."""
         response = requests.get(
-            self.get_url("/footprints"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/footprints"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         footprints = response.json()
@@ -127,8 +127,7 @@ class TestInstrumentAPI:
     def test_get_footprints_by_id(self):
         """Test getting footprints for a specific instrument ID."""
         response = requests.get(
-            self.get_url("/footprints?id=1"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/footprints?id=1"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         footprints = response.json()
@@ -141,7 +140,7 @@ class TestInstrumentAPI:
         """Test getting footprints by instrument name."""
         response = requests.get(
             self.get_url("/footprints?name=Optical"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         footprints = response.json()
@@ -153,12 +152,12 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "New Test Telescope",
             "nickname": "NTT",
-            "instrument_type": InstrumentType.photometric.value
+            "instrument_type": InstrumentType.photometric.value,
         }
         response = requests.post(
             self.get_url("/instruments"),
             json=new_instrument,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         created = response.json()
@@ -177,12 +176,12 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "User Test Telescope",
             "nickname": "UTT",
-            "instrument_type": InstrumentType.spectroscopic.value
+            "instrument_type": InstrumentType.spectroscopic.value,
         }
         response = requests.post(
             self.get_url("/instruments"),
             json=new_instrument,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
         assert response.status_code == status.HTTP_200_OK
         created = response.json()
@@ -193,12 +192,9 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "Unauthorized Telescope",
             "nickname": "UT",
-            "instrument_type": InstrumentType.photometric.value
+            "instrument_type": InstrumentType.photometric.value,
         }
-        response = requests.post(
-            self.get_url("/instruments"),
-            json=new_instrument
-        )
+        response = requests.post(self.get_url("/instruments"), json=new_instrument)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_footprint(self):
@@ -207,12 +203,12 @@ class TestInstrumentAPI:
         new_instrument = {
             "instrument_name": "Footprint Test Telescope 5535",
             "nickname": "FTT 5535",
-            "instrument_type": InstrumentType.photometric.value
+            "instrument_type": InstrumentType.photometric.value,
         }
         inst_response = requests.post(
             self.get_url("/instruments"),
             json=new_instrument,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert inst_response.status_code == status.HTTP_200_OK
         instrument_id = inst_response.json()["id"]
@@ -220,12 +216,12 @@ class TestInstrumentAPI:
         # Now create a footprint
         new_footprint = {
             "instrumentid": instrument_id,
-            "footprint": "POLYGON((-3 -3, 3 -3, 3 3, -3 3, -3 -3))"
+            "footprint": "POLYGON((-3 -3, 3 -3, 3 3, -3 3, -3 -3))",
         }
         response = requests.post(
             self.get_url("/footprints"),
             json=new_footprint,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         created = response.json()
@@ -236,12 +232,12 @@ class TestInstrumentAPI:
         """Test creating footprint for non-existent instrument."""
         new_footprint = {
             "instrumentid": 9999,  # Non-existent ID
-            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))"
+            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))",
         }
         response = requests.post(
             self.get_url("/footprints"),
             json=new_footprint,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["message"]
@@ -251,12 +247,12 @@ class TestInstrumentAPI:
         # Try to add footprint to instrument with ID 1 (owned by admin) using user token
         new_footprint = {
             "instrumentid": 1,
-            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))"
+            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))",
         }
         response = requests.post(
             self.get_url("/footprints"),
             json=new_footprint,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "don't have permission" in response.json()["message"]
@@ -265,29 +261,35 @@ class TestInstrumentAPI:
         """Test that authentication is required for footprint creation."""
         new_footprint = {
             "instrumentid": 1,
-            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))"
+            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))",
         }
-        response = requests.post(
-            self.get_url("/footprints"),
-            json=new_footprint
-        )
+        response = requests.post(self.get_url("/footprints"), json=new_footprint)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_instruments_with_complex_query(self):
         """Test complex query combining multiple filters."""
         # First create some test data
         photometric_instruments = [
-            {"instrument_name": f"Photometric {i}", "nickname": f"P{i}",
-             "instrument_type": InstrumentType.photometric.value}
+            {
+                "instrument_name": f"Photometric {i}",
+                "nickname": f"P{i}",
+                "instrument_type": InstrumentType.photometric.value,
+            }
             for i in range(2)
         ]
         for inst in photometric_instruments:
-            requests.post(self.get_url("/instruments"), json=inst, headers={"api_token": self.admin_token})
+            requests.post(
+                self.get_url("/instruments"),
+                json=inst,
+                headers={"api_token": self.admin_token},
+            )
 
         # Query by type and name pattern
         response = requests.get(
-            self.get_url(f"/instruments?type={InstrumentType.photometric.value}&name=Photometric"),
-            headers={"api_token": self.admin_token}
+            self.get_url(
+                f"/instruments?type={InstrumentType.photometric.value}&name=Photometric"
+            ),
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         instruments = response.json()
@@ -297,14 +299,19 @@ class TestInstrumentAPI:
     def test_instrument_data_format(self):
         """Test that instrument data is returned in the correct format."""
         response = requests.get(
-            self.get_url("/instruments?id=1"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/instruments?id=1"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         instrument = response.json()[0]
 
         # Check all required fields are present
-        required_fields = ["id", "instrument_name", "instrument_type", "datecreated", "submitterid"]
+        required_fields = [
+            "id",
+            "instrument_name",
+            "instrument_type",
+            "datecreated",
+            "submitterid",
+        ]
         for field in required_fields:
             assert field in instrument
 
@@ -321,8 +328,7 @@ class TestInstrumentAPI:
     def test_footprint_data_format(self):
         """Test that footprint data is returned in the correct format."""
         response = requests.get(
-            self.get_url("/footprints?id=1"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/footprints?id=1"), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         footprint = response.json()[0]
@@ -353,15 +359,15 @@ class TestInstrumentAPIValidation:
         invalid_instrument = {
             "instrument_name": "Invalid Type Telescope",
             "nickname": "ITT",
-            "instrument_type": 999  # Invalid type
+            "instrument_type": 999,  # Invalid type
         }
         response = requests.post(
             self.get_url("/instruments"),
             json=invalid_instrument,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST  # Validation error
-        assert "Input should be" in response.json()['errors'][0]['message']
+        assert "Input should be" in response.json()["errors"][0]["message"]
 
     def test_missing_required_fields(self):
         """Test creating instrument with missing required fields."""
@@ -372,33 +378,29 @@ class TestInstrumentAPIValidation:
         response = requests.post(
             self.get_url("/instruments"),
             json=incomplete_instrument,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        error_fields = [field['params']['field'] for field in response.json()['errors']]
+        error_fields = [field["params"]["field"] for field in response.json()["errors"]]
         assert "instrument_name" in str(error_fields)
         assert "instrument_type" in str(error_fields)
 
     def test_invalid_footprint_format(self):
         """Test creating footprint with invalid WKT format."""
-        invalid_footprint = {
-            "instrumentid": 1,
-            "footprint": "INVALID WKT STRING"
-        }
+        invalid_footprint = {"instrumentid": 1, "footprint": "INVALID WKT STRING"}
         response = requests.post(
             self.get_url("/footprints"),
             json=invalid_footprint,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         # This should fail at the database level
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Invalid WKT format" in response.json()['errors'][0]['message']
+        assert "Invalid WKT format" in response.json()["errors"][0]["message"]
 
     def test_empty_name_filter(self):
         """Test behavior with empty name filter."""
         response = requests.get(
-            self.get_url("/instruments?name="),
-            headers={"api_token": self.admin_token}
+            self.get_url("/instruments?name="), headers={"api_token": self.admin_token}
         )
         assert response.status_code == status.HTTP_200_OK
         # Should return all instruments since empty filter matches all
@@ -421,8 +423,7 @@ class TestInstrumentAPIPermissions:
         """Test that all users can read instruments."""
         for token in [self.admin_token, self.user_token, self.scientist_token]:
             response = requests.get(
-                self.get_url("/instruments"),
-                headers={"api_token": token}
+                self.get_url("/instruments"), headers={"api_token": token}
             )
             assert response.status_code == status.HTTP_200_OK
 
@@ -430,23 +431,24 @@ class TestInstrumentAPIPermissions:
         """Test that all users can read footprints."""
         for token in [self.admin_token, self.user_token, self.scientist_token]:
             response = requests.get(
-                self.get_url("/footprints"),
-                headers={"api_token": token}
+                self.get_url("/footprints"), headers={"api_token": token}
             )
             assert response.status_code == status.HTTP_200_OK
 
     def test_all_users_can_create_instruments(self):
         """Test that all authenticated users can create instruments."""
-        for i, token in enumerate([self.admin_token, self.user_token, self.scientist_token]):
+        for i, token in enumerate(
+            [self.admin_token, self.user_token, self.scientist_token]
+        ):
             instrument = {
                 "instrument_name": f"User{i} Telescope",
                 "nickname": f"U{i}T",
-                "instrument_type": InstrumentType.photometric.value
+                "instrument_type": InstrumentType.photometric.value,
             }
             response = requests.post(
                 self.get_url("/instruments"),
                 json=instrument,
-                headers={"api_token": token}
+                headers={"api_token": token},
             )
             assert response.status_code == status.HTTP_200_OK
 
@@ -456,12 +458,12 @@ class TestInstrumentAPIPermissions:
         instrument = {
             "instrument_name": "User Owned Telescope",
             "nickname": "UOT",
-            "instrument_type": InstrumentType.photometric.value
+            "instrument_type": InstrumentType.photometric.value,
         }
         response = requests.post(
             self.get_url("/instruments"),
             json=instrument,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
         assert response.status_code == status.HTTP_200_OK
         user_instrument_id = response.json()["id"]
@@ -469,12 +471,12 @@ class TestInstrumentAPIPermissions:
         # User should be able to add footprint to their own instrument
         footprint = {
             "instrumentid": user_instrument_id,
-            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))"
+            "footprint": "POLYGON((-1 -1, 1 -1, 1 1, -1 1, -1 -1))",
         }
         response = requests.post(
             self.get_url("/footprints"),
             json=footprint,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
         assert response.status_code == status.HTTP_200_OK
 
@@ -482,7 +484,7 @@ class TestInstrumentAPIPermissions:
         response = requests.post(
             self.get_url("/footprints"),
             json=footprint,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -502,12 +504,12 @@ class TestInstrumentAPIIntegration:
         new_instrument = {
             "instrument_name": "Integration Test Telescope",
             "nickname": "ITT",
-            "instrument_type": InstrumentType.photometric.value
+            "instrument_type": InstrumentType.photometric.value,
         }
         response = requests.post(
             self.get_url("/instruments"),
             json=new_instrument,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         instrument = response.json()
@@ -516,21 +518,23 @@ class TestInstrumentAPIIntegration:
         # Step 2: Verify instrument was created
         response = requests.get(
             self.get_url(f"/instruments?id={instrument_id}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == 1
-        assert response.json()[0]["instrument_name"] == new_instrument["instrument_name"]
+        assert (
+            response.json()[0]["instrument_name"] == new_instrument["instrument_name"]
+        )
 
         # Step 3: Add footprint to instrument
         footprint = {
             "instrumentid": instrument_id,
-            "footprint": "POLYGON((-2 -2, 2 -2, 2 2, -2 2, -2 -2))"
+            "footprint": "POLYGON((-2 -2, 2 -2, 2 2, -2 2, -2 -2))",
         }
         response = requests.post(
             self.get_url("/footprints"),
             json=footprint,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         created_footprint = response.json()
@@ -538,7 +542,7 @@ class TestInstrumentAPIIntegration:
         # Step 4: Verify footprint was created
         response = requests.get(
             self.get_url(f"/footprints?id={instrument_id}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         footprints = response.json()
@@ -550,12 +554,21 @@ class TestInstrumentAPIIntegration:
         """Test querying instruments with multiple filters."""
         # Create test instruments
         test_instruments = [
-            {"instrument_name": "Multi Test Optical 1", "nickname": "MTO1",
-             "instrument_type": InstrumentType.photometric.value},
-            {"instrument_name": "Multi Test Optical 2", "nickname": "MTO2",
-             "instrument_type": InstrumentType.photometric.value},
-            {"instrument_name": "Multi Test Spectro", "nickname": "MTS",
-             "instrument_type": InstrumentType.spectroscopic.value}
+            {
+                "instrument_name": "Multi Test Optical 1",
+                "nickname": "MTO1",
+                "instrument_type": InstrumentType.photometric.value,
+            },
+            {
+                "instrument_name": "Multi Test Optical 2",
+                "nickname": "MTO2",
+                "instrument_type": InstrumentType.photometric.value,
+            },
+            {
+                "instrument_name": "Multi Test Spectro",
+                "nickname": "MTS",
+                "instrument_type": InstrumentType.spectroscopic.value,
+            },
         ]
 
         created_ids = []
@@ -563,7 +576,7 @@ class TestInstrumentAPIIntegration:
             response = requests.post(
                 self.get_url("/instruments"),
                 json=inst,
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
             assert response.status_code == status.HTTP_200_OK
             created_ids.append(response.json()["id"])
@@ -571,16 +584,18 @@ class TestInstrumentAPIIntegration:
         # Query by type
         response = requests.get(
             self.get_url(f"/instruments?type={InstrumentType.photometric.value}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         photometric_insts = response.json()
-        assert len([inst for inst in photometric_insts if inst["id"] in created_ids]) == 2
+        assert (
+            len([inst for inst in photometric_insts if inst["id"] in created_ids]) == 2
+        )
 
         # Query by name pattern
         response = requests.get(
             self.get_url("/instruments?name=Multi Test"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         named_insts = response.json()

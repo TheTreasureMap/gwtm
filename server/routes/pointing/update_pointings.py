@@ -16,9 +16,9 @@ router = APIRouter(tags=["pointings"])
 
 @router.post("/update_pointings")
 async def update_pointings(
-        update_pointing: PointingUpdate,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    update_pointing: PointingUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Update the status of planned pointings.
@@ -32,11 +32,16 @@ async def update_pointings(
     """
     try:
         # Add a filter to ensure user can only update their own pointings
-        pointings = db.query(Pointing).filter(
-            Pointing.id.in_(update_pointing.ids),
-            Pointing.submitterid == user.id,
-            Pointing.status == pointing_status_enum.planned  # Only planned pointings can be cancelled
-        ).all()
+        pointings = (
+            db.query(Pointing)
+            .filter(
+                Pointing.id.in_(update_pointing.ids),
+                Pointing.submitterid == user.id,
+                Pointing.status
+                == pointing_status_enum.planned,  # Only planned pointings can be cancelled
+            )
+            .all()
+        )
 
         for pointing in pointings:
             pointing.status = update_pointing.status

@@ -13,11 +13,11 @@ router = APIRouter(tags=["galaxies"])
 
 @router.get("/glade")
 async def get_galaxies(
-        ra: Optional[float] = Query(None, description="Right ascension"),
-        dec: Optional[float] = Query(None, description="Declination"),
-        name: Optional[str] = Query(None, description="Galaxy name to search for"),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    ra: Optional[float] = Query(None, description="Right ascension"),
+    dec: Optional[float] = Query(None, description="Declination"),
+    name: Optional[str] = Query(None, description="Galaxy name to search for"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Get galaxies from the GLADE catalog.
@@ -29,7 +29,7 @@ async def get_galaxies(
     base_filter = [
         Glade2P3.pgc_number != -1,
         Glade2P3.distance > 0,
-        Glade2P3.distance < 100
+        Glade2P3.distance < 100,
     ]
 
     # Create base query
@@ -41,17 +41,19 @@ async def get_galaxies(
     # Handle ra and dec
     if ra is not None and dec is not None and isFloat(ra) and isFloat(dec):
         from sqlalchemy import func
+
         geom = f"SRID=4326;POINT({ra} {dec})"
         orderby.append(func.ST_Distance(Glade2P3.position, geom))
 
     # Handle name search
     if name:
         from sqlalchemy import or_
+
         or_conditions = [
             Glade2P3._2mass_name.contains(name.strip()),
             Glade2P3.gwgc_name.contains(name.strip()),
             Glade2P3.hyperleda_name.contains(name.strip()),
-            Glade2P3.sdssdr12_name.contains(name.strip())
+            Glade2P3.sdssdr12_name.contains(name.strip()),
         ]
         filter_conditions.append(or_(*or_conditions))
 
@@ -62,12 +64,14 @@ async def get_galaxies(
     result = []
     for galaxy in galaxies:
         # Convert to dict
-        galaxy_dict = {c.name: getattr(galaxy, c.name) for c in galaxy.__table__.columns}
+        galaxy_dict = {
+            c.name: getattr(galaxy, c.name) for c in galaxy.__table__.columns
+        }
 
         # Convert position to WKT string if it exists
         if galaxy.position:
             shape = to_shape(galaxy.position)
-            galaxy_dict['position'] = str(shape)
+            galaxy_dict["position"] = str(shape)
 
         result.append(galaxy_dict)
 

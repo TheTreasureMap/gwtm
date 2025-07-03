@@ -19,17 +19,13 @@ router = APIRouter(tags=["pointings"])
 
 @router.post("/request_doi", response_model=DOIRequestResponse)
 async def request_doi(
-        request: DOIRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    request: DOIRequest, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     """
     Request a DOI for completed pointings.
     """
     # Build the filter for pointings
-    filter_conditions = [
-        Pointing.submitterid == user.id
-    ]
+    filter_conditions = [Pointing.submitterid == user.id]
 
     # Handle id or ids (these don't require PointingEvent join)
     if request.id:
@@ -41,12 +37,12 @@ async def request_doi(
     if request.graceid:
         normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
         # Query the pointings with explicit join
-        points = db.query(Pointing).join(
-            PointingEvent, Pointing.id == PointingEvent.pointingid
-        ).filter(
-            *filter_conditions,
-            PointingEvent.graceid == normalized_graceid
-        ).all()
+        points = (
+            db.query(Pointing)
+            .join(PointingEvent, Pointing.id == PointingEvent.pointingid)
+            .filter(*filter_conditions, PointingEvent.graceid == normalized_graceid)
+            .all()
+        )
     else:
         # Query without join when only using ID filters
         points = db.query(Pointing).filter(*filter_conditions).all()
@@ -70,19 +66,21 @@ async def request_doi(
     if len(doi_points) == 0:
         raise validation_exception(
             message="No valid pointings found for DOI request",
-            errors=["All pointings must be completed and not already have a DOI"]
+            errors=["All pointings must be completed and not already have a DOI"],
         )
 
     # Get the GW event IDs from the pointings
-    pointing_events = db.query(PointingEvent).filter(
-        PointingEvent.pointingid.in_([x.id for x in doi_points])
-    ).all()
+    pointing_events = (
+        db.query(PointingEvent)
+        .filter(PointingEvent.pointingid.in_([x.id for x in doi_points]))
+        .all()
+    )
     gids = list(set([pe.graceid for pe in pointing_events]))
 
     if len(gids) > 1:
         raise validation_exception(
             message="Multiple events detected",
-            errors=["Pointings must be only for a single GW event for a DOI request"]
+            errors=["Pointings must be only for a single GW event for a DOI request"],
         )
 
     gid = gids[0]

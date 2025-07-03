@@ -2,6 +2,7 @@
 Test candidate endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 import json
@@ -28,13 +29,12 @@ class TestCandidateEndpoints:
         return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
 
     # Known GraceIDs from test data
-    KNOWN_GRACEIDS = ['S190425z', 'S190426c', 'MS230101a', 'GW190521', 'MS190425a']
+    KNOWN_GRACEIDS = ["S190425z", "S190426c", "MS230101a", "GW190521", "MS190425a"]
 
     def test_get_candidates_no_params(self):
         """Test getting candidates without any parameters."""
         response = requests.get(
-            self.get_url("/candidate"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/candidate"), headers={"api_token": self.admin_token}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -58,14 +58,14 @@ class TestCandidateEndpoints:
                 "discovery_date": "2019-04-25T12:00:00.000000",
                 "discovery_magnitude": 21.5,
                 "magnitude_unit": "ab_mag",
-                "magnitude_bandpass": "r"
-            }
+                "magnitude_bandpass": "r",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -74,7 +74,7 @@ class TestCandidateEndpoints:
         response = requests.get(
             self.get_url("/candidate"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -89,7 +89,7 @@ class TestCandidateEndpoints:
         response = requests.get(
             self.get_url("/candidate"),
             params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -113,14 +113,14 @@ class TestCandidateEndpoints:
                     "discovery_date": "2019-04-25T12:00:00.000000",
                     "discovery_magnitude": 21.5 + i,
                     "magnitude_unit": "ab_mag",
-                    "magnitude_bandpass": "r"
-                }
+                    "magnitude_bandpass": "r",
+                },
             }
 
             create_response = requests.post(
                 self.get_url("/candidate"),
                 json=candidate_data,
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
             assert create_response.status_code == status.HTTP_200_OK
             candidate_ids.extend(create_response.json()["candidate_ids"])
@@ -130,7 +130,7 @@ class TestCandidateEndpoints:
         response = requests.get(
             self.get_url("/candidate"),
             params={"ids": ids_param},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -146,7 +146,7 @@ class TestCandidateEndpoints:
         response = requests.get(
             self.get_url("/candidate"),
             params={"userid": 1},  # Admin user ID
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -162,9 +162,9 @@ class TestCandidateEndpoints:
             self.get_url("/candidate"),
             params={
                 "discovery_date_after": "2019-04-01T00:00:00.000000",
-                "discovery_date_before": "2019-05-01T00:00:00.000000"
+                "discovery_date_before": "2019-05-01T00:00:00.000000",
             },
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -173,18 +173,17 @@ class TestCandidateEndpoints:
         # Check that returned candidates are within the date range
         for candidate in data:
             if candidate.get("discovery_date"):
-                discovery_date = datetime.fromisoformat(candidate["discovery_date"].replace('Z', '+00:00'))
+                discovery_date = datetime.fromisoformat(
+                    candidate["discovery_date"].replace("Z", "+00:00")
+                )
                 assert datetime(2019, 4, 1) <= discovery_date <= datetime(2019, 5, 1)
 
     def test_get_candidates_by_magnitude_range(self):
         """Test getting candidates filtered by magnitude range."""
         response = requests.get(
             self.get_url("/candidate"),
-            params={
-                "discovery_magnitude_gt": 20.0,
-                "discovery_magnitude_lt": 23.0
-            },
-            headers={"api_token": self.admin_token}
+            params={"discovery_magnitude_gt": 20.0, "discovery_magnitude_lt": 23.0},
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -212,14 +211,14 @@ class TestCandidateEndpoints:
                 "tns_url": "https://www.wis-tns.org/object/2019abc",
                 "associated_galaxy": "NGC1234",
                 "associated_galaxy_redshift": 0.05,
-                "associated_galaxy_distance": 200.5
-            }
+                "associated_galaxy_distance": 200.5,
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -241,7 +240,7 @@ class TestCandidateEndpoints:
                     "discovery_date": "2019-04-25T15:00:00.000000",
                     "discovery_magnitude": 21.8,
                     "magnitude_unit": "ab_mag",
-                    "magnitude_bandpass": "r"
+                    "magnitude_bandpass": "r",
                 },
                 {
                     "candidate_name": "SN_2019ghi",
@@ -250,15 +249,15 @@ class TestCandidateEndpoints:
                     "discovery_date": "2019-04-25T16:00:00.000000",
                     "discovery_magnitude": 22.3,
                     "magnitude_unit": "ab_mag",
-                    "magnitude_bandpass": "i"
-                }
-            ]
+                    "magnitude_bandpass": "i",
+                },
+            ],
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -277,14 +276,14 @@ class TestCandidateEndpoints:
                 "discovery_date": "2019-04-25T17:00:00.000000",
                 "discovery_magnitude": 21.5,
                 "magnitude_unit": "ab_mag",
-                "magnitude_bandpass": "V"
-            }
+                "magnitude_bandpass": "V",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -304,14 +303,14 @@ class TestCandidateEndpoints:
                 "discovery_magnitude": 20.9,
                 "magnitude_unit": "ab_mag",
                 "wavelength_regime": [4000, 7000],
-                "wavelength_unit": "angstrom"
-            }
+                "wavelength_unit": "angstrom",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -329,14 +328,14 @@ class TestCandidateEndpoints:
                 "dec": -12.345,
                 "discovery_date": "2019-04-25T12:00:00.000000",
                 "discovery_magnitude": 21.5,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -351,19 +350,21 @@ class TestCandidateEndpoints:
                 "ra": 123.456,
                 "dec": -12.345,
                 # Missing discovery_date and discovery_magnitude
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        missing_fields = [field['params']['field'] for field in response.json()['errors']]
+        missing_fields = [
+            field["params"]["field"] for field in response.json()["errors"]
+        ]
         assert "discovery_date" in str(missing_fields)
         assert "discovery_magnitude" in str(missing_fields)
 
@@ -376,20 +377,19 @@ class TestCandidateEndpoints:
                 # Missing both position and ra/dec
                 "discovery_date": "2019-04-25T12:00:00.000000",
                 "discovery_magnitude": 21.5,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        data = response.json()['errors'][0]['message']
+        data = response.json()["errors"][0]["message"]
         assert "Either position or both ra and dec must be provided" in data
-
 
     def test_put_candidate(self):
         """Test updating an existing candidate."""
@@ -403,14 +403,14 @@ class TestCandidateEndpoints:
                 "discovery_date": "2019-04-25T19:00:00.000000",
                 "discovery_magnitude": 22.0,
                 "magnitude_unit": "ab_mag",
-                "magnitude_bandpass": "B"
-            }
+                "magnitude_bandpass": "B",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -422,14 +422,14 @@ class TestCandidateEndpoints:
                 "candidate_name": "SN_Updated",
                 "discovery_magnitude": 21.5,
                 "tns_name": "2019updated",
-                "associated_galaxy": "NGC5678"
-            }
+                "associated_galaxy": "NGC5678",
+            },
         }
 
         response = requests.put(
             self.get_url("/candidate"),
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -442,16 +442,13 @@ class TestCandidateEndpoints:
         """Test updating a non-existent candidate."""
         update_data = {
             "id": 99999,  # Non-existent ID
-            "candidate": {
-                "candidate_name": "SN_NotFound",
-                "discovery_magnitude": 21.5
-            }
+            "candidate": {"candidate_name": "SN_NotFound", "discovery_magnitude": 21.5},
         }
 
         response = requests.put(
             self.get_url("/candidate"),
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -468,14 +465,14 @@ class TestCandidateEndpoints:
                 "dec": -55.123,
                 "discovery_date": "2019-04-25T20:00:00.000000",
                 "discovery_magnitude": 21.7,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -483,15 +480,13 @@ class TestCandidateEndpoints:
         # Try to update as different user
         update_data = {
             "id": candidate_id,
-            "candidate": {
-                "candidate_name": "SN_Hijacked"
-            }
+            "candidate": {"candidate_name": "SN_Hijacked"},
         }
 
         response = requests.put(
             self.get_url("/candidate"),
             json=update_data,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -508,14 +503,14 @@ class TestCandidateEndpoints:
                 "dec": -60.789,
                 "discovery_date": "2019-04-25T21:00:00.000000",
                 "discovery_magnitude": 23.1,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -524,7 +519,7 @@ class TestCandidateEndpoints:
         response = requests.delete(
             self.get_url("/candidate"),
             json={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -545,14 +540,14 @@ class TestCandidateEndpoints:
                     "dec": -65.0 - i,
                     "discovery_date": "2019-04-25T22:00:00.000000",
                     "discovery_magnitude": 22.5 + i * 0.1,
-                    "magnitude_unit": "ab_mag"
-                }
+                    "magnitude_unit": "ab_mag",
+                },
             }
 
             create_response = requests.post(
                 self.get_url("/candidate"),
                 json=candidate_data,
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
             assert create_response.status_code == status.HTTP_200_OK
             candidate_ids.extend(create_response.json()["candidate_ids"])
@@ -562,7 +557,7 @@ class TestCandidateEndpoints:
         response = requests.delete(
             self.get_url("/candidate"),
             json={"ids": candidate_ids},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -577,7 +572,7 @@ class TestCandidateEndpoints:
         response = requests.delete(
             self.get_url("/candidate"),
             json={"id": 99999},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -594,14 +589,14 @@ class TestCandidateEndpoints:
                 "dec": -70.456,
                 "discovery_date": "2019-04-25T23:00:00.000000",
                 "discovery_magnitude": 21.2,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -610,7 +605,7 @@ class TestCandidateEndpoints:
         response = requests.delete(
             self.get_url("/candidate"),
             json={"id": candidate_id},
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -624,8 +619,7 @@ class TestCandidateEndpoints:
 
         # Request with invalid API token
         response = requests.get(
-            self.get_url("/candidate"),
-            headers={"api_token": self.invalid_token}
+            self.get_url("/candidate"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -634,8 +628,7 @@ class TestCandidateEndpoints:
         # All authenticated users should be able to read candidates
         for token in [self.admin_token, self.user_token, self.scientist_token]:
             response = requests.get(
-                self.get_url("/candidate"),
-                headers={"api_token": token}
+                self.get_url("/candidate"), headers={"api_token": token}
             )
             assert response.status_code == status.HTTP_200_OK
 
@@ -649,15 +642,15 @@ class TestCandidateEndpoints:
                 "dec": -75.789,
                 "discovery_date": "2019-04-26T00:00:00.000000",
                 "discovery_magnitude": 22.8,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         # Submit as regular user
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -669,7 +662,7 @@ class TestCandidateEndpoints:
         get_response = requests.get(
             self.get_url("/candidate"),
             params={"id": candidate_id},
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
         assert get_response.status_code == status.HTTP_200_OK
         candidate = get_response.json()[0]
@@ -695,20 +688,19 @@ class TestCandidateAPIValidation:
                 "dec": -12.345,
                 "discovery_date": "2019-04-25T12:00:00.000000",
                 "discovery_magnitude": 21.5,
-                "magnitude_unit": "invalid_unit"
-            }
+                "magnitude_unit": "invalid_unit",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert 'Invalid magnitude unit' in response.json()['errors'][0]['message']
-
+        assert "Invalid magnitude unit" in response.json()["errors"][0]["message"]
 
     def test_invalid_date_format(self):
         """Test creating candidate with invalid date format."""
@@ -720,19 +712,21 @@ class TestCandidateAPIValidation:
                 "dec": -12.345,
                 "discovery_date": "invalid-date-format",
                 "discovery_magnitude": 21.5,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         data = response.json()
-        assert 'Invalid discovery_date format' in response.json()['errors'][0]['message']
+        assert (
+            "Invalid discovery_date format" in response.json()["errors"][0]["message"]
+        )
 
     def test_missing_position_data(self):
         """Test creating candidate without position or coordinates."""
@@ -743,18 +737,21 @@ class TestCandidateAPIValidation:
                 # No position, ra, or dec
                 "discovery_date": "2019-04-25T12:00:00.000000",
                 "discovery_magnitude": 21.5,
-                "magnitude_unit": "ab_mag"
-            }
+                "magnitude_unit": "ab_mag",
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'Either position or both ra and dec must be provided' in response.json()['errors'][0]['message']
+        assert (
+            "Either position or both ra and dec must be provided"
+            in response.json()["errors"][0]["message"]
+        )
 
 
 class TestCandidateAPIIntegration:
@@ -778,14 +775,14 @@ class TestCandidateAPIIntegration:
                 "discovery_date": "2019-04-26T01:00:00.000000",
                 "discovery_magnitude": 21.9,
                 "magnitude_unit": "ab_mag",
-                "magnitude_bandpass": "r"
-            }
+                "magnitude_bandpass": "r",
+            },
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_id = create_response.json()["candidate_ids"][0]
@@ -794,7 +791,7 @@ class TestCandidateAPIIntegration:
         get_response = requests.get(
             self.get_url("/candidate"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert get_response.status_code == status.HTTP_200_OK
         candidate = get_response.json()[0]
@@ -806,13 +803,13 @@ class TestCandidateAPIIntegration:
             "candidate": {
                 "discovery_magnitude": 21.5,
                 "tns_name": "2019workflow",
-                "associated_galaxy": "NGC_Workflow"
-            }
+                "associated_galaxy": "NGC_Workflow",
+            },
         }
         update_response = requests.put(
             self.get_url("/candidate"),
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert update_response.status_code == status.HTTP_200_OK
         assert update_response.json()["candidate"]["discovery_magnitude"] == 21.5
@@ -821,7 +818,7 @@ class TestCandidateAPIIntegration:
         delete_response = requests.delete(
             self.get_url("/candidate"),
             json={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert delete_response.status_code == status.HTTP_200_OK
         assert candidate_id in delete_response.json()["deleted_ids"]
@@ -830,7 +827,7 @@ class TestCandidateAPIIntegration:
         verify_response = requests.get(
             self.get_url("/candidate"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert verify_response.status_code == status.HTTP_200_OK
         assert len(verify_response.json()) == 0  # Should be empty
@@ -847,15 +844,16 @@ class TestCandidateAPIIntegration:
                     "dec": -85.0 - i,
                     "discovery_date": "2019-04-26T02:00:00.000000",
                     "discovery_magnitude": 22.0 + i * 0.1,
-                    "magnitude_unit": "ab_mag"
-                } for i in range(5)
-            ]
+                    "magnitude_unit": "ab_mag",
+                }
+                for i in range(5)
+            ],
         }
 
         create_response = requests.post(
             self.get_url("/candidate"),
             json=candidates_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         candidate_ids = create_response.json()["candidate_ids"]
@@ -865,7 +863,7 @@ class TestCandidateAPIIntegration:
         delete_response = requests.delete(
             self.get_url("/candidate"),
             json={"ids": candidate_ids},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert delete_response.status_code == status.HTTP_200_OK
         assert len(delete_response.json()["deleted_ids"]) == 5
@@ -888,14 +886,14 @@ class TestCandidateAPIIntegration:
                 "tns_url": "https://www.wis-tns.org/object/2019complete",
                 "associated_galaxy": "NGC_Complete",
                 "associated_galaxy_redshift": 0.1,
-                "associated_galaxy_distance": 450.5
-            }
+                "associated_galaxy_distance": 450.5,
+            },
         }
 
         response = requests.post(
             self.get_url("/candidate"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
         assert len(response.json()["candidate_ids"]) == 1
@@ -906,7 +904,7 @@ class TestCandidateAPIIntegration:
         get_response = requests.get(
             self.get_url("/candidate"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         candidate = get_response.json()[0]
         assert candidate["tns_name"] == "2019complete"

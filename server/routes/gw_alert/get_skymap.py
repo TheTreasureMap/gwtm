@@ -21,17 +21,15 @@ router = APIRouter(tags=["gw_alerts"])
     responses={
         200: {
             "content": {"application/fits": {}},
-            "description": "The skymap FITS file for the specified gravitational wave event"
+            "description": "The skymap FITS file for the specified gravitational wave event",
         },
-        404: {
-            "description": "Skymap not found for the specified event"
-        }
-    }
+        404: {"description": "Skymap not found for the specified event"},
+    },
 )
 async def get_gw_skymap(
-        graceid: str = Query(..., description="Grace ID of the GW event"),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    graceid: str = Query(..., description="Grace ID of the GW event"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Get the skymap FITS file for a gravitational wave alert.
@@ -46,7 +44,12 @@ async def get_gw_skymap(
     graceid = GWAlert.graceidfromalternate(graceid)
 
     # Get the latest alert for this graceid
-    alerts = db.query(GWAlert).filter(GWAlert.graceid == graceid).order_by(GWAlert.datecreated.desc()).all()
+    alerts = (
+        db.query(GWAlert)
+        .filter(GWAlert.graceid == graceid)
+        .order_by(GWAlert.datecreated.desc())
+        .all()
+    )
 
     if not alerts:
         raise not_found_exception(f"No alert found with graceid: {graceid}")
@@ -64,8 +67,12 @@ async def get_gw_skymap(
 
     # Download and return the file
     try:
-        file_content = download_gwtm_file(filename=skymap_path, source=settings.STORAGE_BUCKET_SOURCE, config=settings,
-                                          decode=False)
+        file_content = download_gwtm_file(
+            filename=skymap_path,
+            source=settings.STORAGE_BUCKET_SOURCE,
+            config=settings,
+            decode=False,
+        )
 
         # Create a streaming response with the binary content
         filename = f"{graceid}_skymap.fits.gz"
@@ -74,8 +81,8 @@ async def get_gw_skymap(
             media_type="application/fits",
             headers={
                 "Content-Disposition": f"attachment; filename={filename}",
-                "Content-Type": "application/fits"
-            }
+                "Content-Type": "application/fits",
+            },
         )
     except Exception as e:
         raise not_found_exception(f"Error in retrieving skymap file: {skymap_path}")

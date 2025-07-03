@@ -7,6 +7,7 @@ from datetime import datetime
 
 class DOIAuthorBase(BaseModel):
     """Base schema for DOI author data."""
+
     name: str
     affiliation: str
     orcid: Optional[str] = None
@@ -16,11 +17,13 @@ class DOIAuthorBase(BaseModel):
 
 class DOIAuthorCreate(DOIAuthorBase):
     """Schema for creating a new DOI author."""
+
     author_groupid: int
 
 
 class DOIAuthorSchema(DOIAuthorBase):
     """Schema for returning a DOI author."""
+
     id: int
     author_groupid: int
 
@@ -29,17 +32,20 @@ class DOIAuthorSchema(DOIAuthorBase):
 
 class DOIAuthorGroupBase(BaseModel):
     """Base schema for DOI author group data."""
+
     name: str
     userid: Optional[int] = None
 
 
 class DOIAuthorGroupCreate(DOIAuthorGroupBase):
     """Schema for creating a new DOI author group."""
+
     pass
 
 
 class DOIAuthorGroupSchema(DOIAuthorGroupBase):
     """Schema for returning a DOI author group."""
+
     id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -47,6 +53,7 @@ class DOIAuthorGroupSchema(DOIAuthorGroupBase):
 
 class DOICreator(BaseModel):
     """Schema for a DOI creator."""
+
     name: str
     affiliation: str
     orcid: Optional[str] = None
@@ -55,6 +62,7 @@ class DOICreator(BaseModel):
 
 class DOIPointingInfo(BaseModel):
     """Schema for DOI pointing information."""
+
     id: int
     graceid: str
     instrument_name: str
@@ -65,17 +73,20 @@ class DOIPointingInfo(BaseModel):
 
 class DOIPointingsResponse(BaseModel):
     """Schema for DOI pointings response."""
+
     pointings: List[DOIPointingInfo]
 
 
 class DOIRequestResponse(BaseModel):
     """Schema for DOI request response."""
+
     DOI_URL: Optional[str] = None
     WARNINGS: List[Any] = []
 
 
 class DOIMetadata(BaseModel):
     """Schema for DOI metadata."""
+
     doi: str
     creators: List[DOICreator]
     titles: List[Dict[str, str]]
@@ -88,6 +99,7 @@ class DOIMetadata(BaseModel):
 
 class DOICreate(BaseModel):
     """Schema for creating a new DOI."""
+
     points: List[int]
     graceid: str
     creators: List[DOICreator]

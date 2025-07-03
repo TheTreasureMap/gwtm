@@ -22,21 +22,23 @@ SMTP_PASSWORD = settings.MAIL_PASSWORD
 SENDER_EMAIL = settings.MAIL_DEFAULT_SENDER
 BASE_URL = "http://localhost:8000"  # This should be configured in settings as well
 
+
 def create_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT token with optional expiration
     """
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, EMAIL_SECRET_KEY, algorithm=EMAIL_ALGORITHM)
-    
+
     return encoded_jwt
+
 
 def verify_token(token: str) -> dict:
     """
@@ -48,6 +50,7 @@ def verify_token(token: str) -> dict:
     except jwt.PyJWTError:
         raise HTTPException(status_code=400, detail="Invalid token")
 
+
 def send_account_validation_email(user, db: Session) -> None:
     """
     Send an account validation email to a user
@@ -55,15 +58,15 @@ def send_account_validation_email(user, db: Session) -> None:
     # Generate token
     token = create_token(
         data={"sub": user.email, "id": user.id},
-        expires_delta=timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS)
+        expires_delta=timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS),
     )
-    
+
     # Create verification URL
     verification_url = f"{BASE_URL}/verify-account?token={token}"
-    
+
     # Email subject and content
     subject = "Verify your GWTM account"
-    
+
     # Email content - HTML
     html_content = f"""
     <html>
@@ -94,7 +97,7 @@ def send_account_validation_email(user, db: Session) -> None:
     </body>
     </html>
     """
-    
+
     # Email content - Plain text
     text_content = f"""
     Welcome to GWTM!
@@ -108,10 +111,10 @@ def send_account_validation_email(user, db: Session) -> None:
     
     If you did not register for a GWTM account, please ignore this email.
     """
-    
+
     # In a development environment, we might just log the verification URL
     print(f"Verification URL for {user.email}: {verification_url}")
-    
+
     # In a production environment, we would send the actual email
     try:
         # Create message
@@ -119,13 +122,13 @@ def send_account_validation_email(user, db: Session) -> None:
         message["Subject"] = subject
         message["From"] = SENDER_EMAIL
         message["To"] = user.email
-        
+
         # Attach parts
         part1 = MIMEText(text_content, "plain")
         part2 = MIMEText(html_content, "html")
         message.attach(part1)
         message.attach(part2)
-        
+
         # Connect to server and send
         # In a real environment, use a proper production setup
         # This is commented out to avoid actual email sending
@@ -135,20 +138,21 @@ def send_account_validation_email(user, db: Session) -> None:
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, user.email, message.as_string())
         """
-        
+
         # For development, we could save the email to a file
         # email_path = Path(f"./emails/{user.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.html")
         # email_path.parent.mkdir(exist_ok=True)
         # email_path.write_text(html_content)
-        
+
         # Update the user's token
         user.token = token
         db.commit()
-        
+
         return True
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+
 
 def send_password_reset_email(user, db: Session) -> None:
     """
@@ -157,15 +161,15 @@ def send_password_reset_email(user, db: Session) -> None:
     # Generate token
     token = create_token(
         data={"sub": user.email, "id": user.id, "type": "password_reset"},
-        expires_delta=timedelta(hours=1)  # Shorter expiry for password resets
+        expires_delta=timedelta(hours=1),  # Shorter expiry for password resets
     )
-    
+
     # Create reset URL
     reset_url = f"{BASE_URL}/reset-password?token={token}"
-    
+
     # Email subject and content
     subject = "Reset your GWTM password"
-    
+
     # Email content - HTML
     html_content = f"""
     <html>
@@ -196,7 +200,7 @@ def send_password_reset_email(user, db: Session) -> None:
     </body>
     </html>
     """
-    
+
     # Email content - Plain text
     text_content = f"""
     Password Reset Request
@@ -210,10 +214,10 @@ def send_password_reset_email(user, db: Session) -> None:
     
     If you did not request a password reset, please ignore this email.
     """
-    
+
     # In a development environment, we might just log the reset URL
     print(f"Password reset URL for {user.email}: {reset_url}")
-    
+
     # Store the token in the user record
     user.reset_token = token
     user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)

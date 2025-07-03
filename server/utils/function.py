@@ -16,6 +16,7 @@ from server.core.enums.pointingstatus import PointingStatus
 from server.db.models.pointing import Pointing
 from server.schemas.pointing import PointingSchema
 
+
 def isInt(s) -> bool:
     """Check if a value can be converted to an integer."""
     try:
@@ -37,52 +38,52 @@ def isFloat(s) -> bool:
 def get_farrate_farunit(far: float) -> Tuple[float, str]:
     """
     Convert FAR (False Alarm Rate) to human readable format.
-    
+
     Args:
         far: False Alarm Rate in Hz
-    
+
     Returns:
         Tuple of (rate, unit) where unit is a time unit (years, days, hours, etc.)
     """
     far_rate_dict = {
-        'second': 1 / far,
-        'minute': 1 / far / 60,
-        'hour': 1 / far / 3600,
-        'day': 1 / far / 3600 / 24,
-        'month': 1 / far / 3600 / 24 / 30,
-        'year': 1 / far / 3600 / 24 / 365,
-        'decade': 1 / far / 3600 / 24 / 365 / 10,
-        'century': 1 / far / 3600 / 24 / 365 / 100,
-        'millennium': 1 / far / 3600 / 24 / 365 / 1000,
+        "second": 1 / far,
+        "minute": 1 / far / 60,
+        "hour": 1 / far / 3600,
+        "day": 1 / far / 3600 / 24,
+        "month": 1 / far / 3600 / 24 / 30,
+        "year": 1 / far / 3600 / 24 / 365,
+        "decade": 1 / far / 3600 / 24 / 365 / 10,
+        "century": 1 / far / 3600 / 24 / 365 / 100,
+        "millennium": 1 / far / 3600 / 24 / 365 / 1000,
     }
 
-    if far_rate_dict['second'] < 60:
-        return far_rate_dict['second'], 'seconds'
-    if far_rate_dict['minute'] < 60:
-        return far_rate_dict['minute'], 'minutes'
-    if far_rate_dict['hour'] < 24:
-        return far_rate_dict['hour'], 'hours'
-    if far_rate_dict['day'] < 30:
-        return far_rate_dict['day'], 'days'
-    if far_rate_dict['month'] < 12:
-        return far_rate_dict['month'], 'months'
-    if far_rate_dict['year'] < 10:
-        return far_rate_dict['year'], 'years'
-    if far_rate_dict['decade'] < 10:
-        return far_rate_dict['decade'], 'decades'
-    if far_rate_dict['century'] < 10:
-        return far_rate_dict['century'], 'centuries'
+    if far_rate_dict["second"] < 60:
+        return far_rate_dict["second"], "seconds"
+    if far_rate_dict["minute"] < 60:
+        return far_rate_dict["minute"], "minutes"
+    if far_rate_dict["hour"] < 24:
+        return far_rate_dict["hour"], "hours"
+    if far_rate_dict["day"] < 30:
+        return far_rate_dict["day"], "days"
+    if far_rate_dict["month"] < 12:
+        return far_rate_dict["month"], "months"
+    if far_rate_dict["year"] < 10:
+        return far_rate_dict["year"], "years"
+    if far_rate_dict["decade"] < 10:
+        return far_rate_dict["decade"], "decades"
+    if far_rate_dict["century"] < 10:
+        return far_rate_dict["century"], "centuries"
 
-    return far_rate_dict['millennium'], 'millennia'
+    return far_rate_dict["millennium"], "millennia"
 
 
 def sanatize_pointing(position: str) -> Tuple[float, float]:
     """
     Extract RA and Dec from a position string.
-    
+
     Args:
         position: String representation of a point, e.g., "POINT(123.456 -45.678)"
-    
+
     Returns:
         Tuple of (ra, dec) as floats
     """
@@ -95,13 +96,15 @@ def sanatize_pointing(position: str) -> Tuple[float, float]:
         return 0.0, 0.0
 
 
-def sanatize_footprint_ccds(footprint_ccds: List[str]) -> List[List[Tuple[float, float]]]:
+def sanatize_footprint_ccds(
+    footprint_ccds: List[str],
+) -> List[List[Tuple[float, float]]]:
     """
     Convert footprint strings to coordinate lists.
-    
+
     Args:
         footprint_ccds: List of footprint strings (WKT format)
-    
+
     Returns:
         List of coordinate lists, where each coordinate is an (ra, dec) tuple
     """
@@ -122,20 +125,20 @@ def sanatize_footprint_ccds(footprint_ccds: List[str]) -> List[List[Tuple[float,
 
 
 def project_footprint(
-        footprint: List[Tuple[float, float]],
-        ra: float,
-        dec: float,
-        pos_angle: Optional[float] = None
+    footprint: List[Tuple[float, float]],
+    ra: float,
+    dec: float,
+    pos_angle: Optional[float] = None,
 ) -> List[Tuple[float, float]]:
     """
     Project a footprint to a new position with optional rotation.
-    
+
     Args:
         footprint: List of (ra, dec) tuples defining the footprint
         ra: Right ascension of the center
         dec: Declination of the center
         pos_angle: Position angle for rotation (degrees)
-    
+
     Returns:
         Projected footprint as a list of (ra, dec) tuples
     """
@@ -154,8 +157,12 @@ def project_footprint(
         angle_rad = math.radians(pos_angle)
         rotated_offsets = []
         for i in range(len(ra_offsets)):
-            new_ra_offset = ra_offsets[i] * math.cos(angle_rad) - dec_offsets[i] * math.sin(angle_rad)
-            new_dec_offset = ra_offsets[i] * math.sin(angle_rad) + dec_offsets[i] * math.cos(angle_rad)
+            new_ra_offset = ra_offsets[i] * math.cos(angle_rad) - dec_offsets[
+                i
+            ] * math.sin(angle_rad)
+            new_dec_offset = ra_offsets[i] * math.sin(angle_rad) + dec_offsets[
+                i
+            ] * math.cos(angle_rad)
             rotated_offsets.append((new_ra_offset, new_dec_offset))
         ra_offsets = [offset[0] for offset in rotated_offsets]
         dec_offsets = [offset[1] for offset in rotated_offsets]
@@ -174,14 +181,16 @@ def project_footprint(
     return projected_footprint
 
 
-def polygons2footprints(polygons: List[List[List[float]]], time: float = 0) -> List[Dict[str, Any]]:
+def polygons2footprints(
+    polygons: List[List[List[float]]], time: float = 0
+) -> List[Dict[str, Any]]:
     """
     Convert list of polygon coordinates to footprint objects with time.
-    
+
     Args:
         polygons: List of polygon coordinate lists
         time: Time value to associate with the footprints
-    
+
     Returns:
         List of footprint objects with 'polygon' and 'time' keys
     """
@@ -189,10 +198,7 @@ def polygons2footprints(polygons: List[List[List[float]]], time: float = 0) -> L
     for poly in polygons:
         # Convert from [lon, lat] to [ra, dec]
         footprint = [(coord[0], coord[1]) for coord in poly]
-        footprints.append({
-            "polygon": footprint,
-            "time": time
-        })
+        footprints.append({"polygon": footprint, "time": time})
     return footprints
 
 
@@ -209,7 +215,7 @@ def sanatize_gal_info(galaxy_entry, galaxy_list) -> Dict[str, Any]:
     """
     info_dict = {}
 
-    if hasattr(galaxy_entry, 'info') and galaxy_entry.info:
+    if hasattr(galaxy_entry, "info") and galaxy_entry.info:
         # Check if info is already a dict (SQLAlchemy JSON column) or a string
         if isinstance(galaxy_entry.info, dict):
             info_dict = galaxy_entry.info.copy()
@@ -223,32 +229,39 @@ def sanatize_gal_info(galaxy_entry, galaxy_list) -> Dict[str, Any]:
             info_dict = {}
 
     # Add galaxy list information
-    info_dict["Group"] = galaxy_list.groupname if hasattr(galaxy_list, 'groupname') else ""
-    info_dict["Score"] = galaxy_entry.score if hasattr(galaxy_entry, 'score') else ""
-    info_dict["Rank"] = galaxy_entry.rank if hasattr(galaxy_entry, 'rank') else ""
+    info_dict["Group"] = (
+        galaxy_list.groupname if hasattr(galaxy_list, "groupname") else ""
+    )
+    info_dict["Score"] = galaxy_entry.score if hasattr(galaxy_entry, "score") else ""
+    info_dict["Rank"] = galaxy_entry.rank if hasattr(galaxy_entry, "rank") else ""
 
     return info_dict
+
 
 def sanatize_icecube_event(event, notice) -> Dict[str, Any]:
     """
     Format IceCube event information for display.
-    
+
     Args:
         event: An IceCube event object
         notice: The parent IceCube notice object
-    
+
     Returns:
         Formatted IceCube event information as a dictionary
     """
     info_dict = {
-        "Event ID": event.id if hasattr(event, 'id') else "",
-        "Notice ID": notice.id if hasattr(notice, 'id') else "",
-        "RA": event.ra if hasattr(event, 'ra') else "",
-        "Dec": event.dec if hasattr(event, 'dec') else "",
-        "Uncertainty": event.ra_uncertainty if hasattr(event, 'ra_uncertainty') else "",
-        "Event p-value (generic)": event.event_pval_generic if hasattr(event, 'event_pval_generic') else "",
-        "Event p-value (Bayesian)": event.event_pval_bayesian if hasattr(event, 'event_pval_bayesian') else "",
-        "Event DT": event.event_dt if hasattr(event, 'event_dt') else "",
+        "Event ID": event.id if hasattr(event, "id") else "",
+        "Notice ID": notice.id if hasattr(notice, "id") else "",
+        "RA": event.ra if hasattr(event, "ra") else "",
+        "Dec": event.dec if hasattr(event, "dec") else "",
+        "Uncertainty": event.ra_uncertainty if hasattr(event, "ra_uncertainty") else "",
+        "Event p-value (generic)": (
+            event.event_pval_generic if hasattr(event, "event_pval_generic") else ""
+        ),
+        "Event p-value (Bayesian)": (
+            event.event_pval_bayesian if hasattr(event, "event_pval_bayesian") else ""
+        ),
+        "Event DT": event.event_dt if hasattr(event, "event_dt") else "",
     }
 
     return info_dict
@@ -257,29 +270,48 @@ def sanatize_icecube_event(event, notice) -> Dict[str, Any]:
 def sanatize_candidate_info(candidate, ra, dec) -> Dict[str, Any]:
     """
     Format candidate information for display.
-    
+
     Args:
         candidate: A candidate object
         ra: Right ascension
         dec: Declination
-    
+
     Returns:
         Formatted candidate information as a dictionary
     """
     info_dict = {
-        "Candidate Name": candidate.candidate_name if hasattr(candidate, 'candidate_name') else "",
-        "TNS Name": candidate.tns_name if hasattr(candidate, 'tns_name') else "",
-        "TNS URL": candidate.tns_url if hasattr(candidate, 'tns_url') else "",
+        "Candidate Name": (
+            candidate.candidate_name if hasattr(candidate, "candidate_name") else ""
+        ),
+        "TNS Name": candidate.tns_name if hasattr(candidate, "tns_name") else "",
+        "TNS URL": candidate.tns_url if hasattr(candidate, "tns_url") else "",
         "RA": ra,
         "Dec": dec,
-        "Discovery Date": candidate.discovery_date.isoformat() if hasattr(candidate,
-                                                                          'discovery_date') and candidate.discovery_date else "",
-        "Discovery Magnitude": candidate.discovery_magnitude if hasattr(candidate, 'discovery_magnitude') else "",
-        "Associated Galaxy": candidate.associated_galaxy if hasattr(candidate, 'associated_galaxy') else "",
-        "Associated Galaxy Redshift": candidate.associated_galaxy_redshift if hasattr(candidate,
-                                                                                      'associated_galaxy_redshift') else "",
-        "Associated Galaxy Distance": candidate.associated_galaxy_distance if hasattr(candidate,
-                                                                                      'associated_galaxy_distance') else "",
+        "Discovery Date": (
+            candidate.discovery_date.isoformat()
+            if hasattr(candidate, "discovery_date") and candidate.discovery_date
+            else ""
+        ),
+        "Discovery Magnitude": (
+            candidate.discovery_magnitude
+            if hasattr(candidate, "discovery_magnitude")
+            else ""
+        ),
+        "Associated Galaxy": (
+            candidate.associated_galaxy
+            if hasattr(candidate, "associated_galaxy")
+            else ""
+        ),
+        "Associated Galaxy Redshift": (
+            candidate.associated_galaxy_redshift
+            if hasattr(candidate, "associated_galaxy_redshift")
+            else ""
+        ),
+        "Associated Galaxy Distance": (
+            candidate.associated_galaxy_distance
+            if hasattr(candidate, "associated_galaxy_distance")
+            else ""
+        ),
     }
 
     return info_dict
@@ -288,19 +320,19 @@ def sanatize_candidate_info(candidate, ra, dec) -> Dict[str, Any]:
 def sanatize_XRT_source_info(source) -> Dict[str, Any]:
     """
     Format XRT source information for display.
-    
+
     Args:
         source: An XRT source object
-    
+
     Returns:
         Formatted XRT source information as a dictionary
     """
     info_dict = {
-        "Alert Identifier": source.get('alert_identifier', ''),
-        "RA": source.get('right_ascension', ''),
-        "Dec": source.get('declination', ''),
-        "Significance": source.get('significance', ''),
-        "URL": source.get('url', ''),
+        "Alert Identifier": source.get("alert_identifier", ""),
+        "RA": source.get("right_ascension", ""),
+        "Dec": source.get("declination", ""),
+        "Significance": source.get("significance", ""),
+        "URL": source.get("url", ""),
     }
 
     return info_dict
@@ -309,17 +341,17 @@ def sanatize_XRT_source_info(source) -> Dict[str, Any]:
 def by_chunk(items: List[Any], n: int) -> List[List[Any]]:
     """
     Split a list into chunks of size n.
-    
+
     Args:
         items: The list to split
         n: The size of each chunk
-    
+
     Returns:
         List of chunks
     """
     chunks = []
     for i in range(0, len(items), n):
-        chunks.append(items[i:i + n])
+        chunks.append(items[i : i + n])
     return chunks
 
 
@@ -336,13 +368,17 @@ def floatNone(i):
 def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
     if dist_thresh is None:
 
-        filtered_pointings = [x for x in otherpointings if (
-                x.status == pointing.status and \
-                x.instrumentid == int(pointing.instrumentid) and \
-                x.band == pointing.band and \
-                x.time == pointing.time and \
-                x.pos_angle == floatNone(pointing.pos_angle)
-        )]
+        filtered_pointings = [
+            x
+            for x in otherpointings
+            if (
+                x.status == pointing.status
+                and x.instrumentid == int(pointing.instrumentid)
+                and x.band == pointing.band
+                and x.time == pointing.time
+                and x.pos_angle == floatNone(pointing.pos_angle)
+            )
+        ]
 
         for p in filtered_pointings:
             p_pos = str(geoalchemy2.shape.to_shape(p.position))
@@ -353,11 +389,15 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 
         p_ra, p_dec = sanatize_pointing(pointing.position)
 
-        filtered_pointings = [x for x in otherpointings if (
-                x.status == pointing.status and \
-                x.instrumentid == int(pointing.instrumentid) and \
-                x.band == pointing.band
-        )]
+        filtered_pointings = [
+            x
+            for x in otherpointings
+            if (
+                x.status == pointing.status
+                and x.instrumentid == int(pointing.instrumentid)
+                and x.band == pointing.band
+            )
+        ]
 
         for p in filtered_pointings:
             ra, dec = sanatize_pointing(str(geoalchemy2.shape.to_shape(p.position)))
@@ -370,48 +410,62 @@ def pointing_crossmatch(pointing, otherpointings, dist_thresh=None):
 
 def create_doi(payload):
     ACCESS_TOKEN = config.settings.ZENODO_ACCESS_KEY
-    data = payload['data']
-    data_file = payload['data_file']
-    files = payload['files']
-    headers = payload['headers']
+    data = payload["data"]
+    data_file = payload["data_file"]
+    files = payload["files"]
+    headers = payload["headers"]
 
-    r = requests.post('https://zenodo.org/api/deposit/depositions', params={'access_token': ACCESS_TOKEN}, json={},
-                      headers=headers)
+    r = requests.post(
+        "https://zenodo.org/api/deposit/depositions",
+        params={"access_token": ACCESS_TOKEN},
+        json={},
+        headers=headers,
+    )
 
     if r.status_code == 403:
         return None, None
 
-    d_id = r.json()['id']
-    r = requests.post('https://zenodo.org/api/deposit/depositions/%s/files' % d_id,
-                      params={'access_token': ACCESS_TOKEN}, data=data_file, files=files)
-    r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % d_id, data=json.dumps(data),
-                     params={'access_token': ACCESS_TOKEN}, headers=headers)
-    r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % d_id,
-                      params={'access_token': ACCESS_TOKEN})
+    d_id = r.json()["id"]
+    r = requests.post(
+        "https://zenodo.org/api/deposit/depositions/%s/files" % d_id,
+        params={"access_token": ACCESS_TOKEN},
+        data=data_file,
+        files=files,
+    )
+    r = requests.put(
+        "https://zenodo.org/api/deposit/depositions/%s" % d_id,
+        data=json.dumps(data),
+        params={"access_token": ACCESS_TOKEN},
+        headers=headers,
+    )
+    r = requests.post(
+        "https://zenodo.org/api/deposit/depositions/%s/actions/publish" % d_id,
+        params={"access_token": ACCESS_TOKEN},
+    )
 
     return_json = r.json()
     try:
-        doi_url = return_json['doi_url']
+        doi_url = return_json["doi_url"]
     except:  # noqa: E722
         doi_url = None
     return int(d_id), doi_url
 
 
 def create_pointing_doi(
-        points: List[Pointing],
-        graceid: str,
-        creators: List[Dict[str, str]],
-        instrument_names: List[str]
+    points: List[Pointing],
+    graceid: str,
+    creators: List[Dict[str, str]],
+    instrument_names: List[str],
 ) -> Tuple[int, Optional[str]]:
     """
     Create a DOI for pointings.
-    
+
     Args:
         points: List of pointing objects
         graceid: Grace ID of the event
         creators: List of creator dictionaries
         instrument_names: List of instrument names
-    
+
     Returns:
         Tuple of (doi_id, doi_url)
     """
@@ -431,22 +485,33 @@ def create_pointing_doi(
 
         inst_str += " instruments."
     else:
-        inst_str = "These observations were taken on the " + instrument_names[0] + " instrument."
+        inst_str = (
+            "These observations were taken on the "
+            + instrument_names[0]
+            + " instrument."
+        )
 
     if len(points_json):
         payload = {
-            'data': {
+            "data": {
                 "metadata": {
-                    "title": "Submitted Completed pointings to the Gravitational Wave Treasure Map for event " + graceid,
+                    "title": "Submitted Completed pointings to the Gravitational Wave Treasure Map for event "
+                    + graceid,
                     "upload_type": "dataset",
                     "creators": creators,
-                    "description": "Attached in a .json file is the completed pointing information for " + str(
-                        len(points_json)) + " observation(s) for the EM counterpart search associated with the gravitational wave event " + graceid + ". " + inst_str
+                    "description": "Attached in a .json file is the completed pointing information for "
+                    + str(len(points_json))
+                    + " observation(s) for the EM counterpart search associated with the gravitational wave event "
+                    + graceid
+                    + ". "
+                    + inst_str,
                 }
             },
-            'data_file': {'name': 'completed_pointings_' + graceid + '.json'},
-            'files': {'file': json.dumps([p.model_dump(mode="json") for p in points_json])},
-            'headers': {"Content-Type": "application/json"},
+            "data_file": {"name": "completed_pointings_" + graceid + ".json"},
+            "files": {
+                "file": json.dumps([p.model_dump(mode="json") for p in points_json])
+            },
+            "headers": {"Content-Type": "application/json"},
         }
 
         d_id, url = create_doi(payload)
@@ -456,22 +521,22 @@ def create_pointing_doi(
 
 
 def create_galaxy_score_doi(
-        galaxies: List[Any],
-        creators: List[Dict[str, str]],
-        reference: Optional[str],
-        graceid: str,
-        alert_type: str
+    galaxies: List[Any],
+    creators: List[Dict[str, str]],
+    reference: Optional[str],
+    graceid: str,
+    alert_type: str,
 ) -> Tuple[int, Optional[str]]:
     """
     Create a DOI for galaxy scores.
-    
+
     Args:
         galaxies: List of galaxy objects
         creators: List of creator dictionaries
         reference: Reference information
         graceid: Grace ID of the event
         alert_type: Type of the alert
-    
+
     Returns:
         Tuple of (doi_id, doi_url)
     """
@@ -497,19 +562,23 @@ def create_galaxy_score_doi(
         "publisher": "Gravitational-Wave Treasure Map",
         "publicationYear": date[:4],
         "resourceType": {"resourceTypeGeneral": "Dataset"},
-        "descriptions": [{
-            "description": f"Galaxy candidates for gravitational-wave event {graceid}",
-            "descriptionType": "Abstract"
-        }]
+        "descriptions": [
+            {
+                "description": f"Galaxy candidates for gravitational-wave event {graceid}",
+                "descriptionType": "Abstract",
+            }
+        ],
     }
 
     # Add reference if provided
     if reference:
-        metadata["relatedIdentifiers"] = [{
-            "relatedIdentifier": reference,
-            "relatedIdentifierType": "DOI",
-            "relationType": "References"
-        }]
+        metadata["relatedIdentifiers"] = [
+            {
+                "relatedIdentifier": reference,
+                "relatedIdentifierType": "DOI",
+                "relationType": "References",
+            }
+        ]
 
     # In a real implementation, we would make an API call to the DOI service
     # e.g., DataCite, with the metadata

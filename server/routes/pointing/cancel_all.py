@@ -18,9 +18,9 @@ router = APIRouter(tags=["pointings"])
 
 @router.post("/cancel_all")
 async def cancel_all(
-        request: CancelAllRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    request: CancelAllRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Cancel all planned pointings for a specific GW event and instrument.
@@ -37,7 +37,7 @@ async def cancel_all(
         Pointing.submitterid == user.id,
         Pointing.instrumentid == request.instrumentid,
         Pointing.id == PointingEvent.pointingid,
-        PointingEvent.graceid == normalized_graceid
+        PointingEvent.graceid == normalized_graceid,
     ]
 
     # Query the pointings

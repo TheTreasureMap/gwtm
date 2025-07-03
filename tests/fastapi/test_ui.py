@@ -2,6 +2,7 @@
 Test UI-related endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 import json
@@ -22,7 +23,7 @@ class TestUIEndpoints:
     invalid_token = "invalid_token_123"
 
     # Known GraceIDs from test data
-    KNOWN_GRACEIDS = ['S190425z', 'S190426c', 'MS230101a', 'GW190521', 'MS190425a']
+    KNOWN_GRACEIDS = ["S190425z", "S190426c", "MS230101a", "GW190521", "MS190425a"]
 
     def get_url(self, endpoint):
         """Get full URL for an endpoint."""
@@ -34,13 +35,13 @@ class TestUIEndpoints:
             response = requests.get(
                 self.get_url("/ajax_alertinstruments_footprints"),
                 params={"graceid": graceid},
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
+
             if response.status_code == status.HTTP_200_OK:
                 data = response.json()
                 assert isinstance(data, list)
-                
+
                 # If data is returned, it should have the expected structure
                 if len(data) > 0:
                     overlay = data[0]
@@ -49,7 +50,7 @@ class TestUIEndpoints:
                     assert "color" in overlay
                     assert "contours" in overlay
                 return  # Found valid data, test passes
-            
+
         # If we get here, all GraceIDs failed - this might be valid if test data doesn't have footprints
         pytest.skip("No alert instrument footprints found in test data")
 
@@ -57,15 +58,10 @@ class TestUIEndpoints:
         """Test previewing a circular footprint."""
         response = requests.get(
             self.get_url("/ajax_preview_footprint"),
-            params={
-                "ra": 123.456,
-                "dec": -12.345,
-                "radius": 0.5,
-                "shape": "circle"
-            },
-            headers={"api_token": self.admin_token}
+            params={"ra": 123.456, "dec": -12.345, "radius": 0.5, "shape": "circle"},
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         # The response should be a JSON string containing plotly figure data
         assert isinstance(response.text, str)
@@ -85,11 +81,11 @@ class TestUIEndpoints:
                 "dec": -12.345,
                 "height": 0.5,
                 "width": 1.0,
-                "shape": "rectangle"
+                "shape": "rectangle",
             },
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         # The response should be a JSON string containing plotly figure data
         assert isinstance(response.text, str)
@@ -104,14 +100,10 @@ class TestUIEndpoints:
         """Test previewing a footprint with invalid shape."""
         response = requests.get(
             self.get_url("/ajax_preview_footprint"),
-            params={
-                "ra": 123.456,
-                "dec": -12.345,
-                "shape": "invalid"
-            },
-            headers={"api_token": self.admin_token}
+            params={"ra": 123.456, "dec": -12.345, "shape": "invalid"},
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "error" in data
@@ -126,22 +118,22 @@ class TestUIEndpoints:
                 "band_cov": "r,g,i",
                 "depth_cov": "20.0",
                 "depth_unit": "ab_mag",
-                "approx_cov": 1
+                "approx_cov": 1,
             }
-            
+
             response = requests.post(
                 self.get_url("/ajax_coverage_calculator"),
                 json=data,
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
+
             if response.status_code == status.HTTP_200_OK:
                 result = response.json()
                 assert "plot_html" in result
                 assert isinstance(result["plot_html"], str)
                 assert "<div" in result["plot_html"]
                 return  # Found valid data, test passes
-        
+
         # If we get here, all GraceIDs failed - this might be valid if test data doesn't have coverage info
         pytest.skip("No coverage data found in test data")
 
@@ -152,11 +144,11 @@ class TestUIEndpoints:
             params={
                 "band_cov": "r,g,i",
                 "spectral_type": "wavelength",
-                "spectral_unit": "nm"
+                "spectral_unit": "nm",
             },
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "total_min" in data
@@ -168,12 +160,12 @@ class TestUIEndpoints:
             self.get_url("/ajax_update_spectral_range_from_selected_bands"),
             params={
                 "band_cov": "",
-                "spectral_type": "wavelength", 
-                "spectral_unit": "nm"
+                "spectral_type": "wavelength",
+                "spectral_unit": "nm",
             },
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "total_min" in data
@@ -187,9 +179,9 @@ class TestUIEndpoints:
             response = requests.get(
                 self.get_url("/ajax_icecube_notice"),
                 params={"graceid": graceid},
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
+
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert isinstance(data, list)
@@ -202,26 +194,29 @@ class TestUIEndpoints:
             alerts_response = requests.get(
                 self.get_url("/api/v1/query_alerts"),
                 params={"graceid": graceid},
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
-            if alerts_response.status_code == status.HTTP_200_OK and len(alerts_response.json()) > 0:
+
+            if (
+                alerts_response.status_code == status.HTTP_200_OK
+                and len(alerts_response.json()) > 0
+            ):
                 alert = alerts_response.json()[0]
                 alert_id = alert["id"]
-                
+
                 # Now get galaxies for this alert
                 response = requests.get(
                     self.get_url("/ajax_event_galaxies"),
                     params={"alertid": alert_id},
-                    headers={"api_token": self.admin_token}
+                    headers={"api_token": self.admin_token},
                 )
-                
+
                 assert response.status_code == status.HTTP_200_OK
                 data = response.json()
                 assert isinstance(data, list)
                 # Note: data might be empty if there are no galaxies for this alert
                 return  # Found an alert, test passes
-        
+
         # If we get here, no alerts were found
         pytest.skip("No alerts found in test data")
 
@@ -231,9 +226,9 @@ class TestUIEndpoints:
             response = requests.get(
                 self.get_url("/ajax_candidate"),
                 params={"graceid": graceid},
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
+
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert isinstance(data, list)
@@ -246,49 +241,48 @@ class TestUIEndpoints:
             alerts_response = requests.get(
                 self.get_url("/api/v1/query_alerts"),
                 params={"graceid": graceid},
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
-            
-            if alerts_response.status_code == status.HTTP_200_OK and len(alerts_response.json()) > 0:
+
+            if (
+                alerts_response.status_code == status.HTTP_200_OK
+                and len(alerts_response.json()) > 0
+            ):
                 alert = alerts_response.json()[0]
                 alert_id = alert["id"]
                 alert_type = alert["alert_type"].lower()
-                
+
                 # Now get contour data
                 url_id = f"{alert_id}_{alert_type}"
                 response = requests.get(
                     self.get_url("/ajax_alerttype"),
                     params={"urlid": url_id},
-                    headers={"api_token": self.admin_token}
+                    headers={"api_token": self.admin_token},
                 )
-                
+
                 assert response.status_code == status.HTTP_200_OK
                 data = response.json()
                 assert "hidden_alertid" in data
                 assert "detection_overlays" in data
                 return  # Found an alert, test passes
-        
+
         # If we get here, no alerts were found
         pytest.skip("No alerts found in test data")
 
     def test_authentication_required(self):
         """Test that authentication is required for protected endpoints."""
-        endpoints = [
-            "/ajax_coverage_calculator",
-            "/ajax_request_doi"
-        ]
-        
+        endpoints = ["/ajax_coverage_calculator", "/ajax_request_doi"]
+
         for endpoint in endpoints:
             # POST endpoints
             if endpoint == "/ajax_coverage_calculator":
                 response = requests.post(
-                    self.get_url(endpoint),
-                    json={"graceid": self.KNOWN_GRACEIDS[0]}
+                    self.get_url(endpoint), json={"graceid": self.KNOWN_GRACEIDS[0]}
                 )
             else:
                 # GET endpoints
                 response = requests.get(self.get_url(endpoint))
-            
+
             assert response.status_code == 401
 
 

@@ -2,6 +2,7 @@
 Test event endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 from datetime import datetime
@@ -27,13 +28,12 @@ class TestEventEndpoints:
         return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
 
     # Known GraceIDs from test data
-    KNOWN_GRACEIDS = ['S190425z', 'S190426c', 'MS230101a', 'GW190521', 'MS190425a']
+    KNOWN_GRACEIDS = ["S190425z", "S190426c", "MS230101a", "GW190521", "MS190425a"]
 
     def test_query_alerts_no_params(self):
         """Test querying alerts without any parameters."""
         response = requests.get(
-            self.get_url("/query_alerts"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/query_alerts"), headers={"api_token": self.admin_token}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -50,7 +50,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/query_alerts"),
             params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -66,7 +66,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/query_alerts"),
             params={"alert_type": "Initial"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -80,11 +80,8 @@ class TestEventEndpoints:
         """Test querying alerts filtered by both graceid and alert type."""
         response = requests.get(
             self.get_url("/query_alerts"),
-            params={
-                "graceid": "S190425z",
-                "alert_type": "Initial"
-            },
-            headers={"api_token": self.admin_token}
+            params={"graceid": "S190425z", "alert_type": "Initial"},
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -112,13 +109,13 @@ class TestEventEndpoints:
             "prob_bns": 0.8,
             "prob_nsbh": 0.15,
             "prob_bbh": 0.03,
-            "prob_terrestrial": 0.02
+            "prob_terrestrial": 0.02,
         }
 
         response = requests.post(
             self.get_url("/post_alert"),
             json=alert_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -133,13 +130,13 @@ class TestEventEndpoints:
             "graceid": "TEST456",
             "alert_type": "Initial",
             "role": "test",
-            "observing_run": "O4"
+            "observing_run": "O4",
         }
 
         response = requests.post(
             self.get_url("/post_alert"),
             json=alert_data,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == 403
@@ -150,7 +147,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/gw_skymap"),
             params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         # Even if the file doesn't exist in test data, we should get a valid response
@@ -165,7 +162,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/gw_contour"),
             params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         # Even if the file doesn't exist in test data, we should get a valid response
@@ -180,7 +177,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/grb_moc_file"),
             params={"graceid": "S190425z", "instrument": "gbm"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         # Even if the file doesn't exist in test data, we should get a valid response
@@ -195,7 +192,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/grb_moc_file"),
             params={"graceid": "S190425z", "instrument": "invalid"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -208,21 +205,20 @@ class TestEventEndpoints:
             "graceid": f"MS{datetime.now().strftime('%y%m%d')}test",
             "alert_type": "Initial",
             "role": "test",
-            "observing_run": "O4"
+            "observing_run": "O4",
         }
 
         # Create the test alert
         create_response = requests.post(
             self.get_url("/post_alert"),
             json=alert_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
 
         # Now try to delete test alerts
         response = requests.post(
-            self.get_url("/del_test_alerts"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/del_test_alerts"), headers={"api_token": self.admin_token}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -231,8 +227,7 @@ class TestEventEndpoints:
     def test_del_test_alerts_unauthorized(self):
         """Test that non-admin users cannot delete test alerts."""
         response = requests.post(
-            self.get_url("/del_test_alerts"),
-            headers={"api_token": self.user_token}
+            self.get_url("/del_test_alerts"), headers={"api_token": self.user_token}
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -246,8 +241,7 @@ class TestEventEndpoints:
 
         # Request with invalid API token
         response = requests.get(
-            self.get_url("/query_alerts"),
-            headers={"api_token": self.invalid_token}
+            self.get_url("/query_alerts"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -256,8 +250,7 @@ class TestEventEndpoints:
         # All authenticated users should be able to query alerts
         for token in [self.admin_token, self.user_token, self.scientist_token]:
             response = requests.get(
-                self.get_url("/query_alerts"),
-                headers={"api_token": token}
+                self.get_url("/query_alerts"), headers={"api_token": token}
             )
             assert response.status_code == status.HTTP_200_OK
 
@@ -281,12 +274,12 @@ class TestEventAPIValidation:
         response = requests.post(
             self.get_url("/post_alert"),
             json=incomplete_alert,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         error_detail = response.json()["errors"]
-        missing_fields = [field['params']['field'] for field in error_detail]
+        missing_fields = [field["params"]["field"] for field in error_detail]
         assert "alert_type" in str(missing_fields)
         assert "role" in str(missing_fields)
 
@@ -298,13 +291,13 @@ class TestEventAPIValidation:
             "role": "test",
             "observing_run": "O4",
             "prob_bns": 1.5,  # Invalid probability > 1
-            "prob_nsbh": -0.2  # Invalid negative probability
+            "prob_nsbh": -0.2,  # Invalid negative probability
         }
 
         response = requests.post(
             self.get_url("/post_alert"),
             json=invalid_alert,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -314,8 +307,7 @@ class TestEventAPIValidation:
     def test_get_skymap_without_graceid(self):
         """Test getting skymap without providing graceid."""
         response = requests.get(
-            self.get_url("/gw_skymap"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/gw_skymap"), headers={"api_token": self.admin_token}
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -327,7 +319,7 @@ class TestEventAPIValidation:
         response = requests.get(
             self.get_url("/grb_moc_file"),
             params={"graceid": "S190425z"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -337,7 +329,7 @@ class TestEventAPIValidation:
         response = requests.get(
             self.get_url("/grb_moc_file"),
             params={"instrument": "gbm"},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -358,7 +350,7 @@ class TestEventAPIIntegration:
         # Step 1: Create new alert
         event_time = datetime.now().isoformat()
         unique_id = f"TEST{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+
         alert_data = {
             "graceid": unique_id,
             "alert_type": "Initial",
@@ -374,13 +366,13 @@ class TestEventAPIIntegration:
             "prob_bns": 0.75,
             "prob_nsbh": 0.15,
             "prob_bbh": 0.05,
-            "prob_terrestrial": 0.05
+            "prob_terrestrial": 0.05,
         }
 
         create_response = requests.post(
             self.get_url("/post_alert"),
             json=alert_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert create_response.status_code == status.HTTP_200_OK
         created_alert = create_response.json()
@@ -390,7 +382,7 @@ class TestEventAPIIntegration:
         query_response = requests.get(
             self.get_url("/query_alerts"),
             params={"graceid": unique_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert query_response.status_code == status.HTTP_200_OK
         queried_alerts = query_response.json()
@@ -400,8 +392,7 @@ class TestEventAPIIntegration:
 
         # Step 3: Clean up - delete the test alert using del_test_alerts
         delete_response = requests.post(
-            self.get_url("/del_test_alerts"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/del_test_alerts"), headers={"api_token": self.admin_token}
         )
         assert delete_response.status_code == status.HTTP_200_OK
 
@@ -409,7 +400,7 @@ class TestEventAPIIntegration:
         verify_response = requests.get(
             self.get_url("/query_alerts"),
             params={"graceid": unique_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert verify_response.status_code == status.HTTP_200_OK
         assert len(verify_response.json()) == 0  # Should be empty
@@ -418,19 +409,19 @@ class TestEventAPIIntegration:
         """Test creating and querying multiple alerts for the same event."""
         # Create base event ID
         event_id = f"TEST{datetime.now().strftime('%Y%m%d%H%M%S')}_MULTI"
-        
+
         # Create initial alert
         initial_alert = {
             "graceid": event_id,
             "alert_type": "Initial",
             "role": "test",
             "observing_run": "O4",
-            "description": "Multi-alert test - Initial"
+            "description": "Multi-alert test - Initial",
         }
         response = requests.post(
             self.get_url("/post_alert"),
             json=initial_alert,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
 
@@ -440,12 +431,12 @@ class TestEventAPIIntegration:
             "alert_type": "Update",
             "role": "test",
             "observing_run": "O4",
-            "description": "Multi-alert test - Update"
+            "description": "Multi-alert test - Update",
         }
         response = requests.post(
             self.get_url("/post_alert"),
             json=update_alert,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
 
@@ -453,12 +444,12 @@ class TestEventAPIIntegration:
         query_response = requests.get(
             self.get_url("/query_alerts"),
             params={"graceid": event_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
         assert query_response.status_code == status.HTTP_200_OK
         alerts = query_response.json()
         assert len(alerts) == 2
-        
+
         # Verify we have both alert types
         alert_types = [alert["alert_type"] for alert in alerts]
         assert "Initial" in alert_types
@@ -466,8 +457,7 @@ class TestEventAPIIntegration:
 
         # Clean up
         requests.post(
-            self.get_url("/del_test_alerts"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/del_test_alerts"), headers={"api_token": self.admin_token}
         )
 
 
@@ -480,56 +470,57 @@ class TestEventSpecificData:
     def test_known_event_s190425z(self):
         """Test querying the known S190425z event from test data."""
         headers = {"api_token": self.admin_token}
-        
+
         response = requests.get(
             f"{self.BASE_URL}/query_alerts",
             params={"graceid": "S190425z"},
-            headers=headers
+            headers=headers,
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         alerts = response.json()
         assert len(alerts) > 0
-        
+
         # Check expected fields in first alert
         alert = alerts[0]
         assert alert["graceid"] == "S190425z"
         assert "alert_type" in alert
         assert "far" in alert
         assert "time_of_signal" in alert
-        
+
         # Verify classification info is present
-        has_probs = any(key in alert for key in ["prob_bns", "prob_nsbh", "prob_bbh", "prob_terrestrial"])
+        has_probs = any(
+            key in alert
+            for key in ["prob_bns", "prob_nsbh", "prob_bbh", "prob_terrestrial"]
+        )
         assert has_probs
 
     def test_query_by_alert_properties(self):
         """Test querying events with BNS classification."""
         headers = {"api_token": self.admin_token}
-        
+
         # First get all alerts
-        response = requests.get(
-            f"{self.BASE_URL}/query_alerts",
-            headers=headers
-        )
-        
+        response = requests.get(f"{self.BASE_URL}/query_alerts", headers=headers)
+
         assert response.status_code == status.HTTP_200_OK
         all_alerts = response.json()
-        
+
         # Filter for BNS candidates (prob_bns > 0.9)
         bns_candidates = [
-            alert for alert in all_alerts 
+            alert
+            for alert in all_alerts
             if alert.get("prob_bns") is not None and alert.get("prob_bns") > 0.9
         ]
-        
+
         if bns_candidates:
             # Test querying one specific BNS candidate
             sample_bns = bns_candidates[0]
             response = requests.get(
                 f"{self.BASE_URL}/query_alerts",
                 params={"graceid": sample_bns["graceid"]},
-                headers=headers
+                headers=headers,
             )
-            
+
             assert response.status_code == status.HTTP_200_OK
             result = response.json()
             assert len(result) > 0

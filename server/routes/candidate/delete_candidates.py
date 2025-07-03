@@ -7,16 +7,20 @@ from server.db.database import get_db
 from server.db.models.candidate import GWCandidate
 from server.schemas.candidate import DeleteCandidateParams, DeleteCandidateResponse
 from server.auth.auth import get_current_user
-from server.utils.error_handling import not_found_exception, permission_exception, validation_exception
+from server.utils.error_handling import (
+    not_found_exception,
+    permission_exception,
+    validation_exception,
+)
 
 router = APIRouter(tags=["candidates"])
 
 
 @router.delete("/candidate", response_model=DeleteCandidateResponse)
 async def delete_candidates(
-        delete_params: DeleteCandidateParams = Body(..., description="Fields to delete"),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    delete_params: DeleteCandidateParams = Body(..., description="Fields to delete"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Delete candidate(s).
@@ -33,12 +37,18 @@ async def delete_candidates(
 
     # Handle single ID
     if delete_params.id is not None:
-        candidate = db.query(GWCandidate).filter(GWCandidate.id == delete_params.id).first()
+        candidate = (
+            db.query(GWCandidate).filter(GWCandidate.id == delete_params.id).first()
+        )
         if not candidate:
-            raise not_found_exception(f"No candidate found with 'id': {delete_params.id}")
+            raise not_found_exception(
+                f"No candidate found with 'id': {delete_params.id}"
+            )
 
         if candidate.submitterid != user.id:
-            raise permission_exception("Error: Unauthorized. Unable to alter other user's records")
+            raise permission_exception(
+                "Error: Unauthorized. Unable to alter other user's records"
+            )
 
         candidates_to_delete.append(candidate)
 
@@ -53,12 +63,14 @@ async def delete_candidates(
         # Filter candidates the user is allowed to delete
         candidates_to_delete.extend([x for x in candidates if x.submitterid == user.id])
         if len(candidates_to_delete) < len(candidates):
-            warnings.append("Some entries were not deleted. You cannot delete candidates you didn't submit")
+            warnings.append(
+                "Some entries were not deleted. You cannot delete candidates you didn't submit"
+            )
 
     else:
         raise validation_exception(
-            message="Missing required parameter", 
-            errors=["Either 'id' or 'ids' parameter is required"]
+            message="Missing required parameter",
+            errors=["Either 'id' or 'ids' parameter is required"],
         )
 
     # Delete the candidates
@@ -73,5 +85,5 @@ async def delete_candidates(
         return DeleteCandidateResponse(
             message=f"Successfully deleted {len(candidates_to_delete)} candidate(s)",
             deleted_ids=del_ids,
-            warnings=warnings
+            warnings=warnings,
         )

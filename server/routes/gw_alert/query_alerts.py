@@ -18,7 +18,7 @@ async def query_alerts(
     alert_type: Optional[str] = None,
     role: Optional[str] = None,
     db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    user=Depends(get_current_user),
 ):
     """
     Query GW alerts with optional filters.
@@ -42,6 +42,11 @@ async def query_alerts(
     if role:
         filter_conditions.append(GWAlert.role == role)
 
-    alerts = db.query(GWAlert).filter(*filter_conditions).order_by(GWAlert.datecreated.desc()).all()
+    alerts = (
+        db.query(GWAlert)
+        .filter(*filter_conditions)
+        .order_by(GWAlert.datecreated.desc())
+        .all()
+    )
 
     return alerts

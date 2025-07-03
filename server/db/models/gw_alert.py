@@ -3,15 +3,16 @@ from ..database import Base
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+
 class GWAlert(Base):
-    __tablename__ = 'gw_alert'
-    __table_args__ = {'schema': 'public'}
+    __tablename__ = "gw_alert"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True)
     datecreated = Column(DateTime, default=datetime.now)
     graceid = Column(String(50), nullable=False, index=True)
     alternateid = Column(String(50), index=True)
-    role = Column(String(20), default='observation', index=True)  # observation or test
+    role = Column(String(20), default="observation", index=True)  # observation or test
     timesent = Column(DateTime)
     time_of_signal = Column(DateTime, index=True)
     packet_type = Column(Integer)
@@ -49,22 +50,31 @@ class GWAlert(Base):
 
     def getClassification(self) -> str:
         """Get classification based on probabilities."""
-        if self.group == 'Burst':
-            return 'None (detected as burst)'
+        if self.group == "Burst":
+            return "None (detected as burst)"
 
         probs = [
             {"prob": self.prob_bns if self.prob_bns else 0.0, "class": "BNS"},
             {"prob": self.prob_nsbh if self.prob_nsbh else 0.0, "class": "NSBH"},
             {"prob": self.prob_bbh if self.prob_bbh else 0.0, "class": "BBH"},
-            {"prob": self.prob_terrestrial if self.prob_terrestrial else 0.0, "class": "Terrestrial"},
-            {"prob": self.prob_gap if self.prob_gap else 0.0, "class": "Mass Gap"}
+            {
+                "prob": self.prob_terrestrial if self.prob_terrestrial else 0.0,
+                "class": "Terrestrial",
+            },
+            {"prob": self.prob_gap if self.prob_gap else 0.0, "class": "Mass Gap"},
         ]
 
-        sorted_probs = sorted([x for x in probs if x['prob'] > 0.01], key=lambda i: i['prob'], reverse=True)
+        sorted_probs = sorted(
+            [x for x in probs if x["prob"] > 0.01],
+            key=lambda i: i["prob"],
+            reverse=True,
+        )
 
         classification = ""
         for p in sorted_probs:
-            classification += p["class"] + ": (" + str(round(100 * p['prob'], 1)) + "%) "
+            classification += (
+                p["class"] + ": (" + str(round(100 * p["prob"], 1)) + "%) "
+            )
 
         return classification
 
@@ -74,10 +84,10 @@ class GWAlert(Base):
         Convert alternate GraceIDs to standard format.
         Some GraceIDs might be provided in alternative formats like 'S190425z' instead of 'S190425z'.
         This method normalizes them.
-        
+
         Args:
             graceid: The GraceID to normalize
-            
+
         Returns:
             Normalized GraceID
         """
@@ -85,11 +95,11 @@ class GWAlert(Base):
         alias_map = {
             # Add specific mappings as discovered
         }
-        
+
         # Check if the graceid is in the alias map
         if graceid in alias_map:
             return alias_map[graceid]
-        
+
         # Remove any common prefixes/suffixes
         # Here we're just returning the original ID as there's no specific
         # transformation logic implemented yet
@@ -99,10 +109,10 @@ class GWAlert(Base):
     def alternatefromgraceid(graceid: str) -> str:
         """
         Convert standard GraceIDs to alternate format for specific uses.
-        
+
         Args:
             graceid: The standard GraceID
-            
+
         Returns:
             Alternate format GraceID
         """
@@ -110,10 +120,10 @@ class GWAlert(Base):
         reverse_alias_map = {
             # Add specific mappings as discovered
         }
-        
+
         # Check if the graceid is in the reverse alias map
         if graceid in reverse_alias_map:
             return reverse_alias_map[graceid]
-        
+
         # By default, return the original graceid
         return graceid

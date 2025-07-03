@@ -9,24 +9,24 @@ from server.utils.spectral import SpectralRangeHandler
 
 
 class Pointing(Base):
-    __tablename__ = 'pointing'
-    __table_args__ = {'schema': 'public'}
+    __tablename__ = "pointing"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True)
-    status = Column(Enum(pointing_status_enum, name='pointing_status'))
-    position = Column(Geography('POINT', srid=4326))
+    status = Column(Enum(pointing_status_enum, name="pointing_status"))
+    position = Column(Geography("POINT", srid=4326))
     galaxy_catalog = Column(Integer)
     galaxy_catalogid = Column(Integer)
     instrumentid = Column(Integer)
     depth = Column(Float)
     depth_err = Column(Float)
-    depth_unit = Column(Enum(DepthUnit, name='depth_unit'))
+    depth_unit = Column(Enum(DepthUnit, name="depth_unit"))
     time = Column(DateTime)
     datecreated = Column(DateTime)
     dateupdated = Column(DateTime)
     submitterid = Column(Integer)
     pos_angle = Column(Float)
-    band = Column(Enum(Bandpass, name='bandpass'))
+    band = Column(Enum(Bandpass, name="bandpass"))
     doi_url = Column(String(100))
     doi_id = Column(Integer)
     central_wave = Column(Float)
@@ -45,11 +45,17 @@ class Pointing(Base):
         encompassing; whether the endpoints are confined entirely within the provided range
         """
         if spectral_type == SpectralRangeHandler.spectralrangetype.wavelength:
-            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(self.central_wave, self.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(
+                self.central_wave, self.bandwidth
+            )
         elif spectral_type == SpectralRangeHandler.spectralrangetype.energy:
-            thismin, thismax = SpectralRangeHandler.wavetoEnergy(self.central_wave, self.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoEnergy(
+                self.central_wave, self.bandwidth
+            )
         elif spectral_type == SpectralRangeHandler.spectralrangetype.frequency:
-            thismin, thismax = SpectralRangeHandler.wavetoFrequency(self.central_wave, self.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoFrequency(
+                self.central_wave, self.bandwidth
+            )
         else:
             return False
 
@@ -64,11 +70,17 @@ class Pointing(Base):
         SQLAlchemy expression version of inSpectralRange for database queries
         """
         if spectral_type == SpectralRangeHandler.spectralrangetype.wavelength:
-            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(cls.central_wave, cls.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoWaveRange(
+                cls.central_wave, cls.bandwidth
+            )
         elif spectral_type == SpectralRangeHandler.spectralrangetype.energy:
-            thismin, thismax = SpectralRangeHandler.wavetoEnergy(cls.central_wave, cls.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoEnergy(
+                cls.central_wave, cls.bandwidth
+            )
         elif spectral_type == SpectralRangeHandler.spectralrangetype.frequency:
-            thismin, thismax = SpectralRangeHandler.wavetoFrequency(cls.central_wave, cls.bandwidth)
+            thismin, thismax = SpectralRangeHandler.wavetoFrequency(
+                cls.central_wave, cls.bandwidth
+            )
         else:
             return False
 

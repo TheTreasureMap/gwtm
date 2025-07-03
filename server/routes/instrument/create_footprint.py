@@ -18,29 +18,34 @@ router = APIRouter(tags=["instruments"])
 async def create_footprint(
     footprint: FootprintCCDCreate,
     db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    user=Depends(get_current_user),
 ):
     """
     Create a new footprint for an instrument.
-    
+
     Parameters:
     - footprint: Footprint data
-    
+
     Returns the created footprint
     """
     # Check if the instrument exists
-    instrument = db.query(Instrument).filter(Instrument.id == footprint.instrumentid).first()
+    instrument = (
+        db.query(Instrument).filter(Instrument.id == footprint.instrumentid).first()
+    )
     if not instrument:
-        raise not_found_exception(f"Instrument with ID {footprint.instrumentid} not found")
-    
+        raise not_found_exception(
+            f"Instrument with ID {footprint.instrumentid} not found"
+        )
+
     # Check permissions (only the instrument submitter can add footprints)
     if instrument.submitterid != user.id:
-        raise permission_exception("You don't have permission to add footprints to this instrument")
-    
+        raise permission_exception(
+            "You don't have permission to add footprints to this instrument"
+        )
+
     # Create a new footprint
     new_footprint = FootprintCCD(
-        instrumentid=footprint.instrumentid,
-        footprint=footprint.footprint  # WKT format
+        instrumentid=footprint.instrumentid, footprint=footprint.footprint  # WKT format
     )
 
     db.add(new_footprint)

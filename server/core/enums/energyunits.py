@@ -1,7 +1,9 @@
 from enum import IntEnum
 
+
 class EnergyUnits(IntEnum):
     """Enumeration for energy units."""
+
     eV = 1
     keV = 2
     MeV = 3

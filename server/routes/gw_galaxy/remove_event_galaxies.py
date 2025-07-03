@@ -13,9 +13,9 @@ router = APIRouter(tags=["galaxies"])
 
 @router.delete("/remove_event_galaxies")
 async def remove_event_galaxies(
-        listid: int = Query(..., description="ID of the galaxy list to remove"),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    listid: int = Query(..., description="ID of the galaxy list to remove"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Remove galaxies associated with a GW event.
@@ -28,10 +28,14 @@ async def remove_event_galaxies(
 
     # Check permissions
     if user.id != galaxy_list.submitterid:
-        raise permission_exception("You can only delete information related to your API token")
+        raise permission_exception(
+            "You can only delete information related to your API token"
+        )
 
     # Find and delete galaxy entries
-    galaxy_entries = db.query(GWGalaxyEntry).filter(GWGalaxyEntry.listid == listid).all()
+    galaxy_entries = (
+        db.query(GWGalaxyEntry).filter(GWGalaxyEntry.listid == listid).all()
+    )
 
     for entry in galaxy_entries:
         db.delete(entry)
