@@ -60,16 +60,7 @@ jobs:
           -e DB_HOST=gwtm_db \
           -e DB_PORT=5432 \
           gwtm_fastapi:latest \
-          python -c "
-          # Import all FastAPI models to register them with Base metadata
-          from server.db.models import *
-          from server.db.database import Base, engine
-          
-          # Create all tables
-          Base.metadata.create_all(bind=engine)
-          print('FastAPI database schema created successfully')
-          print(f'Created tables: {list(Base.metadata.tables.keys())}')
-          "
+          python -c "from server.db.models import *; from server.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('FastAPI database schema created successfully'); print(f'Created tables: {list(Base.metadata.tables.keys())}')"
         
     - name: Load test data directly (replaces restore-db script)
       run: |
