@@ -50,12 +50,21 @@ jobs:
       run: |
         timeout 120 bash -c 'until docker compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
         
-    - name: Initialize database schema
+    - name: Initialize database schema with FastAPI models
       run: |
-        docker compose run --rm db_init
+        # Initialize database using FastAPI models instead of legacy Flask models
+        docker run --rm --network gwtm_default \
+          -e DB_USER=treasuremap \
+          -e DB_PWD=treasuremap \
+          -e DB_NAME=treasuremap_dev \
+          -e DB_HOST=gwtm_db \
+          -e DB_PORT=5432 \
+          gwtm_fastapi:latest \
+          python -c "from server.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('FastAPI database schema created')"
         
-    - name: Load test data
+    - name: Load test data directly (replaces restore-db script)
       run: |
+        # Load test data directly into database (replaces Kubernetes restore-db script)
         docker compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
         
     - name: Start FastAPI server
