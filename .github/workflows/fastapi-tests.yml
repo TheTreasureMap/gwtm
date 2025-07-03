@@ -29,7 +29,7 @@ jobs:
       run: |
         echo "DB_USER=treasuremap" >> $GITHUB_ENV
         echo "DB_PWD=treasuremap" >> $GITHUB_ENV
-        echo "DB_NAME=treasuremap_dev" >> $GITHUB_ENV
+        echo "DB_NAME=treasuremap" >> $GITHUB_ENV
         echo "MAIL_PASSWORD=dummy" >> $GITHUB_ENV
         echo "RECAPTCHA_PUBLIC_KEY=dummy" >> $GITHUB_ENV
         echo "RECAPTCHA_PRIVATE_KEY=dummy" >> $GITHUB_ENV
@@ -48,36 +48,36 @@ jobs:
         
     - name: Wait for database to be ready
       run: |
-        timeout 120 bash -c 'until docker compose exec -T db pg_isready -U treasuremap -d treasuremap_dev; do sleep 5; done'
+        timeout 120 bash -c 'until docker compose exec -T db pg_isready -U treasuremap -d treasuremap; do sleep 5; done'
         
     - name: Enable PostGIS extension and verify
       run: |
         # Enable PostGIS extension needed for geometry columns
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        docker compose exec -T db psql -U treasuremap -d treasuremap -c "CREATE EXTENSION IF NOT EXISTS postgis;"
         # Verify PostGIS is working
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT PostGIS_Version();"
+        docker compose exec -T db psql -U treasuremap -d treasuremap -c "SELECT PostGIS_Version();"
         # Test basic geometry functions
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT ST_Point(1,2);"
+        docker compose exec -T db psql -U treasuremap -d treasuremap -c "SELECT ST_Point(1,2);"
         
     - name: Initialize database schema with FastAPI models
       run: |
-        # Initialize database using FastAPI models with proper imports
+        # Initialize database using FastAPI database initialization script
         docker run --rm --network gwtm_default \
           -e DB_USER=treasuremap \
           -e DB_PWD=treasuremap \
-          -e DB_NAME=treasuremap_dev \
+          -e DB_NAME=treasuremap \
           -e DB_HOST=gwtm_db \
           -e DB_PORT=5432 \
           gwtm_fastapi:latest \
-          python -c "from server.db.models import *; from server.db.database import Base, engine; Base.metadata.create_all(bind=engine); print('FastAPI database schema created successfully'); print(f'Created tables: {list(Base.metadata.tables.keys())}')"
+          python -c "from server.db.init_db import create_database_tables; create_database_tables()"
         
     - name: Load test data directly (replaces restore-db script)
       run: |
         # Load test data directly into database (replaces Kubernetes restore-db script)
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev < tests/test-data.sql
+        docker compose exec -T db psql -U treasuremap -d treasuremap < tests/test-data.sql
         # Verify GLADE data was loaded
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT COUNT(*) FROM glade_2p3;"
-        docker compose exec -T db psql -U treasuremap -d treasuremap_dev -c "SELECT id, pgc_number, gwgc_name FROM glade_2p3 LIMIT 3;"
+        docker compose exec -T db psql -U treasuremap -d treasuremap -c "SELECT COUNT(*) FROM glade_2p3;"
+        docker compose exec -T db psql -U treasuremap -d treasuremap -c "SELECT id, pgc_number, gwgc_name FROM glade_2p3 LIMIT 3;"
         
     - name: Start FastAPI server
       run: |
@@ -85,7 +85,7 @@ jobs:
           --network gwtm_default \
           -e DB_USER=treasuremap \
           -e DB_PWD=treasuremap \
-          -e DB_NAME=treasuremap_dev \
+          -e DB_NAME=treasuremap \
           -e DB_HOST=gwtm_db \
           -e DB_PORT=5432 \
           -p 8000:8000 \
@@ -109,7 +109,7 @@ jobs:
         API_BASE_URL: http://localhost:8000
         DB_HOST: localhost
         DB_PORT: 5432
-        DB_NAME: treasuremap_dev
+        DB_NAME: treasuremap
         DB_USER: treasuremap
         DB_PWD: treasuremap
         
