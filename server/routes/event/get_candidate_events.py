@@ -17,16 +17,16 @@ async def get_candidate_events(
     id: Optional[int] = Query(None, description="Filter by candidate ID"),
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Get list of candidate events, optionally filtered by user or ID."""
     query = db.query(GWCandidate)
-    
+
     if id:
         query = query.filter(GWCandidate.id == id)
-    
+
     if user_id:
         query = query.filter(GWCandidate.submitterid == user_id)
-    
+
     candidates = query.all()
     return candidates

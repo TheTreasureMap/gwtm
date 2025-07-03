@@ -2,6 +2,7 @@
 Test event endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 import pytest
@@ -26,13 +27,12 @@ class TestEventEndpoints:
         return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
 
     # Known GraceIDs from test data
-    KNOWN_GRACEIDS = ['S190425z', 'S190426c', 'MS230101a', 'GW190521', 'MS190425a']
+    KNOWN_GRACEIDS = ["S190425z", "S190426c", "MS230101a", "GW190521", "MS190425a"]
 
     def test_get_candidate_events_no_params(self):
         """Test getting candidate events without any parameters."""
         response = requests.get(
-            self.get_url("/candidate/event"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/candidate/event"), headers={"api_token": self.admin_token}
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -48,7 +48,7 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/candidate/event"),
             params={"user_id": 1},  # Admin user ID
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -64,13 +64,13 @@ class TestEventEndpoints:
             "graceid": "S190425z",  # Using a known GraceID
             "candidate_name": "Test Candidate Event",
             "ra": 123.456,
-            "dec": -12.345
+            "dec": -12.345,
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -86,20 +86,20 @@ class TestEventEndpoints:
     def test_update_candidate_event(self):
         """Test updating an existing candidate event."""
         # First create a candidate to update
-        if not hasattr(self, 'candidate_id'):
+        if not hasattr(self, "candidate_id"):
             self.test_post_candidate_event()
 
         update_data = {
             "graceid": "S190425z",
             "candidate_name": "Updated Candidate Event",
             "ra": 124.567,
-            "dec": -13.456
+            "dec": -13.456,
         }
 
         response = requests.put(
             self.get_url(f"/candidate/event/{self.candidate_id}"),
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -111,9 +111,9 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/candidate/event"),
             params={"id": self.candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
@@ -127,12 +127,12 @@ class TestEventEndpoints:
     def test_delete_candidate_event(self):
         """Test deleting a candidate event."""
         # First create a candidate to delete
-        if not hasattr(self, 'candidate_id'):
+        if not hasattr(self, "candidate_id"):
             self.test_post_candidate_event()
 
         response = requests.delete(
             self.get_url(f"/candidate/event/{self.candidate_id}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -144,9 +144,9 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/candidate/event"),
             params={"id": self.candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 0  # Should be empty
@@ -157,13 +157,13 @@ class TestEventEndpoints:
             "graceid": "S190425z",  # Required field
             "candidate_name": "User Test Candidate",
             "ra": 130.456,
-            "dec": -15.345
+            "dec": -15.345,
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=candidate_data,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -178,9 +178,9 @@ class TestEventEndpoints:
         response = requests.get(
             self.get_url("/candidate/event"),
             params={"id": self.user_candidate_id},
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
@@ -193,27 +193,27 @@ class TestEventEndpoints:
             "graceid": "S190425z",  # Required field
             "candidate_name": "Admin Candidate",
             "ra": 140.456,
-            "dec": -20.345
+            "dec": -20.345,
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         admin_candidate_id = response.json()["id"]
 
         # Try to update as regular user
         update_data = {
-            "graceid": "S190425z",  # Required field 
-            "candidate_name": "Hijacked Candidate"
+            "graceid": "S190425z",  # Required field
+            "candidate_name": "Hijacked Candidate",
         }
 
         response = requests.put(
             self.get_url(f"/candidate/event/{admin_candidate_id}"),
             json=update_data,
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -226,13 +226,13 @@ class TestEventEndpoints:
             "graceid": "S190425z",  # Required field
             "candidate_name": "Admin Protected Candidate",
             "ra": 150.456,
-            "dec": -25.345
+            "dec": -25.345,
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=candidate_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         admin_candidate_id = response.json()["id"]
@@ -240,7 +240,7 @@ class TestEventEndpoints:
         # Try to delete as regular user
         response = requests.delete(
             self.get_url(f"/candidate/event/{admin_candidate_id}"),
-            headers={"api_token": self.user_token}
+            headers={"api_token": self.user_token},
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -254,8 +254,7 @@ class TestEventEndpoints:
 
         # Request with invalid API token
         response = requests.get(
-            self.get_url("/candidate/event"),
-            headers={"api_token": self.invalid_token}
+            self.get_url("/candidate/event"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -264,8 +263,7 @@ class TestEventEndpoints:
         # All authenticated users should be able to read candidates
         for token in [self.admin_token, self.user_token, self.scientist_token]:
             response = requests.get(
-                self.get_url("/candidate/event"),
-                headers={"api_token": token}
+                self.get_url("/candidate/event"), headers={"api_token": token}
             )
             assert response.status_code == status.HTTP_200_OK
 
@@ -279,24 +277,24 @@ class TestEventEndpoints:
         response = requests.post(
             self.get_url("/candidate/event"),
             json=incomplete_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST  # Validation error
-        assert 'missing' in response.json()['errors'][0]['params']['type']
-        assert 'graceid' in response.json()['errors'][0]['params']['field']
+        assert "missing" in response.json()["errors"][0]["params"]["type"]
+        assert "graceid" in response.json()["errors"][0]["params"]["field"]
 
     def test_update_candidate_event_nonexistent(self):
         """Test updating a non-existent candidate event."""
         update_data = {
             "graceid": "S190425z",  # Required field
-            "candidate_name": "NonExistent Candidate"
+            "candidate_name": "NonExistent Candidate",
         }
 
         response = requests.put(
             self.get_url("/candidate/event/99999"),  # Non-existent ID
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -306,7 +304,7 @@ class TestEventEndpoints:
         """Test deleting a non-existent candidate event."""
         response = requests.delete(
             self.get_url("/candidate/event/99999"),  # Non-existent ID
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -328,13 +326,13 @@ class TestEventAPIValidation:
             "graceid": "S190425z",  # Required field
             "candidate_name": "Invalid Coordinates",
             "ra": "not-a-number",
-            "dec": "also-not-a-number"
+            "dec": "also-not-a-number",
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=invalid_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST  # Validation error
@@ -348,18 +346,20 @@ class TestEventAPIValidation:
             "graceid": "S190425z",  # Required field
             "candidate_name": "Out of Range Coordinates",
             "ra": 400.0,  # RA should be 0-360
-            "dec": -100.0  # Dec should be -90 to +90
+            "dec": -100.0,  # Dec should be -90 to +90
         }
 
         response = requests.post(
             self.get_url("/candidate/event"),
             json=invalid_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST  # Validation error
         errors = response.json()["errors"]
-        assert any("ra" in str(e) for e in errors) or any("dec" in str(e) for e in errors)
+        assert any("ra" in str(e) for e in errors) or any(
+            "dec" in str(e) for e in errors
+        )
 
 
 class TestEventAPIIntegration:
@@ -378,13 +378,13 @@ class TestEventAPIIntegration:
             "graceid": "S190425z",  # Required field
             "candidate_name": "Workflow Test Candidate",
             "ra": 160.0,
-            "dec": -30.0
+            "dec": -30.0,
         }
 
         create_response = requests.post(
             self.get_url("/candidate/event"),
             json=create_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert create_response.status_code == status.HTTP_200_OK
@@ -394,7 +394,7 @@ class TestEventAPIIntegration:
         read_response = requests.get(
             self.get_url("/candidate/event"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert read_response.status_code == status.HTTP_200_OK
@@ -408,13 +408,13 @@ class TestEventAPIIntegration:
         # Step 3: Update the candidate
         update_data = {
             "graceid": "S190425z",  # Required field
-            "candidate_name": "Updated Workflow Candidate"
+            "candidate_name": "Updated Workflow Candidate",
         }
 
         update_response = requests.put(
             self.get_url(f"/candidate/event/{candidate_id}"),
             json=update_data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert update_response.status_code == status.HTTP_200_OK
@@ -424,7 +424,7 @@ class TestEventAPIIntegration:
         verify_response = requests.get(
             self.get_url("/candidate/event"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         updated_data = verify_response.json()[0]
@@ -438,7 +438,7 @@ class TestEventAPIIntegration:
         # Step 4: Delete the candidate
         delete_response = requests.delete(
             self.get_url(f"/candidate/event/{candidate_id}"),
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert delete_response.status_code == status.HTTP_200_OK
@@ -448,7 +448,7 @@ class TestEventAPIIntegration:
         verify_deletion = requests.get(
             self.get_url("/candidate/event"),
             params={"id": candidate_id},
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert verify_deletion.status_code == status.HTTP_200_OK
@@ -463,13 +463,13 @@ class TestEventAPIIntegration:
                 "graceid": "S190425z",  # Required field
                 "candidate_name": f"Multi Test Candidate {i}",
                 "ra": 170.0 + i,
-                "dec": -40.0 - i
+                "dec": -40.0 - i,
             }
 
             response = requests.post(
                 self.get_url("/candidate/event"),
                 json=data,
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
 
             assert response.status_code == status.HTTP_200_OK
@@ -479,12 +479,12 @@ class TestEventAPIIntegration:
         response = requests.get(
             self.get_url("/candidate/event"),
             params={"user_id": 1},  # Admin user ID
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
         candidates = response.json()
-        
+
         # Check if all our created candidates are in the response
         created_candidates = [c for c in candidates if c["id"] in candidate_ids]
         assert len(created_candidates) == 3
@@ -493,7 +493,7 @@ class TestEventAPIIntegration:
         for candidate_id in candidate_ids:
             requests.delete(
                 self.get_url(f"/candidate/event/{candidate_id}"),
-                headers={"api_token": self.admin_token}
+                headers={"api_token": self.admin_token},
             )
 
 

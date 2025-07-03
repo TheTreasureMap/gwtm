@@ -7,4 +7,3 @@ from .gw_galaxy import GWGalaxyEntry
 from .glade import Glade2P3
 from .icecube import IceCubeNotice, IceCubeNoticeCoincEvent
 from .candidate import GWCandidate
-

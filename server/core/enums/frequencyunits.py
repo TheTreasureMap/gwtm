@@ -1,7 +1,9 @@
 from enum import IntEnum
 
+
 class FrequencyUnits(IntEnum):
     """Enumeration for frequency units."""
+
     Hz = 1
     kHz = 2
     GHz = 3

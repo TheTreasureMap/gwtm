@@ -20,8 +20,8 @@ router = APIRouter(tags=["gw_alerts"])
 
 @router.post("/del_test_alerts")
 async def del_test_alerts(
-        db: Session = Depends(get_db),
-        user=Depends(verify_admin)  # Only admin can delete test alerts
+    db: Session = Depends(get_db),
+    user=Depends(verify_admin),  # Only admin can delete test alerts
 ):
     """
     Delete test alerts (admin only).
@@ -50,23 +50,32 @@ async def del_test_alerts(
     testids.append(alert_to_keep)
 
     # Only delete test alerts
-    filter.append(GWAlert.role == 'test')
+    filter.append(GWAlert.role == "test")
 
     # Query for all test alerts that aren't like the ones we want to keep
     gwalerts = db.query(GWAlert).filter(*filter).all()
     gids_to_rm = [x.graceid for x in gwalerts]
 
     # Query for pointings and pointing events from graceids
-    pointing_events = db.query(PointingEvent).filter(PointingEvent.graceid.in_(gids_to_rm)).all()
+    pointing_events = (
+        db.query(PointingEvent).filter(PointingEvent.graceid.in_(gids_to_rm)).all()
+    )
     pointing_ids = [x.pointingid for x in pointing_events]
     pointings = db.query(Pointing).filter(Pointing.id.in_(pointing_ids)).all()
 
     # Query for galaxy lists and galaxy list entries from graceids
     try:
         from server.db.models.gw_alert import GWGalaxyList
-        galaxylists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid.in_(gids_to_rm)).all()
+
+        galaxylists = (
+            db.query(GWGalaxyList).filter(GWGalaxyList.graceid.in_(gids_to_rm)).all()
+        )
         galaxylist_ids = [x.id for x in galaxylists]
-        galaxyentries = db.query(GWGalaxyEntry).filter(GWGalaxyEntry.listid.in_(galaxylist_ids)).all()
+        galaxyentries = (
+            db.query(GWGalaxyEntry)
+            .filter(GWGalaxyEntry.listid.in_(galaxylist_ids))
+            .all()
+        )
     except ImportError:
         # If the model isn't available, create empty lists
         galaxylists = []
@@ -102,16 +111,24 @@ async def del_test_alerts(
 
     # Delete files from storage
     try:
-        objects = list_gwtm_bucket(container="test", source=settings.STORAGE_BUCKET_SOURCE, config=settings)
+        objects = list_gwtm_bucket(
+            container="test", source=settings.STORAGE_BUCKET_SOURCE, config=settings
+        )
         objects_to_delete = [
-            o for o in objects if not any(t in o for t in testids) and 'alert.json' not in o and o != 'test/'
+            o
+            for o in objects
+            if not any(t in o for t in testids)
+            and "alert.json" not in o
+            and o != "test/"
         ]
 
         if len(objects_to_delete):
             total = 0
             for items in by_chunk(objects_to_delete, 1000):
                 total += len(items)
-                delete_gwtm_files(keys=items, source=settings.STORAGE_BUCKET_SOURCE, config=settings)
+                delete_gwtm_files(
+                    keys=items, source=settings.STORAGE_BUCKET_SOURCE, config=settings
+                )
     except Exception as e:
         # Log the error but continue with the database changes
         print(f"Error deleting files: {str(e)}")

@@ -13,9 +13,9 @@ router = APIRouter(tags=["gw_alerts"])
 
 @router.post("/post_alert", response_model=GWAlertSchema)
 async def post_alert(
-        alert_data: GWAlertSchema,
-        db: Session = Depends(get_db),
-        user=Depends(verify_admin)  # Only admin can post alerts
+    alert_data: GWAlertSchema,
+    db: Session = Depends(get_db),
+    user=Depends(verify_admin),  # Only admin can post alerts
 ):
     """
     Post a new GW alert (admin only).

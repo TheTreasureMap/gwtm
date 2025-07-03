@@ -15,9 +15,7 @@ router = APIRouter(tags=["DOI"])
 
 @router.get("/doi_authors/{group_id}", response_model=List[DOIAuthorSchema])
 async def get_doi_authors(
-        group_id: int,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    group_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     """
     Get all DOI authors for a specific group.
@@ -29,13 +27,16 @@ async def get_doi_authors(
     - List of DOI authors
     """
     # First check if the group belongs to the user
-    group = db.query(DOIAuthorGroup).filter(
-        DOIAuthorGroup.id == group_id,
-        DOIAuthorGroup.userid == user.id
-    ).first()
+    group = (
+        db.query(DOIAuthorGroup)
+        .filter(DOIAuthorGroup.id == group_id, DOIAuthorGroup.userid == user.id)
+        .first()
+    )
 
     if not group:
-        raise permission_exception("You don't have permission to access this DOI author group")
+        raise permission_exception(
+            "You don't have permission to access this DOI author group"
+        )
 
     authors = db.query(DOIAuthor).filter(DOIAuthor.author_groupid == group_id).all()
     return authors
