@@ -52,10 +52,6 @@ async def get_grbmoc(
         )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        # Include detailed error information for debugging
-        error_msg = (
-            f"Error retrieving MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}'. "
-            f"Path: {moc_filepath}, Storage: {settings.STORAGE_BUCKET_SOURCE}. "
-            f"Error: {type(e).__name__}: {str(e)}"
+        raise not_found_exception(
+            f"MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}' does not exist!"
         )
-        raise not_found_exception(error_msg)

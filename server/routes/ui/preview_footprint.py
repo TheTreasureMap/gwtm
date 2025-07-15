@@ -18,6 +18,7 @@ async def preview_footprint(
     shape: str = "Circular",
     polygon: str = None,
     db: Session = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Generate a preview of an instrument footprint."""
     import math
@@ -25,11 +26,12 @@ async def preview_footprint(
     import plotly
     import plotly.graph_objects as go
 
+
     # This is a UI helper endpoint to visualize a footprint before saving
     # It generates the appropriate visualization for the given parameters
     vertices = []
 
-    if shape == "Circular" and radius:
+    if shape.lower() == "circle" and radius:
         # For circle, generate points around the circumference
         circle_points = []
         for i in range(36):  # 36 points for a smooth circle
@@ -46,21 +48,29 @@ async def preview_footprint(
             point_dec = dec + y
             circle_points.append([point_ra, point_dec])
 
+
         # Close the polygon
         circle_points.append(circle_points[0])
         vertices.append(circle_points)
 
-    elif shape == "Rectangular" and height and width:
+    elif shape.lower() == "rectangle" and height and width:
         # For rectangle, generate corners
         # Convert height/width in degrees to ra/dec coordinates
         # Proper calculation accounting for coordinate system
         half_width = width / 2
         half_height = height / 2
 
+
         # No cos(dec) correction needed for simple rectangular footprints
         ra_offset = half_width
 
+
         rect_points = [
+            [ra - ra_offset, dec - half_height],  # bottom left
+            [ra - ra_offset, dec + half_height],  # top left
+            [ra + ra_offset, dec + half_height],  # top right
+            [ra + ra_offset, dec - half_height],  # bottom right
+            [ra - ra_offset, dec - half_height],  # close the polygon
             [ra - ra_offset, dec - half_height],  # bottom left
             [ra - ra_offset, dec + half_height],  # top left
             [ra + ra_offset, dec + half_height],  # top right
@@ -69,7 +79,7 @@ async def preview_footprint(
         ]
         vertices.append(rect_points)
 
-    elif shape == "Polygon" and polygon:
+    elif shape.lower() == "polygon" and polygon:
         # For custom polygon, parse the points
         try:
             poly_points = json.loads(polygon)
@@ -80,6 +90,7 @@ async def preview_footprint(
     else:
         return {"error": "Invalid shape type or missing required parameters"}
 
+
     # Create a plotly figure
     traces = []
     for vert in vertices:
@@ -87,8 +98,10 @@ async def preview_footprint(
         ys = [v[1] for v in vert]
         trace = go.Scatter(
             x=xs, y=ys, line_color="blue", fill="tozeroy", fillcolor="violet"
+            x=xs, y=ys, line_color="blue", fill="tozeroy", fillcolor="violet"
         )
         traces.append(trace)
+
 
     fig = go.Figure(data=traces)
     fig.update_layout(
@@ -97,11 +110,15 @@ async def preview_footprint(
         yaxis_title="degrees",
         yaxis=dict(
             matches="x",
+            matches="x",
             scaleanchor="x",
             scaleratio=1,
             constrain="domain",
         ),
+            constrain="domain",
+        ),
     )
 
-    # Return the figure object directly - FastAPI will serialize it properly
-    return fig.to_dict()
+    # Convert to JSON for return
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON

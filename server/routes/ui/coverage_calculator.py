@@ -147,7 +147,7 @@ async def calculate_healpix_coverage(
     from server.db.models.pointing import Pointing
     from server.db.models.gw_alert import GWAlert
     from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
-
+    
     # Handle instrument approximations for large-scale instruments
     approx_dict = {47: 76, 38: 98}  # ZTF to ZTF_approx  # DECam to DECam_approx
 
@@ -182,10 +182,9 @@ async def calculate_healpix_coverage(
     if inst_cov:
         insts_cov = [int(x) for x in inst_cov.split(",")]
         pointing_filter.append(Pointing.instrumentid.in_(insts_cov))
-
-    if depth_unit and depth_unit != "None":
+    
+    if depth_unit and depth_unit != 'None':
         from server.core.enums.depthunit import DepthUnit as depth_unit_enum
-
         try:
             unit_enum = depth_unit_enum[depth_unit]
             pointing_filter.append(Pointing.depth_unit == unit_enum)
@@ -213,31 +212,22 @@ async def calculate_healpix_coverage(
                 shigh = float(spec_range_high)
 
                 # Convert spectral range to common units and apply filter
-                if spec_range_type == "wavelength":
-                    from server.core.enums.wavelengthunits import (
-                        WavelengthUnits as wavelength_units,
-                    )
-
+                if spec_range_type == 'wavelength':
+                    from server.core.enums.wavelengthunits import WavelengthUnits as wavelength_units
                     unit = [x for x in wavelength_units if spec_range_unit == x.name][0]
                     scale = wavelength_units.get_scale(unit)
                     slow = slow * scale
                     shigh = shigh * scale
                     stype = SpectralRangeHandler.spectralrangetype.wavelength
-                elif spec_range_type == "energy":
-                    from server.core.enums.energyunits import (
-                        EnergyUnits as energy_units,
-                    )
-
+                elif spec_range_type == 'energy':
+                    from server.core.enums.energyunits import EnergyUnits as energy_units
                     unit = [x for x in energy_units if spec_range_unit == x.name][0]
                     scale = energy_units.get_scale(unit)
                     slow = slow * scale
                     shigh = shigh * scale
                     stype = SpectralRangeHandler.spectralrangetype.energy
-                elif spec_range_type == "frequency":
-                    from server.core.enums.frequencyunits import (
-                        FrequencyUnits as frequency_units,
-                    )
-
+                elif spec_range_type == 'frequency':
+                    from server.core.enums.frequencyunits import FrequencyUnits as frequency_units
                     unit = [x for x in frequency_units if spec_range_unit == x.name][0]
                     scale = frequency_units.get_scale(unit)
                     slow = slow * scale

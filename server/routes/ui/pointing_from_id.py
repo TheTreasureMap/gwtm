@@ -23,34 +23,22 @@ async def get_pointing_fromID(
     from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 
     if not id or not isInt(id):
-        raise HTTPException(status_code=400, detail="Invalid pointing ID format")
+        return {}
 
     # Convert to integer
     pointing_id = int(id)
 
-    # First check if pointing exists at all
-    pointing_exists = db.query(Pointing).filter(Pointing.id == pointing_id).first()
+    # Query pointings with filter conditions
+    filters = [
+        Pointing.submitterid == current_user.id,
+        Pointing.status == pointing_status_enum.planned,
+        Pointing.id == pointing_id,
+    ]
 
-    if not pointing_exists:
-        raise HTTPException(
-            status_code=404, detail=f"Pointing with ID {pointing_id} does not exist"
-        )
+    pointing = db.query(Pointing).filter(*filters).first()
 
-    # Check if it belongs to the current user
-    if pointing_exists.submitterid != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Pointing {pointing_id} belongs to another user (ID: {pointing_exists.submitterid})",
-        )
-
-    # Check if it's in planned status
-    if pointing_exists.status != pointing_status_enum.planned:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Pointing {pointing_id} has status '{pointing_exists.status.name}' but only 'planned' pointings can be pre-loaded",
-        )
-
-    pointing = pointing_exists
+    if not pointing:
+        return {}
 
     # Get the alert for this pointing
     pointing_event = (
@@ -87,7 +75,7 @@ async def get_pointing_fromID(
         "ra": ra,
         "dec": dec,
         "graceid": pointing_event.graceid,
-        "instrument": f"{pointing.instrumentid}_{instrument.instrument_type.name if instrument else ''}",
+        "instrument": f"{pointing.instrumentid}_{instrument.InstrumentType.name if instrument else ''}",
         "band": pointing.band.name if pointing.band else "",
         "depth": pointing.depth,
         "depth_err": pointing.depth_err,

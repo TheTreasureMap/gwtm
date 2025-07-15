@@ -5,64 +5,6 @@ import re
 import tempfile
 
 
-def _get_swift_conn(config):
-    """
-    Get Swift connection with appropriate authentication method.
-
-    Supports both application credentials and username/password authentication.
-    Application credential IDs are detected as 32-character hex strings.
-
-    Args:
-        config: Configuration object with Swift credentials
-
-    Returns:
-        Swift Connection object
-    """
-    try:
-        from keystoneauth1.identity import v3
-        from keystoneauth1 import session
-        from swiftclient import Connection as SwiftConnection
-    except ImportError:
-        raise Exception(
-            "Swift dependencies not installed. Install python-swiftclient, "
-            "python-keystoneclient, and keystoneauth1"
-        )
-
-    # Detect if using application credentials (32-character hex string)
-    is_app_cred = bool(re.match(r"^[a-f0-9]{32}$", config.OS_USERNAME or ""))
-
-    if is_app_cred:
-        # Use application credential authentication
-        auth = v3.ApplicationCredential(
-            auth_url=config.OS_AUTH_URL,
-            application_credential_id=config.OS_USERNAME,
-            application_credential_secret=config.OS_PASSWORD,
-        )
-
-        # Create authenticated session
-        sess = session.Session(auth=auth)
-
-        # Create Swift connection with session
-        conn = SwiftConnection(
-            session=sess, os_options={"object_storage_url": config.OS_STORAGE_URL}
-        )
-    else:
-        # Use username/password authentication
-        conn = SwiftConnection(
-            authurl=config.OS_AUTH_URL,
-            user=config.OS_USERNAME,
-            key=config.OS_PASSWORD,
-            os_options={
-                "user_domain_name": config.OS_USER_DOMAIN_NAME,
-                "project_domain_name": config.OS_PROJECT_DOMAIN_NAME,
-                "project_name": config.OS_PROJECT_NAME,
-            },
-            auth_version="3",
-        )
-
-    return conn
-
-
 def _get_fs(source, config):
     """
     Get the appropriate filesystem based on source.
@@ -87,23 +29,6 @@ def _get_fs(source, config):
             )
     except Exception as e:
         raise Exception(f"Error in creating {source} filesystem: {str(e)}")
-
-
-def _is_local(source, config):
-    """Check if we should use local filesystem storage."""
-    if source == "local":
-        return True
-    return hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE
-
-
-def _get_local_dir(config):
-    """Return the local storage directory path."""
-    return getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
-
-
-def _local_path(local_dir, filename):
-    """Build the local file path, preserving subdirectory structure."""
-    return os.path.join(local_dir, filename)
 
 
 def download_gwtm_file(filename, source="s3", config=None, decode=True):
@@ -156,15 +81,20 @@ def download_gwtm_file(filename, source="s3", config=None, decode=True):
             else:
                 return _file.read()
     except Exception as e:
-        # Fall back to local storage in development mode
-        if _is_local(source, config):
-            local_dir = _get_local_dir(config)
-            path = _local_path(local_dir, filename.split("/")[-1])
-            if os.path.exists(path):
-                with open(path, "rb") as f:
+        # In development mode, we might want to simulate file access
+        # This would allow the system to function without actual cloud storage
+        if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+            # Check if we have a local development directory
+            dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
+            local_path = os.path.join(dev_dir, filename.split("/")[-1])
+
+            # If the file exists locally, return its contents
+            if os.path.exists(local_path):
+                with open(local_path, "rb") as f:
                     content = f.read()
                     return content.decode("utf-8") if decode else content
 
+        # If we're not in development mode or couldn't find a local file
         raise Exception(f"Error reading {source} file {filename}: {str(e)}")
 
 
@@ -181,13 +111,15 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
     Returns:
         True if upload successful
     """
-    # Local filesystem storage
-    if _is_local(source, config):
-        local_dir = _get_local_dir(config)
-        path = _local_path(local_dir, filename)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+    # In development mode, we might want to simulate file upload
+    if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+        dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
+        os.makedirs(dev_dir, exist_ok=True)
+        local_path = os.path.join(dev_dir, filename.split("/")[-1])
+
+        # Write to local file
         mode = "wb" if isinstance(content, bytes) else "w"
-        with open(path, mode) as f:
+        with open(local_path, mode) as f:
             f.write(content)
         return True
 
@@ -230,18 +162,18 @@ def list_gwtm_bucket(container, source="s3", config=None):
     Returns:
         List of files in the container
     """
-    # Local filesystem storage
-    if _is_local(source, config):
-        local_dir = _get_local_dir(config)
-        container_dir = os.path.join(local_dir, container)
+    # In development mode, we might want to simulate bucket listing
+    if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+        dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
+        container_dir = os.path.join(dev_dir, container)
 
         if os.path.exists(container_dir) and os.path.isdir(container_dir):
             return sorted(
                 [os.path.join(container, f) for f in os.listdir(container_dir)]
             )
-        elif os.path.exists(local_dir):
-            # If the specific container doesn't exist, list files matching the prefix
-            return sorted([f for f in os.listdir(local_dir) if f.startswith(container)])
+        elif os.path.exists(dev_dir):
+            # If the specific container doesn't exist, list all files that match the prefix
+            return sorted([f for f in os.listdir(dev_dir) if f.startswith(container)])
         return []
 
     # Handle Swift separately (doesn't use fsspec)
@@ -295,17 +227,19 @@ def delete_gwtm_files(keys, source="s3", config=None):
     Returns:
         True if delete successful
     """
-    # Convert single key to list
-    if isinstance(keys, str):
-        keys = [keys]
+    # In development mode, we might want to simulate file deletion
+    if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+        dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
 
-    # Local filesystem storage
-    if _is_local(source, config):
-        local_dir = _get_local_dir(config)
+        # Convert single key to list
+        if isinstance(keys, str):
+            keys = [keys]
+
+        # Delete local files
         for key in keys:
-            path = _local_path(local_dir, key)
-            if os.path.exists(path):
-                os.remove(path)
+            local_path = os.path.join(dev_dir, key.split("/")[-1])
+            if os.path.exists(local_path):
+                os.remove(local_path)
         return True
 
     # Handle Swift separately (doesn't use fsspec)
@@ -346,12 +280,10 @@ def get_cached_file(key, config):
     Returns:
         File content or None if not found
     """
-    source = config.STORAGE_BUCKET_SOURCE
-
-    # Local filesystem cache
-    if _is_local(source, config):
-        local_dir = _get_local_dir(config)
-        cache_dir = os.path.join(local_dir, "cache")
+    # In development mode, we might want to use a local cache
+    if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+        dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
+        cache_dir = os.path.join(dev_dir, "cache")
         cache_file = os.path.join(cache_dir, key.split("/")[-1])
 
         if os.path.exists(cache_file):
@@ -360,6 +292,8 @@ def get_cached_file(key, config):
         return None
 
     # Normal cloud storage cache access
+    source = config.STORAGE_BUCKET_SOURCE
+
     try:
         cached_files = list_gwtm_bucket("cache", source, config)
 
@@ -383,12 +317,10 @@ def set_cached_file(key, contents, config):
     Returns:
         True if successful
     """
-    source = config.STORAGE_BUCKET_SOURCE
-
-    # Local filesystem cache
-    if _is_local(source, config):
-        local_dir = _get_local_dir(config)
-        cache_dir = os.path.join(local_dir, "cache")
+    # In development mode, we might want to use a local cache
+    if hasattr(config, "DEVELOPMENT_MODE") and config.DEVELOPMENT_MODE:
+        dev_dir = getattr(config, "DEVELOPMENT_STORAGE_DIR", "./dev_storage")
+        cache_dir = os.path.join(dev_dir, "cache")
         os.makedirs(cache_dir, exist_ok=True)
 
         cache_file = os.path.join(cache_dir, key.split("/")[-1])
@@ -398,6 +330,8 @@ def set_cached_file(key, contents, config):
         return True
 
     # Normal cloud storage cache setting
+    source = config.STORAGE_BUCKET_SOURCE
+
     try:
         return upload_gwtm_file(json.dumps(contents), key, source, config)
     except Exception:

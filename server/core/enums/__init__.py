@@ -8,4 +8,3 @@ from .wavelengthunits import WavelengthUnits
 from .pointingstatus import PointingStatus
 from .frequencyunits import FrequencyUnits
 from .depthunit import DepthUnit
-from .alertrole import AlertRole
