@@ -2,6 +2,7 @@
 Test admin endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 import pytest
@@ -27,10 +28,9 @@ class TestAdminEndpoints:
     def test_fixdata_as_admin_get(self):
         """Test the fixdata endpoint with GET as admin."""
         response = requests.get(
-            self.get_url("/fixdata"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/fixdata"), headers={"api_token": self.admin_token}
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "message" in data
@@ -39,10 +39,9 @@ class TestAdminEndpoints:
     def test_fixdata_as_admin_post(self):
         """Test the fixdata endpoint with POST as admin."""
         response = requests.post(
-            self.get_url("/fixdata"),
-            headers={"api_token": self.admin_token}
+            self.get_url("/fixdata"), headers={"api_token": self.admin_token}
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "message" in data
@@ -52,18 +51,16 @@ class TestAdminEndpoints:
         """Test that non-admin users cannot use the fixdata endpoint."""
         # Test with regular user token
         response = requests.get(
-            self.get_url("/fixdata"),
-            headers={"api_token": self.user_token}
+            self.get_url("/fixdata"), headers={"api_token": self.user_token}
         )
-        
+
         assert response.status_code == 403
-        
+
         # Test with scientist token
         response = requests.get(
-            self.get_url("/fixdata"),
-            headers={"api_token": self.scientist_token}
+            self.get_url("/fixdata"), headers={"api_token": self.scientist_token}
         )
-        
+
         assert response.status_code == 403
 
     def test_fixdata_without_auth(self):
@@ -74,8 +71,7 @@ class TestAdminEndpoints:
     def test_fixdata_with_invalid_token(self):
         """Test fixdata with invalid API token."""
         response = requests.get(
-            self.get_url("/fixdata"),
-            headers={"api_token": self.invalid_token}
+            self.get_url("/fixdata"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == 401
 

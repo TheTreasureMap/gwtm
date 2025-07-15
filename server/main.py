@@ -26,6 +26,7 @@ from server.routes.gw_galaxy.router import router as galaxy_router
 from server.routes.icecube.router import router as icecube_router
 from server.routes.event.router import router as event
 from server.routes.ui.router import router as ui_router
+from server.routes.celestial.router import router as celestial_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
@@ -100,7 +101,7 @@ async def lifespan_middleware(request: Request, call_next):
             # Create a default error response
             response = JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": "Internal server error"}
+                content={"detail": "Internal server error"},
             )
         return response
 
@@ -115,18 +116,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 message=error["msg"],
                 code="validation_error",
                 params={
-                    "field": ".".join(str(x) for x in error["loc"]) if error["loc"] else None,
-                    "type": error["type"]
-                }
+                    "field": (
+                        ".".join(str(x) for x in error["loc"]) if error["loc"] else None
+                    ),
+                    "type": error["type"],
+                },
             ).to_dict()
         )
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content={
-            "message": "Request validation error",
-            "errors": errors
-        }
+        content={"message": "Request validation error", "errors": errors},
     )
 
 
@@ -139,7 +139,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     # Don't expose internal details to the client
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": "A database error occurred"}
+        content={"message": "A database error occurred"},
     )
 
 
@@ -150,7 +150,7 @@ async def integrity_exception_handler(request: Request, exc: IntegrityError):
 
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
-        content={"message": "The request conflicts with database constraints"}
+        content={"message": "The request conflicts with database constraints"},
     )
 
 
@@ -164,9 +164,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content = {"message": content}
 
     return JSONResponse(
-        status_code=exc.status_code,
-        headers=exc.headers,
-        content=content
+        status_code=exc.status_code, headers=exc.headers, content=content
     )
 
 
@@ -179,8 +177,9 @@ async def general_exception_handler(request: Request, exc: Exception):
     # Don't expose internal details to the client
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": "An unexpected error occurred"}
+        content={"message": "An unexpected error occurred"},
     )
+
 
 # API health check
 @app.get("/health")
@@ -202,10 +201,7 @@ async def service_status(db: Session = Depends(get_db)):
     status = {
         "database_status": "unknown",
         "redis_status": "unknown",
-        "details": {
-            "database": {},
-            "redis": {}
-        }
+        "details": {"database": {}, "redis": {}},
     }
 
     # Check database connection with detailed info
@@ -219,7 +215,7 @@ async def service_status(db: Session = Depends(get_db)):
         status["details"]["database"] = {
             "host": db_host,
             "port": db_port,
-            "name": db_name
+            "name": db_name,
         }
 
         # Test actual connection
@@ -235,21 +231,21 @@ async def service_status(db: Session = Depends(get_db)):
     # Check Redis connection with detailed info
     try:
         # Get Redis connection parameters
-        redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+        redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
         # Parse the URL for debug info
-        if redis_url.startswith('redis://'):
-            redis_host = redis_url.split('redis://')[1].split(':')[0]
-            redis_port = redis_url.split(':')[-1].split('/')[0]
+        if redis_url.startswith("redis://"):
+            redis_host = redis_url.split("redis://")[1].split(":")[0]
+            redis_port = redis_url.split(":")[-1].split("/")[0]
         else:
-            redis_host = 'unknown'
-            redis_port = 'unknown'
+            redis_host = "unknown"
+            redis_port = "unknown"
 
         # Store connection info
         status["details"]["redis"] = {
             "host": redis_host,
             "port": redis_port,
-            "url": redis_url
+            "url": redis_url,
         }
 
         # Test actual connection
@@ -268,15 +264,17 @@ async def service_status(db: Session = Depends(get_db)):
 
     return status
 
+
 # Include routers with the API prefix
 app.include_router(pointing_router, prefix=API_V1_PREFIX)
 app.include_router(gw_alert_router, prefix=API_V1_PREFIX)
-app.include_router(candidate_router, prefix=API_V1_PREFIX) 
+app.include_router(candidate_router, prefix=API_V1_PREFIX)
 app.include_router(instrument_router, prefix=API_V1_PREFIX)
 app.include_router(galaxy_router, prefix=API_V1_PREFIX)
 app.include_router(icecube_router, prefix=API_V1_PREFIX)
 app.include_router(doi_router, prefix=API_V1_PREFIX)
 app.include_router(event, prefix=API_V1_PREFIX)
+app.include_router(celestial_router, prefix=API_V1_PREFIX)
 
 # Include admin router without API prefix (matches original endpoint)
 app.include_router(admin_router)

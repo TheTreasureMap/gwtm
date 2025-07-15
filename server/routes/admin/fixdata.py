@@ -12,8 +12,8 @@ router = APIRouter(tags=["admin"])
 @router.get("/fixdata")
 @router.post("/fixdata")
 async def fixdata(
-        db: Session = Depends(get_db),
-        user=Depends(verify_admin)  # Only admin can use this endpoint
+    db: Session = Depends(get_db),
+    user=Depends(verify_admin),  # Only admin can use this endpoint
 ):
     """
     Fix data issues (admin only).

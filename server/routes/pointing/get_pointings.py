@@ -15,12 +15,12 @@ from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
 from server.schemas.pointing import PointingSchema
 from server.utils.error_handling import validation_exception
-from server.core.enums.pointing_status import pointing_status as pointing_status_enum
-from server.core.enums.depth_unit import depth_unit as depth_unit_enum
-from server.core.enums.bandpass import bandpass
-from server.core.enums.wavelength_units import wavelength_units
-from server.core.enums.frequency_units import frequency_units
-from server.core.enums.energy_units import energy_units
+from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
+from server.core.enums.depthunit import DepthUnit as depth_unit_enum
+from server.core.enums.bandpass import Bandpass as bandpass
+from server.core.enums.wavelengthunits import WavelengthUnits as wavelength_units
+from server.core.enums.frequencyunits import FrequencyUnits as frequency_units
+from server.core.enums.energyunits import EnergyUnits as energy_units
 from server.utils.function import isInt, isFloat
 
 router = APIRouter(tags=["pointings"])

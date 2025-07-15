@@ -19,7 +19,7 @@ async def get_grbmoc(
     graceid: str = Query(..., description="Grace ID of the GW event"),
     instrument: str = Query(..., description="Instrument name (gbm, lat, or bat)"),
     db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    user=Depends(get_current_user),
 ):
     """
     Get the GRB MOC file for a GW alert.
@@ -35,17 +35,23 @@ async def get_grbmoc(
 
     # Validate instrument
     instrument = instrument.lower()
-    if instrument not in ['gbm', 'lat', 'bat']:
+    if instrument not in ["gbm", "lat", "bat"]:
         raise validation_exception("Valid instruments are in ['gbm', 'lat', 'bat']")
 
     # Map instrument names to their full names
-    instrument_dictionary = {'gbm': 'Fermi', 'lat': 'LAT', 'bat': 'BAT'}
+    instrument_dictionary = {"gbm": "Fermi", "lat": "LAT", "bat": "BAT"}
 
     # Build path
     moc_filepath = f"fit/{graceid}-{instrument_dictionary[instrument]}.json"
 
     try:
-        file_content = download_gwtm_file(filename=moc_filepath, source=settings.STORAGE_BUCKET_SOURCE, config=settings)
+        file_content = download_gwtm_file(
+            filename=moc_filepath,
+            source=settings.STORAGE_BUCKET_SOURCE,
+            config=settings,
+        )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        raise not_found_exception(f"MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}' does not exist!")
+        raise not_found_exception(
+            f"MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}' does not exist!"
+        )

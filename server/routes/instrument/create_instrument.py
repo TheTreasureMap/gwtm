@@ -16,14 +16,14 @@ router = APIRouter(tags=["instruments"])
 async def create_instrument(
     instrument: InstrumentCreate,
     db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    user=Depends(get_current_user),
 ):
     """
     Create a new instrument.
-    
+
     Parameters:
     - instrument: Instrument data
-    
+
     Returns the created instrument
     """
     # Create a new instrument
@@ -32,11 +32,11 @@ async def create_instrument(
         nickname=instrument.nickname,
         instrument_type=instrument.instrument_type,
         submitterid=user.id,
-        datecreated=datetime.datetime.now()
+        datecreated=datetime.datetime.now(),
     )
-    
+
     db.add(new_instrument)
     db.commit()
     db.refresh(new_instrument)
-    
+
     return new_instrument

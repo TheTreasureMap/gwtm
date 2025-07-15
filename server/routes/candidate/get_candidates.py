@@ -17,9 +17,9 @@ router = APIRouter(tags=["candidates"])
 
 @router.get("/candidate", response_model=List[CandidateSchema])
 async def get_candidates(
-        query_params: GetCandidateQueryParams = Depends(),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    query_params: GetCandidateQueryParams = Depends(),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Get candidates with optional filters.
@@ -33,7 +33,7 @@ async def get_candidates(
         try:
             ids_list = None
             if isinstance(query_params.ids, str):
-                ids_list = query_params.ids.split('[')[1].split(']')[0].split(',')
+                ids_list = query_params.ids.split("[")[1].split("]")[0].split(",")
             elif isinstance(query_params.ids, list):
                 ids_list = query_params.ids
             if ids_list:
@@ -63,10 +63,14 @@ async def get_candidates(
             pass
 
     if query_params.discovery_magnitude_gt is not None:
-        filter_conditions.append(GWCandidate.discovery_magnitude >= query_params.discovery_magnitude_gt)
+        filter_conditions.append(
+            GWCandidate.discovery_magnitude >= query_params.discovery_magnitude_gt
+        )
 
     if query_params.discovery_magnitude_lt is not None:
-        filter_conditions.append(GWCandidate.discovery_magnitude <= query_params.discovery_magnitude_lt)
+        filter_conditions.append(
+            GWCandidate.discovery_magnitude <= query_params.discovery_magnitude_lt
+        )
 
     if query_params.discovery_date_after:
         try:
@@ -83,19 +87,33 @@ async def get_candidates(
             pass
 
     if query_params.associated_galaxy_name:
-        filter_conditions.append(GWCandidate.associated_galaxy.contains(query_params.associated_galaxy_name))
+        filter_conditions.append(
+            GWCandidate.associated_galaxy.contains(query_params.associated_galaxy_name)
+        )
 
     if query_params.associated_galaxy_redshift_gt is not None:
-        filter_conditions.append(GWCandidate.associated_galaxy_redshift >= query_params.associated_galaxy_redshift_gt)
+        filter_conditions.append(
+            GWCandidate.associated_galaxy_redshift
+            >= query_params.associated_galaxy_redshift_gt
+        )
 
     if query_params.associated_galaxy_redshift_lt is not None:
-        filter_conditions.append(GWCandidate.associated_galaxy_redshift <= query_params.associated_galaxy_redshift_lt)
+        filter_conditions.append(
+            GWCandidate.associated_galaxy_redshift
+            <= query_params.associated_galaxy_redshift_lt
+        )
 
     if query_params.associated_galaxy_distance_gt is not None:
-        filter_conditions.append(GWCandidate.associated_galaxy_distance >= query_params.associated_galaxy_distance_gt)
+        filter_conditions.append(
+            GWCandidate.associated_galaxy_distance
+            >= query_params.associated_galaxy_distance_gt
+        )
 
     if query_params.associated_galaxy_distance_lt is not None:
-        filter_conditions.append(GWCandidate.associated_galaxy_distance <= query_params.associated_galaxy_distance_lt)
+        filter_conditions.append(
+            GWCandidate.associated_galaxy_distance
+            <= query_params.associated_galaxy_distance_lt
+        )
 
     candidates = db.query(GWCandidate).filter(*filter_conditions).all()
 

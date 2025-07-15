@@ -10,6 +10,6 @@ metadata:
 data:
   APP_NAME: "GWTM FastAPI"
   DEBUG: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
-  CORS_ORIGINS: "{{ .Values.ingress.host }}"
+  CORS_ORIGINS: '["https://{{ .Values.ingress.host }}", "http://{{ .Values.ingress.host }}", "http://localhost:3000", "http://localhost:5173"]'
   BASE_URL: "https://{{ .Values.ingress.host }}"
   # Add any additional configuration for FastAPI here

@@ -2,6 +2,7 @@
 Test IceCube endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
+
 import os
 import requests
 import datetime
@@ -35,7 +36,9 @@ class TestIceCubeEndpoints:
             "ref_id": ref_id,
             "graceid": "S190425z",  # Use a known GraceID from test data
             "alert_datetime": datetime.datetime.now().isoformat(),
-            "observation_start": (datetime.datetime.now() - datetime.timedelta(hours=1)).isoformat(),
+            "observation_start": (
+                datetime.datetime.now() - datetime.timedelta(hours=1)
+            ).isoformat(),
             "observation_stop": datetime.datetime.now().isoformat(),
             "pval_generic": 0.01,
             "pval_bayesian": 0.02,
@@ -44,9 +47,9 @@ class TestIceCubeEndpoints:
             "flux_sens_low": 1e-10,
             "flux_sens_high": 1e-9,
             "sens_energy_range_low": 100,
-            "sens_energy_range_high": 1000
+            "sens_energy_range_high": 1000,
         }
-        
+
         events_data = [
             {
                 "event_dt": 0.5,
@@ -56,7 +59,7 @@ class TestIceCubeEndpoints:
                 "event_pval_generic": 0.015,
                 "event_pval_bayesian": 0.025,
                 "ra_uncertainty": 0.5,
-                "uncertainty_shape": "circle"
+                "uncertainty_shape": "circle",
             },
             {
                 "event_dt": 1.0,
@@ -66,21 +69,18 @@ class TestIceCubeEndpoints:
                 "event_pval_generic": 0.02,
                 "event_pval_bayesian": 0.03,
                 "ra_uncertainty": 0.6,
-                "uncertainty_shape": "circle"
-            }
+                "uncertainty_shape": "circle",
+            },
         ]
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         result = response.json()
         assert "icecube_notice" in result
@@ -95,26 +95,19 @@ class TestIceCubeEndpoints:
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z",
-            "alert_datetime": datetime.datetime.now().isoformat()
+            "alert_datetime": datetime.datetime.now().isoformat(),
         }
-        
-        events_data = [{
-            "event_dt": 0.5,
-            "ra": 123.456,
-            "dec": -12.345
-        }]
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        events_data = [{"event_dt": 0.5, "ra": 123.456, "dec": -12.345}]
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.user_token}  # Non-admin user
+            headers={"api_token": self.user_token},  # Non-admin user
         )
-        
+
         # Should fail with 403 Forbidden
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -126,35 +119,28 @@ class TestIceCubeEndpoints:
         notice_data = {
             "ref_id": ref_id,
             "graceid": "S190425z",
-            "alert_datetime": datetime.datetime.now().isoformat()
+            "alert_datetime": datetime.datetime.now().isoformat(),
         }
-        
-        events_data = [{
-            "event_dt": 0.5,
-            "ra": 123.456,
-            "dec": -12.345
-        }]
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        events_data = [{"event_dt": 0.5, "ra": 123.456, "dec": -12.345}]
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Now post again with the same ref_id
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         result = response.json()
         assert "event already exists" in result["icecube_notice"]["message"]
@@ -162,30 +148,23 @@ class TestIceCubeEndpoints:
     def test_post_icecube_notice_invalid_graceid(self):
         """Test posting an IceCube notice with an invalid GraceID."""
         ref_id = f"IceCube-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+
         notice_data = {
             "ref_id": ref_id,
             "graceid": "INVALID123",  # Invalid GraceID
-            "alert_datetime": datetime.datetime.now().isoformat()
+            "alert_datetime": datetime.datetime.now().isoformat(),
         }
-        
-        events_data = [{
-            "event_dt": 0.5,
-            "ra": 123.456,
-            "dec": -12.345
-        }]
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        events_data = [{"event_dt": 0.5, "ra": 123.456, "dec": -12.345}]
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         # Note: The endpoint might accept invalid GraceIDs depending on implementation
         # If it validates GraceIDs, the response should indicate an error
         if response.status_code != 200:
@@ -204,23 +183,20 @@ class TestIceCubeEndpoints:
 
         notice_data = {
             "ref_id": ref_id,
-            "graceid": "S190425z"
+            "graceid": "S190425z",
             # Missing other fields, but they are Optional in the schema
         }
-        
+
         events_data = []  # No events
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.admin_token}
+            headers={"api_token": self.admin_token},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         result = response.json()
         assert "icecube_notice" in result
@@ -231,47 +207,32 @@ class TestIceCubeEndpoints:
         """Test that authentication is required."""
         ref_id = f"IceCube-{uuid.uuid4()}"
 
-        notice_data = {
-            "ref_id": ref_id,
-            "graceid": "S190425z"
-        }
-        
+        notice_data = {"ref_id": ref_id, "graceid": "S190425z"}
+
         events_data = []
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
-        response = requests.post(
-            self.get_url("/post_icecube_notice"),
-            json=data
-        )
-        
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
+        response = requests.post(self.get_url("/post_icecube_notice"), json=data)
+
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_post_icecube_notice_with_invalid_token(self):
         """Test with invalid API token."""
         ref_id = f"IceCube-{uuid.uuid4()}"
 
-        notice_data = {
-            "ref_id": ref_id,
-            "graceid": "S190425z"
-        }
-        
+        notice_data = {"ref_id": ref_id, "graceid": "S190425z"}
+
         events_data = []
-        
-        data = {
-            "notice_data": notice_data,
-            "events_data": events_data
-        }
-        
+
+        data = {"notice_data": notice_data, "events_data": events_data}
+
         response = requests.post(
             self.get_url("/post_icecube_notice"),
             json=data,
-            headers={"api_token": self.invalid_token}
+            headers={"api_token": self.invalid_token},
         )
-        
+
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 

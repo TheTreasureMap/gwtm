@@ -689,7 +689,7 @@ class GWTMApiService {
     }
 
     async getGWContour(graceid: string): Promise<any> {
-        return this.get<any>('/gw_contour', { graceid });
+        return this.get<any>('/api/v1/gw_contour', { graceid });
     }
 
     async getGRBMOCFile(graceid: string, instrument: string): Promise<any> {

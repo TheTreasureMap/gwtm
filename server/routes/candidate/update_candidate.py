@@ -16,9 +16,9 @@ router = APIRouter(tags=["candidates"])
 
 @router.put("/candidate", response_model=PutCandidateRequest)
 async def update_candidate(
-        request: PutCandidateRequest = Body(..., description="Fields to update"),
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    request: PutCandidateRequest = Body(..., description="Fields to update"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Update an existing candidate.
@@ -70,7 +70,9 @@ async def update_candidate(
         # convert position from wkb to wkt and then to string
         "position": str(shapely.wkb.loads(bytes(candidate.position.data))),
         # convert discovery_date to string
-        "discovery_date": candidate.discovery_date.isoformat() if candidate.discovery_date else None,
+        "discovery_date": (
+            candidate.discovery_date.isoformat() if candidate.discovery_date else None
+        ),
         "discovery_magnitude": candidate.discovery_magnitude,
         "magnitude_central_wave": candidate.magnitude_central_wave,
         "magnitude_bandwidth": candidate.magnitude_bandwidth,
@@ -78,12 +80,9 @@ async def update_candidate(
         "magnitude_bandpass": candidate.magnitude_bandpass,
         "associated_galaxy": candidate.associated_galaxy,
         "associated_galaxy_redshift": candidate.associated_galaxy_redshift,
-        "associated_galaxy_distance": candidate.associated_galaxy_distance
+        "associated_galaxy_distance": candidate.associated_galaxy_distance,
     }
     # Convert to CandidateUpdateField instance
     updated_candidate = CandidateUpdateField(**candidate_dict)
 
-    return PutCandidateRequest(
-        id=request.id,
-        candidate=updated_candidate
-    )
+    return PutCandidateRequest(id=request.id, candidate=updated_candidate)

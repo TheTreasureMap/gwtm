@@ -9,7 +9,7 @@ from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
 from server.db.models.pointing_event import PointingEvent
-from server.core.enums.pointing_status import pointing_status
+from server.core.enums.pointingstatus import PointingStatus as pointing_status
 from server.schemas.gw_alert import GWAlertSchema, GWAlertQueryResponse, GWAlertFilterOptionsResponse
 router = APIRouter(tags=["gw_alerts"])
 
@@ -44,22 +44,15 @@ async def query_alerts(
     filter_conditions = []
 
     if graceid:
-        # Handle alternative GraceID format if needed and support text search
+        # Handle alternative GraceID format if needed - use exact matching only
         if graceid.strip():
             search_input = graceid.strip()
-            
-            # Try exact match first, then partial search
-            # Escape underscores in LIKE patterns since _ is a wildcard in SQL
-            escaped_search = search_input.replace('_', '\\_').replace('%', '\\%')
-            search_term = f"%{escaped_search}%"
             
             from sqlalchemy import or_
             filter_conditions.append(
                 or_(
                     GWAlert.graceid == search_input,
-                    GWAlert.alternateid == search_input,
-                    GWAlert.graceid.ilike(search_term, escape='\\'),
-                    GWAlert.alternateid.ilike(search_term, escape='\\')
+                    GWAlert.alternateid == search_input
                 )
             )
 

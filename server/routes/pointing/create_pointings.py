@@ -16,9 +16,9 @@ router = APIRouter(tags=["pointings"])
 
 @router.post("/pointings", response_model=PointingResponse)
 async def add_pointings(
-        request: PointingCreateRequest,
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    request: PointingCreateRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Add new pointings to the database.
@@ -42,10 +42,14 @@ async def add_pointings(
     instruments_dict = pointing_utils.get_instruments_dict(db)
 
     # Get existing pointings for duplicate check
-    existing_pointings = db.query(Pointing).filter(
-        Pointing.id == PointingEvent.pointingid,
-        PointingEvent.graceid == request.graceid
-    ).all()
+    existing_pointings = (
+        db.query(Pointing)
+        .filter(
+            Pointing.id == PointingEvent.pointingid,
+            PointingEvent.graceid == request.graceid,
+        )
+        .all()
+    )
 
     # Process pointings (either single or multiple)
     pointings_to_process = []
@@ -57,7 +61,7 @@ async def add_pointings(
     for pointing_data in pointings_to_process:
         try:
             # Check if this is an update to a planned pointing
-            if hasattr(pointing_data, 'id') and pointing_data.id:
+            if hasattr(pointing_data, "id") and pointing_data.id:
                 # Handle planned pointing update
                 pointing_obj = pointing_utils.handle_planned_pointing_update(
                     pointing_data, user.id, db
@@ -67,15 +71,22 @@ async def add_pointings(
                 instrument_id = pointing_utils.validate_instrument_reference(
                     pointing_data, instruments_dict
                 )
-                
+
                 # Create new pointing object
                 pointing_obj = pointing_utils.create_pointing_from_schema(
                     pointing_data, user.id, instrument_id
                 )
-                
+
                 # Check for duplicates
-                if pointing_utils.check_duplicate_pointing(pointing_obj, existing_pointings):
-                    errors.append([f"Object: {pointing_data.dict()}", ["Pointing already submitted"]])
+                if pointing_utils.check_duplicate_pointing(
+                    pointing_obj, existing_pointings
+                ):
+                    errors.append(
+                        [
+                            f"Object: {pointing_data.dict()}",
+                            ["Pointing already submitted"],
+                        ]
+                    )
                     continue
 
             points.append(pointing_obj)
@@ -90,10 +101,7 @@ async def add_pointings(
     # Create pointing events (this should always happen when we have valid points and graceid)
     if points:  # Only create pointing events if we have valid points
         for p in points:
-            pointing_event = PointingEvent(
-                pointingid=p.id,
-                graceid=request.graceid
-            )
+            pointing_event = PointingEvent(pointingid=p.id, graceid=request.graceid)
             db.add(pointing_event)
 
     db.flush()
@@ -122,5 +130,5 @@ async def add_pointings(
         pointing_ids=[p.id for p in points],
         ERRORS=errors,
         WARNINGS=warnings,
-        DOI=doi_url
+        DOI=doi_url,
     )

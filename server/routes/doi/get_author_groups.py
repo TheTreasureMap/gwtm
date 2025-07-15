@@ -14,8 +14,7 @@ router = APIRouter(tags=["DOI"])
 
 @router.get("/doi_author_groups", response_model=List[DOIAuthorGroupSchema])
 async def get_doi_author_groups(
-        db: Session = Depends(get_db),
-        user=Depends(get_current_user)
+    db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     """
     Get all DOI author groups for the current user.
