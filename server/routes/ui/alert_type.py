@@ -17,6 +17,7 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
     from server.utils.function import get_farrate_farunit, polygons2footprints
     from server.utils.gwtm_io import download_gwtm_file
     from server.config import settings
+    import pandas as pd
 
     # Parse the URL ID to get alert ID and alert type
     url_parts = urlid.split("_")
@@ -31,7 +32,7 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Alert not found")
 
     # Determine storage path
-    s3path = "fit" if alert.role == AlertRole.observation else "test"
+    s3path = "fit" if alert.role == "observation" else "test"
 
     # Format FAR (False Alarm Rate) for human readability
     human_far = ""
@@ -81,18 +82,20 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         alert.area_90 = f"{round(alert.area_90, 3)} deg<sup>2</sup>"
 
     # Round probability values
-    for prob_attr in [
-        "prob_bns",
-        "prob_nsbh",
-        "prob_gap",
-        "prob_bbh",
-        "prob_terrestrial",
-        "prob_hasns",
-        "prob_hasremenant",
-    ]:
-        value = getattr(alert, prob_attr, None)
-        if value is not None:
-            setattr(alert, prob_attr, round(value, 5))
+    if alert.prob_bns is not None:
+        alert.prob_bns = round(alert.prob_bns, 5)
+    if alert.prob_nsbh is not None:
+        alert.prob_nsbh = round(alert.prob_nsbh, 5)
+    if alert.prob_gap is not None:
+        alert.prob_gap = round(alert.prob_gap, 5)
+    if alert.prob_bbh is not None:
+        alert.prob_bbh = round(alert.prob_bbh, 5)
+    if alert.prob_terrestrial is not None:
+        alert.prob_terrestrial = round(alert.prob_terrestrial, 5)
+    if alert.prob_hasns is not None:
+        alert.prob_hasns = round(alert.prob_hasns, 5)
+    if alert.prob_hasremenant is not None:
+        alert.prob_hasremenant = round(alert.prob_hasremenant, 5)
 
     # Prepare detection overlays
     detection_overlays = []
@@ -104,10 +107,10 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         contours_data = download_gwtm_file(
             contour_path, source=settings.STORAGE_BUCKET_SOURCE, config=settings
         )
-        contours_data = json.loads(contours_data)
+        contours_df = pd.read_json(contours_data)
 
         contour_geometry = []
-        for contour in contours_data["features"]:
+        for contour in contours_df["features"]:
             contour_geometry.extend(contour["geometry"]["coordinates"])
 
         detection_overlays.append(

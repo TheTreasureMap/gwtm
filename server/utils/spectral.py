@@ -4,7 +4,8 @@ These functions handle conversions between different spectral representations
 like wavelength, frequency, and energy.
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
+import numpy as np
 from server.core.enums.bandpass import Bandpass
 from enum import IntEnum
 

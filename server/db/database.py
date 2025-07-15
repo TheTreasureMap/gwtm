@@ -10,18 +10,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+
 # Database dependency for FastAPI
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@contextmanager
-def db_session():
-    """Context manager for non-FastAPI database access (scripts, background tasks)."""
     db = SessionLocal()
     try:
         yield db

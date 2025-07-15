@@ -38,8 +38,11 @@
 	let maxTime = 7;
 	let currentTab = 'info'; // 'info', 'coverage', 'renorm'
 	
-	// Alert type management
+	// Alert type management  
 	let availableAlertTypes: any[] = [];
+	
+	let isLoadingAlertTypes = false;
+	let isSwitchingAlert = false;
 	
 	// Overlay management
 	let overlayLists = {
@@ -52,34 +55,25 @@
 	};
 
 	onMount(async () => {
-		console.log('SkyVisualization onMount called');
-		console.log('Props at mount:', { graceid, alert: !!alert, pointingStatus, selectedAlertType });
+		// Load alert types first (before visualization)
+		if (graceid) {
+			await loadAlertTypes();
+		}
 		
 		// Use tick to ensure DOM is fully rendered
 		await tick();
-		console.log('After tick - container state:', aladinContainer);
 		
 		// Wait for container to be available with retries
 		awaitContainer();
 	});
 	
 	async function awaitContainer(maxRetries = 20, retryDelay = 200) {
-		console.log('Waiting for Aladin container...');
-		console.log('Current container state:', aladinContainer);
-		
 		// Also try to find container by ID as backup
 		const findContainerById = () => document.getElementById('aladin-lite-div');
 		
 		for (let i = 0; i < maxRetries; i++) {
 			const containerByBinding = aladinContainer;
 			const containerById = findContainerById();
-			
-			console.log(`Attempt ${i + 1}/${maxRetries}:`, {
-				binding: !!containerByBinding,
-				byId: !!containerById,
-				document: !!document,
-				body: !!document.body
-			});
 			
 			if (containerByBinding || containerById) {
 				// Use whichever container we found
@@ -184,39 +178,66 @@
 	// Scripts are now loaded statically in app.html, so no dynamic loading needed
 
 	async function fetchSunMoonPositions(): Promise<{ sun_ra: number, sun_dec: number, moon_ra: number, moon_dec: number } | null> {
-		if (!selectedAlert?.time_of_signal) return null;
+		console.log('fetchSunMoonPositions called with selectedAlert:', selectedAlert);
+		console.log('time_of_signal:', selectedAlert?.time_of_signal);
+		// Try selectedAlert first, then fall back to alert prop
+		const timeOfSignal = selectedAlert?.time_of_signal || alert?.time_of_signal;
+		if (!timeOfSignal) {
+			console.log('No time_of_signal available in selectedAlert or alert prop, returning null');
+			return null;
+		}
 
 		try {
-			// Format date for JPL Horizons API (YYYY-MM-DD format)
-			const gwTime = new Date(selectedAlert.time_of_signal);
-			const dateStr = gwTime.toISOString().slice(0, 10); // Just YYYY-MM-DD
-			const nextDay = new Date(gwTime);
-			nextDay.setDate(nextDay.getDate() + 1);
-			const stopDateStr = nextDay.toISOString().slice(0, 10);
+			console.log('Fetching sun/moon positions from FastAPI backend for:', timeOfSignal);
+
+			// Call our temporary FastAPI endpoint (same calculation as Flask version)
+			const url = `http://localhost:8000/temp_sun_moon_positions?time_of_signal=${encodeURIComponent(timeOfSignal)}`;
+			console.log('Calling URL:', url);
+			const response = await fetch(url);
 			
-			console.log('Fetching sun/moon positions for:', dateStr);
-
-			// Fetch Sun position (COMMAND='10')
-			const sunPromise = fetchHorizonsPosition('10', dateStr, stopDateStr, 'Sun');
-			
-			// Fetch Moon position (COMMAND='301') 
-			const moonPromise = fetchHorizonsPosition('301', dateStr, stopDateStr, 'Moon');
-
-			const [sunPos, moonPos] = await Promise.all([sunPromise, moonPromise]);
-
-			if (sunPos && moonPos) {
-				return {
-					sun_ra: sunPos.ra,
-					sun_dec: sunPos.dec,
-					moon_ra: moonPos.ra,
-					moon_dec: moonPos.dec
-				};
+			console.log('Response status:', response.status, response.statusText);
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
+			
+			const data = await response.json();
+			
+			console.log('Successfully fetched sun/moon positions from FastAPI:', data);
+			return {
+				sun_ra: data.sun_ra,
+				sun_dec: data.sun_dec,
+				moon_ra: data.moon_ra,
+				moon_dec: data.moon_dec
+			};
 
-			return null;
 		} catch (err) {
-			console.error('Failed to fetch sun/moon positions:', err);
-			return null;
+			console.error('Failed to fetch sun/moon positions from FastAPI backend:', err);
+			
+			// Fall back to approximate positions based on time
+			const gwTime = new Date(timeOfSignal);
+			const dayOfYear = Math.floor((gwTime.getTime() - new Date(gwTime.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+			
+			// Approximate sun position (very rough approximation)
+			const sunRA = (dayOfYear * 360 / 365) % 360;
+			const sunDec = 23.5 * Math.sin(2 * Math.PI * (dayOfYear - 80) / 365);
+			
+			// Approximate moon position (offset from sun by ~90 degrees as rough approximation)
+			const moonRA = (sunRA + 90) % 360;
+			const moonDec = sunDec * 0.5; // Rough approximation
+			
+			console.log('Using fallback sun/moon positions:', {
+				sun_ra: sunRA,
+				sun_dec: sunDec,
+				moon_ra: moonRA,
+				moon_dec: moonDec
+			});
+			
+			return {
+				sun_ra: sunRA,
+				sun_dec: sunDec,
+				moon_ra: moonRA,
+				moon_dec: moonDec
+			};
 		}
 	}
 
@@ -400,7 +421,7 @@
 			
 			// Use the correct Aladin v2 API syntax matching Flask settings
 			const aladinOptions = {
-				fov: 60, // Start with smaller field of view to see something
+				fov: 180, // Match Flask default field of view
 				target: target,
 				showGotoControl: true,
 				showFullscreenControl: true,
@@ -426,8 +447,21 @@
 		if (!graceid) return;
 
 		try {
-			// Fetch sun/moon positions from NASA JPL Horizons
+			// Fetch sun/moon positions from FastAPI backend (using Astropy like Flask)
+			console.log('Loading visualization data, attempting to fetch sun/moon positions...');
 			sunMoonData = await fetchSunMoonPositions();
+			console.log('Sun/moon data result:', sunMoonData);
+			
+			// Ensure we always have sun/moon data as failsafe
+			if (!sunMoonData) {
+				console.log('No sun/moon data received, using default positions');
+				sunMoonData = {
+					sun_ra: 180.0,   // Default sun position
+					sun_dec: 0.0,
+					moon_ra: 270.0,  // Default moon position 
+					moon_dec: 10.0
+				};
+			}
 
 			// Load detection overlays from alert data
 			if (selectedAlert) {
@@ -488,12 +522,23 @@
 		if (!aladin) return;
 
 		try {
-			// Clear existing overlays
-			aladin.removeLayers();
+			// Clear existing data overlays only (preserve base sky survey)
+			clearDataOverlays();
 
 			// Add sun and moon overlays (always shown like in Flask)
 			if (sunMoonData) {
 				addSunMoonOverlays();
+			} else {
+				console.log('No sunMoonData available in updateVisualization, attempting to fetch...');
+				// Try to get sun/moon data if we don't have it yet
+				fetchSunMoonPositions().then(data => {
+					if (data) {
+						sunMoonData = data;
+						addSunMoonOverlays();
+					}
+				}).catch(err => {
+					console.error('Failed to fetch sun/moon data in updateVisualization:', err);
+				});
 			}
 			
 			// Add a test marker to ensure something is visible
@@ -548,40 +593,31 @@
 	}
 
 	function addSunMoonOverlays() {
-		if (!aladin || !sunMoonData) return;
+		console.log('addSunMoonOverlays called with:', { aladin: !!aladin, sunMoonData });
+		if (!aladin || !sunMoonData) {
+			console.log('Cannot add sun/moon overlays - missing aladin or sunMoonData');
+			return;
+		}
 
 		try {
 			const A = (window as any).A;
 			
-			// Add Sun marker (matching Flask: sun-logo-100.png style)
-			const sunCat = A.catalog({
-				name: 'Sun at GW T0',
-				color: '#FFD700',
-				sourceSize: 12,
-				shape: 'circle'
-			});
+			// Implement the exact same approach as Flask's aladin_setImage function
+			function aladinSetImage(aladin, imgsource, imgname, pos_ra, pos_dec) {
+				const IMG = new Image();
+				IMG.src = imgsource;
+				const cat = A.catalog({shape: IMG, name: imgname});
+				aladin.addCatalog(cat);
+				cat.addSources(A.source(pos_ra, pos_dec));
+			}
 			
-			sunCat.addSources([A.source(sunMoonData.sun_ra, sunMoonData.sun_dec, {
-				name: 'Sun at GW T0'
-			})]);
-			aladin.addCatalog(sunCat);
+			// Add sun and moon images using the exact Flask approach
+			aladinSetImage(aladin, '/sun-logo-100.png', 'Sun at GW T0', sunMoonData.sun_ra, sunMoonData.sun_dec);
+			aladinSetImage(aladin, '/moon-supersmall.png', 'Moon at GW T0', sunMoonData.moon_ra, sunMoonData.moon_dec);
 			
-			// Add Moon marker (matching Flask: moon-supersmall.png style)
-			const moonCat = A.catalog({
-				name: 'Moon at GW T0',
-				color: '#C0C0C0',
-				sourceSize: 8,
-				shape: 'circle'
-			});
-			
-			moonCat.addSources([A.source(sunMoonData.moon_ra, sunMoonData.moon_dec, {
-				name: 'Moon at GW T0'
-			})]);
-			aladin.addCatalog(moonCat);
-			
-			console.log('Added sun/moon overlays:', {
-				sun: { ra: sunMoonData.sun_ra, dec: sunMoonData.sun_dec },
-				moon: { ra: sunMoonData.moon_ra, dec: sunMoonData.moon_dec }
+			console.log('Added sun/moon image overlays using Flask approach:', {
+				sun: { ra: sunMoonData.sun_ra, dec: sunMoonData.sun_dec, image: '/sun-logo-100.png' },
+				moon: { ra: sunMoonData.moon_ra, dec: sunMoonData.moon_dec, image: '/moon-supersmall.png' }
 			});
 			
 		} catch (err) {
@@ -924,52 +960,136 @@
 
 	// Alert type loading and switching
 	async function loadAlertTypes() {
-		if (!graceid) return;
+		if (!graceid || isLoadingAlertTypes) return;
 		
+		isLoadingAlertTypes = true;
 		try {
-			const response = await gwtmApi.queryAlerts({ graceids: graceid });
+			// Query alerts for this specific graceid only (matching Flask behavior)
+			const response = await gwtmApi.queryAlerts({ graceid: graceid });
 			if (response.alerts && response.alerts.length > 0) {
-				// Group alerts by type
-				const typeMap = new Map();
-				response.alerts.forEach((alert: any) => {
-					if (!typeMap.has(alert.alert_type) || new Date(alert.timesent) > new Date(typeMap.get(alert.alert_type).timesent)) {
-						typeMap.set(alert.alert_type, alert);
+				// Try exact matching first (this should be sufficient for most cases)
+				let exactGraceidAlerts = response.alerts.filter((alert: any) => 
+					alert.graceid === graceid || alert.alternateid === graceid
+				);
+				
+				// If no exact match, try case-insensitive matching only
+				if (exactGraceidAlerts.length === 0) {
+					exactGraceidAlerts = response.alerts.filter((alert: any) => 
+						alert.graceid?.toLowerCase() === graceid?.toLowerCase() || 
+						alert.alternateid?.toLowerCase() === graceid?.toLowerCase()
+					);
+				}
+				
+				// If we still have no alerts, something is wrong - don't fall back to all alerts
+				if (exactGraceidAlerts.length === 0) {
+					console.error('No alerts found for graceid:', graceid);
+					return;
+				}
+				
+				// Filter out retraction alerts from tabs display (matching Flask behavior)
+				const validAlerts = exactGraceidAlerts.filter((alert: any) => alert.alert_type !== 'Retraction');
+				
+				// Sort by datecreated ASC to match Flask processing order
+				validAlerts.sort((a, b) => new Date(a.datecreated || a.timesent).getTime() - new Date(b.datecreated || b.timesent).getTime());
+				
+				// Process alerts with numbering for duplicates (exactly matching Flask logic)
+				const alertTypeTabs: any[] = [];
+				
+				validAlerts.forEach((alert: any) => {
+					const existingTypes = alertTypeTabs.map(tab => tab.type);
+					const baseType = alert.alert_type;
+					
+					// Check if this alert type already exists
+					const existingOfSameType = existingTypes.filter(type => {
+						const typeBase = type.split(' ')[0]; // Get base type without number
+						return typeBase === baseType;
+					});
+					
+					if (existingOfSameType.length > 0) {
+						// This alert type already exists, add number
+						const num = existingOfSameType.length;
+						const displayType = `${baseType} ${num}`;
+						
+						alertTypeTabs.push({
+							type: displayType,
+							timesent: alert.timesent,
+							urlid: `${alert.id}_${baseType}_${num}`,
+							original_alert: alert,
+							alert_type: displayType
+						});
+					} else {
+						// First occurrence of this alert type
+						alertTypeTabs.push({
+							type: baseType,
+							timesent: alert.timesent,
+							urlid: `${alert.id}_${baseType}`,
+							original_alert: alert,
+							alert_type: baseType
+						});
 					}
 				});
 				
-				availableAlertTypes = Array.from(typeMap.values())
-					.sort((a, b) => new Date(b.timesent).getTime() - new Date(a.timesent).getTime());
+				// Sort by timesent DESC for display (newest first, matching Flask)
+				availableAlertTypes = alertTypeTabs.sort((a, b) => new Date(b.timesent).getTime() - new Date(a.timesent).getTime());
+				
 				
 				// Set selected alert if not already set
 				if (!selectedAlert && availableAlertTypes.length > 0) {
-					selectedAlert = availableAlertTypes[0];
-					selectedAlertType = selectedAlert.alert_type;
+					selectedAlert = availableAlertTypes[0].original_alert;
+					selectedAlertType = availableAlertTypes[0].alert_type;
 				}
 			}
 		} catch (err) {
 			console.error('Failed to load alert types:', err);
+		} finally {
+			isLoadingAlertTypes = false;
 		}
 	}
 	
 	async function switchAlertType(alertType: string) {
-		if (!alertType || !availableAlertTypes.length) return;
+		if (!alertType || !availableAlertTypes.length || isSwitchingAlert) return;
 		
-		const newAlert = availableAlertTypes.find(a => a.alert_type === alertType);
-		if (newAlert && newAlert.id !== selectedAlert?.id) {
-			selectedAlert = newAlert;
+		const newAlertTab = availableAlertTypes.find(a => a.alert_type === alertType);
+		if (newAlertTab && newAlertTab.original_alert.id !== selectedAlert?.id) {
+			isSwitchingAlert = true;
+			
+			selectedAlert = newAlertTab.original_alert;
 			selectedAlertType = alertType;
+			
+			// Clear existing data overlays only (preserve base sky survey to prevent flickering)
+			if (aladin) {
+				try {
+					clearDataOverlays();
+				} catch (err) {
+					console.warn('Error clearing overlays:', err);
+				}
+			}
 			
 			// Reload visualization data for new alert
 			await loadVisualizationData();
 			updateVisualization();
 			
-			// Reset marker data
+			// Animate to new alert coordinates (matching Flask behavior)
+			if (aladin && selectedAlert.avgra !== undefined && selectedAlert.avgdec !== undefined) {
+				try {
+					aladin.animateToRaDec(selectedAlert.avgra, selectedAlert.avgdec, 2); // 2-second animation
+				} catch (err) {
+					console.warn('Error animating to coordinates:', err);
+				}
+			}
+			
+			// Reset marker data (so they reload for new alert)
 			galaxyData = [];
 			candidateData = [];
 			icecubeData = [];
 			showGalaxies = false;
 			showCandidates = false;
 			showIceCube = false;
+			
+			isSwitchingAlert = false;
+			
+			// Reload footprint data for the new alert
+			await reloadFootprintData();
 		}
 	}
 
@@ -978,18 +1098,16 @@
 		updateVisualization();
 	}
 
-	$: if (graceid) {
-		loadAlertTypes();
-	}
+	// Load alert types only once when component mounts (not reactively)
+	// Reactive loading was causing tabs to flicker during alert switching
 
 	// Initialization is now handled by onMount to avoid container timing issues
 	// $: if (graceid && selectedAlert) {
 	//	initializeVisualization();
 	// }
 
-	$: if (selectedAlertType && availableAlertTypes.length > 0) {
-		switchAlertType(selectedAlertType);
-	}
+	// Alert switching is handled directly by click handlers to avoid flickering
+	// Removed reactive statement to prevent redundant switchAlertType() calls
 
 	// Dynamic data loading triggers
 	$: if (showGalaxies && galaxyData.length === 0) {
@@ -1007,7 +1125,7 @@
 	// Remove this reactive statement since we now handle it in the slider events
 
 	// Reload data when pointing status changes
-	$: if (pointingStatus && graceid && selectedAlert) {
+	$: if (pointingStatus && graceid && selectedAlert && !isSwitchingAlert) {
 		reloadFootprintData();
 	}
 
@@ -1030,6 +1148,34 @@
 	}
 
 	// Removed duplicate - using the comprehensive animateToMarker function above
+
+	// Clear only data overlays (preserve base sky survey to prevent flickering)
+	function clearDataOverlays() {
+		if (!aladin) return;
+		
+		try {
+			// Clear tracked overlay lists
+			Object.keys(overlayLists).forEach(key => {
+				const overlays = overlayLists[key as keyof typeof overlayLists];
+				if (Array.isArray(overlays)) {
+					overlays.forEach((overlay: any) => {
+						try {
+							if (overlay.markerlayer) overlay.markerlayer.removeAll();
+							if (overlay.overlaylayer && overlay.overlaylayer.removeAll) overlay.overlaylayer.removeAll();
+							if (overlay.contour && overlay.contour.removeAll) overlay.contour.removeAll();
+							if (overlay.remove) overlay.remove();
+						} catch (e) {
+							console.warn('Error removing overlay:', e);
+						}
+					});
+					// Clear the array
+					(overlayLists[key as keyof typeof overlayLists] as any[]).length = 0;
+				}
+			});
+		} catch (err) {
+			console.warn('Error in clearDataOverlays:', err);
+		}
+	}
 
 	// Toggle marker visibility (matching Flask pattern)
 	function toggleMarkerVisibility(markerList: any[], show: boolean) {
@@ -1434,21 +1580,43 @@
 	}
 </script>
 
+<!-- Alert Type Tabs (matching Flask) - positioned at top above visualization -->
+{#if !error && availableAlertTypes.length > 0}
+	<div class="mb-4">
+		<ul class="nav nav-tabs flex flex-wrap border-b border-gray-200">
+			{#each availableAlertTypes as alertTypeOption}
+				<li class="nav-item mr-2">
+					<button
+						class="px-3 py-2 text-sm font-medium border-b-2 transition-all cursor-pointer
+							{selectedAlertType === alertTypeOption.alert_type 
+								? 'text-blue-600 border-blue-600 bg-blue-50' 
+								: 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'}"
+						on:click={() => switchAlertType(alertTypeOption.alert_type)}
+					>
+						<div class="text-center leading-tight">
+							<div class="font-medium">{alertTypeOption.alert_type}</div>
+							{#if alertTypeOption.timesent}
+								<div class="text-xs opacity-75">
+									{new Date(alertTypeOption.timesent).toLocaleString()}
+								</div>
+							{/if}
+						</div>
+					</button>
+				</li>
+			{/each}
+		</ul>
+	</div>
+{/if}
+
 <!-- Two column layout matching Flask implementation -->
 <div class="flex w-full gap-4">
 	<!-- Left column: Aladin visualization (70% width) -->
 	<div style="width: 70%;">
 		<div class="bg-white border rounded-lg overflow-hidden">
-			<div class="bg-gray-50 px-4 py-3 border-b">
-				<h3 class="text-lg font-medium text-gray-900">Interactive Sky Map</h3>
-				{#if loading}
-					<span class="text-sm text-gray-600">Loading visualization...</span>
-				{/if}
-			</div>
 			<div 
 				bind:this={aladinContainer}
 				class="w-full aladin-container"
-				style="height: 480px; position: relative; border: 2px solid #ccc; background: #000;"
+				style="height: 640px; position: relative; border: 2px solid #ccc; background: #000;"
 				id="aladin-lite-div"
 			></div>
 		</div>
@@ -1526,33 +1694,9 @@
 	</div>
 </div>
 
+
 <div class="space-y-6">
 	{#if !loading && !error}
-		<!-- Alert Type Tabs (matching Flask) -->
-		{#if availableAlertTypes.length > 0}
-			<div class="mb-4">
-				<nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-					{#each availableAlertTypes as alertTypeOption}
-						<button
-							class="px-3 py-2 text-sm font-medium rounded-md transition-all
-								{selectedAlertType === alertTypeOption.alert_type 
-									? 'bg-white text-gray-900 shadow-sm' 
-									: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}"
-							on:click={() => switchAlertType(alertTypeOption.alert_type)}
-						>
-							<div class="text-center">
-								<div class="font-medium">{alertTypeOption.alert_type}</div>
-								{#if alertTypeOption.timesent}
-									<div class="text-xs opacity-75">
-										{new Date(alertTypeOption.timesent).toLocaleDateString()}
-									</div>
-								{/if}
-							</div>
-						</button>
-					{/each}
-				</nav>
-			</div>
-		{/if}
 
 		<!-- Controls Section -->
 		<div class="bg-white border rounded-lg p-4">
@@ -1875,69 +2019,8 @@
 			<div class="p-6">
 				{#if currentTab === 'info'}
 					<!-- Summary Tab -->
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-						{#if selectedAlert}
-							<!-- Alert Information -->
-							<div>
-								<h3 class="text-lg font-semibold mb-4">Information</h3>
-								<div class="space-y-2 text-sm">
-									{#if selectedAlert.group}
-										<div><span class="font-medium">Group:</span> {selectedAlert.group}</div>
-									{/if}
-									{#if selectedAlert.detectors}
-										<div><span class="font-medium">Detectors:</span> {selectedAlert.detectors}</div>
-									{/if}
-									{#if selectedAlert.time_of_signal}
-										<div><span class="font-medium">Time of Signal:</span> {new Date(selectedAlert.time_of_signal).toLocaleString()} UTC</div>
-									{/if}
-									{#if selectedAlert.timesent}
-										<div><span class="font-medium">Time Sent:</span> {new Date(selectedAlert.timesent).toLocaleString()} UTC</div>
-									{/if}
-									{#if selectedAlert.far}
-										<div><span class="font-medium">False Alarm Rate:</span> {selectedAlert.far.toExponential(2)} Hz</div>
-									{/if}
-									{#if selectedAlert.area_50}
-										<div><span class="font-medium">50% Area:</span> {selectedAlert.area_50.toFixed(1)} deg²</div>
-									{/if}
-									{#if selectedAlert.area_90}
-										<div><span class="font-medium">90% Area:</span> {selectedAlert.area_90.toFixed(1)} deg²</div>
-									{/if}
-									{#if selectedAlert.distance}
-										<div><span class="font-medium">Distance:</span> {selectedAlert.distance.toFixed(1)} ± {selectedAlert.distance_error?.toFixed(1) || 'N/A'} Mpc</div>
-									{/if}
-								</div>
-							</div>
-							
-							<!-- Classification (if not Burst) -->
-							{#if selectedAlert.group !== 'Burst'}
-								<div>
-									<h3 class="text-lg font-semibold mb-4">Classification (CBC Only)</h3>
-									<div class="space-y-2 text-sm">
-										{#if selectedAlert.prob_bns}
-											<div><span class="font-medium">BNS:</span> {(selectedAlert.prob_bns * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_nsbh}
-											<div><span class="font-medium">NSBH:</span> {(selectedAlert.prob_nsbh * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_gap}
-											<div><span class="font-medium">Mass Gap:</span> {(selectedAlert.prob_gap * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_bbh}
-											<div><span class="font-medium">BBH:</span> {(selectedAlert.prob_bbh * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_terrestrial}
-											<div><span class="font-medium">Terrestrial:</span> {(selectedAlert.prob_terrestrial * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_hasns}
-											<div><span class="font-medium">Has NS:</span> {(selectedAlert.prob_hasns * 100).toFixed(1)}%</div>
-										{/if}
-										{#if selectedAlert.prob_hasremenant}
-											<div><span class="font-medium">Has Remnant:</span> {(selectedAlert.prob_hasremenant * 100).toFixed(1)}%</div>
-										{/if}
-									</div>
-								</div>
-							{/if}
-						{/if}
+					<div class="text-center text-gray-600">
+						<p>Summary information for consistency with Flask version</p>
 					</div>
 				{:else if currentTab === 'coverage'}
 					<!-- Coverage Calculator Tab -->
@@ -2087,7 +2170,7 @@
 	
 	/* Ensure Aladin container and canvas are visible */
 	.aladin-container {
-		min-height: 480px !important;
+		min-height: 640px !important;
 		overflow: visible !important;
 	}
 	

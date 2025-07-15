@@ -17,7 +17,6 @@ async def get_alert_instruments_footprints(
     graceid: str = None,
     pointing_status: str = None,
     tos_mjd: float = None,
-    nocache: bool = False,
     db: Session = Depends(get_db),
 ):
     """Get footprints of instruments that observed a specific alert."""
@@ -32,16 +31,10 @@ async def get_alert_instruments_footprints(
     from server.utils.gwtm_io import get_cached_file, set_cached_file
     from server.config import settings
 
-    # First find the alert by graceid, handling alternate IDs
+    # First find the alert by graceid
     alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
     if not alert:
-        # Try to find by alternate ID
-        alert = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
-        if alert:
-            # Use the actual graceid from now on
-            graceid = alert.graceid
-        else:
-            raise HTTPException(status_code=404, detail="Alert not found")
+        raise HTTPException(status_code=404, detail="Alert not found")
 
     # Set default status if none provided
     if pointing_status is None:
@@ -55,8 +48,6 @@ async def get_alert_instruments_footprints(
     pointing_filter.append(PointingEvent.pointingid == Pointing.id)
 
     # Status filtering
-    from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
-
     if pointing_status == "pandc":
         pointing_filter.append(
             or_(
@@ -65,6 +56,10 @@ async def get_alert_instruments_footprints(
             )
         )
     elif pointing_status not in ["all", ""]:
+        from server.core.enums.pointingstatus import (
+            PointingStatus as pointing_status_enum,
+        )
+
         if pointing_status == "completed":
             pointing_filter.append(Pointing.status == pointing_status_enum.completed)
         elif pointing_status == "planned":
@@ -95,12 +90,11 @@ async def get_alert_instruments_footprints(
     hash_pointing_ids = hashlib.sha1(json.dumps(pointing_ids).encode()).hexdigest()
     cache_key = f"cache/footprint_{graceid}_{pointing_status}_{hash_pointing_ids}"
 
-    # Try to get from cache first (unless nocache parameter is set)
-    cached_overlays = None
-    if not nocache:
-        cached_overlays = get_cached_file(cache_key, settings)
-        if cached_overlays:
-            return json.loads(cached_overlays)
+    # Try to get from cache first
+    cached_overlays = get_cached_file(cache_key, settings)
+
+    if cached_overlays:
+        return json.loads(cached_overlays)
 
     # Not in cache, generate fresh data
     instrument_ids = [p.instrumentid for p in pointing_info]
@@ -170,30 +164,12 @@ async def get_alert_instruments_footprints(
             t = astropy.time.Time([p.time])
             ra, dec = sanatize_pointing(p.position)
 
-            # Calculate time relative to trigger - use the alert's time_of_signal if tos_mjd not available
-            time_value = 0
-            if tos_mjd:
-                time_value = round(t.mjd[0] - tos_mjd, 3)
-            else:
-                # Fallback: try to calculate using alert time_of_signal
-                if alert and alert.time_of_signal:
-                    import astropy.time
-
-                    alert_time = astropy.time.Time(alert.time_of_signal)
-                    time_value = round(t.mjd[0] - alert_time.mjd, 3)
-                else:
-                    # Last resort: use days from Unix epoch as a relative measure
-                    # This will at least give different time values for different pointings
-                    time_value = round(
-                        t.mjd[0] - 40587.0, 3
-                    )  # Days since Unix epoch (1970-01-01)
-
             for ccd in sanatized_ccds:
                 pointing_footprint = project_footprint(ccd, ra, dec, p.pos_angle)
                 pointing_geometries.append(
                     {
                         "polygon": pointing_footprint,
-                        "time": time_value,
+                        "time": round(t.mjd[0] - tos_mjd, 3) if tos_mjd else 0,
                     }
                 )
 

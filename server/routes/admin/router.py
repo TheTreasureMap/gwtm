@@ -11,4 +11,3 @@ router = APIRouter(tags=["admin"])
 
 # Include all the individual routers
 router.include_router(fixdata_router)
-router.include_router(get_users_router)

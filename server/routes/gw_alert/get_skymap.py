@@ -88,15 +88,4 @@ async def get_gw_skymap(
             },
         )
     except Exception as e:
-        logger.warning(
-            "Could not retrieve skymap file: %s from %s storage: %s: %s",
-            skymap_path,
-            settings.STORAGE_BUCKET_SOURCE,
-            type(e).__name__,
-            str(e),
-        )
-        raise not_found_exception(
-            f"Error retrieving skymap file: {skymap_path} "
-            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
-            f"{type(e).__name__}: {str(e)}"
-        )
+        raise not_found_exception(f"Error in retrieving skymap file: {skymap_path}")

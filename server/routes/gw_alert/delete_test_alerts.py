@@ -48,7 +48,7 @@ async def del_test_alerts(
     testids.append(alert_to_keep)
 
     # Only delete test alerts
-    filter.append(GWAlert.role == AlertRole.test)
+    filter.append(GWAlert.role == "test")
 
     # Query for all test alerts that aren't like the ones we want to keep
     gwalerts = db.query(GWAlert).filter(*filter).all()
