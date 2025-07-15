@@ -16,10 +16,10 @@ class FrequencyUnits(IntEnum):
         if unit == FrequencyUnits.Hz:
             return 1.0
         if unit == FrequencyUnits.kHz:
-            return 1e3
+            return 1000.0
         if unit == FrequencyUnits.MHz:
-            return 1e6
+            return 1000000.0
         if unit == FrequencyUnits.GHz:
-            return 1e9
+            return 1000000000.0
         if unit == FrequencyUnits.THz:
-            return 1e12
+            return 1000000000000.0
