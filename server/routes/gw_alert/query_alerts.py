@@ -1,6 +1,6 @@
 """Query GW alerts endpoint."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -11,10 +11,11 @@ from server.db.models.pointing import Pointing
 from server.db.models.pointing_event import PointingEvent
 from server.core.enums.pointingstatus import PointingStatus as pointing_status
 from server.schemas.gw_alert import GWAlertSchema, GWAlertQueryResponse, GWAlertFilterOptionsResponse
+from server.auth.auth import get_current_user
 router = APIRouter(tags=["gw_alerts"])
 
 
-@router.get("/query_alerts", response_model=GWAlertQueryResponse)
+@router.get("/query_alerts")
 async def query_alerts(
     graceid: Optional[str] = None,
     alert_type: Optional[str] = None,
@@ -22,12 +23,14 @@ async def query_alerts(
     observing_run: Optional[str] = None,
     far: Optional[str] = Query(None, description="Filter by FAR: 'all', 'significant', or 'subthreshold'"),
     has_pointings: Optional[bool] = Query(False, description="Filter to only alerts with completed pointings"),
-    page: int = Query(1, ge=1, description="Page number (1-based)"),
-    per_page: int = Query(25, ge=1, le=100, description="Items per page (max 100)"),
-    db: Session = Depends(get_db)
-):
+    format: Optional[str] = Query("simple", description="Response format: 'simple' (list) or 'paginated' (object with metadata)"),
+    page: int = Query(1, ge=1, description="Page number (1-based, only used with format=paginated)"),
+    per_page: int = Query(25, ge=1, le=100, description="Items per page (max 100, only used with format=paginated)"),
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+) -> Union[List[GWAlertSchema], GWAlertQueryResponse]:
     """
-    Query GW alerts with optional filters and pagination.
+    Query GW alerts with optional filters.
 
     Parameters:
     - graceid: Filter by Grace ID (supports partial text search)
@@ -36,10 +39,11 @@ async def query_alerts(
     - observing_run: Filter by observing run (O2, O3, O4, etc.)
     - far: Filter by FAR: 'all', 'significant', or 'subthreshold'
     - has_pointings: Filter to only alerts with completed pointings
-    - page: Page number (1-based)
-    - per_page: Items per page (max 100)
+    - format: Response format - 'simple' returns list (default, backwards compatible), 'paginated' returns object with metadata
+    - page: Page number (1-based, only used with format=paginated)
+    - per_page: Items per page (max 100, only used with format=paginated)
 
-    Returns paginated GW Alert objects with metadata
+    Returns either List[GWAlertSchema] (format=simple) or GWAlertQueryResponse (format=paginated)
     """
     filter_conditions = []
 
@@ -117,18 +121,24 @@ async def query_alerts(
     offset = (page - 1) * per_page
     total_pages = (total + per_page - 1) // per_page  # Ceiling division
     
-    # Get paginated results
-    alerts = base_query.order_by(GWAlert.datecreated.desc()).offset(offset).limit(per_page).all()
-
-    return GWAlertQueryResponse(
-        alerts=alerts,
-        total=total,
-        page=page,
-        per_page=per_page,
-        total_pages=total_pages,
-        has_next=page < total_pages,
-        has_prev=page > 1
-    )
+    # Return format based on format parameter
+    if format == "paginated":
+        # Get paginated results
+        alerts = base_query.order_by(GWAlert.datecreated.desc()).offset(offset).limit(per_page).all()
+        
+        return GWAlertQueryResponse(
+            alerts=alerts,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1
+        )
+    else:
+        # Simple format (backwards compatible) - return all results as list
+        alerts = base_query.order_by(GWAlert.datecreated.desc()).all()
+        return alerts
 
 
 @router.get("/alert_filter_options", response_model=GWAlertFilterOptionsResponse)

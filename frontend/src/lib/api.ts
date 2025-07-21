@@ -669,7 +669,9 @@ class GWTMApiService {
     // ========================================================================================
 
     async queryAlerts(params?: Record<string, any>): Promise<GWAlertQueryResponse> {
-        return this.getPublic<GWAlertQueryResponse>('/api/v1/query_alerts', params);
+        // Always use paginated format for frontend
+        const paginatedParams = { ...params, format: 'paginated' };
+        return this.getPublic<GWAlertQueryResponse>('/api/v1/query_alerts', paginatedParams);
     }
 
     async getAlertFilterOptions(): Promise<GWAlertFilterOptionsResponse> {
@@ -882,6 +884,11 @@ class GWTMApiService {
     }
 
     async getEventContour(urlid: string): Promise<any> {
+        return this.get<any>('/ajax_alerttype', { urlid });
+    }
+
+    async getAlertDetectionOverlays(alertId: number, alertType: string): Promise<any> {
+        const urlid = `${alertId}_${alertType}`;
         return this.get<any>('/ajax_alerttype', { urlid });
     }
 
