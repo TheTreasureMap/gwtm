@@ -11,7 +11,6 @@ from server.db.models.pointing import Pointing
 from server.db.models.pointing_event import PointingEvent
 from server.core.enums.pointingstatus import PointingStatus as pointing_status
 from server.schemas.gw_alert import GWAlertSchema, GWAlertQueryResponse, GWAlertFilterOptionsResponse
-from server.auth.auth import get_current_user
 router = APIRouter(tags=["gw_alerts"])
 
 
@@ -26,8 +25,7 @@ async def query_alerts(
     format: Optional[str] = Query("simple", description="Response format: 'simple' (list) or 'paginated' (object with metadata)"),
     page: int = Query(1, ge=1, description="Page number (1-based, only used with format=paginated)"),
     per_page: int = Query(25, ge=1, le=100, description="Items per page (max 100, only used with format=paginated)"),
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ) -> Union[List[GWAlertSchema], GWAlertQueryResponse]:
     """
     Query GW alerts with optional filters.
