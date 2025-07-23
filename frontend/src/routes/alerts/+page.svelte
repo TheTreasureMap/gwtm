@@ -2,8 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { gwtmApi, type GWAlertSchema } from '$lib/api.js';
-	import SkyVisualization from '$lib/components/visualization/SkyVisualization.svelte';
-	import AlertSelector from '$lib/components/visualization/AlertSelector.svelte';
+	import SkyVisualization from '$lib/components/visualization/SkyVisualizationModular.svelte';
 
 	// Props from URL parameters
 	let graceid = '';
@@ -94,9 +93,7 @@
 	<meta name="description" content="Gravitational wave alerts visualization and telescope pointing coordination" />
 </svelte:head>
 
-<div class="container mx-auto px-4 py-6">
-	<!-- Alert Selector -->
-	<AlertSelector currentGraceid={graceid} />
+<div class="container mx-auto px-4 py-2">
 
 	{#if loading}
 		<div class="flex justify-center items-center py-12">
@@ -109,14 +106,14 @@
 		</div>
 	{:else if alertExists && alert}
 		<!-- Alert Header -->
-		<div class="mb-6">
-			<h1 class="text-3xl font-bold text-gray-900 mb-2">
+		<div class="mb-3">
+			<h1 class="text-xl font-bold text-gray-900 mb-1">
 				Gravitational Wave Localization and Pointings: {graceid}
 				<a 
 					href={getGraceDbUrl(graceid)} 
 					target="_blank" 
 					rel="noopener noreferrer"
-					class="text-blue-600 hover:text-blue-800 text-lg font-normal ml-2"
+					class="text-blue-600 hover:text-blue-800 text-sm font-normal ml-2"
 				>
 					[GraceDB]
 				</a>
@@ -162,6 +159,7 @@
 				{graceid} 
 				{alert} 
 				{pointingStatus}
+				selectedAlertType={alertType}
 			/>
 		</div>
 
