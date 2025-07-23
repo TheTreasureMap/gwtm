@@ -23,6 +23,10 @@
 	let galaxyData: any[] = [];
 	let candidateData: any[] = [];
 	let icecubeData: any[] = [];
+	
+	// Data existence flags
+	let hasIceCubeData: boolean = false;
+	let hasCandidateData: boolean = false;
 	let detectionContours: any = null;
 	let grbCoverage: any = null;
 
@@ -58,6 +62,8 @@
 		// Load alert types first (before visualization)
 		if (graceid) {
 			await loadAlertTypes();
+			// Check for data existence like Flask does
+			await checkDataExistence();
 		}
 		
 		// Use tick to ensure DOM is fully rendered
@@ -78,7 +84,7 @@
 			if (containerByBinding || containerById) {
 				// Use whichever container we found
 				if (!aladinContainer && containerById) {
-					aladinContainer = containerById;
+					aladinContainer = containerById as HTMLDivElement;
 					console.log('Using container found by ID');
 				}
 				
@@ -102,13 +108,21 @@
 	}
 
 	onDestroy(() => {
-		// Cleanup
+		// Cleanup Aladin
 		if (aladin) {
 			try {
 				aladin.removeLayers();
 			} catch (e) {
 				console.warn('Error cleaning up Aladin:', e);
 			}
+		}
+		
+		// Cleanup drag event listeners
+		if (typeof window !== 'undefined') {
+			document.removeEventListener('mousemove', handleDrag);
+			document.removeEventListener('mouseup', stopDrag);
+			document.removeEventListener('touchmove', handleDrag);
+			document.removeEventListener('touchend', stopDrag);
 		}
 	});
 
@@ -153,7 +167,7 @@
 				try {
 					aladin.setImageSurvey('P/DSS2/color');
 					console.log('Set default survey for visibility');
-				} catch (err) {
+				} catch (err: any) {
 					console.warn('Failed to set survey:', err);
 				}
 			}
@@ -167,7 +181,7 @@
 			updateVisualization();
 			console.log('Visualization ready');
 			
-		} catch (err) {
+		} catch (err: any) {
 			console.error('Failed to initialize visualization:', err);
 			error = `Failed to load visualization: ${err.message}`;
 		} finally {
@@ -294,7 +308,7 @@
 			
 			// Find the data line (after "$SOE" and before "$EOE")
 			let dataStarted = false;
-			let dataLines = [];
+			let dataLines: any[] = [];
 			
 			for (const line of lines) {
 				if (line.includes('$SOE')) {
@@ -467,7 +481,7 @@
 			if (selectedAlert) {
 				try {
 					// Try to get detection overlays for this alert type
-					const detectionData = await gwtmApi.getAlertDetectionOverlays?.(selectedAlert.id);
+					const detectionData = await gwtmApi.getAlertDetectionOverlays?.(selectedAlert.id, selectedAlert.alert_type);
 					if (detectionData) {
 						detectionContours = detectionData;
 					}
@@ -488,7 +502,9 @@
 
 			// Load footprint data
 			if (showFootprints) {
-				footprintData = await gwtmApi.getAlertInstrumentsFootprints(graceid, pointingStatus);
+				// Calculate Time of Signal MJD like Flask does
+				const tos_mjd = selectedAlert!.time_of_signal ? convertToMJD(new Date(selectedAlert!.time_of_signal)) : undefined;
+				footprintData = await gwtmApi.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
 				
 				// Calculate time range from footprint data
 				if (footprintData && Array.isArray(footprintData)) {
@@ -581,7 +597,7 @@
 
 			// Add GRB coverage (MOC)
 			if (showGrbCoverage && grbCoverage) {
-				overlayLists.grbOverlays = addMOCLayer(grbCoverage);
+				overlayLists.grbOverlays = addMOCLayer(grbCoverage) as any[];
 			}
 
 			// Update coverage plot
@@ -603,7 +619,7 @@
 			const A = (window as any).A;
 			
 			// Implement the exact same approach as Flask's aladin_setImage function
-			function aladinSetImage(aladin, imgsource, imgname, pos_ra, pos_dec) {
+			function aladinSetImage(aladin: any, imgsource: any, imgname: any, pos_ra: any, pos_dec: any) {
 				const IMG = new Image();
 				IMG.src = imgsource;
 				const cat = A.catalog({shape: IMG, name: imgname});
@@ -655,7 +671,7 @@
 					});
 				}
 				
-				overlayLists.detectionOverlays.push({
+				(overlayLists.detectionOverlays as any[]).push({
 					contour: overlay,
 					toshow: true,
 					tocolor: contourData.color || '#00ff00'
@@ -679,7 +695,7 @@
 		
 		try {
 			const markers = addMarkersToAladin(galaxyData, 'Galaxies', '#FF6B35');
-			overlayLists.galaxyMarkers = markers;
+			overlayLists.galaxyMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add galaxy layer:', err);
 		}
@@ -690,7 +706,7 @@
 		
 		try {
 			const markers = addMarkersToAladin(candidateData, 'Candidates', '#8E44AD');
-			overlayLists.candidateMarkers = markers;
+			overlayLists.candidateMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add candidate layer:', err);
 		}
@@ -701,7 +717,7 @@
 		
 		try {
 			const markers = addMarkersToAladin(icecubeData, 'IceCube Events', '#0080FF');
-			overlayLists.icecubeMarkers = markers;
+			overlayLists.icecubeMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add IceCube layer:', err);
 		}
@@ -793,20 +809,20 @@
 		try {
 			const groupIdStr = groupName.replace(/\s+/g, '');
 			for (const markerGroup of markerList) {
-				const nameIdStr = markerGroup.name.replace(/\s+/g, '');
+				const nameIdStr = (markerGroup as any).name.replace(/\s+/g, '');
 				if (groupIdStr === nameIdStr) {
 					if (show) {
-						markerGroup.markerlayer?.show();
-						if (markerGroup.has_overlay) {
-							markerGroup.overlaylayer?.show();
+						(markerGroup as any).markerlayer?.show();
+						if ((markerGroup as any).has_overlay) {
+							(markerGroup as any).overlaylayer?.show();
 						}
 					} else {
-						markerGroup.markerlayer?.hide();
-						if (markerGroup.has_overlay) {
-							markerGroup.overlaylayer?.hide();
+						(markerGroup as any).markerlayer?.hide();
+						if ((markerGroup as any).has_overlay) {
+							(markerGroup as any).overlaylayer?.hide();
 						}
 					}
-					markerGroup.toshow = show;
+					(markerGroup as any).toshow = show;
 					break;
 				}
 			}
@@ -822,9 +838,9 @@
 		let html = '<ul style="list-style-type:none;">';
 		
 		for (const group of markerData) {
-			const groupName = group.name;
+			const groupName = (group as any).name;
 			const idStr = groupName.replace(/\s+/g, '');
-			const color = group.color || '#FF6B35';
+			const color = (group as any).color || '#FF6B35';
 			
 			html += `
 				<li>
@@ -855,18 +871,18 @@
 					<div class="ml-4 hidden" id="collapse${idStr}">
 						<ul style="list-style-type:none;">`;
 			
-			const markers = group.markers || [];
+			const markers = (group as any).markers || [];
 			for (const marker of markers) {
 				html += `
 					<li>
 						<fieldset>
 							<label>
 								<div 
-									id="${marker.name}" 
+									id="${(marker as any).name}" 
 									class="text-xs text-blue-600 hover:text-blue-800 cursor-pointer py-1"
-									onclick="handleMarkerClick('${marker.name}')"
+									onclick="handleMarkerClick('${(marker as any).name}')"
 								>
-									${marker.name}
+									${(marker as any).name}
 								</div>
 							</label>
 						</fieldset>
@@ -936,8 +952,8 @@
 			const Plotly = (window as any).Plotly;
 			
 			const data = [{
-				x: coverageData.time || [],
-				y: coverageData.probability || [],
+				x: (coverageData as any).time || [],
+				y: (coverageData as any).probability || [],
 				type: 'scatter',
 				mode: 'lines+markers',
 				name: 'Probability Coverage',
@@ -1046,6 +1062,36 @@
 		}
 	}
 	
+	async function checkDataExistence() {
+		// Check if IceCube data exists for this graceid (like Flask does)
+		try {
+			const icecubeResponse = await gwtmApi.getIceCubeNotice(graceid);
+			hasIceCubeData = icecubeResponse && Object.keys(icecubeResponse).length > 0;
+		} catch (error) {
+			console.warn('Error checking IceCube data existence:', error);
+			hasIceCubeData = false;
+		}
+		
+		// Check if candidate data exists for this graceid (like Flask does)  
+		try {
+			const candidateResponse = await gwtmApi.getCandidateAjax(graceid);
+			hasCandidateData = candidateResponse && candidateResponse.length > 0;
+		} catch (error) {
+			console.warn('Error checking candidate data existence:', error);
+			hasCandidateData = false;
+		}
+	}
+	
+	// Convert JavaScript Date to Modified Julian Date (matching Flask's astropy calculation)
+	function convertToMJD(date: Date): number {
+		// MJD = JD - 2400000.5
+		// JD = (Unix timestamp / 86400) + 2440587.5
+		const unixTimestamp = date.getTime() / 1000; // Convert to seconds
+		const julianDate = (unixTimestamp / 86400) + 2440587.5;
+		const mjd = julianDate - 2400000.5;
+		return Math.round(mjd * 1000) / 1000; // Round to 3 decimal places like Flask
+	}
+	
 	async function switchAlertType(alertType: string) {
 		if (!alertType || !availableAlertTypes.length || isSwitchingAlert) return;
 		
@@ -1070,9 +1116,9 @@
 			updateVisualization();
 			
 			// Animate to new alert coordinates (matching Flask behavior)
-			if (aladin && selectedAlert.avgra !== undefined && selectedAlert.avgdec !== undefined) {
+			if (aladin && selectedAlert!.avgra !== undefined && selectedAlert!.avgdec !== undefined) {
 				try {
-					aladin.animateToRaDec(selectedAlert.avgra, selectedAlert.avgdec, 2); // 2-second animation
+					aladin.animateToRaDec(selectedAlert!.avgra, selectedAlert!.avgdec, 2); // 2-second animation
 				} catch (err) {
 					console.warn('Error animating to coordinates:', err);
 				}
@@ -1122,7 +1168,7 @@
 		loadIceCubeData();
 	}
 
-	// Remove this reactive statement since we now handle it in the slider events
+	// Time range filtering is now handled by the slider drag events directly
 
 	// Reload data when pointing status changes
 	$: if (pointingStatus && graceid && selectedAlert && !isSwitchingAlert) {
@@ -1156,7 +1202,7 @@
 		try {
 			// Clear tracked overlay lists
 			Object.keys(overlayLists).forEach(key => {
-				const overlays = overlayLists[key as keyof typeof overlayLists];
+				const overlays = (overlayLists as any)[key as keyof typeof overlayLists];
 				if (Array.isArray(overlays)) {
 					overlays.forEach((overlay: any) => {
 						try {
@@ -1169,7 +1215,7 @@
 						}
 					});
 					// Clear the array
-					(overlayLists[key as keyof typeof overlayLists] as any[]).length = 0;
+					((overlayLists as any)[key as keyof typeof overlayLists] as any[]).length = 0;
 				}
 			});
 		} catch (err) {
@@ -1278,7 +1324,7 @@
 		try {
 			loading = true;
 			
-			const result = await gwtmApi.renormalizeSkymap({
+			const result = await (gwtmApi as any).renormalizeSkymap({
 				graceid: graceid,
 				alert_id: selectedAlert.id,
 				approx_cov: 1
@@ -1381,7 +1427,7 @@
 		
 		try {
 			// Clear existing instrument overlays first
-			overlayLists.instOverlays.forEach((overlay: any) => {
+			(overlayLists.instOverlays as any[]).forEach((overlay: any) => {
 				if (overlay.contour) {
 					try {
 						aladin.removeOverlay(overlay.contour);
@@ -1463,7 +1509,7 @@
 				}
 			});
 			
-			overlayLists.instOverlays = newOverlays;
+			overlayLists.instOverlays = newOverlays as any[];
 			console.log(`Filtered footprints: ${newOverlays.length} instruments visible in time range [${timeRange[0].toFixed(1)}, ${timeRange[1].toFixed(1)}]`);
 			
 		} catch (err) {
@@ -1518,13 +1564,13 @@
 			
 			// Find overlay by color (matching Flask pattern)
 			for (const overlay of overlayList) {
-				if (overlay.tocolor === targetColor) {
+				if ((overlay as any).tocolor === targetColor) {
 					if (target.checked) {
-						overlay.contour?.show();
-						overlay.toshow = true;
+						(overlay as any).contour?.show();
+						(overlay as any).toshow = true;
 					} else {
-						overlay.contour?.hide();
-						overlay.toshow = false;
+						(overlay as any).contour?.hide();
+						(overlay as any).toshow = false;
 					}
 					break;
 				}
@@ -1539,10 +1585,10 @@
 	}
 	
 	function toggleAllInstruments(show: boolean) {
-		if (!overlayLists.instOverlays) return;
+		if (!(overlayLists.instOverlays as any[])) return;
 		
 		try {
-			overlayLists.instOverlays.forEach((overlay: any) => {
+			(overlayLists.instOverlays as any[]).forEach((overlay: any) => {
 				if (overlay.contour) {
 					show ? overlay.contour.show() : overlay.contour.hide();
 					overlay.toshow = show;
@@ -1576,6 +1622,64 @@
 			}
 		} catch (err) {
 			console.error('Failed to update hide/show button:', err);
+		}
+	}
+
+	// Time slider drag handling
+	let isDragging = false;
+	let dragHandle: 'min' | 'max' | null = null;
+
+	function startDrag(e: MouseEvent | TouchEvent, handle: 'min' | 'max') {
+		e.preventDefault();
+		isDragging = true;
+		dragHandle = handle;
+		
+		// Add global event listeners
+		if (typeof window !== 'undefined') {
+			document.addEventListener('mousemove', handleDrag);
+			document.addEventListener('mouseup', stopDrag);
+			document.addEventListener('touchmove', handleDrag, { passive: false });
+			document.addEventListener('touchend', stopDrag);
+		}
+	}
+
+	function handleDrag(e: MouseEvent | TouchEvent) {
+		if (!isDragging || !dragHandle) return;
+		
+		e.preventDefault();
+		
+		// Get the slider wrapper element
+		const sliderWrapper = document.querySelector('.time-slider-wrapper');
+		if (!sliderWrapper) return;
+		
+		const rect = sliderWrapper.getBoundingClientRect();
+		const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+		const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+		const newValue = minTime + (percent / 100) * (maxTime - minTime);
+		
+		if (dragHandle === 'min') {
+			timeRange[0] = Math.min(newValue, timeRange[1]);
+		} else {
+			timeRange[1] = Math.max(newValue, timeRange[0]);
+		}
+		
+		// Trigger reactivity
+		timeRange = [...timeRange];
+		
+		// Filter footprints in real-time (like Flask)
+		filterFootprintsByTime();
+	}
+
+	function stopDrag() {
+		isDragging = false;
+		dragHandle = null;
+		
+		// Remove global event listeners
+		if (typeof window !== 'undefined') {
+			document.removeEventListener('mousemove', handleDrag);
+			document.removeEventListener('mouseup', stopDrag);
+			document.removeEventListener('touchmove', handleDrag);
+			document.removeEventListener('touchend', stopDrag);
 		}
 	}
 </script>
@@ -1622,75 +1726,229 @@
 		</div>
 	</div>
 
-	<!-- Right column: Follow-up controls (30% width) -->
-	<div style="width: 30%;">
-		<div class="bg-white border rounded-lg">
-			<div class="bg-gray-50 px-4 py-3 border-b">
-				<h3 class="text-lg font-medium text-gray-900">Follow-Up</h3>
-			</div>
-			<div class="p-4 space-y-4">
+	<!-- Right column: Follow-up controls (30% width) matching Flask exactly -->
+	<div class="column" style="float: right; width: 30%; padding-left: 2%;">
+		<div class="row">
+			<h3>Follow-Up</h3>
+		</div>
 
-	{#if loading}
-		<div class="flex justify-center py-8">
-			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-			<span class="ml-2 text-gray-600">Loading visualization...</span>
+		
+		<!-- Instrument block buttons and div (matching Flask exactly) -->
+		<div class="btn-group">
+			<button 
+				class="btn btn-primary btn-sm alert_coll my-1 {showFootprints ? 'down-triangle' : ''}"
+				on:click={() => showFootprints = !showFootprints}
+				style="margin-right: 5px;"
+			></button>
+			<button 
+				class="btn btn-primary btn-sm my-1"
+				on:click={() => {
+					(overlayLists.instOverlays as any[]).forEach(overlay => {
+						if (overlay.contour) {
+							showFootprints ? overlay.contour.hide() : overlay.contour.show();
+						}
+					});
+					showFootprints = !showFootprints;
+				}}
+				style="margin-right: 5px;"
+			>
+				{showFootprints ? 'Hide' : 'Show'}
+			</button>
+			<h4 style="display: inline-block;" class={(!footprintData || footprintData.length === 0) ? 'loadingtext' : ''}>
+				{(!footprintData || footprintData.length === 0) ? '...Loading...' : 'Instruments'}
+			</h4>
 		</div>
-	{:else if error}
-		<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-			<strong>Visualization Error:</strong> {error}
-			<details class="mt-2">
-				<summary class="cursor-pointer text-sm">Debug Info</summary>
-				<pre class="text-xs mt-2 bg-gray-100 p-2 rounded">
-					graceid: {graceid}
-					alert: {JSON.stringify(alert, null, 2)}
-					aladinContainer: {aladinContainer ? 'available' : 'missing'}
-					window.A: {typeof window !== 'undefined' ? typeof (window as any).A : 'undefined'}
-					window.Plotly: {typeof window !== 'undefined' ? typeof (window as any).Plotly : 'undefined'}
-				</pre>
-			</details>
+		<div class="row">
+			<div class="collapse {showFootprints ? 'in' : ''} scroll-section inst_coll">
+				{#if footprintData && Array.isArray(footprintData)}
+					{#each footprintData as inst, i}
+						<label style="display: block; padding: 2px 0;">
+							<input 
+								type="checkbox" 
+								checked={true}
+								style="margin-right: 5px;"
+								data-color={inst.color || '#ff0000'}
+								on:change={(e) => {
+									toggleInstrumentOverlay(e.target, overlayLists.instOverlays as any[]);
+									updateHideShowButton();
+								}}
+							/>
+							<span 
+								style="display: inline-block; width: 12px; height: 12px; margin-right: 5px; border: 1px solid #ccc; background-color: {inst.color || '#ff0000'};"
+							></span>
+							{inst.name || `Inst ${i + 1}`}
+						</label>
+					{/each}
+				{/if}
+			</div>
 		</div>
-	{:else}
-				<!-- Compact controls for Follow-Up section -->
-				<div class="space-y-3">
-					<div>
-						<h4 class="text-sm font-medium text-gray-700 mb-2">Instruments</h4>
-						<div class="space-y-1 max-h-24 overflow-y-auto text-xs">
-							{#if footprintData && Array.isArray(footprintData)}
-								{#each footprintData as inst, i}
-									<label class="flex items-center hover:bg-gray-50 p-1 rounded">
-										<input 
-											type="checkbox" 
-											checked={true}
-											class="mr-1 text-xs"
-											data-color={inst.color || '#ff0000'}
-											on:change={(e) => {
-												toggleInstrumentOverlay(e.target, overlayLists.instOverlays);
-												updateHideShowButton();
-											}}
-										/>
-										<div 
-											class="w-2 h-2 mr-1 border border-gray-300 rounded-sm"
-											style="background-color: {inst.color || '#ff0000'}"
-										></div>
-										<span class="text-xs truncate">{inst.name || `Inst ${i + 1}`}</span>
-									</label>
+		
+		<!-- GRB coverage block buttons and div -->
+		<div class="btn-group">
+			<button 
+				class="btn btn-primary btn-sm alert_coll my-1 {showGrbCoverage ? 'down-triangle' : ''}"
+				on:click={() => showGrbCoverage = !showGrbCoverage}
+				style="margin-right: 5px;"
+			></button>
+			<button 
+				class="btn btn-primary btn-sm my-1"
+				on:click={() => showGrbCoverage = !showGrbCoverage}
+				style="margin-right: 5px;"
+			>
+				{showGrbCoverage ? 'Hide' : 'Show'}
+			</button>
+			<h4 style="display: inline-block;">GRB Coverage</h4>
+		</div>
+		<div class="row">
+			<div class="collapse {showGrbCoverage ? 'in' : ''} grb_coll"></div>
+		</div>
+		
+		<div class="row">
+			<h3>Sources</h3>
+		</div>
+		
+		<!-- Galaxies block buttons and div -->
+		<div class="btn-group">
+			<button 
+				class="btn btn-primary btn-sm alert_coll my-1 {showGalaxies ? 'down-triangle' : ''}"
+				on:click={() => showGalaxies = !showGalaxies}
+				style="margin-right: 5px;"
+			></button>
+			<button 
+				class="btn btn-primary btn-sm my-1"
+				on:click={() => {
+					if (!showGalaxies && galaxyData.length === 0) {
+						loadGalaxies();
+					} else if (galaxyData.length > 0) {
+						(overlayLists.galaxyMarkers as any[]).forEach(markerGroup => {
+							toggleMarkerGroup([markerGroup], markerGroup.name, !showGalaxies);
+						});
+					}
+					showGalaxies = !showGalaxies;
+				}}
+				style="margin-right: 5px;"
+			>
+				{galaxyData.length > 0 ? (showGalaxies ? 'Hide' : 'Show') : 'Get'}
+			</button>
+			<h4 style="display: inline-block;">Galaxies</h4>
+		</div>
+		<div class="row">
+			<div class="collapse {showGalaxies ? 'in' : ''} gal_coll">
+				{#if galaxyData.length > 0}
+					{#each galaxyData as group}
+						<div style="margin-bottom: 5px;">
+							<div style="font-weight: bold; font-size: 13px;">{(group as any).name}</div>
+							{#if (group as any).markers}
+								{#each (group as any).markers as marker}
+									<button 
+										style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
+										on:click={() => animateToMarker((marker as any).name, galaxyData)}
+										on:mouseover={(e) => (e.target as any).style.backgroundColor = '#f0f0f0'}
+										on:mouseout={(e) => (e.target as any).style.backgroundColor = 'transparent'}
+									>
+										{(marker as any).name}
+									</button>
 								{/each}
-							{:else}
-								<div class="text-gray-500 italic text-xs">Loading instruments...</div>
 							{/if}
 						</div>
-					</div>
-					
-					<div>
-						<h4 class="text-sm font-medium text-gray-700 mb-2">Time Range</h4>
-						<div class="text-xs text-gray-600 mb-1">
-							{timeRange[0].toFixed(1)} - {timeRange[1].toFixed(1)} days
-						</div>
-					</div>
-				</div>
-	{/if}
+					{/each}
+				{/if}
+			</div>
 		</div>
-	</div>
+		
+		<!-- IceCube Notice block buttons and div -->
+		{#if hasIceCubeData}
+		<div class="btn-group">
+			<button 
+				class="btn btn-primary btn-sm alert_coll my-1 {showIceCube ? 'down-triangle' : ''}"
+				on:click={() => showIceCube = !showIceCube}
+				style="margin-right: 5px;"
+			></button>
+			<button 
+				class="btn btn-primary btn-sm my-1"
+				on:click={() => {
+					if (!showIceCube && icecubeData.length === 0) {
+						loadIceCubeData();
+					}
+					showIceCube = !showIceCube;
+				}}
+				style="margin-right: 5px;"
+			>
+				{icecubeData.length > 0 ? (showIceCube ? 'Hide' : 'Show') : 'Get'}
+			</button>
+			<h4 style="display: inline-block;">ICECUBE Notice</h4>
+		</div>
+		<div class="row">
+			<div class="collapse {showIceCube ? 'in' : ''} icecube_coll">
+				{#if icecubeData.length > 0}
+					{#each icecubeData as group}
+						<div style="margin-bottom: 5px;">
+							<div style="font-weight: bold; font-size: 13px;">{(group as any).name}</div>
+							{#if (group as any).markers}
+								{#each (group as any).markers as marker}
+									<button 
+										style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
+										on:click={() => animateToMarker((marker as any).name, icecubeData)}
+										on:mouseover={(e) => (e.target as any).style.backgroundColor = '#f0f0f0'}
+										on:mouseout={(e) => (e.target as any).style.backgroundColor = 'transparent'}
+									>
+										{(marker as any).name}
+									</button>
+								{/each}
+							{/if}
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</div>
+		{/if}
+		
+		<!-- Candidates block buttons and div -->
+		{#if hasCandidateData}
+		<div class="btn-group">
+			<button 
+				class="btn btn-primary btn-sm alert_coll my-1 {showCandidates ? 'down-triangle' : ''}"
+				on:click={() => showCandidates = !showCandidates}
+				style="margin-right: 5px;"
+			></button>
+			<button 
+				class="btn btn-primary btn-sm my-1"
+				on:click={() => {
+					if (!showCandidates && candidateData.length === 0) {
+						loadCandidates();
+					}
+					showCandidates = !showCandidates;
+				}}
+				style="margin-right: 5px;"
+			>
+				{candidateData.length > 0 ? (showCandidates ? 'Hide' : 'Show') : 'Get'}
+			</button>
+			<h4 style="display: inline-block;">Candidates</h4>
+		</div>
+		<div class="row">
+			<div class="collapse {showCandidates ? 'in' : ''} candidate_coll">
+				{#if candidateData.length > 0}
+					{#each candidateData as group}
+						<div style="margin-bottom: 5px;">
+							<div style="font-weight: bold; font-size: 13px;">{(group as any).name}</div>
+							{#if (group as any).markers}
+								{#each (group as any).markers as marker}
+									<button 
+										style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
+										on:click={() => animateToMarker((marker as any).name, candidateData)}
+										on:mouseover={(e) => (e.target as any).style.backgroundColor = '#f0f0f0'}
+										on:mouseout={(e) => (e.target as any).style.backgroundColor = 'transparent'}
+									>
+										{(marker as any).name}
+									</button>
+								{/each}
+							{/if}
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</div>
+		{/if}
 	</div>
 </div>
 
@@ -1698,230 +1956,9 @@
 <div class="space-y-6">
 	{#if !loading && !error}
 
-		<!-- Controls Section -->
+		<!-- Time Controls Section -->
 		<div class="bg-white border rounded-lg p-4">
-			<h3 class="text-lg font-semibold mb-3">Visualization Controls</h3>
-					
-					<!-- Instrument Controls -->
-					<div class="mb-4">
-						<div class="flex items-center gap-2 mb-2">
-							<button 
-								class="text-blue-600 hover:text-blue-800 text-sm"
-								on:click={() => showFootprints = !showFootprints}
-							>
-								{showFootprints ? '▼' : '▶'}
-							</button>
-							<button 
-								class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-								on:click={() => {
-									overlayLists.instOverlays.forEach(overlay => {
-										if (overlay.contour) {
-											showFootprints ? overlay.contour.hide() : overlay.contour.show();
-										}
-									});
-									showFootprints = !showFootprints;
-								}}
-							>
-								{showFootprints ? 'Hide' : 'Show'}
-							</button>
-							<h4 class="font-medium text-gray-700">Instruments</h4>
-						</div>
-						
-						<!-- Instrument list will be populated dynamically -->
-						<div class="instruments-list space-y-1 max-h-32 overflow-y-auto text-sm">
-							{#if footprintData && Array.isArray(footprintData)}
-								{#each footprintData as inst, i}
-									<label class="flex items-center hover:bg-gray-50 p-1 rounded">
-										<input 
-											type="checkbox" 
-											checked={true}
-											class="mr-2"
-											data-color={inst.color || '#ff0000'}
-											on:change={(e) => {
-												toggleInstrumentOverlay(e.target, overlayLists.instOverlays);
-												updateHideShowButton();
-											}}
-										/>
-										<div 
-											class="w-3 h-3 mr-2 border border-gray-300"
-											style="background-color: {inst.color || '#ff0000'}"
-										></div>
-										<span class="text-xs">{inst.name || `Instrument ${i + 1}`}</span>
-									</label>
-								{/each}
-							{:else}
-								<div class="text-gray-500 italic">...Loading...</div>
-							{/if}
-						</div>
-					</div>
-
-					<!-- GRB Coverage -->
-					<div class="mb-4">
-						<div class="flex items-center gap-2 mb-2">
-							<button 
-								class="text-blue-600 hover:text-blue-800 text-sm"
-								on:click={() => showGrbCoverage = !showGrbCoverage}
-							>
-								{showGrbCoverage ? '▼' : '▶'}
-							</button>
-							<button 
-								class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-								on:click={() => showGrbCoverage = !showGrbCoverage}
-							>
-								{showGrbCoverage ? 'Hide' : 'Show'}
-							</button>
-							<h4 class="font-medium text-gray-700">GRB Coverage</h4>
-						</div>
-					</div>
-
-					<!-- Sources Section -->
-					<div class="mb-4">
-						<h3 class="text-lg font-semibold mb-3">Sources</h3>
-						
-						<!-- Galaxies -->
-						<div class="mb-3">
-							<div class="flex items-center gap-2 mb-2">
-								<button 
-									class="text-blue-600 hover:text-blue-800 text-sm"
-									on:click={() => showGalaxies = !showGalaxies}
-								>
-									{showGalaxies ? '▼' : '▶'}
-								</button>
-								<button 
-									class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-									on:click={() => {
-										if (!showGalaxies && galaxyData.length === 0) {
-											loadGalaxies();
-										} else if (galaxyData.length > 0) {
-											// Toggle visibility of existing markers
-											overlayLists.galaxyMarkers.forEach(markerGroup => {
-												toggleMarkerGroup([markerGroup], markerGroup.name, !showGalaxies);
-											});
-										}
-										showGalaxies = !showGalaxies;
-									}}
-								>
-									{galaxyData.length > 0 ? (showGalaxies ? 'Hide' : 'Show') : 'Get'}
-								</button>
-								<h4 class="font-medium text-gray-700">Galaxies</h4>
-							</div>
-							
-							<!-- Galaxy List (collapsible) -->
-							{#if showGalaxies && galaxyData.length > 0}
-								<div class="max-h-32 overflow-y-auto text-sm space-y-1">
-									{#each galaxyData as group}
-										<div class="border-l-2 border-orange-300 pl-2">
-											<div class="font-medium text-orange-700 mb-1">{group.name}</div>
-											{#if group.markers}
-												{#each group.markers as marker}
-													<button 
-														class="block w-full text-left px-2 py-1 text-xs hover:bg-orange-50 rounded"
-														on:click={() => animateToMarker(marker.name, galaxyData)}
-													>
-														{marker.name}
-													</button>
-												{/each}
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-
-						<!-- Candidates -->
-						<div class="mb-3">
-							<div class="flex items-center gap-2 mb-2">
-								<button 
-									class="text-blue-600 hover:text-blue-800 text-sm"
-									on:click={() => showCandidates = !showCandidates}
-								>
-									{showCandidates ? '▼' : '▶'}
-								</button>
-								<button 
-									class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-									on:click={() => {
-										if (!showCandidates && candidateData.length === 0) {
-											loadCandidates();
-										}
-										showCandidates = !showCandidates;
-									}}
-								>
-									{candidateData.length > 0 ? (showCandidates ? 'Hide' : 'Show') : 'Get'}
-								</button>
-								<h4 class="font-medium text-gray-700">Candidates</h4>
-							</div>
-							
-							<!-- Candidate List (collapsible) -->
-							{#if showCandidates && candidateData.length > 0}
-								<div class="max-h-32 overflow-y-auto text-sm space-y-1">
-									{#each candidateData as group}
-										<div class="border-l-2 border-purple-300 pl-2">
-											<div class="font-medium text-purple-700 mb-1">{group.name}</div>
-											{#if group.markers}
-												{#each group.markers as marker}
-													<button 
-														class="block w-full text-left px-2 py-1 text-xs hover:bg-purple-50 rounded"
-														on:click={() => animateToMarker(marker.name, galaxyData)}
-													>
-														{marker.name}
-													</button>
-												{/each}
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-
-						<!-- IceCube -->
-						<div class="mb-3">
-							<div class="flex items-center gap-2 mb-2">
-								<button 
-									class="text-blue-600 hover:text-blue-800 text-sm"
-									on:click={() => showIceCube = !showIceCube}
-								>
-									{showIceCube ? '▼' : '▶'}
-								</button>
-								<button 
-									class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-									on:click={() => {
-										if (!showIceCube && icecubeData.length === 0) {
-											loadIceCubeData();
-										}
-										showIceCube = !showIceCube;
-									}}
-								>
-									{icecubeData.length > 0 ? (showIceCube ? 'Hide' : 'Show') : 'Get'}
-								</button>
-								<h4 class="font-medium text-gray-700">IceCube Events</h4>
-							</div>
-							
-							<!-- IceCube List (collapsible) -->
-							{#if showIceCube && icecubeData.length > 0}
-								<div class="max-h-32 overflow-y-auto text-sm space-y-1">
-									{#each icecubeData as group}
-										<div class="border-l-2 border-blue-300 pl-2">
-											<div class="font-medium text-blue-700 mb-1">{group.name}</div>
-											{#if group.markers}
-												{#each group.markers as marker}
-													<button 
-														class="block w-full text-left px-2 py-1 text-xs hover:bg-blue-50 rounded"
-														on:click={() => animateToMarker(marker.name, icecubeData)}
-													>
-														{marker.name}
-													</button>
-												{/each}
-											{/if}
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					</div>
-				</div>
-
-		<!-- Time Slider Section (matching Flask layout) -->
-		<div class="mt-4 bg-white border rounded-lg p-4">
+			<h3 class="text-lg font-semibold mb-3">Time Controls</h3>
 			<div class="mb-4">
 				<label class="block text-sm font-medium text-gray-700 mb-2">
 					Pointing Status:
@@ -1940,198 +1977,446 @@
 				<label class="block text-sm font-medium text-gray-700 mb-2">
 					Date range (days since Time of Signal): {timeRange[0].toFixed(1)} - {timeRange[1].toFixed(1)}
 				</label>
-				
-				<!-- Dual range slider (matching Flask) -->
-				<div class="relative mt-4">
-					<input 
-						type="range" 
-						min={minTime}
-						max={maxTime}
-						step="0.1"
-						bind:value={timeRange[0]}
-						class="absolute w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-						style="z-index: 1;"
-						on:input={() => {
-							if (timeRange[0] > timeRange[1]) {
-								timeRange[0] = timeRange[1];
-							}
-							filterFootprintsByTime();
-						}}
-					/>
-					<input 
-						type="range" 
-						min={minTime}
-						max={maxTime}
-						step="0.1"
-						bind:value={timeRange[1]}
-						class="absolute w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-						style="z-index: 2;"
-						on:input={() => {
-							if (timeRange[1] < timeRange[0]) {
-								timeRange[1] = timeRange[0];
-							}
-							filterFootprintsByTime();
-						}}
-					/>
+
+				<!-- Time Range Slider -->
+				<div class="time-slider-container mt-4">
+					<div class="time-slider-wrapper">
+						<div class="time-slider-track"></div>
+						<div 
+							class="time-slider-range" 
+							style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%; 
+								   width: {((timeRange[1] - timeRange[0]) / (maxTime - minTime)) * 100}%"
+						></div>
+						
+						<!-- Min handle -->
+						<div 
+							class="time-slider-handle min-handle"
+							class:dragging={isDragging && dragHandle === 'min'}
+							style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%"
+							on:mousedown={(e) => startDrag(e, 'min')}
+							on:touchstart={(e) => startDrag(e, 'min')}
+							title="Minimum time: {timeRange[0].toFixed(1)} days"
+						></div>
+						
+						<!-- Max handle -->
+						<div 
+							class="time-slider-handle max-handle"
+							class:dragging={isDragging && dragHandle === 'max'}
+							style="left: {((timeRange[1] - minTime) / (maxTime - minTime)) * 100}%"
+							on:mousedown={(e) => startDrag(e, 'max')}
+							on:touchstart={(e) => startDrag(e, 'max')}
+							title="Maximum time: {timeRange[1].toFixed(1)} days"
+						></div>
+					</div>
+					
+					<!-- Time labels -->
+					<div class="time-labels mt-2">
+						<span class="text-xs text-gray-500">{minTime.toFixed(1)} days</span>
+						<span class="text-xs text-gray-500 float-right">{maxTime.toFixed(1)} days</span>
+					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Event Explorer Tabs (matching Flask) -->
+
+		<!-- Event Explorer Tabs (exactly matching Flask) -->
 		<div class="bg-white border rounded-lg overflow-hidden mt-4">
-			<!-- Tab Navigation -->
-			<div class="bg-gray-50 border-b">
-				<nav class="flex">
-					<div class="px-4 py-3 text-sm font-medium text-gray-500">
-						Event Explorer:
-					</div>
+			<!-- Tab Navigation (matching Flask Bootstrap nav-tabs) -->
+			<ul class="nav nav-tabs flex border-b border-gray-200 bg-gray-50">
+				<li class="nav-item px-4 py-3">
+					<span class="nav-link disabled text-sm font-medium text-gray-500" style="font-weight: bold;">Event Explorer:</span>
+				</li>
+				<li class="nav-item cursor-pointer">
 					<button
-						class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+						class="nav-link px-4 py-3 text-sm font-medium border-b-2 transition-colors
 							{currentTab === 'info' 
-								? 'text-blue-600 border-blue-600' 
+								? 'text-blue-600 border-blue-600 bg-white' 
 								: 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'}"
 						on:click={() => currentTab = 'info'}
 					>
 						Summary
 					</button>
+				</li>
+				<li class="nav-item cursor-pointer">
 					<button
-						class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+						class="nav-link px-4 py-3 text-sm font-medium border-b-2 transition-colors
 							{currentTab === 'coverage' 
-								? 'text-blue-600 border-blue-600' 
+								? 'text-blue-600 border-blue-600 bg-white' 
 								: 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'}"
 						on:click={() => currentTab = 'coverage'}
 					>
 						Coverage Calculator
 					</button>
+				</li>
+				<li class="nav-item cursor-pointer">
 					<button
-						class="px-4 py-3 text-sm font-medium border-b-2 transition-colors
+						class="nav-link px-4 py-3 text-sm font-medium border-b-2 transition-colors
 							{currentTab === 'renorm' 
-								? 'text-blue-600 border-blue-600' 
+								? 'text-blue-600 border-blue-600 bg-white' 
 								: 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'}"
 						on:click={() => currentTab = 'renorm'}
 					>
 						Renormalize Skymap
 					</button>
-				</nav>
-			</div>
+				</li>
+			</ul>
 
 			<!-- Tab Content -->
-			<div class="p-6">
+			<div class="tab-content p-6">
 				{#if currentTab === 'info'}
-					<!-- Summary Tab -->
-					<div class="text-center text-gray-600">
-						<p>Summary information for consistency with Flask version</p>
+					<!-- Summary Tab (matching Flask exactly) -->
+					<div class="tab-pane active" id="calc-info-content">
+						<div class="container-fluid">
+							<div class="row flex flex-wrap">
+								<!-- Left Column: Alert Information -->
+								<div class="col-sm-6 w-1/2 pr-4">
+									<table class="table w-full border-collapse">
+										<thead>
+											<tr class="border-b">
+												<th class="text-left py-2 font-semibold">Information</th>
+												<th class="text-left py-2"></th>
+											</tr>
+										</thead>
+										<tbody>
+											{#if selectedAlert?.group && selectedAlert.group !== 'None' && selectedAlert.group !== ''}
+												<tr class="alert-info border-b">
+													<td class="py-2">Group</td>
+													<td class="py-2" id="alert_group">{selectedAlert.group}</td>
+												</tr>
+											{/if}
+											<tr class="alert-info border-b">
+												<td class="py-2">Detectors</td>
+												<td class="py-2" id="alert_detectors">{selectedAlert?.detectors || 'N/A'}</td>
+											</tr>
+											<tr class="alert-info border-b">
+												<td class="py-2">Time of Signal</td>
+												<td class="py-2" id="alert_time_of_signal">
+													{selectedAlert?.time_of_signal ? new Date(selectedAlert.time_of_signal).toISOString().replace('T', ' ').replace('Z', ' UTC') : 'N/A'}
+												</td>
+											</tr>
+											<tr class="alert-info border-b">
+												<td class="py-2">Time Sent</td>
+												<td class="py-2" id="alert_timesent">
+													{selectedAlert?.timesent ? new Date(selectedAlert.timesent).toISOString().replace('T', ' ').replace('Z', ' UTC') : 'N/A'}
+												</td>
+											</tr>
+											<tr class="alert-info border-b">
+												<td class="py-2">False Alarm Rate</td>
+												<td class="py-2" id="alert_human_far">
+													{#if selectedAlert?.human_far}
+														once per {selectedAlert.human_far} {selectedAlert.human_far_unit || 'years'}
+													{:else}
+														N/A
+													{/if}
+												</td>
+											</tr>
+											<tr class="alert-info border-b">
+												<td class="py-2">50% Area</td>
+												<td class="py-2" id="alert_area_50">{selectedAlert?.area_50 || 'N/A'} deg<sup>2</sup></td>
+											</tr>
+											<tr class="alert-info border-b">
+												<td class="py-2">90% Area</td>
+												<td class="py-2" id="alert_area_90">{selectedAlert?.area_90 || 'N/A'} deg<sup>2</sup></td>
+											</tr>
+											{#if selectedAlert?.group !== 'Burst'}
+												<tr class="alert-info border-b">
+													<td class="py-2">Distance</td>
+													<td class="py-2" id="alert_distance_plus_error">
+														{#if selectedAlert?.distance && selectedAlert?.distance_error}
+															{selectedAlert.distance} +/- {selectedAlert.distance_error} Mpc
+														{:else}
+															N/A
+														{/if}
+													</td>
+												</tr>
+											{:else}
+												<tr class="alert-info border-b">
+													<td class="py-2">Central Frequency</td>
+													<td class="py-2" id="alert_centralfreq">{selectedAlert?.centralfreq || 'N/A'} Hz</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">Duration</td>
+													<td class="py-2" id="alert_duration">{selectedAlert?.duration || 'N/A'} seconds</td>
+												</tr>
+											{/if}
+										</tbody>
+									</table>
+								</div>
+
+								<!-- Right Column: Classification (CBC Only) -->
+								{#if selectedAlert?.group !== 'Burst'}
+									<div class="col-sm-6 w-1/2 pl-4">
+										<table class="table w-full border-collapse">
+											<thead>
+												<tr class="border-b">
+													<th class="text-left py-2 font-semibold">Classification (CBC Only)</th>
+													<th class="text-left py-2"></th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr class="alert-info border-b">
+													<td class="py-2">BNS</td>
+													<td class="py-2" id="alert_prob_bns">{selectedAlert?.prob_bns || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">NSBH</td>
+													<td class="py-2" id="alert_prob_nsbh">{selectedAlert?.prob_nsbh || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">Mass Gap</td>
+													<td class="py-2" id="alert_prob_gap">{selectedAlert?.prob_gap || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">BBH</td>
+													<td class="py-2" id="alert_prob_bbh">{selectedAlert?.prob_bbh || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">Terrestrial</td>
+													<td class="py-2" id="alert_prob_terrestrial">{selectedAlert?.prob_terrestrial || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">Has NS</td>
+													<td class="py-2" id="alert_prob_hasns">{selectedAlert?.prob_hasns || 'N/A'}</td>
+												</tr>
+												<tr class="alert-info border-b">
+													<td class="py-2">Has Remnant</td>
+													<td class="py-2" id="alert_prob_hasremenant">{selectedAlert?.prob_hasremenant || 'N/A'}</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								{/if}
+							</div>
+						</div>
 					</div>
 				{:else if currentTab === 'coverage'}
-					<!-- Coverage Calculator Tab -->
-					<div>
-						<h3 class="text-lg font-semibold mb-4">Coverage Calculator</h3>
-						<p class="text-sm text-gray-600 mb-4">
-							Calculate the coverage of the GW localization over time, with choices to limit the coverage calculation to particular sets of instruments, wavelengths, or depth. All fields are optional.
-						</p>
-						
-						<!-- Coverage Calculator Controls -->
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Instrument</label>
-								<select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-									<option value="">All Instruments</option>
-									<!-- Instrument options would be populated dynamically -->
-								</select>
+					<!-- Coverage Calculator Tab (matching Flask exactly) -->
+					<div class="tab-pane" id="calc-coverage-content">
+						<div class="container-fluid">
+							<center><h3 class="text-xl font-semibold" style="margin-top: 2rem;">Coverage Calculator</h3></center>
+							
+							<br>
+							
+							<i class="text-sm text-gray-700 block mb-4"> 
+								Calculate the coverage of the GW localization over time, 
+								with choices to limit the coverage calculation to particular sets of instruments, 
+								wavelengths, or depth. All fields are optional, but cuts on depths must have an associated unit. 
+								If an empty form is submitted, the total reported coverage regardless of depth or band is computed. 
+								Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
+								when the same field is covered multiple times. After clicking Calculate, be patient, it may take up to 2 minutes 
+								to fully compute the coverage profile.
+							</i>
+							<p class="text-red-600 text-sm mb-4">
+								Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
+							</p>
+							
+							<br>
+							
+							<!-- Coverage plot placeholder -->
+							<div id="coveragediv" bind:this={plotlyContainer}></div>
+							
+							<!-- Coverage plot input parameters -->
+							<div class="flex flex-wrap gap-4 mb-4">
+								<div class="inline-block whitespace-nowrap">
+									<b>Instrument</b>
+									<select class="ml-2 px-2 py-1 border rounded" multiple id="inst_cov">
+										<!-- Instrument options would be populated from API -->
+										<option value="all">All Instruments</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b class="tooltip-container">
+										Approximate
+										<span class="tooltip-text">
+											For footprints with multiple ccd's this will approximate the calculator's input by using a simplified instrument footprint without chip-gaps. It is substantially faster, but does introduce a level of uncertainty in the resulting area and probability.
+										</span>
+									</b>
+									<select class="ml-2 px-2 py-1 border rounded" id="approx_cov">
+										<option value="1" selected>Yes</option>
+										<option value="0">No</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b>Depth</b>
+									<input type="text" size="7" class="ml-2 px-2 py-1 border rounded" id="depth_cov" placeholder="Optional">
+									<b class="ml-2">Depth Unit</b>
+									<select class="ml-2 px-2 py-1 border rounded" id="depth_unit">
+										<option value="">Select Unit</option>
+										<option value="mag">Magnitude</option>
+										<option value="flux">FLUX erg cm^-2 s^-1</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b>Band</b>
+									<select class="ml-2 px-2 py-1 border rounded" multiple id="band_cov">
+										<option value="">All Bands</option>
+										<option value="g">g</option>
+										<option value="r">r</option>
+										<option value="i">i</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b class="tooltip-container">
+										Spectral Range
+										<span class="tooltip-text">
+											Filter pointings based on their wavelength, energy, or frequency range
+										</span>
+									</b>
+									<b class="ml-2">Type:</b>
+									<select class="ml-1 px-2 py-1 border rounded" id="spectral_range_type">
+										<option value="wavelength" selected>Wavelength</option>
+										<option value="energy">Energy</option>
+										<option value="frequency">Frequency</option>
+									</select>
+									<b class="ml-2">Range:</b>
+									<input size="10" type="text" class="ml-1 px-1 py-1 border rounded" id="spectral_range_low" placeholder="Min"> -
+									<input size="10" type="text" class="ml-1 px-1 py-1 border rounded" id="spectral_range_high" placeholder="Max">
+									<b class="ml-2">Unit</b>
+									<select class="ml-1 px-2 py-1 border rounded" id="spectral_range_unit">
+										<option value="nm">nm</option>
+										<option value="angstrom">Angstrom</option>
+									</select>
+								</div>
 							</div>
 							
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Approximate</label>
-								<select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-									<option value="1" selected>Yes</option>
-									<option value="0">No</option>
-								</select>
-							</div>
-							
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Depth</label>
-								<input 
-									type="text" 
-									placeholder="Optional"
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								/>
-							</div>
-							
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Depth Unit</label>
-								<select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-									<option value="">Select Unit</option>
-									<option value="mag">Magnitude</option>
-									<option value="flux_erg">FLUX erg cm^-2 s^-1</option>
-								</select>
+							<br><br>
+							<div class="flex justify-center">
+								<button 
+									class="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+									on:click={calculateCoverage}
+								>
+									Calculate
+								</button>
 							</div>
 						</div>
-						
-						<div class="text-center mb-6">
-							<button 
-								class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								on:click={calculateCoverage}
-								disabled={loading}
-							>
-								{loading ? 'Calculating...' : 'Calculate'}
-							</button>
-						</div>
-						
-						<!-- Coverage Plot -->
-						<div 
-							bind:this={plotlyContainer}
-							class="w-full border border-gray-200 rounded-lg"
-							style="height: 400px;"
-						></div>
 					</div>
 				{:else if currentTab === 'renorm'}
-					<!-- Renormalize Skymap Tab -->
-					<div>
-						<h3 class="text-lg font-semibold mb-4">Renormalize Skymap</h3>
-						<p class="text-sm text-gray-600 mb-4">
-							Removes pointings from the GW skymap and renormalizes the remaining probability mass. Click Visualize to replace the localization contours with ones calculated from the renormalized skymap.
-						</p>
-						<p class="text-sm text-red-600 mb-4">
-							Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
-						</p>
-						
-						<!-- Renormalization Controls -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Completed Pointings</label>
-								<select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-									<option value="">All Instruments</option>
-								</select>
+					<!-- Renormalize Skymap Tab (matching Flask exactly) -->
+					<div class="tab-pane" id="calc-renorm-skymap-content">
+						<div class="container-fluid">
+							<center><h3 class="text-xl font-semibold" style="margin-top: 2rem;">Renormalize Skymap</h3></center>
+							
+							<br>
+							
+							<i class="text-sm text-gray-700 block mb-4"> 
+								Removes pointings from the GW skymap and renormalizes the remaining probability mass, 
+								with choices to select particular sets of instruments, 
+								and/or pointings that cover certain wavelengths or depth. All fields are optional, but cuts on depths must have an associated unit. 
+								If an empty form is submitted, all completed pointings regardless of depth or band are removed from the skymap. 
+								Once a HEALPIX pixel has been first covered, it is marked as done, to avoid double counting probability 
+								when the same field is covered multiple times. After clicking Download, be patient, it may take up to 3 minutes 
+								to fully compute the renormalized skymap and download the HEALPIX fits file. 
+								Click Visualize to replace the 50% and 90% localization contours in the figure above with ones calculated from the renormalized skymap.
+							</i>
+							<p class="text-red-600 text-sm mb-4">
+								Disclaimer: The DECam Footprint currently breaks in the calculator. We are temporarily approximating its coverage as a circle with 1 deg radius.
+							</p>
+							
+							<br>
+							
+							<!-- Renorm skymap input parameters -->
+							<div class="flex flex-wrap gap-4 mb-4">
+								<div class="inline-block whitespace-nowrap">
+									<b class="tooltip-container">
+										Instrument:
+										<span class="tooltip-text">
+											Completed and planned pointings to include from each instrument
+										</span>
+									</b>
+									<b class="ml-2">Completed</b>
+									<select class="ml-2 px-2 py-1 border rounded" multiple id="r_inst_cov">
+										<option value="all">All Instruments</option>
+									</select>
+									<b class="ml-2">Planned</b>
+									<select class="ml-2 px-2 py-1 border rounded" multiple id="r_inst_plan">
+										<option value="all">All Instruments</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b class="tooltip-container">
+										Approximate
+										<span class="tooltip-text">
+											For footprints with multiple ccd's this will approximate the calculator's input by using a simplified instrument footprint without chip-gaps. It is substantially faster, but does introduce a level of uncertainty in the resulting area and probability.
+										</span>
+									</b>
+									<select class="ml-2 px-2 py-1 border rounded" id="r_approx_cov">
+										<option value="1" selected>Yes</option>
+										<option value="0">No</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b>Depth</b>
+									<input type="text" size="7" class="ml-2 px-2 py-1 border rounded" id="r_depth_cov" placeholder="Optional">
+									<b class="ml-2">Depth Unit</b>
+									<select class="ml-2 px-2 py-1 border rounded" id="r_depth_unit">
+										<option value="">Select Unit</option>
+										<option value="mag">Magnitude</option>
+										<option value="flux">FLUX erg cm^-2 s^-1</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b>Band</b>
+									<select class="ml-2 px-2 py-1 border rounded" multiple id="r_band_cov">
+										<option value="">All Bands</option>
+										<option value="g">g</option>
+										<option value="r">r</option>
+										<option value="i">i</option>
+									</select>
+								</div>
+
+								<div class="inline-block whitespace-nowrap">
+									<b class="tooltip-container">
+										Spectral Range
+										<span class="tooltip-text">
+											Filter pointings based on their wavelength, energy, or frequency range
+										</span>
+									</b>
+									<b class="ml-2">Type:</b>
+									<select class="ml-1 px-2 py-1 border rounded" id="r_spectral_range_type">
+										<option value="wavelength" selected>Wavelength</option>
+										<option value="energy">Energy</option>
+										<option value="frequency">Frequency</option>
+									</select>
+									<b class="ml-2">Range:</b>
+									<input size="10" type="text" class="ml-1 px-1 py-1 border rounded" id="r_spectral_range_low" placeholder="Min"> -
+									<input size="10" type="text" class="ml-1 px-1 py-1 border rounded" id="r_spectral_range_high" placeholder="Max">
+									<b class="ml-2">Unit</b>
+									<select class="ml-1 px-2 py-1 border rounded" id="r_spectral_range_unit">
+										<option value="nm">nm</option>
+										<option value="angstrom">Angstrom</option>
+									</select>
+								</div>
 							</div>
 							
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Planned Pointings</label>
-								<select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-									<option value="">All Instruments</option>
-								</select>
+							<br>
+							
+							<!-- renorm-skymap result placeholder -->
+							<div id="renormdiv"></div>
+							<div id="renorm-result" class="mt-4 text-sm"></div>
+							
+							<br>
+							
+							<div class="flex justify-center gap-4">
+								<button 
+									class="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+									on:click={downloadRenormalizedSkymap}
+								>
+									Download
+								</button>
+								<button 
+									class="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+									on:click={visualizeRenormalizedSkymap}
+								>
+									Visualize
+								</button>
 							</div>
-						</div>
-						
-						<!-- Result Area -->
-						<div id="renorm-result" class="mb-4 p-4 bg-gray-50 rounded-lg min-h-[50px] flex items-center justify-center text-gray-500">
-							Select options and click a button to proceed
-						</div>
-						
-						<div class="flex gap-4 justify-center">
-							<button 
-								class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								on:click={downloadRenormalizedSkymap}
-								disabled={loading}
-							>
-								{loading ? 'Processing...' : 'Download'}
-							</button>
-							<button 
-								class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-								on:click={visualizeRenormalizedSkymap}
-								disabled={loading}
-							>
-								{loading ? 'Processing...' : 'Visualize'}
-							</button>
 						</div>
 					</div>
 				{/if}
@@ -2139,50 +2424,250 @@
 		</div>
 	{/if}
 </div>
-
 <style>
-	/* Custom styles for visualization controls */
-	input[type="range"] {
-		appearance: none;
-		height: 6px;
-		background: #ddd;
-		border-radius: 3px;
-		outline: none;
-	}
-	
-	input[type="range"]::-webkit-slider-thumb {
-		appearance: none;
-		width: 20px;
-		height: 20px;
-		background: #4CAF50;
-		border-radius: 50%;
-		cursor: pointer;
-	}
-	
-	input[type="range"]::-moz-range-thumb {
-		width: 20px;
-		height: 20px;
-		background: #4CAF50;
-		border: none;
-		border-radius: 50%;
-		cursor: pointer;
-	}
-	
-	/* Ensure Aladin container and canvas are visible */
+	/* General component styles */
 	.aladin-container {
-		min-height: 640px !important;
-		overflow: visible !important;
+		width: 100%;
+		height: 640px;
+		position: relative;
+		border: 2px solid #ccc;
+		background: #000;
+	}
+
+	.loadingtext {
+		color: #888;
+	}
+
+	.scroll-section {
+		max-height: 200px;
+		overflow-y: auto;
+		border: 1px solid #eee;
+		padding: 10px;
+		margin-top: 5px;
+	}
+
+	/* Custom styles for buttons and triangles */
+	.alert_coll::before {
+		content: '▶'; /* Right-pointing triangle */
+		margin-right: 5px;
+		display: inline-block;
+		transition: transform 0.2s;
+	}
+
+	.alert_coll.down-triangle::before {
+		transform: rotate(90deg);
 	}
 	
-	:global(.aladin-container canvas) {
-		width: 100% !important;
-		height: 100% !important;
-		display: block !important;
+	/* Time slider styles */
+	.time-slider-container {
+		width: 100%;
+		margin-top: 1rem;
 	}
-	
-	:global(.aladin-container .aladin-location) {
-		color: white !important;
-		background: rgba(0,0,0,0.7) !important;
-		padding: 5px !important;
+
+	.time-slider-wrapper {
+		position: relative;
+		height: 20px;
+		width: 100%;
+		cursor: pointer;
+	}
+
+	.time-slider-track {
+		position: absolute;
+		top: 50%;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background-color: #e5e7eb; /* gray-200 */
+		border-radius: 2px;
+		transform: translateY(-50%);
+	}
+
+	.time-slider-range {
+		position: absolute;
+		top: 50%;
+		height: 4px;
+		background-color: #3b82f6; /* blue-500 */
+		border-radius: 2px;
+		transform: translateY(-50%);
+	}
+
+	.time-slider-handle {
+		position: absolute;
+		top: 50%;
+		width: 16px;
+		height: 16px;
+		background-color: #3b82f6; /* blue-500 */
+		border: 2px solid white;
+		border-radius: 50%;
+		cursor: grab;
+		transform: translate(-50%, -50%);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		z-index: 10;
+		transition: transform 0.1s ease;
+	}
+
+	.time-slider-handle:hover {
+		transform: translate(-50%, -50%) scale(1.1);
+	}
+
+	.time-slider-handle:active,
+	.time-slider-handle.dragging {
+		cursor: grabbing;
+		transform: translate(-50%, -50%) scale(1.15);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+	}
+
+	.time-labels {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 0.5rem;
+	}
+
+	/* Tooltip styles (matching Flask implementation) */
+	.tooltip-container {
+		position: relative;
+		cursor: help;
+		border-bottom: 1px dotted #999;
+	}
+
+	.tooltip-container .tooltip-text {
+		visibility: hidden;
+		width: 300px;
+		background-color: #555;
+		color: white;
+		text-align: left;
+		border-radius: 6px;
+		padding: 8px;
+		font-size: 12px;
+		font-weight: normal;
+		position: absolute;
+		z-index: 1000;
+		bottom: 125%;
+		left: 50%;
+		margin-left: -150px;
+		opacity: 0;
+		transition: opacity 0.3s;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+	}
+
+	.tooltip-container .tooltip-text::after {
+		content: "";
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		margin-left: -5px;
+		border-width: 5px;
+		border-style: solid;
+		border-color: #555 transparent transparent transparent;
+	}
+
+	.tooltip-container:hover .tooltip-text {
+		visibility: visible;
+		opacity: 1;
+	}
+
+	/* Bootstrap-style form controls */
+	.table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 1rem;
+	}
+
+	.table th,
+	.table td {
+		padding: 0.5rem;
+		vertical-align: top;
+		border-bottom: 1px solid #dee2e6;
+	}
+
+	.table th {
+		font-weight: 600;
+		border-bottom: 2px solid #dee2e6;
+	}
+
+	/* Nav tabs styling (matching Bootstrap) */
+	.nav-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		border-bottom: 1px solid #dee2e6;
+		background-color: #f8f9fa;
+	}
+
+	.nav-tabs .nav-item {
+		margin-bottom: -1px;
+	}
+
+	.nav-tabs .nav-link {
+		border: 1px solid transparent;
+		border-top-left-radius: 0.25rem;
+		border-top-right-radius: 0.25rem;
+		transition: all 0.15s ease-in-out;
+	}
+
+	.nav-tabs .nav-link:hover {
+		border-color: #e9ecef #e9ecef #dee2e6;
+	}
+
+	.nav-tabs .nav-link.active,
+	.nav-tabs .nav-item.show .nav-link {
+		color: #495057;
+		background-color: #fff;
+		border-color: #dee2e6 #dee2e6 #fff;
+	}
+
+	/* Container and row styles */
+	.container-fluid {
+		width: 100%;
+		padding-right: 15px;
+		padding-left: 15px;
+		margin-right: auto;
+		margin-left: auto;
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		margin-right: -15px;
+		margin-left: -15px;
+	}
+
+	.col-sm-6 {
+		flex: 0 0 50%;
+		max-width: 50%;
+		padding-right: 15px;
+		padding-left: 15px;
+	}
+
+	/* Form styling */
+	select, input[type="text"] {
+		font-size: 14px;
+		line-height: 1.5;
+	}
+
+	.btn {
+		display: inline-block;
+		font-weight: 400;
+		text-align: center;
+		vertical-align: middle;
+		user-select: none;
+		border: 1px solid transparent;
+		padding: 0.375rem 0.75rem;
+		font-size: 1rem;
+		line-height: 1.5;
+		border-radius: 0.25rem;
+		transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+		cursor: pointer;
+	}
+
+	.btn-primary {
+		color: #fff;
+		background-color: #007bff;
+		border-color: #007bff;
+	}
+
+	.btn-primary:hover {
+		color: #fff;
+		background-color: #0056b3;
+		border-color: #004085;
 	}
 </style>
