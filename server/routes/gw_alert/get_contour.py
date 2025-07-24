@@ -17,7 +17,7 @@ router = APIRouter(tags=["gw_alerts"])
 @router.get("/gw_contour")
 async def get_gw_contour(
     graceid: str = Query(..., description="Grace ID of the GW event"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get the contour for a GW alert.
@@ -31,7 +31,12 @@ async def get_gw_contour(
     graceid = GWAlert.graceidfromalternate(graceid)
 
     # Get the latest alert for this graceid
-    alerts = db.query(GWAlert).filter(GWAlert.graceid == graceid).order_by(GWAlert.datecreated.desc()).all()
+    alerts = (
+        db.query(GWAlert)
+        .filter(GWAlert.graceid == graceid)
+        .order_by(GWAlert.datecreated.desc())
+        .all()
+    )
 
     if not alerts:
         raise not_found_exception(f"No alert found with graceid: {graceid}")
@@ -48,7 +53,11 @@ async def get_gw_contour(
     contour_path = f"fit/{path_info}-contours-smooth.json"
 
     try:
-        file_content = download_gwtm_file(filename=contour_path, source=settings.STORAGE_BUCKET_SOURCE, config=settings)
+        file_content = download_gwtm_file(
+            filename=contour_path,
+            source=settings.STORAGE_BUCKET_SOURCE,
+            config=settings,
+        )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
         raise not_found_exception(f"Error in retrieving Contour file: {contour_path}")

@@ -34,37 +34,41 @@ from server.utils.error_handling import ErrorDetail
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan_context(app: FastAPI):
     logger.info("Application is starting up...")
     # Create database tables with proper "IF NOT EXISTS" behaviour
     try:
         logger.info("Initialising database schema...")
-        
+
         # Use checkfirst=True to avoid errors if tables already exist (production-safe)
         Base.metadata.create_all(bind=engine, checkfirst=True)
         logger.info("Database tables created/verified successfully!")
-        
+
         # Create indexes if they don't exist (production-safe)
         with engine.connect() as conn:
             try:
                 # Create performance index for pointing queries (matches Flask version)
-                conn.execute("""
+                conn.execute(
+                    """
                     CREATE INDEX IF NOT EXISTS idx_pointing_status_id 
                     ON public.pointing(status, id);
-                """)
+                """
+                )
                 conn.commit()
                 logger.info("Database indexes created/verified successfully!")
             except Exception as e:
                 logger.warning(f"Index creation warning (may already exist): {e}")
-                
+
     except Exception as e:
         logger.error(f"Failed to initialise database: {e}")
         # Don't raise - allow app to start even if DB setup fails (for debugging)
-    
+
     yield
-    
+
     logger.info("Application is shutting down...")
+
 
 app = FastAPI(
     title=settings.APP_NAME,

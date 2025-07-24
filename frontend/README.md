@@ -23,6 +23,7 @@ This frontend provides a modern web interface for managing gravitational wave ob
 ## Development
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - FastAPI backend running on port 8000
 
@@ -44,6 +45,7 @@ The development server runs on http://localhost:5173 and automatically proxies A
 ### Environment Configuration
 
 The frontend automatically detects the API endpoint:
+
 - **Development**: Uses `http://localhost:8000` (with port forwarding)
 - **Production**: Uses `PUBLIC_API_BASE_URL` environment variable
 
@@ -69,31 +71,36 @@ skaffold dev  # Full development environment with hot reload
 ```
 
 This provides:
+
 - Frontend at http://localhost:3000
-- FastAPI at http://localhost:8000  
+- FastAPI at http://localhost:8000
 - PostgreSQL and Redis services
 
 ### Docker
 
 The frontend uses a multi-stage Dockerfile:
+
 - **Development**: Node.js with hot reload
 - **Production**: Static files served by Node.js
 
 ## Current Implementation
 
 ### ✅ Completed Features
+
 - **GW Events Page** (`/alerts/select`): Full filtering, search, and pagination
 - **API Integration**: Type-safe FastAPI client
 - **URL Parameters**: Deep linking with filter state
 - **Responsive Design**: Mobile-friendly interface
 
 ### 🚧 In Development
+
 - **Authentication**: User login and permissions
 - **Pointing Management**: Create and edit telescope observations
 - **Dashboard**: Overview and statistics
 - **Additional Pages**: Instruments, candidates, etc.
 
 ### 📋 Planned Features
+
 - **Data Visualisation**: Charts and maps
 - **Advanced Filtering**: Complex query builder
 
@@ -120,7 +127,7 @@ frontend/
 # Type checking
 npm run check
 
-# Linting and formatting  
+# Linting and formatting
 npm run lint
 npm run format
 ```
@@ -138,6 +145,7 @@ For Flask template equivalents, see the legacy `src/templates/` directory in the
 ## Contributing
 
 This is an active work in progress. When contributing:
+
 1. Check existing implementation patterns in `/routes/alerts/select/`
 2. Maintain TypeScript coverage
 3. Follow established API client patterns in `lib/api.ts`

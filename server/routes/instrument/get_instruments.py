@@ -2,15 +2,16 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from typing import List, Optional
 import json
 
 from server.db.database import get_db
 from server.db.models.instrument import Instrument
 from server.db.models.pointing import Pointing
+from server.db.models.pointing_event import PointingEvent
 from server.schemas.instrument import InstrumentSchema
-from server.auth.auth import get_current_user
+from server.core.enums.pointingstatus import PointingStatus
 from server.utils.error_handling import validation_exception
 from server.core.enums.instrumenttype import InstrumentType
 
@@ -24,8 +25,8 @@ async def get_instruments(
     name: Optional[str] = None,
     names: Optional[str] = None,
     type: Optional[InstrumentType] = None,
+    reporting_only: Optional[bool] = False,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Get instruments with optional filters.
@@ -36,47 +37,96 @@ async def get_instruments(
     - name: Filter by instrument name (fuzzy match)
     - names: Filter by list of instrument names (fuzzy match)
     - type: Filter by instrument type
+    - reporting_only: If true, only return instruments with completed pointings and include pointing counts
 
     Returns a list of instrument objects
     """
-    filter_conditions = []
+    if reporting_only:
+        # Special query for reporting instruments (matching Flask logic)
+        query = (
+            db.query(
+                Instrument.id,
+                Instrument.instrument_name,
+                Instrument.nickname,
+                Instrument.instrument_type,
+                Instrument.datecreated,
+                Instrument.submitterid,
+                func.count(Pointing.id).label("num_pointings"),
+            )
+            .join(Pointing, Instrument.id == Pointing.instrumentid)
+            .join(PointingEvent, PointingEvent.pointingid == Pointing.id)
+            .filter(Pointing.status == PointingStatus.completed)
+            .group_by(
+                Instrument.id,
+                Instrument.instrument_name,
+                Instrument.nickname,
+                Instrument.instrument_type,
+                Instrument.datecreated,
+                Instrument.submitterid,
+            )
+            .order_by(func.count(Pointing.id).desc())
+        )
 
-    if id:
-        filter_conditions.append(Instrument.id == id)
+        results = query.all()
 
-    if ids:
-        try:
-            if isinstance(ids, str):
-                ids_list = json.loads(ids)
-            else:
-                ids_list = ids
-            filter_conditions.append(Instrument.id.in_(ids_list))
-        except:
-            raise validation_exception("Invalid ids format. Must be a JSON array.")
+        # Convert to InstrumentSchema objects with num_pointings
+        instruments = []
+        for result in results:
+            instrument_dict = {
+                "id": result.id,
+                "instrument_name": result.instrument_name,
+                "nickname": result.nickname,
+                "instrument_type": result.instrument_type,
+                "datecreated": result.datecreated,
+                "submitterid": result.submitterid,
+                "num_pointings": result.num_pointings,
+            }
+            instruments.append(InstrumentSchema(**instrument_dict))
 
-    if name:
-        filter_conditions.append(Instrument.instrument_name.contains(name))
+        return instruments
 
-    if names:
-        try:
-            if isinstance(names, str):
-                insts = json.loads(names)
-            else:
-                insts = names
+    else:
+        # Original query logic for regular instrument listing
+        filter_conditions = []
 
-            or_conditions = []
-            for i in insts:
-                or_conditions.append(Instrument.instrument_name.contains(i.strip()))
+        if id:
+            filter_conditions.append(Instrument.id == id)
 
-            filter_conditions.append(or_(*or_conditions))
-            filter_conditions.append(Instrument.id == Pointing.instrumentid)
-        except:
-            raise validation_exception("Invalid names format. Must be a JSON array.")
+        if ids:
+            try:
+                if isinstance(ids, str):
+                    ids_list = json.loads(ids)
+                else:
+                    ids_list = ids
+                filter_conditions.append(Instrument.id.in_(ids_list))
+            except:
+                raise validation_exception("Invalid ids format. Must be a JSON array.")
 
-    if type:
-        filter_conditions.append(Instrument.instrument_type == type)
+        if name:
+            filter_conditions.append(Instrument.instrument_name.contains(name))
 
-    instruments = db.query(Instrument).filter(*filter_conditions).all()
+        if names:
+            try:
+                if isinstance(names, str):
+                    insts = json.loads(names)
+                else:
+                    insts = names
 
-    # FastAPI will automatically convert SQLAlchemy models to Pydantic models
-    return instruments
+                or_conditions = []
+                for i in insts:
+                    or_conditions.append(Instrument.instrument_name.contains(i.strip()))
+
+                filter_conditions.append(or_(*or_conditions))
+                filter_conditions.append(Instrument.id == Pointing.instrumentid)
+            except:
+                raise validation_exception(
+                    "Invalid names format. Must be a JSON array."
+                )
+
+        if type:
+            filter_conditions.append(Instrument.instrument_type == type)
+
+        instruments = db.query(Instrument).filter(*filter_conditions).all()
+
+        # FastAPI will automatically convert SQLAlchemy models to Pydantic models
+        return instruments

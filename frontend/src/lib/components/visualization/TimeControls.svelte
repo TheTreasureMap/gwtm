@@ -17,7 +17,7 @@
 		e.preventDefault();
 		isDragging = true;
 		dragHandle = handle;
-		
+
 		// Add global event listeners
 		if (typeof window !== 'undefined') {
 			document.addEventListener('mousemove', handleDrag);
@@ -29,27 +29,27 @@
 
 	function handleDrag(e: MouseEvent | TouchEvent) {
 		if (!isDragging || !dragHandle) return;
-		
+
 		e.preventDefault();
-		
+
 		// Get the slider wrapper element
 		const sliderWrapper = document.querySelector('.time-slider-wrapper');
 		if (!sliderWrapper) return;
-		
+
 		const rect = sliderWrapper.getBoundingClientRect();
 		const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 		const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
 		const newValue = minTime + (percent / 100) * (maxTime - minTime);
-		
+
 		if (dragHandle === 'min') {
 			timeRange[0] = Math.min(newValue, timeRange[1]);
 		} else {
 			timeRange[1] = Math.max(newValue, timeRange[0]);
 		}
-		
+
 		// Trigger reactivity
 		timeRange = [...timeRange];
-		
+
 		// Notify parent of time range change
 		dispatch('timeRangeChange', { timeRange: [...timeRange] });
 	}
@@ -57,7 +57,7 @@
 	function stopDrag() {
 		isDragging = false;
 		dragHandle = null;
-		
+
 		// Remove global event listeners
 		if (typeof window !== 'undefined') {
 			document.removeEventListener('mousemove', handleDrag);
@@ -88,10 +88,8 @@
 <div class="bg-white border rounded-lg p-4">
 	<h3 class="text-lg font-semibold mb-3">Time Controls</h3>
 	<div class="mb-4">
-		<label class="block text-sm font-medium text-gray-700 mb-2">
-			Pointing Status:
-		</label>
-		<select 
+		<label class="block text-sm font-medium text-gray-700 mb-2"> Pointing Status: </label>
+		<select
 			value={pointingStatus}
 			on:change={handlePointingStatusChange}
 			class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -112,14 +110,14 @@
 		<div class="time-slider-container mt-4">
 			<div class="time-slider-wrapper">
 				<div class="time-slider-track"></div>
-				<div 
-					class="time-slider-range" 
+				<div
+					class="time-slider-range"
 					style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%; 
 						   width: {((timeRange[1] - timeRange[0]) / (maxTime - minTime)) * 100}%"
 				></div>
-				
+
 				<!-- Min handle -->
-				<div 
+				<div
 					class="time-slider-handle min-handle"
 					class:dragging={isDragging && dragHandle === 'min'}
 					style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%"
@@ -127,9 +125,9 @@
 					on:touchstart={(e) => startDrag(e, 'min')}
 					title="Minimum time: {timeRange[0].toFixed(1)} days"
 				></div>
-				
+
 				<!-- Max handle -->
-				<div 
+				<div
 					class="time-slider-handle max-handle"
 					class:dragging={isDragging && dragHandle === 'max'}
 					style="left: {((timeRange[1] - minTime) / (maxTime - minTime)) * 100}%"
@@ -138,7 +136,7 @@
 					title="Maximum time: {timeRange[1].toFixed(1)} days"
 				></div>
 			</div>
-			
+
 			<!-- Time labels -->
 			<div class="time-labels mt-2">
 				<span class="text-xs text-gray-500">{minTime.toFixed(1)} days</span>
