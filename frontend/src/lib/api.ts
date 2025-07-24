@@ -679,6 +679,16 @@ class GWTMApiService {
 		return this.getPublic<GWAlertQueryResponse>('/api/v1/query_alerts', paginatedParams);
 	}
 
+	async getInstrumentEventsContributed(instrumentId: number): Promise<GWAlertSchema[]> {
+		// Get events with completed pointings from this instrument, including pointing counts
+		const params = {
+			instrument_id: instrumentId,
+			include_pointing_count: true,
+			format: 'simple' // Return as simple list
+		};
+		return this.getPublic<GWAlertSchema[]>('/api/v1/query_alerts', params);
+	}
+
 	async getAlertFilterOptions(): Promise<GWAlertFilterOptionsResponse> {
 		return this.getPublic<GWAlertFilterOptionsResponse>('/api/v1/alert_filter_options');
 	}

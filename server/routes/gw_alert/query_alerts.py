@@ -31,6 +31,12 @@ async def query_alerts(
     has_pointings: Optional[bool] = Query(
         False, description="Filter to only alerts with completed pointings"
     ),
+    instrument_id: Optional[int] = Query(
+        None, description="Filter to only alerts with pointings from specific instrument"
+    ),
+    include_pointing_count: Optional[bool] = Query(
+        False, description="Include pointing count for each alert (when filtered by instrument)"
+    ),
     format: Optional[str] = Query(
         "simple",
         description="Response format: 'simple' (list) or 'paginated' (object with metadata)",
@@ -56,6 +62,8 @@ async def query_alerts(
     - observing_run: Filter by observing run (O2, O3, O4, etc.)
     - far: Filter by FAR: 'all', 'significant', or 'subthreshold'
     - has_pointings: Filter to only alerts with completed pointings
+    - instrument_id: Filter to only alerts with pointings from specific instrument
+    - include_pointing_count: Include pointing count for each alert (when filtered by instrument)
     - format: Response format - 'simple' returns list (default, backwards compatible), 'paginated' returns object with metadata
     - page: Page number (1-based, only used with format=paginated)
     - per_page: Items per page (max 100, only used with format=paginated)
@@ -114,21 +122,101 @@ async def query_alerts(
             # Filter out retracted alerts when applying FAR filtering
             filter_conditions.append(GWAlert.alert_type != "Retraction")
 
-    # Create base query
-    base_query = db.query(GWAlert).filter(*filter_conditions)
+    # Handle instrument filtering and pointing counts
+    if instrument_id is not None or include_pointing_count:
+        # When filtering by instrument or including pointing counts, we need to join with pointing tables
+        if include_pointing_count and instrument_id is not None:
+            # Special logic for getting events contributed - match Flask exactly
+            # First, get the count of pointings per graceid using a proper group by query
+            pointing_counts_query = (
+                db.query(
+                    PointingEvent.graceid,
+                    func.count(Pointing.id).label('pointing_count')
+                )
+                .join(Pointing, PointingEvent.pointingid == Pointing.id)
+                .filter(
+                    Pointing.instrumentid == instrument_id,
+                    Pointing.status == pointing_status.completed
+                )
+                .group_by(PointingEvent.graceid)
+                .all()
+            )
+            
+            # Extract unique graceids and create count mapping
+            if pointing_counts_query:
+                gids = [x.graceid for x in pointing_counts_query]
+                pointing_counts_map = {x.graceid: x.pointing_count for x in pointing_counts_query}
+                
+                # Query GWAlerts for these grace IDs
+                results = (
+                    db.query(GWAlert)
+                    .filter(GWAlert.graceid.in_(gids))
+                    .filter(*filter_conditions)
+                    .order_by(GWAlert.graceid.desc())  # Sort graceids in reverse order like Flask
+                    .all()
+                )
+                
+                # Add pointing counts to each alert
+                alerts_with_counts = []
+                for alert in results:
+                    alert_dict = {**alert.__dict__}
+                    alert_dict['pointing_count'] = pointing_counts_map.get(alert.graceid, 0)
+                    alerts_with_counts.append(GWAlertSchema(**alert_dict))
+                
+                # Return processed results directly
+                return alerts_with_counts
+            else:
+                # No events contributed, return empty list
+                return []
+        else:
+            # Standard query but still handle instrument filtering
+            base_query = db.query(GWAlert).filter(*filter_conditions)
+    else:
+        # Standard query without instrument-specific logic
+        base_query = db.query(GWAlert).filter(*filter_conditions)
 
     # Apply has_pointings filter if requested
     if has_pointings:
         # Only include alerts that have completed pointings
         # Use a subquery to find graceids with completed pointings
+        if instrument_id is not None:
+            # Filter by specific instrument
+            pointing_subquery = (
+                db.query(PointingEvent.graceid)
+                .join(Pointing, Pointing.id == PointingEvent.pointingid)
+                .filter(
+                    Pointing.status == pointing_status.completed,
+                    Pointing.instrumentid == instrument_id
+                )
+                .distinct()
+                .subquery()
+            )
+        else:
+            # Filter by any instrument
+            pointing_subquery = (
+                db.query(PointingEvent.graceid)
+                .join(Pointing, Pointing.id == PointingEvent.pointingid)  
+                .filter(Pointing.status == pointing_status.completed)
+                .distinct()
+                .subquery()
+            )
+
+        base_query = base_query.filter(
+            GWAlert.graceid.in_(db.query(pointing_subquery.c.graceid))
+        )
+    elif instrument_id is not None:
+        # Filter by instrument even if not requiring pointings
         pointing_subquery = (
             db.query(PointingEvent.graceid)
             .join(Pointing, Pointing.id == PointingEvent.pointingid)
-            .filter(Pointing.status == pointing_status.completed)
+            .filter(
+                Pointing.instrumentid == instrument_id,
+                Pointing.status == pointing_status.completed
+            )
             .distinct()
             .subquery()
         )
-
+        
         base_query = base_query.filter(
             GWAlert.graceid.in_(db.query(pointing_subquery.c.graceid))
         )
@@ -143,12 +231,25 @@ async def query_alerts(
     # Return format based on format parameter
     if format == "paginated":
         # Get paginated results
-        alerts = (
+        results = (
             base_query.order_by(GWAlert.datecreated.desc())
             .offset(offset)
             .limit(per_page)
             .all()
         )
+
+        # Process results based on whether we have pointing counts
+        if include_pointing_count and instrument_id is not None:
+            alerts = []
+            for result in results:
+                alert = result[0]  # GWAlert object
+                pointing_count = result[1]  # pointing count
+                # Create alert dict and add pointing count
+                alert_dict = {**alert.__dict__}
+                alert_dict['pointing_count'] = pointing_count
+                alerts.append(GWAlertSchema(**alert_dict))
+        else:
+            alerts = [GWAlertSchema.model_validate(alert) for alert in results]
 
         return GWAlertQueryResponse(
             alerts=alerts,
@@ -161,8 +262,21 @@ async def query_alerts(
         )
     else:
         # Simple format (backwards compatible) - return all results as list
-        alerts = base_query.order_by(GWAlert.datecreated.desc()).all()
-        return alerts
+        results = base_query.order_by(GWAlert.datecreated.desc()).all()
+        
+        # Process results based on whether we have pointing counts
+        if include_pointing_count and instrument_id is not None:
+            alerts = []
+            for result in results:
+                alert = result[0]  # GWAlert object
+                pointing_count = result[1]  # pointing count
+                # Create alert dict and add pointing count
+                alert_dict = {**alert.__dict__}
+                alert_dict['pointing_count'] = pointing_count
+                alerts.append(GWAlertSchema(**alert_dict))
+            return alerts
+        else:
+            return [GWAlertSchema.model_validate(alert) for alert in results]
 
 
 @router.get("/alert_filter_options", response_model=GWAlertFilterOptionsResponse)
