@@ -36,15 +36,15 @@
 			console.log('Aladin initialization already attempted, skipping');
 			return;
 		}
-		
+
 		initializationAttempted = true;
-		
+
 		// Wait for Svelte to complete DOM updates
 		await tick();
-		
+
 		// Additional small delay to ensure rendering is complete
-		await new Promise(resolve => setTimeout(resolve, 200));
-		
+		await new Promise((resolve) => setTimeout(resolve, 200));
+
 		await awaitContainer();
 	}
 
@@ -61,22 +61,25 @@
 
 	async function awaitContainer(maxRetries = 30, retryDelay = 200) {
 		console.log('awaitContainer started, looking for container...');
-		
+
 		for (let i = 0; i < maxRetries; i++) {
 			console.log(`Container check attempt ${i + 1}:`);
 			console.log('  - aladinContainer (binding):', !!aladinContainer);
-			console.log('  - aladinContainer visible:', aladinContainer && aladinContainer.offsetParent !== null);
+			console.log(
+				'  - aladinContainer visible:',
+				aladinContainer && aladinContainer.offsetParent !== null
+			);
 			console.log('  - document.getElementById:', !!document.getElementById('aladin-lite-div'));
 			console.log('  - aladinLoading:', aladinLoading);
 			console.log('  - aladinError:', aladinError);
-			
+
 			// Check if container is bound and visible
 			if (aladinContainer && aladinContainer.offsetParent !== null) {
 				console.log('Container found via binding and is visible');
 				await initializeAladin();
 				return;
 			}
-			
+
 			// Fallback: try to find by ID
 			const containerById = document.getElementById('aladin-lite-div');
 			if (containerById && containerById.offsetParent !== null) {
@@ -85,11 +88,11 @@
 				await initializeAladin();
 				return;
 			}
-			
+
 			// Wait before next attempt
-			await new Promise(resolve => setTimeout(resolve, retryDelay));
+			await new Promise((resolve) => setTimeout(resolve, retryDelay));
 		}
-		
+
 		console.error('Container never became available after', maxRetries, 'attempts');
 		console.log('Final state:', {
 			aladinContainer: !!aladinContainer,
@@ -98,20 +101,22 @@
 			aladinLoading,
 			aladinError
 		});
-		
+
 		aladinError = 'Sky map container failed to initialize. Please refresh the page.';
 		showLoadingSpinner = false;
-		dispatch('error', { message: 'Sky map container failed to initialize. Please refresh the page.' });
+		dispatch('error', {
+			message: 'Sky map container failed to initialize. Please refresh the page.'
+		});
 	}
 
 	async function initializeAladin() {
 		console.log('initializeAladin called with:', { graceid, alert: !!selectedAlert });
-		
+
 		if (!graceid || !selectedAlert) {
 			console.log('Skipping initialization - missing graceid or alert');
 			return;
 		}
-		
+
 		try {
 			// Check if scripts are available
 			console.log('Checking for Aladin availability...');
@@ -119,18 +124,18 @@
 				throw new Error('Aladin script not available. Please check your internet connection.');
 			}
 			console.log('Aladin is available:', typeof (window as any).A);
-			
+
 			// Container should be available by now since awaitContainer() called us
 			console.log('Container check:', aladinContainer);
 			if (!aladinContainer) {
 				throw new Error('Aladin container still not available');
 			}
-			
+
 			// Initialize Aladin sky map
 			console.log('Initializing Aladin...');
 			initAladin();
 			console.log('Aladin initialized successfully:', !!aladin);
-			
+
 			// Ensure Aladin is visible by setting a survey
 			if (aladin) {
 				try {
@@ -140,11 +145,10 @@
 					console.warn('Failed to set survey:', err);
 				}
 			}
-			
+
 			// Notify parent that Aladin is ready
 			showLoadingSpinner = false;
 			dispatch('aladinReady', { aladin });
-			
 		} catch (err: any) {
 			console.error('Failed to initialize Aladin:', err);
 			aladinError = `Failed to load visualization: ${err.message}`;
@@ -155,7 +159,7 @@
 
 	function initAladin() {
 		console.log('initAladin called', { aladinContainer: !!aladinContainer, window: typeof window });
-		
+
 		if (!aladinContainer || typeof window === 'undefined') {
 			console.log('Cannot initialize Aladin - missing container or window');
 			return;
@@ -164,17 +168,18 @@
 		try {
 			const A = (window as any).A;
 			console.log('Aladin object:', A);
-			
+
 			// Set a unique ID for the container
 			aladinContainer.id = 'aladin-lite-div';
 			console.log('Container ID set to:', aladinContainer.id);
-			
+
 			// Calculate target coordinates
-			const target = selectedAlert?.avgra && selectedAlert?.avgdec 
-				? `${selectedAlert.avgra} ${selectedAlert.avgdec}` 
-				: '0 0';
+			const target =
+				selectedAlert?.avgra && selectedAlert?.avgdec
+					? `${selectedAlert.avgra} ${selectedAlert.avgdec}`
+					: '0 0';
 			console.log('Target coordinates:', target);
-			
+
 			// Use the correct Aladin v2 API syntax matching Flask settings
 			const aladinOptions = {
 				fov: 180, // Match Flask default field of view
@@ -189,10 +194,9 @@
 				survey: 'P/DSS2/color' // Set default survey
 			};
 			console.log('Aladin options:', aladinOptions);
-			
+
 			aladin = A.aladin('#aladin-lite-div', aladinOptions);
 			console.log('Aladin instance created:', !!aladin);
-
 		} catch (err) {
 			console.error('Failed to initialize Aladin:', err);
 			aladinError = 'Failed to initialize sky map';
@@ -228,34 +232,33 @@
 <div style="width: 70%;">
 	<div class="bg-white border rounded-lg overflow-hidden">
 		<!-- Always render the container -->
-		<div 
-			class="relative aladin-container-wrapper"
-			style="height: 640px;"
-		>
-			<div 
+		<div class="relative aladin-container-wrapper" style="height: 640px;">
+			<div
 				bind:this={aladinContainer}
 				class="w-full aladin-container"
 				style="height: 640px; position: relative; border: 2px solid #ccc; background: #000;"
 				id="aladin-lite-div"
 			></div>
-			
+
 			<!-- Loading overlay -->
 			{#if showLoadingSpinner}
 				<div class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
 					<div class="text-center">
-						<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<div
+							class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+						></div>
 						<p class="text-gray-600">Loading sky visualization...</p>
 					</div>
 				</div>
 			{/if}
-			
+
 			<!-- Error overlay -->
 			{#if aladinError}
 				<div class="absolute inset-0 flex items-center justify-center bg-white z-10">
 					<div class="text-center text-red-600">
 						<div class="text-4xl mb-4">⚠️</div>
 						<p class="font-medium">{aladinError}</p>
-						<button 
+						<button
 							class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
 							on:click={reinitialize}
 						>

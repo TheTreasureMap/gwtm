@@ -28,54 +28,86 @@ router = APIRouter(tags=["pointings"])
 
 @router.get("/pointings", response_model=List[PointingSchema])
 def get_pointings(
-        # Basic filters
-        graceid: Optional[str] = Query(None, description="Grace ID of the GW event"),
-        graceids: Optional[str] = Query(None, description="Comma-separated list or JSON array of Grace IDs"),
-        id: Optional[int] = Query(None, description="Filter by pointing ID"),
-        ids: Optional[str] = Query(None, description="Comma-separated list or JSON array of pointing IDs"),
-
-        # Status filters
-        status: Optional[str] = Query(None, description="Filter by status (planned, completed, cancelled)"),
-        statuses: Optional[str] = Query(None, description="Comma-separated list or JSON array of statuses"),
-
-        # Time filters
-        completed_after: Optional[datetime] = Query(None,
-                                                    description="Filter for pointings completed after this time (ISO format)"),
-        completed_before: Optional[datetime] = Query(None,
-                                                     description="Filter for pointings completed before this time (ISO format)"),
-        planned_after: Optional[datetime] = Query(None,
-                                                  description="Filter for pointings planned after this time (ISO format)"),
-        planned_before: Optional[datetime] = Query(None,
-                                                   description="Filter for pointings planned before this time (ISO format)"),
-
-        # User filters
-        user: Optional[str] = Query(None, description="Filter by username, first name, or last name"),
-        users: Optional[str] = Query(None, description="Comma-separated list or JSON array of usernames"),
-
-        # Instrument filters
-        instrument: Optional[str] = Query(None, description="Filter by instrument ID or name"),
-        instruments: Optional[str] = Query(None,
-                                           description="Comma-separated list or JSON array of instrument IDs or names"),
-
-        # Band filters
-        band: Optional[str] = Query(None, description="Filter by band"),
-        bands: Optional[str] = Query(None, description="Comma-separated list or JSON array of bands"),
-
-        # Spectral filters
-        wavelength_regime: Optional[str] = Query(None, description="Filter by wavelength regime [min, max]"),
-        wavelength_unit: Optional[str] = Query(None, description="Wavelength unit (angstrom, nanometer, micron)"),
-        frequency_regime: Optional[str] = Query(None, description="Filter by frequency regime [min, max]"),
-        frequency_unit: Optional[str] = Query(None, description="Frequency unit (Hz, kHz, MHz, GHz, THz)"),
-        energy_regime: Optional[str] = Query(None, description="Filter by energy regime [min, max]"),
-        energy_unit: Optional[str] = Query(None, description="Energy unit (eV, keV, MeV, GeV, TeV)"),
-
-        # Depth filters
-        depth_gt: Optional[float] = Query(None, description="Filter by depth greater than this value"),
-        depth_lt: Optional[float] = Query(None, description="Filter by depth less than this value"),
-        depth_unit: Optional[str] = Query(None, description="Depth unit (ab_mag, vega_mag, flux_erg, flux_jy)"),
-
-        # DB access
-        db: Session = Depends(get_db)
+    # Basic filters
+    graceid: Optional[str] = Query(None, description="Grace ID of the GW event"),
+    graceids: Optional[str] = Query(
+        None, description="Comma-separated list or JSON array of Grace IDs"
+    ),
+    id: Optional[int] = Query(None, description="Filter by pointing ID"),
+    ids: Optional[str] = Query(
+        None, description="Comma-separated list or JSON array of pointing IDs"
+    ),
+    # Status filters
+    status: Optional[str] = Query(
+        None, description="Filter by status (planned, completed, cancelled)"
+    ),
+    statuses: Optional[str] = Query(
+        None, description="Comma-separated list or JSON array of statuses"
+    ),
+    # Time filters
+    completed_after: Optional[datetime] = Query(
+        None, description="Filter for pointings completed after this time (ISO format)"
+    ),
+    completed_before: Optional[datetime] = Query(
+        None, description="Filter for pointings completed before this time (ISO format)"
+    ),
+    planned_after: Optional[datetime] = Query(
+        None, description="Filter for pointings planned after this time (ISO format)"
+    ),
+    planned_before: Optional[datetime] = Query(
+        None, description="Filter for pointings planned before this time (ISO format)"
+    ),
+    # User filters
+    user: Optional[str] = Query(
+        None, description="Filter by username, first name, or last name"
+    ),
+    users: Optional[str] = Query(
+        None, description="Comma-separated list or JSON array of usernames"
+    ),
+    # Instrument filters
+    instrument: Optional[str] = Query(
+        None, description="Filter by instrument ID or name"
+    ),
+    instruments: Optional[str] = Query(
+        None,
+        description="Comma-separated list or JSON array of instrument IDs or names",
+    ),
+    # Band filters
+    band: Optional[str] = Query(None, description="Filter by band"),
+    bands: Optional[str] = Query(
+        None, description="Comma-separated list or JSON array of bands"
+    ),
+    # Spectral filters
+    wavelength_regime: Optional[str] = Query(
+        None, description="Filter by wavelength regime [min, max]"
+    ),
+    wavelength_unit: Optional[str] = Query(
+        None, description="Wavelength unit (angstrom, nanometer, micron)"
+    ),
+    frequency_regime: Optional[str] = Query(
+        None, description="Filter by frequency regime [min, max]"
+    ),
+    frequency_unit: Optional[str] = Query(
+        None, description="Frequency unit (Hz, kHz, MHz, GHz, THz)"
+    ),
+    energy_regime: Optional[str] = Query(
+        None, description="Filter by energy regime [min, max]"
+    ),
+    energy_unit: Optional[str] = Query(
+        None, description="Energy unit (eV, keV, MeV, GeV, TeV)"
+    ),
+    # Depth filters
+    depth_gt: Optional[float] = Query(
+        None, description="Filter by depth greater than this value"
+    ),
+    depth_lt: Optional[float] = Query(
+        None, description="Filter by depth less than this value"
+    ),
+    depth_unit: Optional[str] = Query(
+        None, description="Depth unit (ab_mag, vega_mag, flux_erg, flux_jy)"
+    ),
+    # DB access
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve pointings from the database with optional filters.
@@ -576,10 +608,15 @@ def get_pointings(
         # Query the database
         # Check if we need to join PointingEvent table (when graceid filters are used)
         has_graceid_filters = graceid or graceids
-        
+
         if has_graceid_filters:
             # Join with PointingEvent table when filtering by graceid
-            pointings = db.query(Pointing).join(PointingEvent, Pointing.id == PointingEvent.pointingid).filter(*filter_conditions).all()
+            pointings = (
+                db.query(Pointing)
+                .join(PointingEvent, Pointing.id == PointingEvent.pointingid)
+                .filter(*filter_conditions)
+                .all()
+            )
         else:
             # Direct query on Pointing table for other filters
             pointings = db.query(Pointing).filter(*filter_conditions).all()
