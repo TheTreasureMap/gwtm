@@ -146,23 +146,26 @@ async def query_alerts(
             if pointing_counts_query:
                 gids = [x.graceid for x in pointing_counts_query]
                 pointing_counts_map = {x.graceid: x.pointing_count for x in pointing_counts_query}
-                
-                # Query GWAlerts for these grace IDs
+
+                # Query GWAlerts for these grace IDs, ordering by date to get the latest one first
                 results = (
                     db.query(GWAlert)
                     .filter(GWAlert.graceid.in_(gids))
                     .filter(*filter_conditions)
-                    .order_by(GWAlert.graceid.desc())  # Sort graceids in reverse order like Flask
+                    .order_by(GWAlert.graceid.desc(), GWAlert.datecreated.desc())  # Get latest alert first for each graceid
                     .all()
                 )
-                
-                # Add pointing counts to each alert
+
+                # Add pointing counts to each alert, ensuring uniqueness by graceid
                 alerts_with_counts = []
+                seen_graceids = set()
                 for alert in results:
-                    alert_dict = {**alert.__dict__}
-                    alert_dict['pointing_count'] = pointing_counts_map.get(alert.graceid, 0)
-                    alerts_with_counts.append(GWAlertSchema(**alert_dict))
-                
+                    if alert.graceid not in seen_graceids:
+                        alert_dict = {**alert.__dict__}
+                        alert_dict['pointing_count'] = pointing_counts_map.get(alert.graceid, 0)
+                        alerts_with_counts.append(GWAlertSchema(**alert_dict))
+                        seen_graceids.add(alert.graceid)
+
                 # Return processed results directly
                 return alerts_with_counts
             else:

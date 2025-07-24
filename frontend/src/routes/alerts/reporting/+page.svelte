@@ -42,15 +42,11 @@
 <PageContainer>
 	<!-- Header -->
 	<div class="flex items-center justify-between mb-8">
-		<PageHeader 
-			title="Reporting Instruments" 
+		<PageHeader
+			title="Reporting Instruments"
 			description="Instruments that have reported completed pointings, ordered by activity level."
 		/>
-		<Button 
-			on:click={handleRefresh} 
-			disabled={loading} 
-			variant="secondary"
-		>
+		<Button on:click={handleRefresh} disabled={loading} variant="secondary">
 			<svg
 				class="w-4 h-4 mr-2 {loading ? 'animate-spin' : ''}"
 				fill="none"
