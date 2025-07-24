@@ -2,6 +2,11 @@
 	import { onMount } from 'svelte';
 	import { gwtmApi, type InstrumentSchema } from '$lib/api';
 	import ReportingInstrumentsTable from '$lib/components/tables/ReportingInstrumentsTable.svelte';
+	import PageContainer from '$lib/components/ui/PageContainer.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let instruments: InstrumentSchema[] = [];
 	let loading = false;
@@ -34,68 +39,38 @@
 	<title>Reporting Instruments - GWTM</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 py-8">
+<PageContainer>
 	<!-- Header -->
-	<div class="mb-8">
-		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-4xl font-bold text-gray-900 mb-4">Reporting Instruments</h1>
-				<p class="text-lg text-gray-600">
-					Instruments that have reported completed pointings, ordered by activity level.
-				</p>
-			</div>
-			<button
-				on:click={handleRefresh}
-				disabled={loading}
-				class="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+	<div class="flex items-center justify-between mb-8">
+		<PageHeader 
+			title="Reporting Instruments" 
+			description="Instruments that have reported completed pointings, ordered by activity level."
+		/>
+		<Button 
+			on:click={handleRefresh} 
+			disabled={loading} 
+			variant="secondary"
+		>
+			<svg
+				class="w-4 h-4 mr-2 {loading ? 'animate-spin' : ''}"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
 			>
-				<svg
-					class="w-4 h-4 mr-2 {loading ? 'animate-spin' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-					/>
-				</svg>
-				Refresh
-			</button>
-		</div>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+				/>
+			</svg>
+			Refresh
+		</Button>
 	</div>
 
 	<!-- Error State -->
 	{#if error}
-		<div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
-			<div class="flex items-center">
-				<svg
-					class="w-6 h-6 text-red-600 mr-3"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>
-				<div>
-					<h3 class="text-lg font-semibold text-red-800">Error Loading Reporting Instruments</h3>
-					<p class="text-red-700">{error}</p>
-					<button
-						on:click={handleRefresh}
-						class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-					>
-						Try again
-					</button>
-				</div>
-			</div>
-		</div>
+		<ErrorMessage message={error} title="Error Loading Reporting Instruments" />
 	{:else}
 		<!-- Reporting Instruments Table -->
 		<ReportingInstrumentsTable {instruments} {loading} />
@@ -103,7 +78,7 @@
 
 	<!-- Quick Actions -->
 	<div class="grid md:grid-cols-2 gap-6 mt-8">
-		<div class="bg-white rounded-lg shadow-lg p-6">
+		<Card>
 			<h3 class="text-xl font-semibold mb-4 flex items-center">
 				<svg
 					class="w-6 h-6 mr-2 text-blue-600"
@@ -129,9 +104,9 @@
 			>
 				Search Instruments →
 			</a>
-		</div>
+		</Card>
 
-		<div class="bg-white rounded-lg shadow-lg p-6">
+		<Card>
 			<h3 class="text-xl font-semibold mb-4 flex items-center">
 				<svg
 					class="w-6 h-6 mr-2 text-green-600"
@@ -157,7 +132,7 @@
 			>
 				Submit Instrument →
 			</a>
-		</div>
+		</Card>
 	</div>
 
 	<!-- Back Navigation -->
@@ -169,4 +144,4 @@
 			Back to GW Events
 		</a>
 	</div>
-</div>
+</PageContainer>
