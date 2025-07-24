@@ -1,17 +1,19 @@
+<script>
+	import PageContainer from '$lib/components/ui/PageContainer.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+</script>
+
 <svelte:head>
 	<title>Documentation - GWTM</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 py-8">
-	<!-- Header -->
-	<div class="mb-8">
-		<h1 class="text-4xl font-bold text-gray-900 mb-4">Documentation</h1>
-		<p class="text-lg text-gray-600">
-			Communicating with the Treasure Map to either report or get information is best done
-			programmatically through the API using POST and GET methods. However, you can also use the
-			pages on this website to report and get information.
-		</p>
-	</div>
+<PageContainer>
+	<PageHeader
+		title="Documentation"
+		description="Communicating with the Treasure Map to either report or get information is best done programmatically through the API using POST and GET methods. However, you can also use the pages on this website to report and get information."
+	/>
 
 	<!-- API Notice -->
 	<div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
@@ -33,7 +35,7 @@
 	</div>
 
 	<!-- API Versions -->
-	<div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+	<Card>
 		<h2 class="text-2xl font-semibold mb-4">API Versions</h2>
 		<p class="mb-4">
 			We have two versions of the API. <strong>We recommend using <em>/api/v1</em></strong>
@@ -61,11 +63,11 @@
 				</p>
 			</div>
 		</div>
-	</div>
+	</Card>
 
 	<!-- Quick Links -->
 	<div class="grid md:grid-cols-2 gap-6 mb-8">
-		<div class="bg-white rounded-lg shadow-lg p-6">
+		<Card>
 			<h3 class="text-xl font-semibold mb-4 flex items-center">
 				<svg
 					class="w-6 h-6 mr-2 text-blue-600"
@@ -92,9 +94,9 @@
 			>
 				Open API Docs →
 			</a>
-		</div>
+		</Card>
 
-		<div class="bg-white rounded-lg shadow-lg p-6">
+		<Card>
 			<h3 class="text-xl font-semibold mb-4 flex items-center">
 				<svg
 					class="w-6 h-6 mr-2 text-green-600"
@@ -121,11 +123,11 @@
 			>
 				View on GitHub →
 			</a>
-		</div>
+		</Card>
 	</div>
 
 	<!-- Use Cases -->
-	<div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+	<Card>
 		<h2 class="text-2xl font-semibold mb-6">API Use Cases</h2>
 
 		<div class="space-y-8">
@@ -196,10 +198,10 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</Card>
 
 	<!-- Getting Started -->
-	<div class="bg-white rounded-lg shadow-lg p-6">
+	<Card>
 		<h2 class="text-2xl font-semibold mb-6">Getting Started</h2>
 
 		<div class="grid md:grid-cols-3 gap-6">
@@ -244,5 +246,5 @@
 				>
 			</div>
 		</div>
-	</div>
-</div>
+	</Card>
+</PageContainer>

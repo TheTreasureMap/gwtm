@@ -3,6 +3,10 @@
 	import { onMount } from 'svelte';
 	import { gwtmApi, type GWAlertSchema } from '$lib/api.js';
 	import SkyVisualization from '$lib/components/visualization/SkyVisualization.svelte';
+	import PageContainer from '$lib/components/ui/PageContainer.svelte';
+	import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
+	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 
 	// Props from URL parameters
 	let graceid = '';
@@ -96,16 +100,11 @@
 	/>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-2">
+<PageContainer padding="sm">
 	{#if loading}
-		<div class="flex justify-center items-center py-12">
-			<div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-		</div>
+		<LoadingSpinner />
 	{:else if error}
-		<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-			<strong class="font-bold">Error:</strong>
-			<span class="block sm:inline">{error}</span>
-		</div>
+		<ErrorMessage message={error} />
 	{:else if alertExists && alert}
 		<!-- Alert Header -->
 		<div class="mb-3">
@@ -155,9 +154,9 @@
 		</div>
 
 		<!-- Visualization Container -->
-		<div class="bg-white shadow-lg rounded-lg p-6">
+		<Card>
 			<SkyVisualization {graceid} {alert} {pointingStatus} selectedAlertType={alertType} />
-		</div>
+		</Card>
 	{:else if graceid && graceid !== 'None'}
 		<!-- Event not found -->
 		<div class="text-center py-12">
@@ -177,13 +176,10 @@
 			</p>
 		</div>
 	{/if}
-</div>
+</PageContainer>
 
 <style>
 	/* Custom styles for the alerts page */
-	.container {
-		max-width: 1200px;
-	}
 
 	code {
 		font-family: 'Courier New', monospace;

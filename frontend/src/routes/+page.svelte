@@ -1,5 +1,8 @@
 <script>
 	import { auth } from '$lib/stores/auth';
+	import PageContainer from '$lib/components/ui/PageContainer.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 </script>
 
 <svelte:head>
@@ -8,7 +11,7 @@
 
 <!-- Hero Section -->
 <div class="bg-gradient-to-b from-blue-50 to-white">
-	<div class="max-w-7xl mx-auto px-4 py-16">
+	<PageContainer>
 		<!-- API Notice -->
 		<div class="bg-blue-100 border border-blue-200 rounded-lg p-4 mb-8">
 			<p class="text-center text-blue-800">
@@ -65,7 +68,7 @@
 			</div>
 
 			<!-- Visualization Card -->
-			<div class="bg-white rounded-lg shadow-lg overflow-hidden">
+			<Card padding="none" hover={true}>
 				<div class="bg-gray-200 h-48 flex items-center justify-center">
 					<div class="text-center text-gray-500">
 						<svg
@@ -101,27 +104,24 @@
 						></small
 					>
 				</div>
-			</div>
+			</Card>
 		</div>
 
 		<!-- Explore Button -->
 		<div class="text-center mt-12">
 			<p class="text-lg mb-4">Explore all GW alerts</p>
-			<a
-				href="/alerts/select"
-				class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-			>
+			<Button href="/alerts/select" size="lg">
 				Browse Events
-			</a>
+			</Button>
 		</div>
-	</div>
+	</PageContainer>
 </div>
 
 <!-- Action Cards -->
-<div class="max-w-7xl mx-auto px-4 py-16">
+<PageContainer>
 	<div class="grid md:grid-cols-3 gap-8">
 		<!-- Register Card -->
-		<div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+		<Card padding="none" hover={true}>
 			<div
 				class="h-48 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center"
 			>
@@ -143,10 +143,10 @@
 					begin assisting the community's search for GW counterparts.
 				</p>
 			</div>
-		</div>
+		</Card>
 
 		<!-- Submit Instruments Card -->
-		<div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+		<Card padding="none" hover={true}>
 			<div
 				class="h-48 bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center"
 			>
@@ -175,10 +175,10 @@
 					follow-up efforts.
 				</p>
 			</div>
-		</div>
+		</Card>
 
 		<!-- API Integration Card -->
-		<div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+		<Card padding="none" hover={true}>
 			<div
 				class="h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center"
 			>
@@ -201,6 +201,6 @@
 					to more and quicker discoveries!
 				</p>
 			</div>
-		</div>
+		</Card>
 	</div>
-</div>
+</PageContainer>

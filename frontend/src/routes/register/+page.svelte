@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { auth, authActions } from '$lib/stores/auth';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let email = '';
 	let password = '';
@@ -60,12 +63,11 @@
 
 <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
 	<div class="max-w-md w-full space-y-8">
-		<div>
-			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Create Account</h2>
-			<p class="mt-2 text-center text-sm text-gray-600">
-				Join the Gravitational Wave Treasure Map community
-			</p>
-		</div>
+		<PageHeader 
+			title="Create Account" 
+			description="Join the Gravitational Wave Treasure Map community" 
+			size="md" 
+		/>
 
 		<form class="mt-8 space-y-6" on:submit|preventDefault={handleRegister}>
 			<div class="space-y-4">
@@ -137,18 +139,12 @@
 			</div>
 
 			{#if error}
-				<div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-					{error}
-				</div>
+				<ErrorMessage message={error} />
 			{/if}
 
-			<button
-				type="submit"
-				disabled={loading}
-				class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-50 transition-colors"
-			>
+			<Button type="submit" disabled={loading} loading={loading} fullWidth={true}>
 				{loading ? 'Creating Account...' : 'Create Account'}
-			</button>
+			</Button>
 
 			<div class="text-center">
 				<a href="/login" class="text-blue-600 hover:text-blue-500">
