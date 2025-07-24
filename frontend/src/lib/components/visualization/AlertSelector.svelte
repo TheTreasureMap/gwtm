@@ -11,9 +11,10 @@
 	let showDropdown = false;
 
 	// Filtered alerts based on search term
-	$: filteredAlerts = alerts.filter(alert => 
-		alert.graceid.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		(alert.alternateid && alert.alternateid.toLowerCase().includes(searchTerm.toLowerCase()))
+	$: filteredAlerts = alerts.filter(
+		(alert) =>
+			alert.graceid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			(alert.alternateid && alert.alternateid.toLowerCase().includes(searchTerm.toLowerCase()))
 	);
 
 	onMount(async () => {
@@ -55,25 +56,36 @@
 	<label for="alert-selector" class="block text-sm font-medium text-gray-700 mb-2">
 		Select Gravitational Wave Event
 	</label>
-	
+
 	<div class="relative">
 		<button
 			type="button"
 			class="relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-			on:click={() => showDropdown = !showDropdown}
+			on:click={() => (showDropdown = !showDropdown)}
 		>
 			<span class="block truncate">
 				{currentGraceid || 'Choose an event...'}
 			</span>
 			<span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-				<svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+				<svg
+					class="h-5 w-5 text-gray-400"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</span>
 		</button>
 
 		{#if showDropdown}
-			<div class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+			<div
+				class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+			>
 				<!-- Search input -->
 				<div class="sticky top-0 bg-white px-3 py-2 border-b">
 					<input
@@ -86,13 +98,9 @@
 				</div>
 
 				{#if loading}
-					<div class="px-3 py-2 text-center text-gray-500">
-						Loading events...
-					</div>
+					<div class="px-3 py-2 text-center text-gray-500">Loading events...</div>
 				{:else if filteredAlerts.length === 0}
-					<div class="px-3 py-2 text-center text-gray-500">
-						No events found
-					</div>
+					<div class="px-3 py-2 text-center text-gray-500">No events found</div>
 				{:else}
 					{#each filteredAlerts as alert (alert.graceid)}
 						<button
@@ -130,9 +138,9 @@
 
 <!-- Click outside to close dropdown -->
 {#if showDropdown}
-	<div 
-		class="fixed inset-0 z-0" 
-		on:click={() => showDropdown = false}
+	<div
+		class="fixed inset-0 z-0"
+		on:click={() => (showDropdown = false)}
 		on:keydown={(e) => e.key === 'Escape' && (showDropdown = false)}
 		role="button"
 		tabindex="-1"

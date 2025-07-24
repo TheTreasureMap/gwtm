@@ -21,6 +21,10 @@ class InstrumentSchema(BaseModel):
     submitterid: Optional[int] = Field(
         None, description="ID of the user who submitted the instrument"
     )
+    num_pointings: Optional[int] = Field(
+        None,
+        description="Number of completed pointings (only included when reporting_only=true)",
+    )
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=False)
 

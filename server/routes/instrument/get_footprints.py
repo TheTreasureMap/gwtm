@@ -19,7 +19,6 @@ async def get_footprints(
     id: Optional[int] = None,
     name: Optional[str] = None,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Get instrument footprints with optional filters.

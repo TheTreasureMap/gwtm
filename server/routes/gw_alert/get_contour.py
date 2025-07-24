@@ -17,7 +17,7 @@ router = APIRouter(tags=["gw_alerts"])
 @router.get("/gw_contour")
 async def get_gw_contour(
     graceid: str = Query(..., description="Grace ID of the GW event"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get the contour for a GW alert.
@@ -60,10 +60,4 @@ async def get_gw_contour(
         )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        # Include detailed error information for debugging
-        error_msg = (
-            f"Error retrieving contour file: {contour_path} "
-            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
-            f"Error: {type(e).__name__}: {str(e)}"
-        )
-        raise not_found_exception(error_msg)
+        raise not_found_exception(f"Error in retrieving Contour file: {contour_path}")
