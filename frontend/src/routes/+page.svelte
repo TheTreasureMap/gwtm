@@ -110,9 +110,7 @@
 		<!-- Explore Button -->
 		<div class="text-center mt-12">
 			<p class="text-lg mb-4">Explore all GW alerts</p>
-			<Button href="/alerts/select" size="lg">
-				Browse Events
-			</Button>
+			<Button href="/alerts/select" size="lg">Browse Events</Button>
 		</div>
 	</PageContainer>
 </div>
