@@ -94,7 +94,7 @@
 			{/if}
 
 			<div>
-				<Button type="submit" disabled={loading} loading={loading} fullWidth={true}>
+				<Button type="submit" disabled={loading} {loading} fullWidth={true}>
 					{loading ? 'Signing in...' : 'Sign in'}
 				</Button>
 			</div>

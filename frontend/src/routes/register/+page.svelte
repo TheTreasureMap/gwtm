@@ -63,10 +63,10 @@
 
 <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
 	<div class="max-w-md w-full space-y-8">
-		<PageHeader 
-			title="Create Account" 
-			description="Join the Gravitational Wave Treasure Map community" 
-			size="md" 
+		<PageHeader
+			title="Create Account"
+			description="Join the Gravitational Wave Treasure Map community"
+			size="md"
 		/>
 
 		<form class="mt-8 space-y-6" on:submit|preventDefault={handleRegister}>
@@ -142,7 +142,7 @@
 				<ErrorMessage message={error} />
 			{/if}
 
-			<Button type="submit" disabled={loading} loading={loading} fullWidth={true}>
+			<Button type="submit" disabled={loading} {loading} fullWidth={true}>
 				{loading ? 'Creating Account...' : 'Create Account'}
 			</Button>
 
