@@ -14,7 +14,7 @@
 		moon_ra: number;
 		moon_dec: number;
 	} | null = null;
-	export let grbCoverage: any = null;
+	export const grbCoverage: any = null;
 	export let timeRange: number[] = [-1, 7];
 
 	const dispatch = createEventDispatcher();
