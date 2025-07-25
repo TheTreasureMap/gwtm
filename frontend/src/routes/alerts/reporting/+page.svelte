@@ -1,37 +1,16 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { gwtmApi, type InstrumentSchema } from '$lib/api';
 	import ReportingInstrumentsTable from '$lib/components/tables/ReportingInstrumentsTable.svelte';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
-	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
+	import AsyncErrorBoundary from '$lib/components/ui/AsyncErrorBoundary.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	let instruments: InstrumentSchema[] = [];
-	let loading = false;
-	let error: string | null = null;
-
-	onMount(() => {
-		loadReportingInstruments();
-	});
 
 	async function loadReportingInstruments() {
-		loading = true;
-		error = null;
-
-		try {
-			instruments = await gwtmApi.getReportingInstruments();
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load reporting instruments';
-			console.error('Error loading reporting instruments:', err);
-		} finally {
-			loading = false;
-		}
-	}
-
-	function handleRefresh() {
-		loadReportingInstruments();
+		instruments = await gwtmApi.getReportingInstruments();
 	}
 </script>
 
@@ -41,36 +20,37 @@
 
 <PageContainer>
 	<!-- Header -->
-	<div class="flex items-center justify-between mb-8">
+	<div class="mb-8">
 		<PageHeader
 			title="Reporting Instruments"
 			description="Instruments that have reported completed pointings, ordered by activity level."
 		/>
-		<Button on:click={handleRefresh} disabled={loading} variant="secondary">
-			<svg
-				class="w-4 h-4 mr-2 {loading ? 'animate-spin' : ''}"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-				/>
-			</svg>
-			Refresh
-		</Button>
 	</div>
 
-	<!-- Error State -->
-	{#if error}
-		<ErrorMessage message={error} title="Error Loading Reporting Instruments" />
-	{:else}
+	<!-- Data Loading with Error Boundary -->
+	<AsyncErrorBoundary
+		asyncFunction={loadReportingInstruments}
+		loadingText="Loading reporting instruments..."
+		errorFallback="Failed to load reporting instruments data. Please try again."
+		let:executeAsync
+	>
+		<div class="flex justify-end mb-4">
+			<Button on:click={executeAsync} variant="secondary">
+				<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+					/>
+				</svg>
+				Refresh
+			</Button>
+		</div>
+
 		<!-- Reporting Instruments Table -->
-		<ReportingInstrumentsTable {instruments} {loading} />
-	{/if}
+		<ReportingInstrumentsTable {instruments} loading={false} />
+	</AsyncErrorBoundary>
 
 	<!-- Quick Actions -->
 	<div class="grid md:grid-cols-2 gap-6 mt-8">

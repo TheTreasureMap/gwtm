@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { gwtmApi } from '$lib/api';
+import { errorHandler } from '$lib/utils/errorHandling';
 
 interface User {
 	id: number;
@@ -61,7 +62,7 @@ export const authActions = {
 	async login(email: string, password: string) {
 		auth.update((state) => ({ ...state, loading: true }));
 
-		try {
+		const result = await errorHandler.withErrorHandling(async () => {
 			const response = await gwtmApi.login(email, password);
 			const { access_token, user } = response.data;
 
@@ -82,14 +83,16 @@ export const authActions = {
 				loading: false
 			});
 
+			errorHandler.showToast('Login successful!', {
+				type: 'info',
+				duration: 3000
+			});
+
 			return { success: true };
-		} catch (error: any) {
-			auth.update((state) => ({ ...state, loading: false }));
-			return {
-				success: false,
-				error: error.response?.data?.detail || 'Login failed'
-			};
-		}
+		}, 'User login');
+
+		auth.update((state) => ({ ...state, loading: false }));
+		return result || { success: false };
 	},
 
 	// Logout function
@@ -119,17 +122,19 @@ export const authActions = {
 	}) {
 		auth.update((state) => ({ ...state, loading: true }));
 
-		try {
+		const result = await errorHandler.withErrorHandling(async () => {
 			const response = await gwtmApi.register(userData);
-			auth.update((state) => ({ ...state, loading: false }));
+
+			errorHandler.showToast('Registration successful! Please check your email for verification.', {
+				type: 'info',
+				duration: 5000
+			});
+
 			return { success: true, data: response.data };
-		} catch (error: any) {
-			auth.update((state) => ({ ...state, loading: false }));
-			return {
-				success: false,
-				error: error.response?.data?.detail || 'Registration failed'
-			};
-		}
+		}, 'User registration');
+
+		auth.update((state) => ({ ...state, loading: false }));
+		return result || { success: false };
 	}
 };
 
