@@ -88,8 +88,9 @@
 <div class="bg-white border rounded-lg p-4">
 	<h3 class="text-lg font-semibold mb-3">Time Controls</h3>
 	<div class="mb-4">
-		<label class="block text-sm font-medium text-gray-700 mb-2"> Pointing Status: </label>
+		<label for="pointing-status-select" class="block text-sm font-medium text-gray-700 mb-2"> Pointing Status: </label>
 		<select
+			id="pointing-status-select"
 			value={pointingStatus}
 			on:change={handlePointingStatusChange}
 			class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -102,9 +103,9 @@
 	</div>
 
 	<div class="mb-4">
-		<label class="block text-sm font-medium text-gray-700 mb-2">
+		<div class="block text-sm font-medium text-gray-700 mb-2">
 			Date range (days since Time of Signal): {timeRange[0].toFixed(1)} - {timeRange[1].toFixed(1)}
-		</label>
+		</div>
 
 		<!-- Time Range Slider -->
 		<div class="time-slider-container mt-4">
@@ -124,6 +125,12 @@
 					on:mousedown={(e) => startDrag(e, 'min')}
 					on:touchstart={(e) => startDrag(e, 'min')}
 					title="Minimum time: {timeRange[0].toFixed(1)} days"
+					role="slider"
+					tabindex="0"
+					aria-label="Minimum time range"
+					aria-valuemin={minTime}
+					aria-valuemax={maxTime}
+					aria-valuenow={timeRange[0]}
 				></div>
 
 				<!-- Max handle -->
@@ -134,6 +141,12 @@
 					on:mousedown={(e) => startDrag(e, 'max')}
 					on:touchstart={(e) => startDrag(e, 'max')}
 					title="Maximum time: {timeRange[1].toFixed(1)} days"
+					role="slider"
+					tabindex="0"
+					aria-label="Maximum time range"
+					aria-valuemin={minTime}
+					aria-valuemax={maxTime}
+					aria-valuenow={timeRange[1]}
 				></div>
 			</div>
 

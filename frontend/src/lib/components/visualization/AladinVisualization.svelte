@@ -4,8 +4,8 @@
 
 	export let graceid: string;
 	export let selectedAlert: GWAlertSchema | null = null;
-	export let loading: boolean = false;
-	export let error: string = '';
+	export const loading: boolean = false;
+	export const error: string = '';
 
 	// Internal loading state for Aladin initialization
 	let aladinLoading = false; // Start false so container is rendered

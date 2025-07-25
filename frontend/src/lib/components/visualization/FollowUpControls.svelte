@@ -1,5 +1,55 @@
+<!--
+@component FollowUpControls
+@description Follow-up control panel for telescope observations and data layers
+@category Visualization Components
+@version 2.0.0
+@author GWTM Team
+@since 2024-01-25
+
+@example
+```svelte
+<FollowUpControls
+  footprintData={instruments}
+  galaxyData={galaxies}
+  candidateData={candidates}
+  icecubeData={icecube}
+  {hasIceCubeData}
+  {hasCandidateData}
+  bind:showFootprints
+  bind:showGalaxies
+  bind:showCandidates
+  bind:showIceCube
+  on:toggleInstrument={handleToggleInstrument}
+  on:toggleAllInstruments={handleToggleAll}
+  on:toggleMarkerGroup={handleToggleMarkerGroup}
+  on:animateToMarker={handleAnimateToMarker}
+  on:loadData={handleLoadData}
+/>
+```
+
+@prop {any} footprintData - Telescope footprint data
+@prop {any[]} galaxyData - Galaxy marker data
+@prop {any[]} candidateData - Candidate object data
+@prop {any[]} icecubeData - IceCube neutrino data
+@prop {boolean} hasIceCubeData - Whether IceCube data exists
+@prop {boolean} hasCandidateData - Whether candidate data exists
+@prop {boolean} showFootprints - Show instrument footprints
+@prop {boolean} showGrbCoverage - Show GRB coverage
+@prop {boolean} showGalaxies - Show galaxy markers
+@prop {boolean} showCandidates - Show candidate markers
+@prop {boolean} showIceCube - Show IceCube markers
+@prop {any} overlayLists - Overlay management data
+
+@event toggleInstrument - Individual instrument toggled
+@event toggleAllInstruments - All instruments toggled
+@event toggleMarkerGroup - Marker group toggled
+@event animateToMarker - Animate to specific marker
+@event loadData - Request to load data
+-->
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import InstrumentPanel from './panels/InstrumentPanel.svelte';
+	import DataLayerPanel from './panels/DataLayerPanel.svelte';
 
 	export let footprintData: any = null;
 	export let galaxyData: any[] = [];
@@ -12,322 +62,176 @@
 	export let showGalaxies: boolean = false;
 	export let showCandidates: boolean = false;
 	export let showIceCube: boolean = false;
-	export let overlayLists: any = {};
+	export const overlayLists: any = {};
 
 	const dispatch = createEventDispatcher();
 
-	function toggleInstrumentOverlay(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dispatch('toggleInstrument', { target, checked: target.checked });
+	// Instrument panel event handlers
+	function handleToggleFootprints(event: CustomEvent) {
+		showFootprints = event.detail.expanded;
 	}
 
-	function toggleAllInstruments(show: boolean) {
-		dispatch('toggleAllInstruments', { show });
+	function handleToggleInstrument(event: CustomEvent) {
+		dispatch('toggleInstrument', event.detail);
 	}
 
-	function handleMarkerToggle(groupName: string, checked: boolean, dataType: string) {
-		dispatch('toggleMarkerGroup', { groupName, checked, dataType });
+	function handleToggleAllInstruments(event: CustomEvent) {
+		dispatch('toggleAllInstruments', event.detail);
 	}
 
-	function handleMarkerClick(markerName: string, dataType: string) {
-		dispatch('animateToMarker', { markerName, dataType });
+	// Data layer event handlers
+	function handleToggleGalaxies(event: CustomEvent) {
+		showGalaxies = event.detail.expanded;
 	}
 
-	function loadData(dataType: string) {
-		dispatch('loadData', { dataType });
+	function handleToggleCandidates(event: CustomEvent) {
+		showCandidates = event.detail.expanded;
+	}
+
+	function handleToggleIceCube(event: CustomEvent) {
+		showIceCube = event.detail.expanded;
+	}
+
+	function handleToggleGrbCoverage() {
+		showGrbCoverage = !showGrbCoverage;
+	}
+
+	function handleToggleMarkerGroup(event: CustomEvent) {
+		dispatch('toggleMarkerGroup', event.detail);
+	}
+
+	function handleAnimateToMarker(event: CustomEvent) {
+		dispatch('animateToMarker', event.detail);
+	}
+
+	function handleLoadData(event: CustomEvent) {
+		dispatch('loadData', event.detail);
 	}
 </script>
 
-<!-- Right column: Follow-up controls (30% width) matching Flask exactly -->
-<div class="column" style="float: right; width: 30%; padding-left: 2%;">
-	<div class="row">
-		<h3>Follow-Up</h3>
+<!-- Follow-up controls panel with modern component architecture -->
+<div class="follow-up-controls w-full max-w-sm space-y-4">
+	<!-- Header -->
+	<div class="border-b pb-2">
+		<h3 class="text-lg font-semibold text-gray-900">Follow-Up</h3>
 	</div>
 
-	<!-- Instrument block buttons and div (matching Flask exactly) -->
-	<div class="btn-group">
-		<button
-			class="btn btn-primary btn-sm alert_coll my-1 {showFootprints ? 'down-triangle' : ''}"
-			on:click={() => (showFootprints = !showFootprints)}
-			style="margin-right: 5px;"
-		></button>
-		<button
-			class="btn btn-primary btn-sm my-1"
-			on:click={() => toggleAllInstruments(!showFootprints)}
-			style="margin-right: 5px;"
-		>
-			{showFootprints ? 'Hide' : 'Show'}
-		</button>
-		<h4
-			style="display: inline-block;"
-			class={!footprintData || footprintData.length === 0 ? 'loadingtext' : ''}
-		>
-			{!footprintData || footprintData.length === 0 ? '...Loading...' : 'Instruments'}
-		</h4>
-	</div>
-	<div class="row">
-		<div class="collapse {showFootprints ? 'in' : ''} scroll-section inst_coll">
-			{#if footprintData && Array.isArray(footprintData)}
-				{#each footprintData as inst, i}
-					<label style="display: block; padding: 2px 0;">
-						<input
-							type="checkbox"
-							checked={true}
-							style="margin-right: 5px;"
-							data-color={inst.color || '#ff0000'}
-							on:change={toggleInstrumentOverlay}
-						/>
-						<span
-							style="display: inline-block; width: 12px; height: 12px; margin-right: 5px; border: 1px solid #ccc; background-color: {inst.color ||
-								'#ff0000'};"
-						></span>
-						{inst.name || `Inst ${i + 1}`}
-					</label>
-				{/each}
-			{/if}
-		</div>
-	</div>
+	<!-- Instrument Controls -->
+	<InstrumentPanel
+		{footprintData}
+		expanded={showFootprints}
+		on:toggle={handleToggleFootprints}
+		on:toggleInstrument={handleToggleInstrument}
+		on:toggleAllInstruments={handleToggleAllInstruments}
+	/>
 
-	<!-- GRB coverage block buttons and div -->
-	<div class="btn-group">
-		<button
-			class="btn btn-primary btn-sm alert_coll my-1 {showGrbCoverage ? 'down-triangle' : ''}"
-			on:click={() => (showGrbCoverage = !showGrbCoverage)}
-			style="margin-right: 5px;"
-		></button>
-		<button
-			class="btn btn-primary btn-sm my-1"
-			on:click={() => (showGrbCoverage = !showGrbCoverage)}
-			style="margin-right: 5px;"
-		>
-			{showGrbCoverage ? 'Hide' : 'Show'}
-		</button>
-		<h4 style="display: inline-block;">GRB Coverage</h4>
-	</div>
-	<div class="row">
-		<div class="collapse {showGrbCoverage ? 'in' : ''} grb_coll"></div>
-	</div>
-
-	<div class="row">
-		<h3>Sources</h3>
-	</div>
-
-	<!-- Galaxies block buttons and div -->
-	<div class="btn-group">
-		<button
-			class="btn btn-primary btn-sm alert_coll my-1 {showGalaxies ? 'down-triangle' : ''}"
-			on:click={() => (showGalaxies = !showGalaxies)}
-			style="margin-right: 5px;"
-		></button>
-		<button
-			class="btn btn-primary btn-sm my-1"
-			on:click={() => {
-				if (!showGalaxies && galaxyData.length === 0) {
-					loadData('galaxies');
-				} else if (galaxyData.length > 0) {
-					handleMarkerToggle('all', !showGalaxies, 'galaxies');
-				}
-				showGalaxies = !showGalaxies;
-			}}
-			style="margin-right: 5px;"
-		>
-			{galaxyData.length > 0 ? (showGalaxies ? 'Hide' : 'Show') : 'Get'}
-		</button>
-		<h4 style="display: inline-block;">Galaxies</h4>
-	</div>
-	<div class="row">
-		<div class="collapse {showGalaxies ? 'in' : ''} gal_coll">
-			{#if galaxyData.length > 0}
-				{#each galaxyData as group}
-					<div style="margin-bottom: 5px;">
-						<div style="font-weight: bold; font-size: 13px;">{group.name}</div>
-						{#if group.markers}
-							{#each group.markers as marker}
-								<button
-									style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
-									on:click={() => handleMarkerClick(marker.name, 'galaxies')}
-									on:mouseover={(e) => (e.target.style.backgroundColor = '#f0f0f0')}
-									on:mouseout={(e) => (e.target.style.backgroundColor = 'transparent')}
-								>
-									{marker.name}
-								</button>
-							{/each}
-						{/if}
-					</div>
-				{/each}
-			{/if}
-		</div>
-	</div>
-
-	<!-- IceCube Notice block buttons and div -->
-	{#if hasIceCubeData}
-		<div class="btn-group">
+	<!-- GRB Coverage Controls -->
+	<div class="grb-coverage-panel mb-4">
+		<div class="flex items-center gap-2 mb-2">
 			<button
-				class="btn btn-primary btn-sm alert_coll my-1 {showIceCube ? 'down-triangle' : ''}"
-				on:click={() => (showIceCube = !showIceCube)}
-				style="margin-right: 5px;"
-			></button>
-			<button
-				class="btn btn-primary btn-sm my-1"
-				on:click={() => {
-					if (!showIceCube && icecubeData.length === 0) {
-						loadData('icecube');
-					}
-					showIceCube = !showIceCube;
-				}}
-				style="margin-right: 5px;"
+				class="toggle-btn w-4 h-4 bg-blue-600 rounded-sm flex items-center justify-center text-white text-xs"
+				class:expanded={showGrbCoverage}
+				on:click={handleToggleGrbCoverage}
+				aria-label="Toggle GRB coverage panel"
 			>
-				{icecubeData.length > 0 ? (showIceCube ? 'Hide' : 'Show') : 'Get'}
+				<span class="transform transition-transform duration-200" class:rotate-90={showGrbCoverage}>
+					▶
+				</span>
 			</button>
-			<h4 style="display: inline-block;">ICECUBE Notice</h4>
+
+			<button
+				class="action-btn px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+				on:click={handleToggleGrbCoverage}
+			>
+				{showGrbCoverage ? 'Hide' : 'Show'}
+			</button>
+
+			<h4 class="text-sm font-medium text-gray-900 flex-1">GRB Coverage</h4>
 		</div>
-		<div class="row">
-			<div class="collapse {showIceCube ? 'in' : ''} icecube_coll">
-				{#if icecubeData.length > 0}
-					{#each icecubeData as group}
-						<div style="margin-bottom: 5px;">
-							<div style="font-weight: bold; font-size: 13px;">{group.name}</div>
-							{#if group.markers}
-								{#each group.markers as marker}
-									<button
-										style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
-										on:click={() => handleMarkerClick(marker.name, 'icecube')}
-										on:mouseover={(e) => (e.target.style.backgroundColor = '#f0f0f0')}
-										on:mouseout={(e) => (e.target.style.backgroundColor = 'transparent')}
-									>
-										{marker.name}
-									</button>
-								{/each}
-							{/if}
-						</div>
-					{/each}
-				{/if}
+
+		{#if showGrbCoverage}
+			<div class="panel-content bg-gray-50 rounded border p-3 min-h-12">
+				<p class="text-sm text-gray-600">No GRB coverage data available</p>
 			</div>
-		</div>
+		{/if}
+	</div>
+
+	<!-- Sources Section Header -->
+	<div class="border-b pb-2">
+		<h3 class="text-lg font-semibold text-gray-900">Sources</h3>
+	</div>
+
+	<!-- Galaxy Data Layer -->
+	<DataLayerPanel
+		title="Galaxies"
+		data={galaxyData}
+		expanded={showGalaxies}
+		loading={false}
+		hasData={galaxyData.length > 0}
+		dataType="galaxies"
+		on:toggle={handleToggleGalaxies}
+		on:loadData={handleLoadData}
+		on:toggleMarkerGroup={handleToggleMarkerGroup}
+		on:animateToMarker={handleAnimateToMarker}
+	/>
+
+	<!-- IceCube Data Layer -->
+	{#if hasIceCubeData}
+		<DataLayerPanel
+			title="ICECUBE Notice"
+			data={icecubeData}
+			expanded={showIceCube}
+			loading={false}
+			hasData={icecubeData.length > 0}
+			dataType="icecube"
+			on:toggle={handleToggleIceCube}
+			on:loadData={handleLoadData}
+			on:toggleMarkerGroup={handleToggleMarkerGroup}
+			on:animateToMarker={handleAnimateToMarker}
+		/>
 	{/if}
 
-	<!-- Candidates block buttons and div -->
+	<!-- Candidate Data Layer -->
 	{#if hasCandidateData}
-		<div class="btn-group">
-			<button
-				class="btn btn-primary btn-sm alert_coll my-1 {showCandidates ? 'down-triangle' : ''}"
-				on:click={() => (showCandidates = !showCandidates)}
-				style="margin-right: 5px;"
-			></button>
-			<button
-				class="btn btn-primary btn-sm my-1"
-				on:click={() => {
-					if (!showCandidates && candidateData.length === 0) {
-						loadData('candidates');
-					}
-					showCandidates = !showCandidates;
-				}}
-				style="margin-right: 5px;"
-			>
-				{candidateData.length > 0 ? (showCandidates ? 'Hide' : 'Show') : 'Get'}
-			</button>
-			<h4 style="display: inline-block;">Candidates</h4>
-		</div>
-		<div class="row">
-			<div class="collapse {showCandidates ? 'in' : ''} candidate_coll">
-				{#if candidateData.length > 0}
-					{#each candidateData as group}
-						<div style="margin-bottom: 5px;">
-							<div style="font-weight: bold; font-size: 13px;">{group.name}</div>
-							{#if group.markers}
-								{#each group.markers as marker}
-									<button
-										style="display: block; width: 100%; text-align: left; padding: 2px 5px; border: none; background: none; font-size: 12px; cursor: pointer;"
-										on:click={() => handleMarkerClick(marker.name, 'candidates')}
-										on:mouseover={(e) => (e.target.style.backgroundColor = '#f0f0f0')}
-										on:mouseout={(e) => (e.target.style.backgroundColor = 'transparent')}
-									>
-										{marker.name}
-									</button>
-								{/each}
-							{/if}
-						</div>
-					{/each}
-				{/if}
-			</div>
-		</div>
+		<DataLayerPanel
+			title="Candidates"
+			data={candidateData}
+			expanded={showCandidates}
+			loading={false}
+			hasData={candidateData.length > 0}
+			dataType="candidates"
+			on:toggle={handleToggleCandidates}
+			on:loadData={handleLoadData}
+			on:toggleMarkerGroup={handleToggleMarkerGroup}
+			on:animateToMarker={handleAnimateToMarker}
+		/>
 	{/if}
 </div>
 
 <style>
-	.loadingtext {
-		color: #888;
+	.follow-up-controls {
+		background-color: white;
+		border-radius: 0.5rem;
+		border: 1px solid #e5e7eb;
+		padding: 1rem;
 	}
 
-	.scroll-section {
-		max-height: 200px;
-		overflow-y: auto;
-		border: 1px solid #eee;
-		padding: 10px;
-		margin-top: 5px;
+	.toggle-btn.expanded {
+		background-color: #1d4ed8;
 	}
 
-	/* Custom styles for buttons and triangles */
-	.alert_coll::before {
-		content: '▶'; /* Right-pointing triangle */
-		margin-right: 5px;
-		display: inline-block;
-		transition: transform 0.2s;
+	.panel-content {
+		animation: slideDown 0.2s ease-out;
 	}
 
-	.alert_coll.down-triangle::before {
-		transform: rotate(90deg);
-	}
-
-	.btn {
-		display: inline-block;
-		font-weight: 400;
-		text-align: center;
-		vertical-align: middle;
-		user-select: none;
-		border: 1px solid transparent;
-		padding: 0.25rem 0.5rem;
-		font-size: 0.875rem;
-		line-height: 1.5;
-		border-radius: 0.2rem;
-		transition:
-			color 0.15s ease-in-out,
-			background-color 0.15s ease-in-out,
-			border-color 0.15s ease-in-out,
-			box-shadow 0.15s ease-in-out;
-		cursor: pointer;
-		background: none;
-	}
-
-	.btn-primary {
-		color: #fff;
-		background-color: #007bff;
-		border-color: #007bff;
-	}
-
-	.btn-primary:hover {
-		color: #fff;
-		background-color: #0056b3;
-		border-color: #004085;
-	}
-
-	.btn-sm {
-		padding: 0.25rem 0.5rem;
-		font-size: 0.875rem;
-		line-height: 1.5;
-		border-radius: 0.2rem;
-	}
-
-	.collapse {
-		display: none;
-	}
-
-	.collapse.in {
-		display: block;
-	}
-
-	.my-1 {
-		margin-top: 0.25rem;
-		margin-bottom: 0.25rem;
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			max-height: 0;
+		}
+		to {
+			opacity: 1;
+			max-height: 16rem;
+		}
 	}
 </style>

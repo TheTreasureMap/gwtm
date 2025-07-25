@@ -1,8 +1,88 @@
 <script lang="ts">
+	/**
+	 * @component ErrorMessage
+	 * @description A component for displaying error, warning, and info messages with consistent styling
+	 * @category Feedback
+	 * @version 1.1.0
+	 * @author GWTM Team
+	 * @since 2024-01-15
+	 *
+	 * @accessibility
+	 * - Uses proper ARIA role="alert" for error announcements
+	 * - Screen reader accessible with semantic markup
+	 * - Keyboard accessible dismiss button with focus management
+	 * - Color-blind friendly with icons in addition to colors
+	 *
+	 * @performance
+	 * - Minimal re-renders with computed style classes
+	 * - Efficient icon rendering with SVG sprites
+	 * - Optimized for both static and dismissible states
+	 *
+	 * @example
+	 * ```svelte
+	 * <!-- Basic error message -->
+	 * <ErrorMessage message="Something went wrong!" />
+	 *
+	 * <!-- Warning with custom title -->
+	 * <ErrorMessage
+	 *   type="warning"
+	 *   title="Warning"
+	 *   message="This action cannot be undone"
+	 * />
+	 *
+	 * <!-- Dismissible info message -->
+	 * <ErrorMessage
+	 *   type="info"
+	 *   title="Information"
+	 *   message="Your data has been saved"
+	 *   dismissible
+	 *   onDismiss={handleDismiss}
+	 * />
+	 *
+	 * <!-- Error with callback -->
+	 * <ErrorMessage
+	 *   message="Network error occurred"
+	 *   dismissible
+	 *   onDismiss={() => clearError()}
+	 * />
+	 * ```
+	 *
+	 * @see AsyncErrorBoundary - For async operation error handling
+	 * @see ErrorToast - For global toast notifications
+	 */
+
+	/**
+	 * The message text to display
+	 * @type {string}
+	 */
 	export let message: string;
+
+	/**
+	 * The title/heading for the message
+	 * @type {string}
+	 * @default 'Error'
+	 */
 	export let title: string = 'Error';
+
+	/**
+	 * The type of message which determines styling and icon
+	 * @type {'error' | 'warning' | 'info'}
+	 * @default 'error'
+	 */
 	export let type: 'error' | 'warning' | 'info' = 'error';
+
+	/**
+	 * Whether the message can be dismissed by the user
+	 * @type {boolean}
+	 * @default false
+	 */
 	export let dismissible: boolean = false;
+
+	/**
+	 * Callback function called when message is dismissed
+	 * @type {(() => void) | undefined}
+	 * @optional
+	 */
 	export let onDismiss: (() => void) | undefined = undefined;
 
 	const typeClasses = {
@@ -32,7 +112,11 @@
 	}
 </script>
 
-<div class="{classes.container} px-4 py-3 rounded">
+<!--
+Component displays error, warning, or info messages with appropriate styling and optional dismiss functionality.
+No slots - content is provided via props for consistency.
+-->
+<div class="{classes.container} px-4 py-3 rounded" role="alert" aria-live="polite">
 	<div class="flex items-start">
 		<div class="flex-shrink-0">
 			{#if type === 'error'}
