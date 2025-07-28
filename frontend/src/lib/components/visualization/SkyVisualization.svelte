@@ -10,6 +10,9 @@
 	import EventExplorer from './EventExplorer.svelte';
 	import OverlayManager from './OverlayManager.svelte';
 
+	// Import service components
+	import DataLoaderService from './services/DataLoaderService.svelte';
+
 	// Import utilities
 	import { 
 		fetchSunMoonPositions, 
@@ -62,6 +65,7 @@
 	let aladin: any = null;
 	let aladinVisualization: AladinVisualization;
 	let overlayManager: OverlayManager;
+	let dataLoaderService: DataLoaderService;
 	let plotlyContainer: HTMLDivElement;
 
 	onMount(async () => {
@@ -360,6 +364,28 @@
 
 		const result = await fetchSunMoonPositions(timeOfSignal);
 		return result || getDefaultSunMoonPositions();
+	}
+
+	// Data loader service event handlers
+	function handleGalaxyDataLoaded(event: CustomEvent<{ data: any[] }>) {
+		galaxyData = event.detail.data;
+		console.log('Galaxy data loaded:', galaxyData.length, 'galaxies');
+	}
+
+	function handleCandidateDataLoaded(event: CustomEvent<{ data: any[] }>) {
+		candidateData = event.detail.data;
+		console.log('Candidate data loaded:', candidateData.length, 'candidates');
+	}
+
+	function handleIceCubeDataLoaded(event: CustomEvent<{ data: any[] }>) {
+		icecubeData = event.detail.data;
+		hasIceCubeData = icecubeData.length > 0;
+		console.log('IceCube data loaded:', icecubeData.length, 'events');
+	}
+
+	function handleDetectionOverlaysLoaded(event: CustomEvent<{ data: any }>) {
+		console.log('Detection overlays loaded:', event.detail.data);
+		// Detection overlays will be handled by the overlay manager
 	}
 
 	function updateVisualization() {
@@ -684,48 +710,39 @@
 	async function loadGalaxies() {
 		if (!selectedAlert?.id) return;
 
-		try {
-			galaxyData = await gwtmApi.getEventGalaxiesAjax(selectedAlert.id.toString());
+		if (dataLoaderService) {
+			await dataLoaderService.loadGalaxyData();
 			if (showGalaxies) {
 				if (overlayManager) {
 					overlayManager.addGalaxyLayer();
 				}
 			}
-		} catch (err) {
-			console.warn('Failed to load galaxies:', err);
-			galaxyData = [];
 		}
 	}
 
 	async function loadCandidates() {
 		if (!graceid) return;
 
-		try {
-			candidateData = await gwtmApi.getCandidateAjax(graceid);
+		if (dataLoaderService) {
+			await dataLoaderService.loadCandidateData();
 			if (showCandidates) {
 				if (overlayManager) {
 					overlayManager.addCandidateLayer();
 				}
 			}
-		} catch (err) {
-			console.warn('Failed to load candidates:', err);
-			candidateData = [];
 		}
 	}
 
 	async function loadIceCubeData() {
 		if (!graceid) return;
 
-		try {
-			icecubeData = await gwtmApi.getIceCubeNotice(graceid);
+		if (dataLoaderService) {
+			await dataLoaderService.loadIceCubeData();
 			if (showIceCube) {
 				if (overlayManager) {
 					overlayManager.addIceCubeLayer();
 				}
 			}
-		} catch (err) {
-			console.warn('Failed to load IceCube data:', err);
-			icecubeData = [];
 		}
 	}
 
@@ -861,6 +878,17 @@
 </script>
 
 <div class="space-y-6">
+	<!-- Service Components (no visual output) -->
+	<DataLoaderService
+		{graceid}
+		{selectedAlert}
+		bind:this={dataLoaderService}
+		on:galaxy-data-loaded={handleGalaxyDataLoaded}
+		on:candidate-data-loaded={handleCandidateDataLoaded}
+		on:icecube-data-loaded={handleIceCubeDataLoaded}
+		on:detection-overlays-loaded={handleDetectionOverlaysLoaded}
+	/>
+
 	<!-- Alert Type Tabs -->
 	<AlertTypeTabs
 		{availableAlertTypes}
