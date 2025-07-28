@@ -106,13 +106,21 @@
 @slot {boolean} hover - Whether hover effects are enabled
 @slot {boolean} clickable - Whether the card is clickable
 -->
+{#if clickable}
 <div
 	class={cardClass}
 	on:click
 	on:keydown
-	role={clickable ? 'button' : undefined}
-	tabindex={clickable ? 0 : undefined}
-	aria-pressed={clickable ? 'false' : undefined}
+	role="button"
+	tabindex="0"
+	aria-pressed="false"
 >
 	<slot {padding} {shadow} {hover} {clickable} />
 </div>
+{:else}
+<div
+	class={cardClass}
+>
+	<slot {padding} {shadow} {hover} {clickable} />
+</div>
+{/if}
