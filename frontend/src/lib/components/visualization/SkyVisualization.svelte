@@ -10,6 +10,14 @@
 	import EventExplorer from './EventExplorer.svelte';
 	import OverlayManager from './OverlayManager.svelte';
 
+	// Import utilities
+	import { 
+		fetchSunMoonPositions, 
+		getDefaultSunMoonPositions, 
+		convertToMJD,
+		type SunMoonData 
+	} from '$lib/utils/astronomicalCalculations.js';
+
 	export let graceid: string;
 	export let alert: GWAlertSchema | null = null;
 	export let pointingStatus: string = 'completed';
@@ -21,8 +29,7 @@
 	let contourData: any = null;
 	let footprintData: any = null;
 	let coverageData: any = null;
-	let sunMoonData: { sun_ra: number; sun_dec: number; moon_ra: number; moon_dec: number } | null =
-		null;
+	let sunMoonData: SunMoonData | null = null;
 	let alertTypes: any[] = [];
 	let selectedAlert: GWAlertSchema | null = null;
 	let galaxyData: any[] = [];
@@ -264,18 +271,13 @@
 		try {
 			// Fetch sun/moon positions from FastAPI backend (using Astropy like Flask)
 			console.log('Loading visualization data, attempting to fetch sun/moon positions...');
-			sunMoonData = await fetchSunMoonPositions();
+			sunMoonData = await loadSunMoonData();
 			console.log('Sun/moon data result:', sunMoonData);
 
 			// Ensure we always have sun/moon data as failsafe
 			if (!sunMoonData) {
 				console.log('No sun/moon data received, using default positions');
-				sunMoonData = {
-					sun_ra: 180.0, // Default sun position
-					sun_dec: 0.0,
-					moon_ra: 270.0, // Default moon position
-					moon_dec: 10.0
-				};
+				sunMoonData = getDefaultSunMoonPositions();
 			}
 
 			// Load detection overlays from alert data
@@ -348,74 +350,16 @@
 		}
 	}
 
-	async function fetchSunMoonPositions(): Promise<{
-		sun_ra: number;
-		sun_dec: number;
-		moon_ra: number;
-		moon_dec: number;
-	} | null> {
-		console.log('fetchSunMoonPositions called with selectedAlert:', selectedAlert);
-		console.log('time_of_signal:', selectedAlert?.time_of_signal);
+	async function loadSunMoonData(): Promise<SunMoonData | null> {
 		// Try selectedAlert first, then fall back to alert prop
 		const timeOfSignal = selectedAlert?.time_of_signal || alert?.time_of_signal;
 		if (!timeOfSignal) {
-			console.log('No time_of_signal available in selectedAlert or alert prop, returning null');
-			return null;
+			console.log('No time_of_signal available, using defaults');
+			return getDefaultSunMoonPositions();
 		}
 
-		try {
-			console.log('Fetching sun/moon positions from FastAPI backend for:', timeOfSignal);
-
-			// Call our temporary FastAPI endpoint (same calculation as Flask version)
-			const url = `http://localhost:8000/temp_sun_moon_positions?time_of_signal=${encodeURIComponent(timeOfSignal)}`;
-			console.log('Calling URL:', url);
-			const response = await fetch(url);
-
-			console.log('Response status:', response.status, response.statusText);
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			}
-
-			const data = await response.json();
-
-			console.log('Successfully fetched sun/moon positions from FastAPI:', data);
-			return {
-				sun_ra: data.sun_ra,
-				sun_dec: data.sun_dec,
-				moon_ra: data.moon_ra,
-				moon_dec: data.moon_dec
-			};
-		} catch (err) {
-			console.error('Failed to fetch sun/moon positions from FastAPI backend:', err);
-
-			// Fall back to approximate positions based on time
-			const gwTime = new Date(timeOfSignal);
-			const dayOfYear = Math.floor(
-				(gwTime.getTime() - new Date(gwTime.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
-			);
-
-			// Approximate sun position (very rough approximation)
-			const sunRA = ((dayOfYear * 360) / 365) % 360;
-			const sunDec = 23.5 * Math.sin((2 * Math.PI * (dayOfYear - 80)) / 365);
-
-			// Approximate moon position (offset from sun by ~90 degrees as rough approximation)
-			const moonRA = (sunRA + 90) % 360;
-			const moonDec = sunDec * 0.5; // Rough approximation
-
-			console.log('Using fallback sun/moon positions:', {
-				sun_ra: sunRA,
-				sun_dec: sunDec,
-				moon_ra: moonRA,
-				moon_dec: moonDec
-			});
-
-			return {
-				sun_ra: sunRA,
-				sun_dec: sunDec,
-				moon_ra: moonRA,
-				moon_dec: moonDec
-			};
-		}
+		const result = await fetchSunMoonPositions(timeOfSignal);
+		return result || getDefaultSunMoonPositions();
 	}
 
 	function updateVisualization() {
@@ -435,7 +379,7 @@
 			} else {
 				console.log('No sunMoonData available in updateVisualization, attempting to fetch...');
 				// Try to get sun/moon data if we don't have it yet
-				fetchSunMoonPositions()
+				loadSunMoonData()
 					.then((data) => {
 						if (data) {
 							sunMoonData = data;
@@ -913,15 +857,7 @@
 		}
 	}
 
-	// Utility functions
-	function convertToMJD(date: Date): number {
-		// MJD = JD - 2400000.5
-		// JD = (Unix timestamp / 86400) + 2440587.5
-		const unixTimestamp = date.getTime() / 1000; // Convert to seconds
-		const julianDate = unixTimestamp / 86400 + 2440587.5;
-		const mjd = julianDate - 2400000.5;
-		return Math.round(mjd * 1000) / 1000; // Round to 3 decimal places like Flask
-	}
+	// Utility functions now imported from astronomicalCalculations.js
 </script>
 
 <div class="space-y-6">
