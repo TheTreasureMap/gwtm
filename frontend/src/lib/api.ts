@@ -7,12 +7,12 @@ import { env } from '$env/dynamic/public';
 // ========================================================================================
 
 // Authentication and security
-export interface ApiKeyAuth {
+interface ApiKeyAuth {
 	api_token: string;
 }
 
 // Base response types
-export interface ApiResponse<T> {
+interface ApiResponse<T> {
 	data?: T;
 	message?: string;
 	errors?: any[];
@@ -20,19 +20,19 @@ export interface ApiResponse<T> {
 }
 
 // Health and status types
-export interface HealthResponse {
+interface HealthResponse {
 	status: string;
 	timestamp?: string;
 }
 
-export interface ServiceStatusResponse {
+interface ServiceStatusResponse {
 	database: 'connected' | 'disconnected';
 	redis: 'connected' | 'disconnected';
 	details?: Record<string, any>;
 }
 
 // Pointing related types
-export interface PointingSchema {
+interface PointingSchema {
 	id?: number;
 	position?: string;
 	ra?: number;
@@ -54,7 +54,7 @@ export interface PointingSchema {
 	doi_id?: number;
 }
 
-export interface PointingCreate {
+interface PointingCreate {
 	position?: string;
 	ra?: number;
 	dec?: number;
@@ -71,7 +71,7 @@ export interface PointingCreate {
 	id?: number; // For updating existing pointings
 }
 
-export interface PointingCreateRequest {
+interface PointingCreateRequest {
 	graceid: string;
 	pointing?: PointingCreate;
 	pointings?: PointingCreate[];
@@ -81,25 +81,25 @@ export interface PointingCreateRequest {
 	doi_url?: string;
 }
 
-export interface PointingResponse {
+interface PointingResponse {
 	pointing_ids: number[];
 	ERRORS?: any[];
 	WARNINGS?: any[];
 	DOI?: string;
 }
 
-export interface PointingUpdate {
+interface PointingUpdate {
 	status: number | string;
 	ids: number[];
 }
 
-export interface CancelAllRequest {
+interface CancelAllRequest {
 	graceid: string;
 	instrumentid: number;
 }
 
 // GW Alert types
-export interface GWAlertSchema {
+interface GWAlertSchema {
 	id?: number;
 	datecreated?: string;
 	graceid: string;
@@ -141,7 +141,7 @@ export interface GWAlertSchema {
 	time_difference?: number;
 }
 
-export interface GWAlertQueryResponse {
+interface GWAlertQueryResponse {
 	alerts: GWAlertSchema[];
 	total: number;
 	page: number;
@@ -151,14 +151,14 @@ export interface GWAlertQueryResponse {
 	has_prev: boolean;
 }
 
-export interface GWAlertFilterOptionsResponse {
+interface GWAlertFilterOptionsResponse {
 	observing_runs: string[];
 	roles: string[];
 	alert_types: string[];
 }
 
 // Candidate types
-export interface CandidateSchema {
+interface CandidateSchema {
 	id: number;
 	graceid: string;
 	submitterid: number;
@@ -178,7 +178,7 @@ export interface CandidateSchema {
 	associated_galaxy_distance?: number;
 }
 
-export interface CandidateRequest {
+interface CandidateRequest {
 	candidate_name: string;
 	position?: string;
 	ra?: number;
@@ -202,19 +202,19 @@ export interface CandidateRequest {
 	associated_galaxy_distance?: number;
 }
 
-export interface PostCandidateRequest {
+interface PostCandidateRequest {
 	graceid: string;
 	candidate?: CandidateRequest;
 	candidates?: CandidateRequest[];
 }
 
-export interface CandidateResponse {
+interface CandidateResponse {
 	candidate_ids: number[];
 	ERRORS: any[][];
 	WARNINGS: any[][];
 }
 
-export interface PutCandidateRequest {
+interface PutCandidateRequest {
 	id: number;
 	candidate: {
 		graceid?: string;
@@ -242,19 +242,19 @@ export interface PutCandidateRequest {
 	};
 }
 
-export interface DeleteCandidateParams {
+interface DeleteCandidateParams {
 	id?: number;
 	ids?: number[];
 }
 
-export interface DeleteCandidateResponse {
+interface DeleteCandidateResponse {
 	message: string;
 	deleted_ids?: number[];
 	warnings?: string[];
 }
 
 // Instrument types
-export interface InstrumentSchema {
+interface InstrumentSchema {
 	id: number;
 	instrument_name: string;
 	nickname?: string;
@@ -264,25 +264,25 @@ export interface InstrumentSchema {
 	num_pointings?: number; // Only included when reporting_only=true
 }
 
-export interface InstrumentCreate {
+interface InstrumentCreate {
 	instrument_name: string;
 	nickname?: string;
 	instrument_type: number;
 }
 
-export interface FootprintCCDSchema {
+interface FootprintCCDSchema {
 	id: number;
 	instrumentid: number;
 	footprint?: string;
 }
 
-export interface FootprintCCDCreate {
+interface FootprintCCDCreate {
 	instrumentid: number;
 	footprint: string;
 }
 
 // Galaxy types
-export interface GWGalaxyEntrySchema {
+interface GWGalaxyEntrySchema {
 	id?: number;
 	listid: number;
 	name: string;
@@ -292,7 +292,7 @@ export interface GWGalaxyEntrySchema {
 	info?: Record<string, any>;
 }
 
-export interface GalaxyEntryCreate {
+interface GalaxyEntryCreate {
 	name: string;
 	score: number;
 	position?: string;
@@ -302,7 +302,7 @@ export interface GalaxyEntryCreate {
 	info?: Record<string, any>;
 }
 
-export interface PostEventGalaxiesRequest {
+interface PostEventGalaxiesRequest {
 	graceid: string;
 	timesent_stamp: string;
 	groupname?: string;
@@ -313,21 +313,21 @@ export interface PostEventGalaxiesRequest {
 	galaxies: GalaxyEntryCreate[];
 }
 
-export interface PostEventGalaxiesResponse {
+interface PostEventGalaxiesResponse {
 	message: string;
 	errors: any[];
 	warnings: any[];
 }
 
 // DOI types
-export interface DOICreator {
+interface DOICreator {
 	name: string;
 	affiliation: string;
 	orcid?: string;
 	gnd?: string;
 }
 
-export interface DOIRequest {
+interface DOIRequest {
 	graceid?: string;
 	id?: number;
 	ids?: number[];
@@ -336,18 +336,18 @@ export interface DOIRequest {
 	doi_url?: string;
 }
 
-export interface DOIRequestResponse {
+interface DOIRequestResponse {
 	DOI_URL?: string;
 	WARNINGS?: any[];
 }
 
-export interface DOIAuthorGroupSchema {
+interface DOIAuthorGroupSchema {
 	name: string;
 	userid?: number;
 	id: number;
 }
 
-export interface DOIAuthorSchema {
+interface DOIAuthorSchema {
 	name: string;
 	affiliation: string;
 	orcid?: string;
@@ -357,7 +357,7 @@ export interface DOIAuthorSchema {
 	author_groupid: number;
 }
 
-export interface DOIPointingInfo {
+interface DOIPointingInfo {
 	id: number;
 	graceid: string;
 	instrument_name: string;
@@ -366,12 +366,12 @@ export interface DOIPointingInfo {
 	doi_id?: number;
 }
 
-export interface DOIPointingsResponse {
+interface DOIPointingsResponse {
 	pointings: DOIPointingInfo[];
 }
 
 // IceCube types
-export interface IceCubeNoticeCreateSchema {
+interface IceCubeNoticeCreateSchema {
 	ref_id: string;
 	graceid: string;
 	alert_datetime?: string;
@@ -387,7 +387,7 @@ export interface IceCubeNoticeCreateSchema {
 	sens_energy_range_high?: number;
 }
 
-export interface IceCubeNoticeCoincEventCreateSchema {
+interface IceCubeNoticeCoincEventCreateSchema {
 	event_dt?: number;
 	ra?: number;
 	dec?: number;
@@ -398,13 +398,13 @@ export interface IceCubeNoticeCoincEventCreateSchema {
 	uncertainty_shape?: string;
 }
 
-export interface IceCubeNoticeRequestSchema {
+interface IceCubeNoticeRequestSchema {
 	notice_data: IceCubeNoticeCreateSchema;
 	events_data: IceCubeNoticeCoincEventCreateSchema[];
 }
 
 // Candidate Event types
-export interface GWCandidateSchema {
+interface GWCandidateSchema {
 	graceid: string;
 	candidate_name: string;
 	submitterid?: number;
@@ -425,7 +425,7 @@ export interface GWCandidateSchema {
 	dec?: number;
 }
 
-export interface GWCandidateCreate {
+interface GWCandidateCreate {
 	graceid: string;
 	candidate_name: string;
 	submitterid?: number;
@@ -446,7 +446,7 @@ export interface GWCandidateCreate {
 }
 
 // Query filter types
-export interface PointingFilters {
+interface PointingFilters {
 	graceid?: string;
 	graceids?: string;
 	id?: number;
@@ -474,7 +474,7 @@ export interface PointingFilters {
 	depth_unit?: string;
 }
 
-export interface CandidateFilters {
+interface CandidateFilters {
 	id?: number;
 	graceid?: string;
 	userid?: number;
@@ -491,7 +491,7 @@ export interface CandidateFilters {
 	associated_galaxy_distance_lt?: number;
 }
 
-export interface InstrumentFilters {
+interface InstrumentFilters {
 	id?: number;
 	ids?: string;
 	name?: string;
@@ -500,7 +500,7 @@ export interface InstrumentFilters {
 	reporting_only?: boolean;
 }
 
-export interface GalaxyFilters {
+interface GalaxyFilters {
 	graceid: string;
 	timesent_stamp?: string;
 	listid?: number;
@@ -509,7 +509,7 @@ export interface GalaxyFilters {
 	score_lt?: number;
 }
 
-export interface GladeFilters {
+interface GladeFilters {
 	ra?: number;
 	dec?: number;
 	name?: string;
@@ -883,7 +883,7 @@ class GWTMApiService {
 	}
 
 	async resendVerificationEmail(email?: string): Promise<any> {
-		return this.post<any, {}>('/ajax_resend_verification_email', {}, { params: { email } });
+		return this.post<any, { email?: string }>('/ajax_resend_verification_email', { email });
 	}
 
 	async coverageCalculator(params: {
@@ -999,6 +999,75 @@ class GWTMApiService {
 
 	isAuthenticated(): boolean {
 		return !!this.getApiToken();
+	}
+
+	// ========================================================================================
+	// SEARCH METHODS
+	// ========================================================================================
+
+	async searchPointings(params: {
+		graceid: string;
+		bands?: string[];
+		statuses?: string[];
+		my_points_only?: boolean;
+	}): Promise<any[]> {
+		// Use the existing getPointings method with proper filters
+		const filters: any = {
+			graceid: params.graceid
+		};
+
+		if (params.bands && params.bands.length > 0) {
+			filters.bands = params.bands.join(',');
+		}
+
+		if (params.statuses && params.statuses.length > 0) {
+			filters.statuses = params.statuses.join(',');
+		}
+
+		// Note: my_points_only filtering would need to be handled server-side
+		// For now, we'll fetch all and let the server handle user filtering
+		if (params.my_points_only) {
+			// This would typically require authentication and server-side filtering
+			// The FastAPI endpoint should handle this based on the authenticated user
+		}
+
+		return this.getPointings(filters);
+	}
+
+	async getUserCreatorGroups(): Promise<Array<{ id: string; name: string }>> {
+		// This method would typically fetch DOI creator groups for the current user
+		// Since we don't have the exact endpoint, we'll use the existing DOI methods
+		try {
+			const groups = await this.getDOIAuthorGroups();
+			return groups.map((group: any) => ({
+				id: group.id.toString(),
+				name: group.name
+			}));
+		} catch (err) {
+			console.warn('Could not load DOI author groups:', err);
+			return [];
+		}
+	}
+
+	async requestDoi(params: {
+		pointing_ids: number[];
+		graceid: string;
+		doi_group_id: string;
+		doi_url?: string;
+	}): Promise<{ doi_url: string }> {
+		// Use the existing requestDOIAjax method
+		const ids = params.pointing_ids.join(',');
+		const result = await this.requestDOIAjax(
+			params.graceid,
+			ids,
+			params.doi_group_id,
+			params.doi_url
+		);
+		
+		// Return in the expected format
+		return {
+			doi_url: result.doi_url || result
+		};
 	}
 }
 

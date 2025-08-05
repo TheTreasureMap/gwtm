@@ -28,7 +28,7 @@
 
 		try {
 			console.log('Loading alert types for graceid:', graceid);
-			
+
 			// Query alerts for this specific graceid only (matching Flask behavior)
 			const response = await gwtmApi.queryAlerts({ graceid: graceid });
 			if (response.alerts && response.alerts.length > 0) {
@@ -112,9 +112,9 @@
 			}
 
 			console.log('Loaded alert types:', availableAlertTypes.length);
-			dispatch('alert-types-loaded', { 
+			dispatch('alert-types-loaded', {
 				data: availableAlertTypes,
-				count: availableAlertTypes.length 
+				count: availableAlertTypes.length
 			});
 
 			return availableAlertTypes;
@@ -137,10 +137,8 @@
 			return null;
 		}
 
-		const alert = availableAlertTypes.find(
-			alert => alert.alert_type === selectedAlertType
-		);
-		
+		const alert = availableAlertTypes.find((alert) => alert.alert_type === selectedAlertType);
+
 		return alert || null;
 	}
 
@@ -153,16 +151,14 @@
 		}
 
 		isSwitchingAlert = true;
-		dispatch('alert-switch-started', { 
-			from: selectedAlertType, 
-			to: newAlertType 
+		dispatch('alert-switch-started', {
+			from: selectedAlertType,
+			to: newAlertType
 		});
 
 		try {
 			// Validate the alert type exists
-			const alert = availableAlertTypes.find(
-				alert => alert.alert_type === newAlertType
-			);
+			const alert = availableAlertTypes.find((alert) => alert.alert_type === newAlertType);
 
 			if (!alert) {
 				throw new Error(`Alert type '${newAlertType}' not found in available alerts`);
@@ -182,9 +178,9 @@
 			return alert;
 		} catch (err) {
 			console.error('Failed to switch alert type:', err);
-			dispatch('alert-switch-error', { 
+			dispatch('alert-switch-error', {
 				error: err,
-				alertType: newAlertType 
+				alertType: newAlertType
 			});
 			return null;
 		} finally {
@@ -203,11 +199,9 @@
 
 		// Priority order for auto-selection (matching Flask logic)
 		const priorityOrder = ['Update', 'Initial', 'Preliminary', 'Retraction'];
-		
+
 		for (const priority of priorityOrder) {
-			const alert = availableAlertTypes.find(
-				alert => alert.alert_type === priority
-			);
+			const alert = availableAlertTypes.find((alert) => alert.alert_type === priority);
 			if (alert) {
 				console.log(`Auto-selected alert type: ${priority}`);
 				return priority;
@@ -225,7 +219,7 @@
 	 */
 	export async function initialize(): Promise<void> {
 		console.log('Initializing AlertTypeManager for graceid:', graceid);
-		
+
 		// Load alert types first
 		await loadAlertTypes();
 

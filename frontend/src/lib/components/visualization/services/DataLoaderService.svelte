@@ -11,27 +11,7 @@
 	const dispatch = createEventDispatcher();
 
 	export let graceid: string;
-	export let selectedAlert: GWAlertSchema | null = null;
-
-	/**
-	 * Load detection overlays for the selected alert
-	 */
-	export async function loadDetectionOverlays() {
-		if (!selectedAlert) return null;
-
-		try {
-			const detectionData = await gwtmApi.getAlertDetectionOverlays?.(
-				selectedAlert.id,
-				graceid
-			);
-			dispatch('detection-overlays-loaded', { data: detectionData });
-			return detectionData;
-		} catch (err) {
-			console.error('Failed to load detection overlays:', err);
-			dispatch('detection-overlays-error', { error: err });
-			return null;
-		}
-	}
+	export const selectedAlert: GWAlertSchema | null = null;
 
 	/**
 	 * Load galaxy data for visualization
@@ -96,9 +76,8 @@
 	 */
 	export async function loadAllData() {
 		const results = await Promise.allSettled([
-			loadDetectionOverlays(),
 			loadGalaxyData(),
-			loadCandidateData(), 
+			loadCandidateData(),
 			loadIceCubeData()
 		]);
 

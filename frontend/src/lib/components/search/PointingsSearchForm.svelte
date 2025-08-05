@@ -35,20 +35,39 @@
 
 	async function loadFormOptions() {
 		try {
-			// Load Grace IDs from alerts - try without parameters first
-			const alertsResponse = await gwtmApi.queryAlerts();
-			const alerts = alertsResponse.alerts || [];
+			// Load ALL Grace IDs from alerts - fetch all pages like Flask does with .all()
+			let allAlerts: any[] = [];
+			let page = 1;
+			let totalFetched = 0;
 			
-			console.log('Alerts response:', {
-				total: alertsResponse.total,
-				returned: alerts.length,
-				sample: alerts.slice(0, 3)
-			});
+			// First request to get total count
+			const firstResponse = await gwtmApi.queryAlerts({ page: 1 });
+			allAlerts = firstResponse.alerts || [];
+			const totalCount = firstResponse.total || 0;
+			totalFetched = allAlerts.length;
 			
-			const uniqueGraceIds = [...new Set(alerts.map((a: any) => a.graceid))]
+			console.log(`Initial fetch: ${totalFetched}/${totalCount} alerts`);
+			
+			// Fetch remaining pages if needed
+			while (totalFetched < totalCount && firstResponse.has_next) {
+				page++;
+				const response = await gwtmApi.queryAlerts({ page });
+				const pageAlerts = response.alerts || [];
+				allAlerts = [...allAlerts, ...pageAlerts];
+				totalFetched += pageAlerts.length;
+				
+				console.log(`Fetched page ${page}: ${totalFetched}/${totalCount} alerts`);
+				
+				if (!response.has_next) break;
+				if (page > 50) break; // Safety limit
+			}
+			
+			const uniqueGraceIds = [...new Set(allAlerts.map((a: any) => a.graceid))]
 				.filter(Boolean)
 				.sort()
 				.reverse();
+			
+			console.log(`Final result: ${uniqueGraceIds.length} unique Grace IDs from ${allAlerts.length} total alerts`);
 			
 			graceIdOptions = [
 				{ value: '', label: '--Select--' },

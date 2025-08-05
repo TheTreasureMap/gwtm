@@ -33,7 +33,24 @@
 				my_points_only
 			};
 
-			searchResults = await gwtmApi.searchPointings(searchParams);
+			// Get the pointing results (now includes instrument_name and username from API)
+			const results = await gwtmApi.searchPointings(searchParams);
+			console.log('Search results with joined data:', results);
+			
+			// Process results to extract RA/DEC if needed
+			if (results && results.length > 0) {
+				searchResults = results.map(pointing => {
+					// Extract ra/dec from position if not already present
+					if (pointing.position && !pointing.ra && !pointing.dec) {
+						const coords = extractRaDecFromPosition(pointing.position);
+						return { ...pointing, ra: coords.ra, dec: coords.dec };
+					}
+					return pointing;
+				});
+			} else {
+				searchResults = results || [];
+			}
+			
 			hasSearched = true;
 			selectedPointings.clear();
 			selectedPointings = selectedPointings; // Trigger reactivity
@@ -44,6 +61,22 @@
 		} finally {
 			isSearching = false;
 		}
+	}
+
+	function extractRaDecFromPosition(position: string): { ra?: number, dec?: number } {
+		// Extract RA/DEC from POINT(ra dec) string
+		if (position && position.startsWith('POINT(')) {
+			try {
+				const coords = position.slice(6, -1); // Remove "POINT(" and ")"
+				const [ra, dec] = coords.split(' ').map(Number);
+				if (!isNaN(ra) && !isNaN(dec)) {
+					return { ra, dec };
+				}
+			} catch (err) {
+				console.warn('Failed to parse position:', position, err);
+			}
+		}
+		return {};
 	}
 
 	// Handle DOI request

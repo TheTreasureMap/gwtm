@@ -24,15 +24,17 @@
 	let grbCoverage: any = null;
 	let detectionContours: any = null;
 
-	// Time range data
-	let minTime: Date | null = null;
-	let maxTime: Date | null = null;
-	let timeRange: number = 0;
+	// Time range data (numbers representing days from trigger)
+	export let minTime: number = -1;
+	export let maxTime: number = 7;
+	export let timeRange: number[] = [-1, 7];
 
 	/**
 	 * Load all visualization data for the current alert
 	 */
-	export async function loadVisualizationData(sunMoonData: SunMoonData | null = null): Promise<void> {
+	export async function loadVisualizationData(
+		sunMoonData: SunMoonData | null = null
+	): Promise<void> {
 		if (!graceid || !selectedAlert) return;
 
 		dispatch('loading-started', { operation: 'visualization-data' });
@@ -67,7 +69,6 @@
 				detectionContours,
 				sunMoonData
 			});
-
 		} catch (err) {
 			console.error('Failed to load visualization data:', err);
 			dispatch('visualization-data-error', { error: err });
@@ -94,7 +95,11 @@
 		// Only try detection overlays if we have valid alert data
 		if (selectedAlert.id && selectedAlert.alert_type) {
 			try {
-				console.log('Calling getAlertDetectionOverlays with:', selectedAlert.id, selectedAlert.alert_type);
+				console.log(
+					'Calling getAlertDetectionOverlays with:',
+					selectedAlert.id,
+					selectedAlert.alert_type
+				);
 				const detectionData = await gwtmApi.getAlertDetectionOverlays?.(
 					selectedAlert.id,
 					selectedAlert.alert_type
@@ -140,22 +145,18 @@
 				? convertToMJD(new Date(selectedAlert.time_of_signal))
 				: undefined;
 
-			console.log('Loading footprint data with params:', { 
-				graceid, 
-				pointingStatus, 
+			console.log('Loading footprint data with params:', {
+				graceid,
+				pointingStatus,
 				tos_mjd,
 				selectedAlert: {
 					id: selectedAlert.id,
 					time_of_signal: selectedAlert.time_of_signal
 				}
 			});
-			
-			footprintData = await gwtmApi.getAlertInstrumentsFootprints(
-				graceid,
-				pointingStatus,
-				tos_mjd
-			);
-			
+
+			footprintData = await gwtmApi.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
+
 			console.log('Loaded footprint data:', {
 				isArray: Array.isArray(footprintData),
 				length: footprintData?.length,
@@ -173,11 +174,10 @@
 				timeRange = [-1, 7];
 			}
 
-			dispatch('footprint-data-loaded', { 
+			dispatch('footprint-data-loaded', {
 				data: footprintData,
 				timeRange: { minTime, maxTime, timeRange }
 			});
-
 		} catch (err) {
 			console.error('Failed to load footprint data:', err);
 			footprintData = null;
@@ -210,15 +210,14 @@
 
 		try {
 			console.log('Calculating coverage for graceid:', graceid);
-			
+
 			// This calls the coverage calculation endpoint
 			coverageData = await gwtmApi.calculateCoverage(graceid);
-			
+
 			console.log('Coverage calculation result:', coverageData);
-			
+
 			dispatch('coverage-calculated', { data: coverageData });
 			return coverageData;
-
 		} catch (err) {
 			console.error('Coverage calculation failed:', err);
 			dispatch('coverage-calculation-error', { error: err });
@@ -236,25 +235,34 @@
 		}
 
 		console.log('Calculating time range from footprint data...');
-		
+
 		// Extract all contour times from all instruments
 		const allTimes: number[] = [];
-		
+
 		footprintData.forEach((instrument: any, idx: number) => {
 			if (instrument.contours && Array.isArray(instrument.contours)) {
+				// Debug: Look at the first contour to see its structure
+				if (idx === 0 && instrument.contours.length > 0) {
+					console.log('Sample contour structure:', Object.keys(instrument.contours[0]));
+					console.log('Sample contour data:', instrument.contours[0]);
+				}
+				
 				instrument.contours.forEach((contour: any) => {
 					if (typeof contour.time === 'number') {
 						allTimes.push(contour.time);
 					}
 				});
 			}
-			
-			console.log(`Instrument ${idx} (${instrument.name}): found ${
-				instrument.contours?.filter((c: any) => typeof c.time === 'number').length || 0
-			} contours with time data`);
+
+			console.log(
+				`Instrument ${idx} (${instrument.name}): found ${
+					instrument.contours?.filter((c: any) => typeof c.time === 'number').length || 0
+				} contours with time data`
+			);
 		});
 
 		console.log('All extracted times:', allTimes.length, 'total times');
+		console.log('Sample time values:', allTimes.slice(0, 10));
 
 		if (allTimes.length === 0) {
 			console.log('No time data found, using default range');
@@ -267,14 +275,32 @@
 
 		const minTimeValue = Math.min(...allTimes);
 		const maxTimeValue = Math.max(...allTimes);
-		
+
+		// Handle case where all times are the same (especially 0)
+		if (minTimeValue === maxTimeValue) {
+			console.warn('All time values are identical:', minTimeValue);
+			if (minTimeValue === 0) {
+				console.warn('All times are 0 - using default range instead');
+				minTime = -1;
+				maxTime = 7;
+				timeRange = [-1, 7];
+				return;
+			} else {
+				// Expand around the single time value
+				minTime = minTimeValue - 1;
+				maxTime = maxTimeValue + 1;
+				timeRange = [minTime, maxTime];
+				return;
+			}
+		}
+
 		// Set min/max as numbers (days from trigger) for TimeControls
 		minTime = minTimeValue;
 		maxTime = maxTimeValue;
-		
+
 		// timeRange should be an array [min, max] for the overlay filtering
 		timeRange = [minTimeValue, maxTimeValue];
-		
+
 		console.log('Calculated time range:', {
 			minTimeValue,
 			maxTimeValue,
@@ -291,10 +317,10 @@
 		showFootprints?: boolean;
 		showGrbCoverage?: boolean;
 	}): Promise<void> {
-		const { 
+		const {
 			showContours: newShowContours,
-			showFootprints: newShowFootprints, 
-			showGrbCoverage: newShowGrbCoverage 
+			showFootprints: newShowFootprints,
+			showGrbCoverage: newShowGrbCoverage
 		} = settings;
 
 		let needsReload = false;
@@ -318,10 +344,10 @@
 			await loadVisualizationData();
 		}
 
-		dispatch('display-settings-updated', { 
-			showContours, 
-			showFootprints, 
-			showGrbCoverage 
+		dispatch('display-settings-updated', {
+			showContours,
+			showFootprints,
+			showGrbCoverage
 		});
 	}
 
@@ -334,9 +360,9 @@
 		coverageData = null;
 		grbCoverage = null;
 		detectionContours = null;
-		minTime = null;
-		maxTime = null;
-		timeRange = 0;
+		minTime = -1;
+		maxTime = 7;
+		timeRange = [-1, 7];
 
 		dispatch('visualization-data-cleared');
 	}
