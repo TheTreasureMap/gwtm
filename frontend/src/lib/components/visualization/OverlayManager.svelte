@@ -158,62 +158,94 @@
 
 	// Add footprint layer with time filtering
 	export function addFootprintLayerWithTimeFilter() {
-		if (!footprintData || !Array.isArray(footprintData)) return;
+		if (!footprintData || !Array.isArray(footprintData)) {
+			console.log('No footprint data available:', {
+				footprintData,
+				isArray: Array.isArray(footprintData)
+			});
+			return;
+		}
+
+		console.log('Adding footprint layer with data:', {
+			footprintCount: footprintData.length,
+			timeRange,
+			sampleData: footprintData[0]
+		});
 
 		try {
 			const A = (window as any).A;
 			const newOverlays: any[] = [];
 
 			footprintData.forEach((instData: any, i: number) => {
-				const overlay = A.graphicOverlay({
-					id: i,
-					color: instData.color || '#ff0000',
-					lineWidth: 2,
-					name: instData.name || `Instrument ${i + 1}`
+				let hasVisibleContours = false;
+				let totalContours = 0;
+				let visibleContours = 0;
+
+				console.log(`Processing instrument ${i}:`, {
+					name: instData.name,
+					color: instData.color,
+					contourCount: instData.contours?.length || 0,
+					sampleContour: instData.contours?.[0]
 				});
 
-				aladin.addOverlay(overlay);
-
-				let hasVisibleContours = false;
-
-				// Filter contours by time
+				// First, check if this instrument has any contours within time range
 				if (instData.contours && Array.isArray(instData.contours)) {
+					totalContours = instData.contours.length;
 					instData.contours.forEach((contour: any) => {
-						// Check if contour time is within range
-						if (
-							typeof contour.time === 'number' &&
-							contour.time >= timeRange[0] &&
-							contour.time <= timeRange[1]
-						) {
+						// Check if contour time is within range (strict filtering like Flask)
+						if (typeof contour.time === 'number' && 
+							contour.time >= timeRange[0] && 
+							contour.time <= timeRange[1]) {
 							if (contour.polygon && Array.isArray(contour.polygon)) {
-								overlay.addFootprints([A.polygon(contour.polygon)]);
 								hasVisibleContours = true;
+								visibleContours++;
 							}
 						}
 					});
 				}
 
-				// Only add to overlay list if there are visible contours
-				if (hasVisibleContours || !instData.contours) {
+				console.log(`Instrument ${i} processed:`, {
+					totalContours,
+					visibleContours,
+					hasVisibleContours,
+					timeRange
+				});
+
+				// Only create and add overlay if there are visible contours (like Flask)
+				if (hasVisibleContours) {
+					const overlay = A.graphicOverlay({
+						id: i,
+						color: instData.color || '#ff0000',
+						lineWidth: 2,
+						name: instData.name || `Instrument ${i + 1}`
+					});
+
+					aladin.addOverlay(overlay);
+
+					// Add only the footprints within time range
+					instData.contours.forEach((contour: any) => {
+						if (typeof contour.time === 'number' && 
+							contour.time >= timeRange[0] && 
+							contour.time <= timeRange[1]) {
+							if (contour.polygon && Array.isArray(contour.polygon)) {
+								overlay.addFootprints([A.polygon(contour.polygon)]);
+							}
+						}
+					});
+
 					newOverlays.push({
 						contour: overlay,
 						toshow: true,
 						tocolor: instData.color || '#ff0000',
 						name: instData.name || `Instrument ${i + 1}`
 					});
-				} else {
-					// Remove overlay if no visible contours
-					try {
-						aladin.removeOverlay(overlay);
-					} catch (e) {
-						// Ignore removal errors
-					}
 				}
+				// If no visible contours, don't create overlay at all (like Flask)
 			});
 
 			overlayLists.instOverlays = newOverlays as any[];
 			console.log(
-				`Filtered footprints: ${newOverlays.length} instruments visible in time range [${timeRange[0].toFixed(1)}, ${timeRange[1].toFixed(1)}]`
+				`Footprint layer complete: ${newOverlays.length} instruments visible in time range [${timeRange[0]}, ${timeRange[1]}]`
 			);
 		} catch (err) {
 			console.error('Failed to add time-filtered footprints:', err);
@@ -356,24 +388,28 @@
 		if (!aladin || !footprintData) return;
 
 		try {
-			// Clear existing instrument overlays first
-			(overlayLists.instOverlays as any[]).forEach((overlay: any) => {
-				if (overlay.contour) {
-					try {
-						aladin.removeOverlay(overlay.contour);
-					} catch (e) {
-						// Ignore removal errors
-					}
+			// Use Flask approach: complete removal and recreation like the slider function
+			console.log('Filtering footprints by time, using Flask removeLayers approach');
+			
+			// Flask: aladin.removeLayers() - clear ALL overlays except base sky survey
+			// This is the key difference - Flask removes EVERYTHING and rebuilds
+			aladin.removeLayers();
+
+			// Clear our tracked overlay lists
+			Object.keys(overlayLists).forEach((key) => {
+				const overlays = (overlayLists as any)[key as keyof typeof overlayLists];
+				if (Array.isArray(overlays)) {
+					overlays.length = 0;
 				}
 			});
-			overlayLists.instOverlays = [];
 
-			// Re-add sun/moon markers (they should always be visible)
+			// Flask approach: Rebuild everything from scratch after clearing
+			// Re-add sun/moon images (they should always be visible)
 			if (sunMoonData) {
 				addSunMoonOverlays();
 			}
 
-			// Recreate footprints with time filtering
+			// Recreate footprints with time filtering (this will only create overlays for visible contours)
 			addFootprintLayerWithTimeFilter();
 
 			// Re-add contours if they should be shown
