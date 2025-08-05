@@ -486,6 +486,17 @@
 
             // Update coverage plot
             updateCoveragePlot();
+
+            // Center on alert coordinates after all overlays are loaded (matching Flask behavior)
+            if (selectedAlert?.avgra !== undefined && selectedAlert?.avgdec !== undefined) {
+                try {
+                    console.log('Centering view on alert coordinates after data load:', selectedAlert.avgra, selectedAlert.avgdec);
+                    aladin.animateToRaDec(selectedAlert.avgra, selectedAlert.avgdec, 2); // 2-second animation
+                    aladin.setFov(200.0); // Set FOV to 200 degrees like Flask does after loading data
+                } catch (err) {
+                    console.warn('Failed to center on alert coordinates after data load:', err);
+                }
+            }
         } catch (err) {
             console.error('Failed to update visualization:', err);
         }

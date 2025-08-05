@@ -32,10 +32,16 @@ async def get_alert_instruments_footprints(
     from server.utils.gwtm_io import get_cached_file, set_cached_file
     from server.config import settings
 
-    # First find the alert by graceid
+    # First find the alert by graceid, handling alternate IDs
     alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
     if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
+        # Try to find by alternate ID
+        alert = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
+        if alert:
+            # Use the actual graceid from now on
+            graceid = alert.graceid
+        else:
+            raise HTTPException(status_code=404, detail="Alert not found")
 
     # Set default status if none provided
     if pointing_status is None:
@@ -49,15 +55,13 @@ async def get_alert_instruments_footprints(
     pointing_filter.append(PointingEvent.pointingid == Pointing.id)
 
     # Status filtering
+    from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
+    
     if pointing_status == "pandc":
         pointing_filter.append(
-            or_(Pointing.status == "completed", Pointing.status == "planned")
+            or_(Pointing.status == pointing_status_enum.completed, Pointing.status == pointing_status_enum.planned)
         )
     elif pointing_status not in ["all", ""]:
-        from server.core.enums.pointingstatus import (
-            PointingStatus as pointing_status_enum,
-        )
-
         if pointing_status == "completed":
             pointing_filter.append(Pointing.status == pointing_status_enum.completed)
         elif pointing_status == "planned":
