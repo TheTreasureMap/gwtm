@@ -182,7 +182,7 @@
 
 			// Use the correct Aladin v2 API syntax matching Flask settings
 			const aladinOptions = {
-				fov: 180, // Match Flask default field of view
+				fov: 180, // Match Flask initial field of view (180 degrees, later set to 200 after data loads)
 				target: target,
 				showGotoControl: true,
 				showFullscreenControl: true,
@@ -190,7 +190,7 @@
 				showShareControl: true,
 				realFullscreen: false,
 				cooFrame: 'ICRSd',
-				showReticle: true, // Show reticle to confirm position
+				showReticle: false, // Match Flask setting (false initially)
 				survey: 'P/DSS2/color' // Set default survey
 			};
 			console.log('Aladin options:', aladinOptions);

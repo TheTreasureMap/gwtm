@@ -3,6 +3,27 @@
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Carousel from '$lib/components/ui/Carousel.svelte';
+
+	// GW190814 carousel images (matching Flask implementation)
+	const carouselImages = [
+		{
+			src: '/GW190814_alert.png',
+			alt: 'GW190814 Alert Skymap - Shows the gravitational wave localization region'
+		},
+		{
+			src: '/GW190814_image.png', 
+			alt: 'GW190814 Observation Image - Telescope follow-up observation'
+		},
+		{
+			src: '/GW190814_followup.png',
+			alt: 'GW190814 Follow-up Coverage - Telescope pointings and coverage map'
+		},
+		{
+			src: '/GW190814_prob.png',
+			alt: 'GW190814 Probability Map - Statistical analysis of the gravitational wave event'
+		}
+	];
 </script>
 
 <svelte:head>
@@ -69,23 +90,8 @@
 
 			<!-- Visualization Card -->
 			<Card padding="none" hover={true}>
-				<div class="bg-gray-200 h-48 flex items-center justify-center">
-					<div class="text-center text-gray-500">
-						<svg
-							class="w-16 h-16 mx-auto mb-2"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						<p class="text-sm">GW Visualization</p>
-					</div>
+				<div class="w-full aspect-square">
+					<Carousel images={carouselImages} autoPlay={true} interval={5000} />
 				</div>
 				<div class="p-6">
 					<h3 class="text-xl font-semibold mb-3">Visualization</h3>
