@@ -175,8 +175,8 @@
 
 			// Calculate target coordinates
 			const target =
-				selectedAlert?.avgra && selectedAlert?.avgdec
-					? `${selectedAlert.avgra} ${selectedAlert.avgdec}`
+				selectedAlert?.original_alert?.avgra && selectedAlert?.original_alert?.avgdec
+					? `${selectedAlert.original_alert.avgra} ${selectedAlert.original_alert.avgdec}`
 					: '0 0';
 			console.log('Target coordinates:', target);
 

@@ -149,9 +149,9 @@
             updateVisualization();
 
             // Animate to new alert coordinates (matching Flask behavior)
-            if (aladin && selectedAlert!.avgra !== undefined && selectedAlert!.avgdec !== undefined) {
+            if (aladin && selectedAlert!.original_alert?.avgra !== undefined && selectedAlert!.original_alert?.avgdec !== undefined) {
                 try {
-                    aladin.animateToRaDec(selectedAlert!.avgra, selectedAlert!.avgdec, 2); // 2-second animation
+                    aladin.animateToRaDec(selectedAlert!.original_alert.avgra, selectedAlert!.original_alert.avgdec, 2); // 2-second animation
                 } catch (err) {
                     console.warn('Error animating to coordinates:', err);
                 }
@@ -420,15 +420,15 @@
             }
 
             // Add a test marker to ensure something is visible
-            if (aladin && alert) {
+            if (aladin && selectedAlert?.original_alert) {
                 try {
                     const A = (window as any).A;
                     const testCat = A.catalog({name: 'GW Event', color: 'red', sourceSize: 15});
                     testCat.addSources([
-                        A.source(alert.avgra || 0, alert.avgdec || 0, {name: `GW ${graceid}`})
+                        A.source(selectedAlert.original_alert.avgra || 0, selectedAlert.original_alert.avgdec || 0, {name: `GW ${graceid}`})
                     ]);
                     aladin.addCatalog(testCat);
-                    console.log('Added GW event marker at:', alert.avgra, alert.avgdec);
+                    console.log('Added GW event marker at:', selectedAlert.original_alert.avgra, selectedAlert.original_alert.avgdec);
                 } catch (err) {
                     console.warn('Failed to add test marker:', err);
                 }
@@ -488,10 +488,9 @@
             updateCoveragePlot();
 
             // Center on alert coordinates after all overlays are loaded (matching Flask behavior)
-            if (selectedAlert?.avgra !== undefined && selectedAlert?.avgdec !== undefined) {
+            if (selectedAlert?.original_alert?.avgra !== undefined && selectedAlert?.original_alert?.avgdec !== undefined) {
                 try {
-                    console.log('Centering view on alert coordinates after data load:', selectedAlert.avgra, selectedAlert.avgdec);
-                    aladin.animateToRaDec(selectedAlert.avgra, selectedAlert.avgdec, 2); // 2-second animation
+                    aladin.animateToRaDec(selectedAlert.original_alert.avgra, selectedAlert.original_alert.avgdec, 2); // 2-second animation
                     aladin.setFov(200.0); // Set FOV to 200 degrees like Flask does after loading data
                 } catch (err) {
                     console.warn('Failed to center on alert coordinates after data load:', err);
