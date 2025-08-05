@@ -1,12 +1,20 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import { gwtmApi } from '$lib/api';
+	import FilterManagementService from '$lib/components/alerts/services/FilterManagementService.svelte';
+	import AlertSearchService from '$lib/components/alerts/services/AlertSearchService.svelte';
+	import AlertDataService from '$lib/components/alerts/services/AlertDataService.svelte';
+	import PaginationService from '$lib/components/alerts/services/PaginationService.svelte';
 
-	let alerts = [];
-	let groupedAlerts = [];
-	let loading = true;
-	let error = null;
+	// Service component references
+	let filterService: FilterManagementService;
+	let searchService: AlertSearchService;
+	let dataService: AlertDataService;
+	let paginationService: PaginationService;
+
+	// Component state
+	let searchInput: HTMLInputElement;
+
+	// Data state (managed by services)
 	let filters = {
 		graceid: '',
 		alert_type: '',
@@ -15,418 +23,169 @@
 		far: 'significant',
 		has_pointings: false
 	};
-
-	// Dynamic search state
-	let searchSuggestions = [];
-	let showSuggestions = false;
-	let searchTimeout;
-	let searchInput;
-
-	// Filter options loaded from API
-	let filterOptions = {
+	let filterOptions: {
+		observing_runs: string[];
+		roles: string[];
+		alert_types: string[];
+	} = {
 		observing_runs: [],
 		roles: [],
 		alert_types: []
 	};
-	let filterOptionsLoading = true;
-
-	// Function to apply URL parameters to filters
-	function applyUrlParams() {
-		const urlParams = $page.url.searchParams;
-
-		if (urlParams.get('graceid')) {
-			filters.graceid = urlParams.get('graceid');
-		}
-		if (urlParams.get('alert_type')) {
-			filters.alert_type = urlParams.get('alert_type');
-		}
-		if (urlParams.get('role')) {
-			filters.role = urlParams.get('role');
-		}
-		if (urlParams.get('observing_run')) {
-			filters.observing_run = urlParams.get('observing_run');
-		}
-		if (urlParams.get('far')) {
-			filters.far = urlParams.get('far');
-		}
-		if (urlParams.get('has_pointings')) {
-			filters.has_pointings = urlParams.get('has_pointings') === 'true';
-		}
-	}
-
-	// Pagination state
-	let currentPage = 1;
-	let perPage = 25;
-	let totalItems = 0;
-	let totalPages = 0;
-	let hasNext = false;
-	let hasPrev = false;
+	let filterOptionsLoading: boolean = true;
+	let alerts: any[] = [];
+	let groupedAlerts: any[] = [];
+	let loading: boolean = true;
+	let error: string | null = null;
+	let searchSuggestions: string[] = [];
+	let showSuggestions: boolean = false;
+	let currentPage: number = 1;
+	let perPage: number = 25;
+	let totalItems: number = 0;
+	let totalPages: number = 0;
+	let hasNext: boolean = false;
+	let hasPrev: boolean = false;
 
 	async function loadAlerts() {
+		const params = filterService.buildQueryParams({
+			page: currentPage,
+			per_page: perPage
+		});
+
 		try {
-			loading = true;
-			error = null;
-
-			// Build query parameters
-			const params = {
-				page: currentPage,
-				per_page: perPage
-			};
-			if (filters.graceid.trim()) params.graceid = filters.graceid.trim();
-			if (filters.alert_type) params.alert_type = filters.alert_type;
-			if (filters.role && filters.role !== 'all') params.role = filters.role;
-			if (filters.observing_run && filters.observing_run !== 'all')
-				params.observing_run = filters.observing_run;
-			if (filters.far && filters.far !== 'all') params.far = filters.far;
-			if (filters.has_pointings) params.has_pointings = filters.has_pointings;
-
-			// Call FastAPI to fetch alerts
-			const response = await gwtmApi.queryAlerts(params);
-			if (response) {
-				alerts = response.alerts || [];
-				// Group alerts by graceid for display
-				groupedAlerts = groupAlertsByGraceid(alerts);
-
-				// Get pointing counts for the grouped alerts
-				if (groupedAlerts.length > 0) {
-					const graceids = groupedAlerts.map((g) => g.alertname);
-					await loadPointingCounts(graceids);
-				}
-
-				totalItems = response.total;
-				totalPages = response.total_pages;
-				hasNext = response.has_next;
-				hasPrev = response.has_prev;
-				currentPage = response.page;
-			} else {
-				alerts = [];
-				groupedAlerts = [];
-				totalItems = 0;
-				totalPages = 0;
-				hasNext = false;
-				hasPrev = false;
-			}
+			const result = await dataService.loadAlerts(params);
+			paginationService.updatePaginationState(result);
 		} catch (err) {
-			error = err.message || 'Failed to load alerts';
-			console.error('Error loading alerts:', err);
-		} finally {
-			loading = false;
+			// Error handling is managed by the service
 		}
 	}
 
 	function handleSearch() {
-		currentPage = 1; // Reset to first page when searching
-		loadAlerts();
+		paginationService.resetToFirstPage();
 	}
 
 	function clearFilters() {
-		filters = {
-			graceid: '',
-			alert_type: '',
-			role: filterOptions.roles.includes('observation') ? 'observation' : 'all',
-			observing_run:
-				filterOptions.observing_runs.length > 0
-					? filterOptions.observing_runs[filterOptions.observing_runs.length - 1]
-					: 'all',
-			far: 'significant',
-			has_pointings: false
-		};
-		currentPage = 1; // Reset to first page when clearing
+		filterService.clearFilters();
+	}
+
+	// Event handlers for service integration
+	function handleFilterChange() {
+		paginationService.resetToFirstPage();
 		loadAlerts();
 	}
 
-	function goToPage(page) {
-		if (page >= 1 && page <= totalPages) {
-			currentPage = page;
-			loadAlerts();
-		}
+	function handleHasPointingsChange() {
+		filterService.updateFilter('has_pointings', filters.has_pointings);
+		handleFilterChange();
 	}
 
-	function nextPage() {
-		if (hasNext) {
-			goToPage(currentPage + 1);
-		}
+	function handleSearchInputChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		filters.graceid = target.value;
+		filterService.updateFilter('graceid', target.value);
+		searchService.handleSearchInput(target.value);
 	}
 
-	function prevPage() {
-		if (hasPrev) {
-			goToPage(currentPage - 1);
-		}
-	}
-
-	function formatDate(dateString) {
-		if (!dateString) return 'N/A';
-		try {
-			return new Date(dateString).toLocaleString();
-		} catch {
-			return dateString;
-		}
-	}
-
-	function formatNumber(num) {
-		if (num === null || num === undefined) return 'N/A';
-		if (typeof num === 'number') {
-			return num.toFixed(3);
-		}
-		return num;
-	}
-
-	function groupAlertsByGraceid(alertsList) {
-		const grouped = {};
-
-		// Group alerts by graceid (or alternateid if available)
-		alertsList.forEach((alert) => {
-			const key = alert.alternateid || alert.graceid;
-			if (!grouped[key]) {
-				grouped[key] = [];
-			}
-			grouped[key].push(alert);
-		});
-
-		// Process each group to create the grouped alert format
-		const result = [];
-		for (const [graceid, alerts] of Object.entries(grouped)) {
-			// Sort alerts by date created, most recent first
-			alerts.sort((a, b) => new Date(b.datecreated) - new Date(a.datecreated));
-
-			const mostRecentAlert = alerts[0];
-			const alertTypes = alerts.map((a) => a.alert_type).filter(Boolean);
-			const hasRetraction = alertTypes.includes('Retraction');
-
-			// Calculate classification (like Flask version)
-			let classification = 'Unknown';
-			if (hasRetraction) {
-				classification = 'Retracted';
-			} else {
-				// Use most recent alert's classification logic
-				classification = getAlertClassification(mostRecentAlert);
-			}
-
-			// Format distance
-			let distanceStr = 'N/A';
-			if (mostRecentAlert.distance && mostRecentAlert.distance > 0) {
-				const dist = Math.round(mostRecentAlert.distance * 100) / 100;
-				const distErr = mostRecentAlert.distance_error
-					? Math.round(mostRecentAlert.distance_error * 100) / 100
-					: null;
-				distanceStr = distErr ? `${dist} +/- ${distErr}` : `${dist}`;
-			}
-
-			result.push({
-				alertname: graceid,
-				classification: classification,
-				distance: distanceStr,
-				pcounts: 0, // TODO: Get pointing counts from API
-				alert_types: alertTypes,
-				has_icecube: false, // TODO: Get icecube data
-				mostRecentAlert: mostRecentAlert
-			});
-		}
-
-		return result.sort((a, b) => a.alertname.localeCompare(b.alertname));
-	}
-
-	function getAlertClassification(alert) {
-		// Classification logic matching Flask version
-		if (!alert) return 'Unknown';
-
-		// Handle Burst events
-		if (alert.group === 'Burst') {
-			return 'None (detected as burst)';
-		}
-
-		// Build probability list with classifications
-		const probabilities = [];
-
-		if (alert.prob_bns && alert.prob_bns > 0.01) {
-			probabilities.push({ prob: alert.prob_bns, name: 'BNS' });
-		}
-		if (alert.prob_nsbh && alert.prob_nsbh > 0.01) {
-			probabilities.push({ prob: alert.prob_nsbh, name: 'NSBH' });
-		}
-		if (alert.prob_bbh && alert.prob_bbh > 0.01) {
-			probabilities.push({ prob: alert.prob_bbh, name: 'BBH' });
-		}
-		if (alert.prob_terrestrial && alert.prob_terrestrial > 0.01) {
-			probabilities.push({ prob: alert.prob_terrestrial, name: 'Terrestrial' });
-		}
-		if (alert.prob_gap && alert.prob_gap > 0.01) {
-			probabilities.push({ prob: alert.prob_gap, name: 'Mass Gap' });
-		}
-
-		// Sort by probability descending
-		probabilities.sort((a, b) => b.prob - a.prob);
-
-		// Format as "BBH: (85.2%) BNS: (12.3%) "
-		if (probabilities.length === 0) {
-			return 'Unknown';
-		}
-
-		return probabilities.map((p) => `${p.name}: (${(p.prob * 100).toFixed(1)}%)`).join(' ') + ' ';
-	}
-
-	function getAlertTypeBadges(alertTypes) {
-		const badgeConfig = {
-			Preliminary: { color: 'bg-yellow-100 text-yellow-800', icon: 'P' },
-			Initial: { color: 'bg-blue-100 text-blue-800', icon: 'I' },
-			Update: { color: 'bg-green-100 text-green-800', icon: 'U' },
-			Retraction: { color: 'bg-red-100 text-red-800', icon: 'R' },
-			EarlyWarning: { color: 'bg-purple-100 text-purple-800', icon: 'EW' },
-			Early_Warning: { color: 'bg-purple-100 text-purple-800', icon: 'EW' },
-			Publication: { color: 'bg-gray-100 text-gray-800', icon: 'PU' }
-		};
-
-		return alertTypes.map((type) => {
-			const config = badgeConfig[type] || {
-				color: 'bg-gray-100 text-gray-800',
-				icon: type?.substring(0, 2) || '?'
-			};
-			return { type, ...config };
-		});
-	}
-
-	async function loadPointingCounts(graceids) {
-		try {
-			// Get pointing counts for each graceid using the existing pointings API
-			const pointingPromises = graceids.map(async (graceid) => {
-				try {
-					const pointings = await gwtmApi.getPointings({ graceid, status: 'completed' });
-					return { graceid, count: pointings?.length || 0 };
-				} catch (err) {
-					console.warn(`Failed to get pointings for ${graceid}:`, err);
-					return { graceid, count: 0 };
-				}
-			});
-
-			const pointingCounts = await Promise.all(pointingPromises);
-
-			// Update the grouped alerts with pointing counts
-			groupedAlerts = groupedAlerts.map((alert) => {
-				const countData = pointingCounts.find((pc) => pc.graceid === alert.alertname);
-				return {
-					...alert,
-					pcounts: countData ? countData.count : 0
-				};
-			});
-		} catch (err) {
-			console.error('Error loading pointing counts:', err);
-			// Set all counts to 0 on error
-			groupedAlerts = groupedAlerts.map((alert) => ({
-				...alert,
-				pcounts: 0
-			}));
-		}
-	}
-
-	async function loadFilterOptions() {
-		try {
-			filterOptionsLoading = true;
-			const options = await gwtmApi.getAlertFilterOptions();
-			filterOptions = options;
-
-			// Set default values based on available options
-			if (
-				options.observing_runs.length > 0 &&
-				!options.observing_runs.includes(filters.observing_run)
-			) {
-				filters.observing_run = options.observing_runs[options.observing_runs.length - 1]; // Latest observing run
-			}
-			if (options.roles.length > 0 && !options.roles.includes(filters.role)) {
-				filters.role = options.roles.includes('observation') ? 'observation' : options.roles[0];
-			}
-		} catch (err) {
-			console.error('Error loading filter options:', err);
-		} finally {
-			filterOptionsLoading = false;
-		}
-	}
-
-	async function searchGraceids(query) {
-		if (!query || query.length < 3) {
-			searchSuggestions = [];
-			showSuggestions = false;
-			return;
-		}
-
-		try {
-			// Build search parameters using current filters
-			const searchParams = {
-				graceid: query,
-				page: 1,
-				per_page: 20 // Get more results to extract suggestions from
-			};
-
-			// Apply current filter selections to the search
-			if (filters.alert_type) searchParams.alert_type = filters.alert_type;
-			if (filters.role && filters.role !== 'all') searchParams.role = filters.role;
-			if (filters.observing_run && filters.observing_run !== 'all')
-				searchParams.observing_run = filters.observing_run;
-			if (filters.far && filters.far !== 'all') searchParams.far = filters.far;
-			if (filters.has_pointings) searchParams.has_pointings = filters.has_pointings;
-
-			const response = await gwtmApi.queryAlerts(searchParams);
-
-			if (response && response.alerts) {
-				// Extract unique graceids/alertnames from the results
-				const suggestions = new Set();
-				response.alerts.forEach((alert) => {
-					if (alert.graceid) suggestions.add(alert.graceid);
-					if (alert.alternateid) suggestions.add(alert.alternateid);
-				});
-
-				searchSuggestions = Array.from(suggestions)
-					.filter((id) => id.toLowerCase().includes(query.toLowerCase()))
-					.slice(0, 8); // Show max 8 suggestions
-
-				showSuggestions = searchSuggestions.length > 0;
-			}
-		} catch (err) {
-			console.warn('Error searching graceids:', err);
-			searchSuggestions = [];
-			showSuggestions = false;
-		}
-	}
-
-	function handleSearchInput(event) {
-		const value = event.target.value;
-		filters.graceid = value;
-
-		// Clear existing timeout
-		if (searchTimeout) {
-			clearTimeout(searchTimeout);
-		}
-
-		// Set new timeout for search
-		searchTimeout = setTimeout(() => {
-			searchGraceids(value);
-		}, 300); // Wait 300ms after user stops typing
-	}
-
-	function selectSuggestion(suggestion) {
+	function handleSuggestionSelect(suggestion: string) {
 		filters.graceid = suggestion;
-		showSuggestions = false;
-		searchSuggestions = [];
+		filterService.updateFilter('graceid', suggestion);
+		searchService.selectSuggestion(suggestion);
 		handleSearch();
 	}
 
-	function hideSuggestions() {
-		// Delay hiding to allow clicking on suggestions
-		setTimeout(() => {
-			showSuggestions = false;
-		}, 200);
+	function handlePerPageChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		paginationService.changePerPage(parseInt(target.value));
+	}
+
+	// Service event handlers
+	function handleAlertsLoaded(event: CustomEvent) {
+		const { alerts: newAlerts, groupedAlerts: newGroupedAlerts, pagination } = event.detail;
+		alerts = newAlerts;
+		groupedAlerts = newGroupedAlerts;
+		totalItems = pagination.total;
+		totalPages = pagination.totalPages;
+		hasNext = pagination.hasNext;
+		hasPrev = pagination.hasPrev;
+		currentPage = pagination.currentPage;
+	}
+
+	function handleAlertsError(event: CustomEvent) {
+		error = event.detail.error;
+	}
+
+	function handleFilterOptionsLoaded(event: CustomEvent) {
+		filterOptions = event.detail.filterOptions;
+	}
+
+	function handleFiltersUpdated(event: CustomEvent) {
+		filters = event.detail.filters;
+	}
+
+	function handleSuggestionsUpdated(event: CustomEvent) {
+		searchSuggestions = event.detail.suggestions;
+		showSuggestions = event.detail.show;
+	}
+
+	function handlePageChange(event: CustomEvent) {
+		currentPage = event.detail.page;
+		perPage = event.detail.perPage;
+		loadAlerts();
 	}
 
 	onMount(async () => {
 		// Apply URL parameters first
-		applyUrlParams();
+		filterService.applyUrlParams();
 
 		// Load filter options
-		await loadFilterOptions();
+		await filterService.loadFilterOptions();
 
 		// Load alerts with applied filters
 		loadAlerts();
 	});
 </script>
+
+<!-- Service Components -->
+<FilterManagementService
+	bind:this={filterService}
+	bind:filters
+	bind:filterOptions
+	bind:filterOptionsLoading
+	on:filters-updated={handleFiltersUpdated}
+	on:filter-options-loaded={handleFilterOptionsLoaded}
+	on:filters-cleared={handleFilterChange}
+	on:filter-changed={handleFilterChange}
+/>
+
+<AlertSearchService
+	bind:this={searchService}
+	bind:searchSuggestions
+	bind:showSuggestions
+	{filters}
+	on:suggestions-updated={handleSuggestionsUpdated}
+	on:suggestion-selected={(e) => handleSuggestionSelect(e.detail.suggestion)}
+/>
+
+<AlertDataService
+	bind:this={dataService}
+	bind:alerts
+	bind:groupedAlerts
+	bind:loading
+	bind:error
+	on:alerts-loaded={handleAlertsLoaded}
+	on:alerts-error={handleAlertsError}
+/>
+
+<PaginationService
+	bind:this={paginationService}
+	bind:currentPage
+	bind:perPage
+	bind:totalItems
+	bind:totalPages
+	bind:hasNext
+	bind:hasPrev
+	on:page-changed={handlePageChange}
+/>
 
 <svelte:head>
 	<title>GW Events - GWTM</title>
@@ -451,6 +210,7 @@
 				<select
 					id="observing_run"
 					bind:value={filters.observing_run}
+					on:change={handleFilterChange}
 					disabled={filterOptionsLoading}
 					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
 				>
@@ -468,6 +228,7 @@
 				<select
 					id="role"
 					bind:value={filters.role}
+					on:change={handleFilterChange}
 					disabled={filterOptionsLoading}
 					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
 				>
@@ -485,6 +246,7 @@
 				<select
 					id="far"
 					bind:value={filters.far}
+					on:change={handleFilterChange}
 					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					<option value="all">All</option>
@@ -498,6 +260,7 @@
 					<input
 						type="checkbox"
 						bind:checked={filters.has_pointings}
+						on:change={handleHasPointingsChange}
 						class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
 					/>
 					<span class="text-sm font-medium text-gray-700"><strong>Has Pointings</strong></span>
@@ -541,9 +304,9 @@
 					id="search"
 					type="text"
 					bind:value={filters.graceid}
-					on:input={handleSearchInput}
-					on:blur={hideSuggestions}
-					on:focus={() => filters.graceid.length >= 3 && searchGraceids(filters.graceid)}
+					on:input={handleSearchInputChange}
+					on:blur={() => searchService.hideSuggestions()}
+					on:focus={() => searchService.showSuggestionsIfReady(filters.graceid)}
 					placeholder="Search for graceid (e.g., S190425z, GW190521)..."
 					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 					autocomplete="off"
@@ -557,7 +320,7 @@
 						{#each searchSuggestions as suggestion}
 							<button
 								class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-								on:click={() => selectSuggestion(suggestion)}
+								on:click={() => handleSuggestionSelect(suggestion)}
 							>
 								<span class="text-sm text-gray-900">{suggestion}</span>
 							</button>
@@ -619,10 +382,7 @@
 					<select
 						id="perPage"
 						bind:value={perPage}
-						on:change={() => {
-							currentPage = 1;
-							loadAlerts();
-						}}
+						on:change={handlePerPageChange}
 						class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value={10}>10</option>
@@ -694,7 +454,7 @@
 												</a>
 											</div>
 											<div class="flex space-x-1">
-												{#each getAlertTypeBadges(groupedAlert.alert_types) as badge}
+												{#each dataService.getAlertTypeBadges(groupedAlert.alert_types) as badge}
 													<span
 														class="inline-flex px-1 py-0.5 text-xs font-semibold rounded-full {badge.color}"
 													>
@@ -744,7 +504,7 @@
 				<div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
 					<div class="flex items-center space-x-2">
 						<button
-							on:click={prevPage}
+							on:click={() => paginationService.prevPage()}
 							disabled={!hasPrev}
 							class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
@@ -752,13 +512,9 @@
 						</button>
 
 						<div class="flex items-center space-x-1">
-							{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-								const startPage = Math.max(1, currentPage - 2);
-								const endPage = Math.min(totalPages, startPage + 4);
-								return startPage + i <= endPage ? startPage + i : null;
-							}).filter((p) => p !== null) as page}
+							{#each paginationService.getDisplayPages().pages as page}
 								<button
-									on:click={() => goToPage(page)}
+									on:click={() => paginationService.goToPage(page)}
 									class="px-3 py-2 border rounded-md text-sm font-medium
                     {page === currentPage
 										? 'bg-blue-600 text-white border-blue-600'
@@ -771,7 +527,7 @@
 							{#if totalPages > 5 && currentPage < totalPages - 2}
 								<span class="px-2 text-gray-500">...</span>
 								<button
-									on:click={() => goToPage(totalPages)}
+									on:click={() => paginationService.goToPage(totalPages)}
 									class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
 								>
 									{totalPages}
@@ -780,7 +536,7 @@
 						</div>
 
 						<button
-							on:click={nextPage}
+							on:click={() => paginationService.nextPage()}
 							disabled={!hasNext}
 							class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
 						>

@@ -13,10 +13,23 @@
 	let isDragging = false;
 	let dragHandle: 'min' | 'max' | null = null;
 
+	// Reactive calculations for slider positioning
+	$: range = maxTime - minTime;
+	$: minHandlePosition = range > 0 ? ((timeRange[0] - minTime) / range) * 100 : 0;
+	$: maxHandlePosition = range > 0 ? ((timeRange[1] - minTime) / range) * 100 : 0;
+	$: rangeWidth = range > 0 ? ((timeRange[1] - timeRange[0]) / range) * 100 : 0;
+
+	// Debug logging (disabled to reduce noise)
+	// $: console.log('TimeControls reactive update:', { 
+	//	timeRange, minTime, maxTime, range, minHandlePosition, maxHandlePosition, rangeWidth 
+	// });
+
 	function startDrag(e: MouseEvent | TouchEvent, handle: 'min' | 'max') {
 		e.preventDefault();
 		isDragging = true;
 		dragHandle = handle;
+
+		// console.log('Starting drag:', { handle, timeRange, minTime, maxTime });
 
 		// Add global event listeners
 		if (typeof window !== 'undefined') {
@@ -39,7 +52,12 @@
 		const rect = sliderWrapper.getBoundingClientRect();
 		const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 		const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-		const newValue = minTime + (percent / 100) * (maxTime - minTime);
+		
+		// Prevent division by zero or invalid calculations
+		const range = maxTime - minTime;
+		if (range === 0) return;
+		
+		const newValue = minTime + (percent / 100) * range;
 
 		if (dragHandle === 'min') {
 			timeRange[0] = Math.min(newValue, timeRange[1]);
@@ -49,6 +67,8 @@
 
 		// Trigger reactivity
 		timeRange = [...timeRange];
+
+		// console.log('Drag update:', { dragHandle, newValue, timeRange });
 
 		// Notify parent of time range change
 		dispatch('timeRangeChange', { timeRange: [...timeRange] });
@@ -88,7 +108,9 @@
 <div class="bg-white border rounded-lg p-4">
 	<h3 class="text-lg font-semibold mb-3">Time Controls</h3>
 	<div class="mb-4">
-		<label for="pointing-status-select" class="block text-sm font-medium text-gray-700 mb-2"> Pointing Status: </label>
+		<label for="pointing-status-select" class="block text-sm font-medium text-gray-700 mb-2">
+			Pointing Status:
+		</label>
 		<select
 			id="pointing-status-select"
 			value={pointingStatus}
@@ -104,7 +126,7 @@
 
 	<div class="mb-4">
 		<div class="block text-sm font-medium text-gray-700 mb-2">
-			Date range (days since Time of Signal): {timeRange[0].toFixed(1)} - {timeRange[1].toFixed(1)}
+			Date range (days since Time of Signal): {timeRange[0]?.toFixed(1) || '0.0'} - {timeRange[1]?.toFixed(1) || '0.0'}
 		</div>
 
 		<!-- Time Range Slider -->
@@ -113,18 +135,17 @@
 				<div class="time-slider-track"></div>
 				<div
 					class="time-slider-range"
-					style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%; 
-						   width: {((timeRange[1] - timeRange[0]) / (maxTime - minTime)) * 100}%"
+					style="left: {minHandlePosition}%; width: {rangeWidth}%"
 				></div>
 
 				<!-- Min handle -->
 				<div
 					class="time-slider-handle min-handle"
 					class:dragging={isDragging && dragHandle === 'min'}
-					style="left: {((timeRange[0] - minTime) / (maxTime - minTime)) * 100}%"
+					style="left: {minHandlePosition}%"
 					on:mousedown={(e) => startDrag(e, 'min')}
 					on:touchstart={(e) => startDrag(e, 'min')}
-					title="Minimum time: {timeRange[0].toFixed(1)} days"
+					title="Minimum time: {timeRange[0]?.toFixed(1) || '0.0'} days"
 					role="slider"
 					tabindex="0"
 					aria-label="Minimum time range"
@@ -137,10 +158,10 @@
 				<div
 					class="time-slider-handle max-handle"
 					class:dragging={isDragging && dragHandle === 'max'}
-					style="left: {((timeRange[1] - minTime) / (maxTime - minTime)) * 100}%"
+					style="left: {maxHandlePosition}%"
 					on:mousedown={(e) => startDrag(e, 'max')}
 					on:touchstart={(e) => startDrag(e, 'max')}
-					title="Maximum time: {timeRange[1].toFixed(1)} days"
+					title="Maximum time: {timeRange[1]?.toFixed(1) || '0.0'} days"
 					role="slider"
 					tabindex="0"
 					aria-label="Maximum time range"
@@ -152,8 +173,8 @@
 
 			<!-- Time labels -->
 			<div class="time-labels mt-2">
-				<span class="text-xs text-gray-500">{minTime.toFixed(1)} days</span>
-				<span class="text-xs text-gray-500 float-right">{maxTime.toFixed(1)} days</span>
+				<span class="text-xs text-gray-500">{minTime?.toFixed(1) || '0.0'} days</span>
+				<span class="text-xs text-gray-500 float-right">{maxTime?.toFixed(1) || '0.0'} days</span>
 			</div>
 		</div>
 	</div>

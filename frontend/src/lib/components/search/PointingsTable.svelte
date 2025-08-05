@@ -14,19 +14,19 @@
 	export let allowSelection: boolean = false;
 	export let selectedPointings: Set<number> = new Set();
 
-	// Table configuration
+	// Table configuration - very compact to fit all columns
 	const columns = [
-		{ key: 'checkbox', label: '', sortable: false, width: '50px' },
-		{ key: 'id', label: 'ID', sortable: true, width: '80px' },
-		{ key: 'position', label: 'Position (RA, DEC)', sortable: false, width: '200px' },
-		{ key: 'status', label: 'Status', sortable: true, width: '120px' },
-		{ key: 'instrument_name', label: 'Instrument', sortable: true, width: '150px' },
-		{ key: 'band', label: 'Band', sortable: true, width: '80px' },
-		{ key: 'depth', label: 'Depth', sortable: true, width: '100px' },
-		{ key: 'pos_angle', label: 'Position Angle', sortable: true, width: '120px' },
-		{ key: 'time', label: 'Time', sortable: true, width: '180px' },
-		{ key: 'username', label: 'Submitter', sortable: true, width: '120px' },
-		{ key: 'doi_url', label: 'DOI', sortable: false, width: '200px' }
+		{ key: 'checkbox', label: '', sortable: false, width: '30px' },
+		{ key: 'id', label: 'ID', sortable: true, width: '60px' },
+		{ key: 'position', label: 'RA, DEC', sortable: false, width: '120px' },
+		{ key: 'status', label: 'Status', sortable: true, width: '80px' },
+		{ key: 'instrument_name', label: 'Instrument', sortable: true, width: '100px' },
+		{ key: 'band', label: 'Band', sortable: true, width: '60px' },
+		{ key: 'depth', label: 'Depth', sortable: true, width: '70px' },
+		{ key: 'pos_angle', label: 'Angle', sortable: true, width: '60px' },
+		{ key: 'time', label: 'Time', sortable: true, width: '110px' },
+		{ key: 'username', label: 'User', sortable: true, width: '80px' },
+		{ key: 'doi_url', label: 'DOI', sortable: false, width: '50px' }
 	];
 
 	function canSelectPointing(pointing: any): boolean {
@@ -66,22 +66,50 @@
 		dispatch('select-all', { checked });
 	}
 
-	function formatPosition(position: string): string {
-		// Format POINT(ra dec) string to "ra, dec"
+	function formatPosition(ra: number, dec: number): string {
+		// Format RA/DEC coordinates to "ra, dec" with compact precision
+		if (ra !== null && ra !== undefined && dec !== null && dec !== undefined) {
+			return `${ra.toFixed(2)}, ${dec.toFixed(2)}`;
+		}
+		return '—';
+	}
+
+	function formatPositionFromString(position: string): string {
+		// Fallback for POINT(ra dec) string format
 		if (position && position.startsWith('POINT(')) {
 			const coords = position.slice(6, -1); // Remove "POINT(" and ")"
-			return coords.replace(' ', ', ');
+			const [ra, dec] = coords.split(' ').map(Number);
+			if (!isNaN(ra) && !isNaN(dec)) {
+				return `${ra.toFixed(2)}, ${dec.toFixed(2)}`;
+			}
 		}
 		return position || '—';
 	}
 
 	function formatTime(time: string): string {
-		// Format ISO timestamp to readable format
+		// Format ISO timestamp to very compact format (MM/DD HH:MM)
 		try {
-			return new Date(time).toLocaleString();
+			const date = new Date(time);
+			const month = (date.getMonth() + 1).toString().padStart(2, '0');
+			const day = date.getDate().toString().padStart(2, '0');
+			const hours = date.getHours().toString().padStart(2, '0');
+			const minutes = date.getMinutes().toString().padStart(2, '0');
+			return `${month}/${day} ${hours}:${minutes}`;
 		} catch {
 			return time || '—';
 		}
+	}
+
+	function formatNumericValue(value: any, decimals: number = 2): string {
+		// Format numeric values with proper precision
+		if (value === null || value === undefined || value === '') {
+			return '—';
+		}
+		const num = parseFloat(value);
+		if (isNaN(num)) {
+			return '—';
+		}
+		return num.toFixed(decimals);
 	}
 
 	function getStatusVariant(status: string): 'success' | 'warning' | 'error' | 'info' {
@@ -106,6 +134,8 @@
 </script>
 
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
+	<!-- Make table horizontally scrollable -->
+	<div class="overflow-x-auto">
 	<Table 
 		data={pointings} 
 		{columns} 
@@ -136,7 +166,12 @@
 				{/if}
 				
 			{:else if column.key === 'position'}
-				{formatPosition(item[column.key])}
+				<!-- Handle both separate ra/dec fields and position string -->
+				{#if item.ra !== undefined && item.dec !== undefined}
+					{formatPosition(item.ra, item.dec)}
+				{:else}
+					{formatPositionFromString(item[column.key])}
+				{/if}
 				
 			{:else if column.key === 'status'}
 				<StatusBadge
@@ -152,16 +187,24 @@
 					<a 
 						href={item[column.key]} 
 						target="_blank" 
-						class="text-indigo-600 hover:text-indigo-900 underline text-sm"
+						class="text-indigo-600 hover:text-indigo-900 underline text-xs"
+						title={item[column.key]}
 					>
-						{item[column.key]}
+						DOI
 					</a>
 				{:else}
 					—
 				{/if}
 				
-			{:else if column.key === 'depth' || column.key === 'pos_angle'}
-				{item[column.key] || '—'}
+			{:else if column.key === 'depth'}
+				{formatNumericValue(item[column.key])}
+				
+			{:else if column.key === 'pos_angle'}
+				{#if item[column.key] !== null && item[column.key] !== undefined && item[column.key] !== ''}
+					{formatNumericValue(item[column.key])}°
+				{:else}
+					—
+				{/if}
 				
 			{:else}
 				{item[column.key] || '—'}
@@ -184,6 +227,7 @@
 			{/if}
 		</svelte:fragment>
 	</Table>
+	</div> <!-- End overflow-x-auto -->
 	
 	<!-- Selection Summary -->
 	{#if allowSelection && selectedPointings.size > 0}
