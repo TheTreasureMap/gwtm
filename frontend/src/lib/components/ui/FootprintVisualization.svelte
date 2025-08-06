@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Plotly from 'plotly.js-dist-min';
-	import { gwtmApi } from '$lib/api';
+	import { api } from '$lib/api';
 	import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 
@@ -25,7 +25,7 @@
 			loading = true;
 			error = null;
 
-			const footprints = await gwtmApi.getFootprints(instrumentId);
+			const footprints = await api.instruments.getFootprints(instrumentId);
 
 			if (footprints.length === 0) {
 				error = 'No footprint data available for this instrument.';

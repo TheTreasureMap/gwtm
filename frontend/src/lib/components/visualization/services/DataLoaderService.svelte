@@ -5,7 +5,7 @@
 	 * Handles fetching of alert data, galaxy data, candidate data, and detection overlays
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { gwtmApi } from '$lib/api.js';
+	import { api } from '$lib/api';
 	import type { GWAlertSchema } from '../../../types/api.js';
 
 	const dispatch = createEventDispatcher();
@@ -18,7 +18,7 @@
 	 */
 	export async function loadGalaxyData() {
 		try {
-			const galaxyData = await gwtmApi.getGWGalaxies?.(graceid);
+			const galaxyData = await api.ajax.getEventGalaxiesAjax?.(graceid);
 			dispatch('galaxy-data-loaded', { data: galaxyData });
 			return galaxyData || [];
 		} catch (err) {
@@ -33,7 +33,7 @@
 	 */
 	export async function loadCandidateData() {
 		try {
-			const candidateData = await gwtmApi.getCandidatesByAlert?.(graceid);
+			const candidateData = await api.ajax.getCandidateAjax?.(graceid);
 			dispatch('candidate-data-loaded', { data: candidateData });
 			return candidateData || [];
 		} catch (err) {
@@ -48,7 +48,7 @@
 	 */
 	export async function loadIceCubeData() {
 		try {
-			const icecubeData = await gwtmApi.getIceCubeEventsByAlert?.(graceid);
+			const icecubeData = await api.ajax.getIceCubeNotice?.(graceid);
 			dispatch('icecube-data-loaded', { data: icecubeData });
 			return icecubeData || [];
 		} catch (err) {

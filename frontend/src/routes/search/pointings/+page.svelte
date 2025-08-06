@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { gwtmApi } from '$lib/api.js';
+	import { api } from '$lib/api';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
@@ -34,7 +34,7 @@
 			};
 
 			// Get the pointing results (now includes instrument_name and username from API)
-			const results = await gwtmApi.searchPointings(searchParams);
+			const results = await api.search.searchPointings(searchParams);
 			console.log('Search results with joined data:', results);
 			
 			// Process results to extract RA/DEC if needed
@@ -84,7 +84,7 @@
 		const { pointing_ids, graceid, doi_group_id, doi_url } = event.detail;
 
 		try {
-			const result = await gwtmApi.requestDoi({
+			const result = await api.search.requestDoi({
 				pointing_ids,
 				graceid,
 				doi_group_id,

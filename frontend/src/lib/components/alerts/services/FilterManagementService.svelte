@@ -6,7 +6,7 @@
 	 */
 	import { createEventDispatcher } from 'svelte';
 	import { page } from '$app/stores';
-	import { gwtmApi } from '$lib/api';
+	import { api } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
@@ -63,18 +63,18 @@
 	export async function loadFilterOptions() {
 		try {
 			filterOptionsLoading = true;
-			const options = await gwtmApi.getAlertFilterOptions();
-			filterOptions = options;
+			const fetchedOptions = await api.alerts.getAlertFilterOptions();
+			filterOptions = fetchedOptions;
 
 			// Set default values based on available options
 			if (
-				options.observing_runs.length > 0 &&
-				!options.observing_runs.includes(filters.observing_run)
+				fetchedOptions.observing_runs.length > 0 &&
+				!fetchedOptions.observing_runs.includes(filters.observing_run)
 			) {
-				filters.observing_run = options.observing_runs[options.observing_runs.length - 1]; // Latest observing run
+				filters.observing_run = fetchedOptions.observing_runs[fetchedOptions.observing_runs.length - 1]; // Latest observing run
 			}
-			if (options.roles.length > 0 && !options.roles.includes(filters.role)) {
-				filters.role = options.roles.includes('observation') ? 'observation' : options.roles[0];
+			if (fetchedOptions.roles.length > 0 && !fetchedOptions.roles.includes(filters.role)) {
+				filters.role = fetchedOptions.roles.includes('observation') ? 'observation' : fetchedOptions.roles[0];
 			}
 
 			dispatch('filter-options-loaded', { filterOptions });
