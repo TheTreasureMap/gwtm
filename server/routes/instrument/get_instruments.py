@@ -103,7 +103,14 @@ async def get_instruments(
                 raise validation_exception("Invalid ids format. Must be a JSON array.")
 
         if name:
-            filter_conditions.append(Instrument.instrument_name.contains(name))
+            # Case-insensitive partial match in both name and nickname fields
+            # This enhances Flask's behavior by also searching nicknames
+            filter_conditions.append(
+                or_(
+                    Instrument.instrument_name.ilike(f'%{name}%'),
+                    Instrument.nickname.ilike(f'%{name}%')
+                )
+            )
 
         if names:
             try:
