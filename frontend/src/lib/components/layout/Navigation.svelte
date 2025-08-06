@@ -1,8 +1,8 @@
 <script>
-	import { auth, authActions } from '$lib/stores/auth';
+	import { auth } from '$lib/stores/auth';
 
 	function handleLogout() {
-		authActions.logout();
+		auth.logout();
 	}
 </script>
 

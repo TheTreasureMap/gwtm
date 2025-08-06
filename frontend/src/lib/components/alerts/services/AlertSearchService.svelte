@@ -5,7 +5,7 @@
 	 * Handles search queries, suggestions, and search result processing
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { gwtmApi } from '$lib/api';
+	import { api } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
@@ -43,7 +43,7 @@
 			if (filters.far && filters.far !== 'all') searchParams.far = filters.far;
 			if (filters.has_pointings) searchParams.has_pointings = filters.has_pointings;
 
-			const response = await gwtmApi.queryAlerts(searchParams);
+			const response = await api.alerts.queryAlerts(currentParams);
 
 			if (response && response.alerts) {
 				// Extract unique graceids/alertnames from the results

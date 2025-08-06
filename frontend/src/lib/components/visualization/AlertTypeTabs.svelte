@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { GWAlertSchema } from '$lib/api.js';
+	import type { GWAlertSchema } from '$lib/api';
 
 	export let availableAlertTypes: any[] = [];
 	export let selectedAlertType: string = '';

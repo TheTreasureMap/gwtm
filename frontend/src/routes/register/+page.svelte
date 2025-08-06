@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth, authActions } from '$lib/stores/auth';
+	import { auth } from '$lib/stores/auth';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -34,7 +34,7 @@
 		loading = true;
 		error = '';
 
-		const result = await authActions.register({
+		const result = await auth.register({
 			email,
 			password,
 			username,

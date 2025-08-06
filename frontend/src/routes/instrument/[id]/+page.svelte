@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { gwtmApi, type InstrumentSchema, type GWAlertSchema } from '$lib/api';
+	import { api, type InstrumentSchema, type GWAlertSchema } from '$lib/api';
 	import { onMount } from 'svelte';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
@@ -32,7 +32,7 @@
 		try {
 			loading = true;
 			error = null;
-			const instruments = await gwtmApi.getInstruments({ id: instrumentId });
+			const instruments = await api.instruments.getInstruments({ id: instrumentId });
 
 			if (instruments.length === 0) {
 				error = 'Instrument not found';
@@ -55,7 +55,7 @@
 		try {
 			eventsLoading = true;
 			eventsError = null;
-			eventsContributed = await gwtmApi.getInstrumentEventsContributed(instrumentId);
+			eventsContributed = await api.alerts.getInstrumentEventsContributed(instrumentId);
 		} catch (err) {
 			eventsError = err instanceof Error ? err.message : 'Failed to load events contributed';
 			console.error('Error loading events contributed:', err);

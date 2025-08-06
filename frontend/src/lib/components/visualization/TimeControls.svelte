@@ -18,10 +18,11 @@
 	$: minHandlePosition = range > 0 ? ((timeRange[0] - minTime) / range) * 100 : 0;
 	$: maxHandlePosition = range > 0 ? ((timeRange[1] - minTime) / range) * 100 : 0;
 	$: rangeWidth = range > 0 ? ((timeRange[1] - timeRange[0]) / range) * 100 : 0;
+	$: isSliderDisabled = range <= 0 || (minTime === maxTime && minTime === 0);
 
 	// Debug logging (disabled to reduce noise)
-	// $: console.log('TimeControls reactive update:', { 
-	//	timeRange, minTime, maxTime, range, minHandlePosition, maxHandlePosition, rangeWidth 
+	// $: console.log('TimeControls reactive update:', {
+	//	timeRange, minTime, maxTime, range, minHandlePosition, maxHandlePosition, rangeWidth
 	// });
 
 	function startDrag(e: MouseEvent | TouchEvent, handle: 'min' | 'max') {
@@ -41,7 +42,7 @@
 	}
 
 	function handleDrag(e: MouseEvent | TouchEvent) {
-		if (!isDragging || !dragHandle) return;
+		if (!isDragging || !dragHandle || isSliderDisabled) return;
 
 		e.preventDefault();
 
@@ -52,11 +53,11 @@
 		const rect = sliderWrapper.getBoundingClientRect();
 		const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 		const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-		
+
 		// Prevent division by zero or invalid calculations
 		const range = maxTime - minTime;
 		if (range === 0) return;
-		
+
 		const newValue = minTime + (percent / 100) * range;
 
 		if (dragHandle === 'min') {
@@ -126,15 +127,24 @@
 
 	<div class="mb-4">
 		<div class="block text-sm font-medium text-gray-700 mb-2">
-			Date range (days since Time of Signal): {timeRange[0]?.toFixed(1) || '0.0'} - {timeRange[1]?.toFixed(1) || '0.0'}
+			Date range (days since Time of Signal): {timeRange[0]?.toFixed(1) || '0.0'} - {timeRange[1]?.toFixed(
+				1
+			) || '0.0'}
 		</div>
 
+		{#if isSliderDisabled}
+			<div class="text-sm text-gray-500 italic mb-2">
+				Time slider is disabled (no time range available)
+			</div>
+		{/if}
+
 		<!-- Time Range Slider -->
-		<div class="time-slider-container mt-4">
+		<div class="time-slider-container mt-4" class:disabled={isSliderDisabled}>
 			<div class="time-slider-wrapper">
-				<div class="time-slider-track"></div>
+				<div class="time-slider-track" class:disabled={isSliderDisabled}></div>
 				<div
 					class="time-slider-range"
+					class:disabled={isSliderDisabled}
 					style="left: {minHandlePosition}%; width: {rangeWidth}%"
 				></div>
 
@@ -142,32 +152,40 @@
 				<div
 					class="time-slider-handle min-handle"
 					class:dragging={isDragging && dragHandle === 'min'}
+					class:disabled={isSliderDisabled}
 					style="left: {minHandlePosition}%"
-					on:mousedown={(e) => startDrag(e, 'min')}
-					on:touchstart={(e) => startDrag(e, 'min')}
-					title="Minimum time: {timeRange[0]?.toFixed(1) || '0.0'} days"
+					on:mousedown={(e) => (isSliderDisabled ? null : startDrag(e, 'min'))}
+					on:touchstart={(e) => (isSliderDisabled ? null : startDrag(e, 'min'))}
+					title={isSliderDisabled
+						? 'Time slider disabled'
+						: `Minimum time: ${timeRange[0]?.toFixed(1) || '0.0'} days`}
 					role="slider"
-					tabindex="0"
+					tabindex={isSliderDisabled ? -1 : 0}
 					aria-label="Minimum time range"
 					aria-valuemin={minTime}
 					aria-valuemax={maxTime}
 					aria-valuenow={timeRange[0]}
+					aria-disabled={isSliderDisabled}
 				></div>
 
 				<!-- Max handle -->
 				<div
 					class="time-slider-handle max-handle"
 					class:dragging={isDragging && dragHandle === 'max'}
+					class:disabled={isSliderDisabled}
 					style="left: {maxHandlePosition}%"
-					on:mousedown={(e) => startDrag(e, 'max')}
-					on:touchstart={(e) => startDrag(e, 'max')}
-					title="Maximum time: {timeRange[1]?.toFixed(1) || '0.0'} days"
+					on:mousedown={(e) => (isSliderDisabled ? null : startDrag(e, 'max'))}
+					on:touchstart={(e) => (isSliderDisabled ? null : startDrag(e, 'max'))}
+					title={isSliderDisabled
+						? 'Time slider disabled'
+						: `Maximum time: ${timeRange[1]?.toFixed(1) || '0.0'} days`}
 					role="slider"
-					tabindex="0"
+					tabindex={isSliderDisabled ? -1 : 0}
 					aria-label="Maximum time range"
 					aria-valuemin={minTime}
 					aria-valuemax={maxTime}
 					aria-valuenow={timeRange[1]}
+					aria-disabled={isSliderDisabled}
 				></div>
 			</div>
 
@@ -238,6 +256,30 @@
 		cursor: grabbing;
 		transform: translate(-50%, -50%) scale(1.15);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+	}
+
+	/* Disabled slider styles */
+	.time-slider-container.disabled {
+		opacity: 0.5;
+		pointer-events: none;
+	}
+
+	.time-slider-track.disabled {
+		background-color: #f3f4f6; /* gray-100 */
+	}
+
+	.time-slider-range.disabled {
+		background-color: #d1d5db; /* gray-300 */
+	}
+
+	.time-slider-handle.disabled {
+		background-color: #d1d5db; /* gray-300 */
+		cursor: not-allowed;
+		transform: translate(-50%, -50%);
+	}
+
+	.time-slider-handle.disabled:hover {
+		transform: translate(-50%, -50%);
 	}
 
 	.time-labels {
