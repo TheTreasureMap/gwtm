@@ -5,7 +5,7 @@
 	 * Handles loading alert types, switching between alert types, and managing alert state
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { gwtmApi, type GWAlertSchema } from '$lib/api.js';
+	import { api, type GWAlertSchema } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
@@ -30,7 +30,7 @@
 			console.log('Loading alert types for graceid:', graceid);
 
 			// Query alerts for this specific graceid only (matching Flask behavior)
-			const response = await gwtmApi.queryAlerts({ graceid: graceid });
+			const response = await api.alerts.queryAlerts({ graceid: graceid });
 			if (response.alerts && response.alerts.length > 0) {
 				// Try exact matching first (this should be sufficient for most cases)
 				let exactGraceidAlerts = response.alerts.filter(

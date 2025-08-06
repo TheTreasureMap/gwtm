@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { gwtmApi, type InstrumentSchema } from '$lib/api';
+	import { api, type InstrumentSchema } from '$lib/api';
 	import ReportingInstrumentsTable from '$lib/components/tables/ReportingInstrumentsTable.svelte';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
@@ -10,7 +10,8 @@
 	let instruments: InstrumentSchema[] = [];
 
 	async function loadReportingInstruments() {
-		instruments = await gwtmApi.getReportingInstruments();
+		instruments = await api.instruments.getReportingInstruments();
+		return instruments;
 	}
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { gwtmApi } from '$lib/api.js';
+	import { api } from '$lib/api';
 	import Form from '$lib/components/forms/Form.svelte';
 	import FormField from '$lib/components/forms/FormField.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -41,7 +41,7 @@
 			let totalFetched = 0;
 			
 			// First request to get total count
-			const firstResponse = await gwtmApi.queryAlerts({ page: 1 });
+			const firstResponse = await api.alerts.queryAlerts({ page: 1 });
 			allAlerts = firstResponse.alerts || [];
 			const totalCount = firstResponse.total || 0;
 			totalFetched = allAlerts.length;
@@ -51,7 +51,7 @@
 			// Fetch remaining pages if needed
 			while (totalFetched < totalCount && firstResponse.has_next) {
 				page++;
-				const response = await gwtmApi.queryAlerts({ page });
+				const response = await api.alerts.queryAlerts({ page });
 				const pageAlerts = response.alerts || [];
 				allAlerts = [...allAlerts, ...pageAlerts];
 				totalFetched += pageAlerts.length;

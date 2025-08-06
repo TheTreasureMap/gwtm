@@ -1,6 +1,6 @@
 <script lang="ts">
     import {onMount, onDestroy, tick} from 'svelte';
-    import {gwtmApi, type GWAlertSchema} from '$lib/api.js';
+    import {api, type GWAlertSchema} from '$lib/api';
 
     // Import modular components
     import AlertTypeTabs from './AlertTypeTabs.svelte';
@@ -98,7 +98,7 @@
     async function checkDataExistence() {
         // Check if IceCube data exists for this graceid (like Flask does)
         try {
-            const icecubeResponse = await gwtmApi.getIceCubeNotice(graceid);
+            const icecubeResponse = await api.ajax.getIceCubeNotice(graceid);
             hasIceCubeData = icecubeResponse && Object.keys(icecubeResponse).length > 0;
         } catch (error) {
             console.warn('Error checking IceCube data existence:', error);
@@ -107,7 +107,7 @@
 
         // Check if candidate data exists for this graceid (like Flask does)
         try {
-            const candidateResponse = await gwtmApi.getCandidateAjax(graceid);
+            const candidateResponse = await api.ajax.getCandidateAjax(graceid);
             hasCandidateData = candidateResponse && candidateResponse.length > 0;
         } catch (error) {
             console.warn('Error checking candidate data existence:', error);
@@ -568,7 +568,7 @@
                 ? convertToMJD(new Date(selectedAlert.time_of_signal))
                 : undefined;
 
-            footprintData = await gwtmApi.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
+            footprintData = await api.ajax.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
 
             if (footprintData && Array.isArray(footprintData)) {
                 // Time range calculation is handled by VisualizationDataManager service
@@ -751,7 +751,7 @@
         try {
             loading = true;
 
-            const result = await (gwtmApi as any).renormalizeSkymap({
+            const result = await (api as any).renormalizeSkymap({
                 graceid: graceid,
                 alert_id: selectedAlert.id,
                 approx_cov: 1

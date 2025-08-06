@@ -5,7 +5,7 @@
 	 * Handles contours, footprints, coverage calculation, and data coordination
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { gwtmApi, type GWAlertSchema } from '$lib/api.js';
+	import { api, type GWAlertSchema } from '$lib/api';
 	import { convertToMJD, type SunMoonData } from '$lib/utils/astronomicalCalculations.js';
 
 	const dispatch = createEventDispatcher();
@@ -100,7 +100,7 @@
 					selectedAlert.id,
 					selectedAlert.alert_type
 				);
-				const detectionData = await gwtmApi.getAlertDetectionOverlays?.(
+				const detectionData = await api.ajax.getAlertDetectionOverlays?.(
 					selectedAlert.id,
 					selectedAlert.alert_type
 				);
@@ -121,7 +121,7 @@
 		if (!detectionContours && showContours && graceid) {
 			try {
 				console.log('Falling back to GW contour loading for:', graceid);
-				contourData = await gwtmApi.getGWContour(graceid);
+				contourData = await api.alerts.getGWContour(graceid);
 				dispatch('contour-data-loaded', { data: contourData });
 			} catch (err) {
 				console.warn('GW contour loading failed (may require auth):', err);
@@ -155,7 +155,7 @@
 				}
 			});
 
-			footprintData = await gwtmApi.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
+			footprintData = await api.ajax.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
 
 			console.log('Loaded footprint data:', {
 				isArray: Array.isArray(footprintData),
@@ -212,7 +212,7 @@
 			console.log('Calculating coverage for graceid:', graceid);
 
 			// This calls the coverage calculation endpoint
-			coverageData = await gwtmApi.calculateCoverage(graceid);
+			coverageData = await api.ajax.coverageCalculator({ graceid });
 
 			console.log('Coverage calculation result:', coverageData);
 
@@ -238,6 +238,7 @@
 
 		// Extract all contour times from all instruments
 		const allTimes: number[] = [];
+		const allObservationTimes: Date[] = [];
 
 		footprintData.forEach((instrument: any, idx: number) => {
 			if (instrument.contours && Array.isArray(instrument.contours)) {
@@ -246,10 +247,14 @@
 					console.log('Sample contour structure:', Object.keys(instrument.contours[0]));
 					console.log('Sample contour data:', instrument.contours[0]);
 				}
-				
+
 				instrument.contours.forEach((contour: any) => {
 					if (typeof contour.time === 'number') {
 						allTimes.push(contour.time);
+					}
+					// Also collect raw observation times for fallback calculation
+					if (contour.observation_time) {
+						allObservationTimes.push(new Date(contour.observation_time));
 					}
 				});
 			}
@@ -265,8 +270,40 @@
 		console.log('Sample time values:', allTimes.slice(0, 10));
 
 		if (allTimes.length === 0) {
-			console.log('No time data found, using default range');
-			// Default range: -1 to 7 days from trigger
+			console.log('No time data found, trying to calculate from observation times...');
+
+			if (allObservationTimes.length > 0 && selectedAlert?.time_of_signal) {
+				// Calculate time differences manually if we have observation times and time of signal
+				const tosDate = new Date(selectedAlert.time_of_signal);
+				const calculatedTimes = allObservationTimes.map((obsTime) => {
+					const diffMs = obsTime.getTime() - tosDate.getTime();
+					const diffDays = diffMs / (1000 * 60 * 60 * 24);
+					return diffDays;
+				});
+
+				if (calculatedTimes.length > 0) {
+					const minCalcTime = Math.min(...calculatedTimes);
+					const maxCalcTime = Math.max(...calculatedTimes);
+
+					console.log('Calculated times from observation data:', {
+						minCalcTime,
+						maxCalcTime,
+						tosDate,
+						sampleObsTimes: allObservationTimes.slice(0, 3)
+					});
+
+					// If we got reasonable values, use them
+					if (minCalcTime !== maxCalcTime) {
+						minTime = minCalcTime;
+						maxTime = maxCalcTime;
+						timeRange = [minCalcTime, maxCalcTime];
+						return;
+					}
+				}
+			}
+
+			// Final fallback: default range
+			console.log('Using default range');
 			minTime = -1;
 			maxTime = 7;
 			timeRange = [-1, 7];
@@ -280,7 +317,41 @@
 		if (minTimeValue === maxTimeValue) {
 			console.warn('All time values are identical:', minTimeValue);
 			if (minTimeValue === 0) {
-				console.warn('All times are 0 - using default range instead');
+				console.warn('All times are 0 - trying to calculate from raw observation times...');
+
+				if (allObservationTimes.length > 0 && selectedAlert?.time_of_signal) {
+					// Calculate time differences manually if we have observation times and time of signal
+					const tosDate = new Date(selectedAlert.time_of_signal);
+					const calculatedTimes = allObservationTimes.map((obsTime) => {
+						const diffMs = obsTime.getTime() - tosDate.getTime();
+						const diffDays = diffMs / (1000 * 60 * 60 * 24);
+						return diffDays;
+					});
+
+					if (calculatedTimes.length > 0) {
+						const minCalcTime = Math.min(...calculatedTimes);
+						const maxCalcTime = Math.max(...calculatedTimes);
+
+						console.log('Fallback calculated times:', {
+							minCalcTime,
+							maxCalcTime,
+							tosDate,
+							sampleCalculated: calculatedTimes.slice(0, 3)
+						});
+
+						// If we got reasonable values, use them
+						if (Math.abs(maxCalcTime - minCalcTime) > 0.001) {
+							// At least 1.44 minutes difference
+							minTime = minCalcTime;
+							maxTime = maxCalcTime;
+							timeRange = [minCalcTime, maxCalcTime];
+							return;
+						}
+					}
+				}
+
+				// If still no luck, use default range
+				console.warn('Could not calculate meaningful time range, using default');
 				minTime = -1;
 				maxTime = 7;
 				timeRange = [-1, 7];

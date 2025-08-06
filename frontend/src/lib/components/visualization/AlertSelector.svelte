@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { gwtmApi, type GWAlertSchema } from '$lib/api.js';
+	import { api, type GWAlertSchema } from '$lib/api';
 
 	export let currentGraceid: string = '';
 
@@ -24,7 +24,7 @@
 	async function loadAlerts() {
 		loading = true;
 		try {
-			const response = await gwtmApi.queryAlerts({
+			const response = await api.alerts.queryAlerts({
 				per_page: 100,
 				sort_by: 'time_of_signal',
 				sort_order: 'desc'

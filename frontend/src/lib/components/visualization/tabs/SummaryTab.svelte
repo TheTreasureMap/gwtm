@@ -31,14 +31,36 @@
 
 	// Format distance with error
 	function formatDistance(distance: number | null, error: number | null): string {
-		if (!distance || !error) return 'N/A';
-		return `${distance} +/- ${error} Mpc`;
+		if (distance === null || distance === undefined || error === null || error === undefined) {
+			return 'N/A';
+		}
+		return `${distance.toFixed(3)} +/- ${error.toFixed(3)} Mpc`;
 	}
 
-	// Format false alarm rate
-	function formatFalseAlarmRate(far: string | null, unit: string | null): string {
-		if (!far) return 'N/A';
-		return `once per ${far} ${unit || 'years'}`;
+	// Format false alarm rate (convert from Hz to human-readable)
+	function formatFalseAlarmRate(far: number | null): string {
+		if (!far || far <= 0) return 'N/A';
+
+		// Convert Hz to human-readable format using Flask algorithm
+		let farrate = 1 / far;
+		let farunit = 's';
+
+		if (farrate > 86400) {
+			farunit = 'days';
+			farrate /= 86400;
+			if (farrate > 365) {
+				farrate /= 365.25;
+				farunit = 'years';
+			} else if (farrate > 30) {
+				farrate /= 30;
+				farunit = 'months';
+			} else if (farrate > 7) {
+				farrate /= 7;
+				farunit = 'weeks';
+			}
+		}
+
+		return `once per ${farrate.toFixed(2)} ${farunit}`;
 	}
 
 	$: isBurst = selectedAlert?.group === 'Burst';
@@ -97,7 +119,7 @@
 									False Alarm Rate
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_human_far">
-									{formatFalseAlarmRate(selectedAlert?.human_far, selectedAlert?.human_far_unit)}
+									{selectedAlert?.far_human || formatFalseAlarmRate(selectedAlert?.far)}
 								</td>
 							</tr>
 
@@ -106,7 +128,13 @@
 									50% Area
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_area_50">
-									{selectedAlert?.area_50 || 'N/A'} deg<sup>2</sup>
+									{#if typeof selectedAlert?.area_50 === 'string'}
+										{@html selectedAlert.area_50}
+									{:else if selectedAlert?.area_50}
+										{selectedAlert.area_50.toFixed(3)} deg<sup>2</sup>
+									{:else}
+										None
+									{/if}
 								</td>
 							</tr>
 
@@ -115,7 +143,13 @@
 									90% Area
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_area_90">
-									{selectedAlert?.area_90 || 'N/A'} deg<sup>2</sup>
+									{#if typeof selectedAlert?.area_90 === 'string'}
+										{@html selectedAlert.area_90}
+									{:else if selectedAlert?.area_90}
+										{selectedAlert.area_90.toFixed(3)} deg<sup>2</sup>
+									{:else}
+										None
+									{/if}
 								</td>
 							</tr>
 
@@ -125,7 +159,7 @@
 										Distance
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_distance_plus_error">
-										{formatDistance(selectedAlert?.distance, selectedAlert?.distance_error)}
+										{selectedAlert?.distance_with_error || formatDistance(selectedAlert?.distance, selectedAlert?.distance_error)}
 									</td>
 								</tr>
 							{:else}
@@ -165,7 +199,9 @@
 										BNS
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_bns">
-										{selectedAlert?.prob_bns || 'N/A'}
+										{selectedAlert?.prob_bns !== null && selectedAlert?.prob_bns !== undefined
+											? selectedAlert.prob_bns
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -174,7 +210,9 @@
 										NSBH
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_nsbh">
-										{selectedAlert?.prob_nsbh || 'N/A'}
+										{selectedAlert?.prob_nsbh !== null && selectedAlert?.prob_nsbh !== undefined
+											? selectedAlert.prob_nsbh
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -183,7 +221,9 @@
 										Mass Gap
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_gap">
-										{selectedAlert?.prob_gap || 'N/A'}
+										{selectedAlert?.prob_gap !== null && selectedAlert?.prob_gap !== undefined
+											? selectedAlert.prob_gap
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -192,7 +232,9 @@
 										BBH
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_bbh">
-										{selectedAlert?.prob_bbh || 'N/A'}
+										{selectedAlert?.prob_bbh !== null && selectedAlert?.prob_bbh !== undefined
+											? selectedAlert.prob_bbh
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -201,7 +243,10 @@
 										Terrestrial
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_terrestrial">
-										{selectedAlert?.prob_terrestrial || 'N/A'}
+										{selectedAlert?.prob_terrestrial !== null &&
+										selectedAlert?.prob_terrestrial !== undefined
+											? selectedAlert.prob_terrestrial
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -210,7 +255,9 @@
 										Has NS
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_hasns">
-										{selectedAlert?.prob_hasns || 'N/A'}
+										{selectedAlert?.prob_hasns !== null && selectedAlert?.prob_hasns !== undefined
+											? selectedAlert.prob_hasns
+											: 'N/A'}
 									</td>
 								</tr>
 
@@ -219,7 +266,10 @@
 										Has Remnant
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_prob_hasremenant">
-										{selectedAlert?.prob_hasremenant || 'N/A'}
+										{selectedAlert?.prob_hasremenant !== null &&
+										selectedAlert?.prob_hasremenant !== undefined
+											? selectedAlert.prob_hasremenant
+											: 'N/A'}
 									</td>
 								</tr>
 							</tbody>

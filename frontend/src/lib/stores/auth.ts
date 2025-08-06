@@ -1,9 +1,10 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { gwtmApi } from '$lib/api';
+import { api } from '$lib/api';
 import { errorHandler } from '$lib/utils/errorHandling';
 
+// Define the User interface based on the previous file
 interface User {
 	id: number;
 	email: string;
@@ -12,133 +13,125 @@ interface User {
 	last_name?: string;
 }
 
+// Define the state for our auth store
 interface AuthState {
-	user: User | null;
-	token: string | null;
-	isAuthenticated: boolean;
-	loading: boolean;
+    isAuthenticated: boolean;
+    user: User | null;
+    loading: boolean;
+    token: string | null;
 }
 
-const initialState: AuthState = {
-	user: null,
-	token: null,
-	isAuthenticated: false,
-	loading: false
-};
+function createAuthStore() {
+    const { subscribe, update, set } = writable<AuthState>({
+        isAuthenticated: false,
+        user: null,
+        loading: true, // Start loading until init is complete
+        token: null,
+    });
 
-// Create the auth store
-export const auth = writable<AuthState>(initialState);
+    // This function will be called when the app loads
+    const init = () => {
+        if (!browser) {
+            update(state => ({ ...state, loading: false }));
+            return;
+        }
 
-// Helper functions
-export const authActions = {
-	// Initialize auth state from localStorage
-	init() {
-		if (!browser) return;
+        const token = api.auth.getApiToken();
+        const userStr = localStorage.getItem('user');
 
-		const token = localStorage.getItem('jwt_token');
-		const userStr = localStorage.getItem('user');
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                set({
+                    isAuthenticated: true,
+                    user: user,
+                    token: token,
+                    loading: false
+                });
+            } catch (e) {
+                // If parsing fails, clear everything
+                api.auth.clearApiToken();
+                localStorage.removeItem('user');
+                set({ isAuthenticated: false, user: null, token: null, loading: false });
+            }
+        } else {
+            // Not authenticated
+            set({ isAuthenticated: false, user: null, token: null, loading: false });
+        }
+    };
 
-		if (token && userStr) {
-			try {
-				const user = JSON.parse(userStr);
-				auth.set({
-					user,
-					token,
-					isAuthenticated: true,
-					loading: false
-				});
+    const login = async (email: string, password: string) => {
+        update(state => ({ ...state, loading: true }));
+        try {
+            const response = await api.auth.login(email, password);
+            if (response.data && response.data.api_token) {
+                const { api_token: token, user } = response.data;
 
-				// Set default authorization header
-				gwtmApi.setApiToken(token);
-			} catch (e) {
-				// Clear invalid data
-				localStorage.removeItem('jwt_token');
-				localStorage.removeItem('user');
-			}
-		}
-	},
+                api.auth.setApiToken(token);
+                if (browser) {
+                    localStorage.setItem('user', JSON.stringify(user));
+                }
 
-	// Login function
-	async login(email: string, password: string) {
-		auth.update((state) => ({ ...state, loading: true }));
+                set({
+                    isAuthenticated: true,
+                    user: user,
+                    token: token,
+                    loading: false
+                });
 
-		const result = await errorHandler.withErrorHandling(async () => {
-			const response = await gwtmApi.login(email, password);
-			const { access_token, user } = response.data;
+                errorHandler.showToast('Login successful!', { type: 'info', duration: 3000 });
+                goto('/alerts'); // Redirect to a protected route
+            } else {
+                throw new Error('Login response did not contain an API token.');
+            }
+        } catch (err) {
+            console.error('Login failed:', err);
+            const errorMessage = (err as any).response?.data?.detail || 'Invalid credentials. Please try again.';
+            errorHandler.showToast(errorMessage, { type: 'error' });
+            update(state => ({ ...state, isAuthenticated: false, user: null, token: null, loading: false }));
+        }
+    };
 
-			// Store in localStorage
-			if (browser) {
-				localStorage.setItem('jwt_token', access_token);
-				localStorage.setItem('user', JSON.stringify(user));
-			}
+    const logout = () => {
+        api.auth.clearApiToken();
+        if (browser) {
+            localStorage.removeItem('user');
+        }
+        set({
+            isAuthenticated: false,
+            user: null,
+            token: null,
+            loading: false
+        });
+        errorHandler.showToast('You have been logged out.', { type: 'info' });
+        goto('/'); // Redirect to home or login page
+    };
 
-			// Set authorization header
-			gwtmApi.setApiToken(access_token);
+    const register = async (userData: any) => {
+        update(state => ({ ...state, loading: true }));
+        try {
+            await api.auth.register(userData);
+            errorHandler.showToast('Registration successful! Please check your email for verification.', { type: 'info', duration: 5000 });
+            goto('/login');
+        } catch (err) {
+            console.error('Registration failed:', err);
+            const errorMessage = (err as any).response?.data?.detail || 'Registration failed. Please try again.';
+            errorHandler.showToast(errorMessage, { type: 'error' });
+        } finally {
+            update(state => ({ ...state, loading: false }));
+        }
+    };
 
-			// Update store
-			auth.set({
-				user,
-				token: access_token,
-				isAuthenticated: true,
-				loading: false
-			});
-
-			errorHandler.showToast('Login successful!', {
-				type: 'info',
-				duration: 3000
-			});
-
-			return { success: true };
-		}, 'User login');
-
-		auth.update((state) => ({ ...state, loading: false }));
-		return result || { success: false };
-	},
-
-	// Logout function
-	logout() {
-		if (browser) {
-			localStorage.removeItem('jwt_token');
-			localStorage.removeItem('user');
-		}
-
-		// Clear authorization header
-		gwtmApi.clearApiToken();
-
-		// Reset store
-		auth.set(initialState);
-
-		// Redirect to login
-		goto('/login');
-	},
-
-	// Register function
-	async register(userData: {
-		email: string;
-		password: string;
-		username: string;
-		first_name?: string;
-		last_name?: string;
-	}) {
-		auth.update((state) => ({ ...state, loading: true }));
-
-		const result = await errorHandler.withErrorHandling(async () => {
-			const response = await gwtmApi.register(userData);
-
-			errorHandler.showToast('Registration successful! Please check your email for verification.', {
-				type: 'info',
-				duration: 5000
-			});
-
-			return { success: true, data: response.data };
-		}, 'User registration');
-
-		auth.update((state) => ({ ...state, loading: false }));
-		return result || { success: false };
-	}
-};
-
-// Initialize auth state when the module loads
-if (browser) {
-	authActions.init();
+    return {
+        subscribe,
+        init,
+        login,
+        logout,
+        register
+    };
 }
+
+export const auth = createAuthStore();
+
+// Initialize on load
+auth.init();

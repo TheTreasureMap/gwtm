@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { gwtmApi } from '$lib/api.js';
+	import { api } from '$lib/api';
 	import Button from '$lib/components/ui/Button.svelte';
 	import FormField from '$lib/components/forms/FormField.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -31,7 +31,7 @@
 
 	async function loadCreatorGroups() {
 		try {
-			const groups = await gwtmApi.getUserCreatorGroups();
+			const groups = await api.doi.getDOIAuthorGroups();
 			availableCreatorGroups = [
 				{ value: '', label: 'None' },
 				...groups.map((g: any) => ({ value: g.id, label: g.name }))

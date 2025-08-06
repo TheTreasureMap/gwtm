@@ -30,7 +30,7 @@
 -->
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { GWAlertSchema } from '$lib/api.js';
+	import type { GWAlertSchema } from '$lib/api';
 	import { TabNavigation, LoadingState, AlertBanner } from '$lib/components/ui';
 	import SummaryTab from './tabs/SummaryTab.svelte';
 	import CoverageCalculatorTab from './tabs/CoverageCalculatorTab.svelte';

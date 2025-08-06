@@ -5,7 +5,7 @@
 	 * Handles alert loading, grouping by graceid, classification logic, and pointing counts
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { gwtmApi } from '$lib/api';
+	import { api } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
@@ -24,7 +24,7 @@
 			error = null;
 
 			// Call FastAPI to fetch alerts
-			const response = await gwtmApi.queryAlerts(queryParams);
+			const response = await api.alerts.queryAlerts(queryParams);
 			if (response) {
 				alerts = response.alerts || [];
 
@@ -224,7 +224,7 @@
 			// Get pointing counts for each graceid using the existing pointings API
 			const pointingPromises = graceids.map(async (graceid) => {
 				try {
-					const pointings = await gwtmApi.getPointings({ graceid, status: 'completed' });
+					const pointings = await api.pointings.getPointings({ graceid, status: 'completed' });
 					return { graceid, count: pointings?.length || 0 };
 				} catch (err) {
 					console.warn(`Failed to get pointings for ${graceid}:`, err);

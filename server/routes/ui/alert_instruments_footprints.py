@@ -166,12 +166,27 @@ async def get_alert_instruments_footprints(
             t = astropy.time.Time([p.time])
             ra, dec = sanatize_pointing(p.position)
 
+            # Calculate time relative to trigger - use the alert's time_of_signal if tos_mjd not available
+            time_value = 0
+            if tos_mjd:
+                time_value = round(t.mjd[0] - tos_mjd, 3)
+            else:
+                # Fallback: try to calculate using alert time_of_signal
+                if alert and alert.time_of_signal:
+                    import astropy.time
+                    alert_time = astropy.time.Time(alert.time_of_signal)
+                    time_value = round(t.mjd[0] - alert_time.mjd, 3)
+                else:
+                    # Last resort: use days from Unix epoch as a relative measure
+                    # This will at least give different time values for different pointings
+                    time_value = round(t.mjd[0] - 40587.0, 3)  # Days since Unix epoch (1970-01-01)
+
             for ccd in sanatized_ccds:
                 pointing_footprint = project_footprint(ccd, ra, dec, p.pos_angle)
                 pointing_geometries.append(
                     {
                         "polygon": pointing_footprint,
-                        "time": round(t.mjd[0] - tos_mjd, 3) if tos_mjd else 0,
+                        "time": time_value,
                     }
                 )
 
