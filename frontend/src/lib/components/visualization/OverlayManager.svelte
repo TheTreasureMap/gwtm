@@ -193,9 +193,11 @@
 					totalContours = instData.contours.length;
 					instData.contours.forEach((contour: any) => {
 						// Check if contour time is within range (strict filtering like Flask)
-						if (typeof contour.time === 'number' && 
-							contour.time >= timeRange[0] && 
-							contour.time <= timeRange[1]) {
+						if (
+							typeof contour.time === 'number' &&
+							contour.time >= timeRange[0] &&
+							contour.time <= timeRange[1]
+						) {
 							if (contour.polygon && Array.isArray(contour.polygon)) {
 								hasVisibleContours = true;
 								visibleContours++;
@@ -224,9 +226,11 @@
 
 					// Add only the footprints within time range
 					instData.contours.forEach((contour: any) => {
-						if (typeof contour.time === 'number' && 
-							contour.time >= timeRange[0] && 
-							contour.time <= timeRange[1]) {
+						if (
+							typeof contour.time === 'number' &&
+							contour.time >= timeRange[0] &&
+							contour.time <= timeRange[1]
+						) {
 							if (contour.polygon && Array.isArray(contour.polygon)) {
 								overlay.addFootprints([A.polygon(contour.polygon)]);
 							}
@@ -390,7 +394,7 @@
 		try {
 			// Use Flask approach: complete removal and recreation like the slider function
 			console.log('Filtering footprints by time, using Flask removeLayers approach');
-			
+
 			// Flask: aladin.removeLayers() - clear ALL overlays except base sky survey
 			// This is the key difference - Flask removes EVERYTHING and rebuilds
 			aladin.removeLayers();

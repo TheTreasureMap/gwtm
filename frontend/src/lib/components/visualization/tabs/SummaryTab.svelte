@@ -159,7 +159,8 @@
 										Distance
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_distance_plus_error">
-										{selectedAlert?.distance_with_error || formatDistance(selectedAlert?.distance, selectedAlert?.distance_error)}
+										{selectedAlert?.distance_with_error ||
+											formatDistance(selectedAlert?.distance, selectedAlert?.distance_error)}
 									</td>
 								</tr>
 							{:else}

@@ -50,10 +50,10 @@
 	function toggleAllSelection(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const checked = target.checked;
-		
+
 		if (checked) {
 			// Select all selectable pointings
-			pointings.forEach(pointing => {
+			pointings.forEach((pointing) => {
 				if (canSelectPointing(pointing)) {
 					selectedPointings.add(pointing.id);
 				}
@@ -127,8 +127,8 @@
 
 	// Compute if "select all" checkbox should be checked/indeterminate
 	$: selectablePointings = pointings.filter(canSelectPointing);
-	$: allSelectableSelected = selectablePointings.length > 0 && 
-		selectablePointings.every(p => selectedPointings.has(p.id));
+	$: allSelectableSelected =
+		selectablePointings.length > 0 && selectablePointings.every((p) => selectedPointings.has(p.id));
 	$: someSelected = selectedPointings.size > 0;
 	$: selectAllIndeterminate = someSelected && !allSelectableSelected;
 </script>
@@ -136,99 +136,93 @@
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
 	<!-- Make table horizontally scrollable -->
 	<div class="overflow-x-auto">
-	<Table 
-		data={pointings} 
-		{columns} 
-		{loading}
-		sortable={true}
-		paginated={true}
-		pageSize={25}
-		emptyMessage="No pointings found for the selected criteria."
-		let:item
-		let:column
-	>
-		<svelte:fragment slot="cell" let:item let:column>
-			{#if column.key === 'checkbox'}
-				{#if allowSelection}
+		<Table
+			data={pointings}
+			{columns}
+			{loading}
+			sortable={true}
+			paginated={true}
+			pageSize={25}
+			emptyMessage="No pointings found for the selected criteria."
+			let:item
+			let:column
+		>
+			<svelte:fragment slot="cell" let:item let:column>
+				{#if column.key === 'checkbox'}
+					{#if allowSelection}
+						<input
+							type="checkbox"
+							checked={selectedPointings.has(item.id)}
+							disabled={!canSelectPointing(item)}
+							on:change={() => togglePointingSelection(item.id)}
+							class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-50"
+						/>
+					{:else}
+						<input
+							type="checkbox"
+							disabled
+							class="h-4 w-4 text-gray-400 border-gray-300 rounded opacity-50"
+						/>
+					{/if}
+				{:else if column.key === 'position'}
+					<!-- Handle both separate ra/dec fields and position string -->
+					{#if item.ra !== undefined && item.dec !== undefined}
+						{formatPosition(item.ra, item.dec)}
+					{:else}
+						{formatPositionFromString(item[column.key])}
+					{/if}
+				{:else if column.key === 'status'}
+					<StatusBadge
+						variant={getStatusVariant(item[column.key])}
+						label={item[column.key] || 'Unknown'}
+					/>
+				{:else if column.key === 'time'}
+					{formatTime(item[column.key])}
+				{:else if column.key === 'doi_url'}
+					{#if item[column.key]}
+						<a
+							href={item[column.key]}
+							target="_blank"
+							class="text-indigo-600 hover:text-indigo-900 underline text-xs"
+							title={item[column.key]}
+						>
+							DOI
+						</a>
+					{:else}
+						—
+					{/if}
+				{:else if column.key === 'depth'}
+					{formatNumericValue(item[column.key])}
+				{:else if column.key === 'pos_angle'}
+					{#if item[column.key] !== null && item[column.key] !== undefined && item[column.key] !== ''}
+						{formatNumericValue(item[column.key])}°
+					{:else}
+						—
+					{/if}
+				{:else}
+					{item[column.key] || '—'}
+				{/if}
+			</svelte:fragment>
+
+			<!-- Custom header for checkbox column -->
+			<svelte:fragment slot="header" let:column>
+				{#if column.key === 'checkbox'}
 					<input
 						type="checkbox"
-						checked={selectedPointings.has(item.id)}
-						disabled={!canSelectPointing(item)}
-						on:change={() => togglePointingSelection(item.id)}
+						checked={allSelectableSelected}
+						indeterminate={selectAllIndeterminate}
+						disabled={!allowSelection || selectablePointings.length === 0}
+						on:change={toggleAllSelection}
 						class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-50"
 					/>
 				{:else}
-					<input
-						type="checkbox"
-						disabled
-						class="h-4 w-4 text-gray-400 border-gray-300 rounded opacity-50"
-					/>
+					{column.label}
 				{/if}
-				
-			{:else if column.key === 'position'}
-				<!-- Handle both separate ra/dec fields and position string -->
-				{#if item.ra !== undefined && item.dec !== undefined}
-					{formatPosition(item.ra, item.dec)}
-				{:else}
-					{formatPositionFromString(item[column.key])}
-				{/if}
-				
-			{:else if column.key === 'status'}
-				<StatusBadge
-					variant={getStatusVariant(item[column.key])}
-					label={item[column.key] || 'Unknown'}
-				/>
-				
-			{:else if column.key === 'time'}
-				{formatTime(item[column.key])}
-				
-			{:else if column.key === 'doi_url'}
-				{#if item[column.key]}
-					<a 
-						href={item[column.key]} 
-						target="_blank" 
-						class="text-indigo-600 hover:text-indigo-900 underline text-xs"
-						title={item[column.key]}
-					>
-						DOI
-					</a>
-				{:else}
-					—
-				{/if}
-				
-			{:else if column.key === 'depth'}
-				{formatNumericValue(item[column.key])}
-				
-			{:else if column.key === 'pos_angle'}
-				{#if item[column.key] !== null && item[column.key] !== undefined && item[column.key] !== ''}
-					{formatNumericValue(item[column.key])}°
-				{:else}
-					—
-				{/if}
-				
-			{:else}
-				{item[column.key] || '—'}
-			{/if}
-		</svelte:fragment>
+			</svelte:fragment>
+		</Table>
+	</div>
+	<!-- End overflow-x-auto -->
 
-		<!-- Custom header for checkbox column -->
-		<svelte:fragment slot="header" let:column>
-			{#if column.key === 'checkbox'}
-				<input
-					type="checkbox"
-					checked={allSelectableSelected}
-					indeterminate={selectAllIndeterminate}
-					disabled={!allowSelection || selectablePointings.length === 0}
-					on:change={toggleAllSelection}
-					class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-50"
-				/>
-			{:else}
-				{column.label}
-			{/if}
-		</svelte:fragment>
-	</Table>
-	</div> <!-- End overflow-x-auto -->
-	
 	<!-- Selection Summary -->
 	{#if allowSelection && selectedPointings.size > 0}
 		<div class="bg-indigo-50 px-6 py-3 border-t border-gray-200">

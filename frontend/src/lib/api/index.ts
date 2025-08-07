@@ -11,17 +11,17 @@ import { authService } from './services/auth.service';
 import { searchService } from './services/search.service';
 
 export const api = {
-    pointings: pointingService,
-    alerts: alertService,
-    candidates: candidateService,
-    instruments: instrumentService,
-    galaxies: galaxyService,
-    doi: doiService,
-    icecube: icecubeService,
-    misc: miscService,
-    ajax: ajaxService,
-    auth: authService,
-    search: searchService
+	pointings: pointingService,
+	alerts: alertService,
+	candidates: candidateService,
+	instruments: instrumentService,
+	galaxies: galaxyService,
+	doi: doiService,
+	icecube: icecubeService,
+	misc: miscService,
+	ajax: ajaxService,
+	auth: authService,
+	search: searchService
 };
 
 export * from './types/alert.types';
