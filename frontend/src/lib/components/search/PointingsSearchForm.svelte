@@ -39,15 +39,15 @@
 			let allAlerts: any[] = [];
 			let page = 1;
 			let totalFetched = 0;
-			
+
 			// First request to get total count
 			const firstResponse = await api.alerts.queryAlerts({ page: 1 });
 			allAlerts = firstResponse.alerts || [];
 			const totalCount = firstResponse.total || 0;
 			totalFetched = allAlerts.length;
-			
+
 			console.log(`Initial fetch: ${totalFetched}/${totalCount} alerts`);
-			
+
 			// Fetch remaining pages if needed
 			while (totalFetched < totalCount && firstResponse.has_next) {
 				page++;
@@ -55,20 +55,22 @@
 				const pageAlerts = response.alerts || [];
 				allAlerts = [...allAlerts, ...pageAlerts];
 				totalFetched += pageAlerts.length;
-				
+
 				console.log(`Fetched page ${page}: ${totalFetched}/${totalCount} alerts`);
-				
+
 				if (!response.has_next) break;
 				if (page > 50) break; // Safety limit
 			}
-			
+
 			const uniqueGraceIds = [...new Set(allAlerts.map((a: any) => a.graceid))]
 				.filter(Boolean)
 				.sort()
 				.reverse();
-			
-			console.log(`Final result: ${uniqueGraceIds.length} unique Grace IDs from ${allAlerts.length} total alerts`);
-			
+
+			console.log(
+				`Final result: ${uniqueGraceIds.length} unique Grace IDs from ${allAlerts.length} total alerts`
+			);
+
 			graceIdOptions = [
 				{ value: '', label: '--Select--' },
 				...uniqueGraceIds.map((gid: string) => ({ value: gid, label: gid }))
@@ -108,8 +110,8 @@
 
 		// Process bands - if "all" is selected, send empty array
 		const processedBands = formData.bands.includes('all') ? [] : formData.bands;
-		
-		// Process statuses - if "all" is selected, send empty array  
+
+		// Process statuses - if "all" is selected, send empty array
 		const processedStatuses = formData.statuses.includes('all') ? [] : formData.statuses;
 
 		dispatch('search', {
@@ -198,8 +200,13 @@
 		{#if isLoadingOptions}
 			<div class="mt-4 text-sm text-gray-500 flex items-center">
 				<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
-					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path>
 				</svg>
 				Loading form options...
 			</div>

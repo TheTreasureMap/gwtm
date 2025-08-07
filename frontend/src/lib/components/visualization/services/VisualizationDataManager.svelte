@@ -155,7 +155,11 @@
 				}
 			});
 
-			footprintData = await api.ajax.getAlertInstrumentsFootprints(graceid, pointingStatus, tos_mjd);
+			footprintData = await api.ajax.getAlertInstrumentsFootprints(
+				graceid,
+				pointingStatus,
+				tos_mjd
+			);
 
 			console.log('Loaded footprint data:', {
 				isArray: Array.isArray(footprintData),

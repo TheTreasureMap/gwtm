@@ -56,7 +56,7 @@
 		try {
 			const result = await dataService.loadAlerts(params);
 			paginationService.updatePaginationState(result);
-		} catch (err) {
+		} catch {
 			// Error handling is managed by the service
 		}
 	}

@@ -128,7 +128,6 @@
 	<AsyncErrorBoundary
 		loadingText="Loading gravitational wave alert..."
 		errorFallback="Failed to load alert data. Please check the Grace ID and try again."
-		let:captureError
 	>
 		{#if alertExists && alert}
 			<!-- Alert Header Component -->
