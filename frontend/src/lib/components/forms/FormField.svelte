@@ -93,6 +93,13 @@
 	export let name: string;
 
 	/**
+	 * Custom id for the form field (overrides auto-generated id)
+	 * @type {string}
+	 * @optional
+	 */
+	export let id: string = '';
+
+	/**
 	 * The label text for the field
 	 * @type {string}
 	 */
@@ -233,7 +240,7 @@
 	$: hasError = !validationResult.isValid || externalErrors.length > 0;
 	$: allErrors = [...validationResult.errors, ...externalErrors];
 	$: showErrors = touched && hasError;
-	$: fieldId = `field-${name}`;
+	$: fieldId = id || `field-${name}`;
 	$: helpId = `${fieldId}-help`;
 	$: errorId = `${fieldId}-error`;
 

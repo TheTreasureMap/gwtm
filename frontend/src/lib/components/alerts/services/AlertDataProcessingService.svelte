@@ -139,8 +139,9 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 			'prob_hasremenant'
 		];
 		probFields.forEach((field) => {
-			if (processed[field] !== null && processed[field] !== undefined) {
-				processed[field] = Math.round(processed[field] * 100000) / 100000; // 5 decimal places
+			const value = (processed as any)[field];
+			if (value !== null && value !== undefined && typeof value === 'number') {
+				(processed as any)[field] = Math.round(value * 100000) / 100000; // 5 decimal places
 			}
 		});
 
