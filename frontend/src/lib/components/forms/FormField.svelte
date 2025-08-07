@@ -227,7 +227,6 @@
 
 	let validationResult: ValidationResult = { isValid: true, errors: [] };
 	let touched = false;
-	let focused = false;
 	let validationTimeout: NodeJS.Timeout;
 
 	// Computed states
