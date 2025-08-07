@@ -131,7 +131,6 @@
 	// Computed states
 	$: isValid =
 		Object.values(fieldValidationStates).every(Boolean) && Object.keys(fieldErrors).length === 0;
-	$: hasErrors = Object.keys(fieldErrors).length > 0 || !!submitError;
 
 	// Form classes
 	$: formClasses = ['space-y-6', className].filter(Boolean).join(' ');

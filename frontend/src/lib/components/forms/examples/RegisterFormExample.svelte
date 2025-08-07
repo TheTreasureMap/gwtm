@@ -42,7 +42,7 @@
 
 	async function handleFormSubmit(data: typeof formData) {
 		// Remove confirmPassword from submission data
-		const { confirmPassword, ...submitData } = data;
+		const { confirmPassword: _, ...submitData } = data;
 
 		const result = await onSubmit({
 			email: submitData.email,

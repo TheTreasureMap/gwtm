@@ -51,7 +51,7 @@ Displays alert title, status badges, and special download links.
 	<!-- Special Downloads -->
 	{#if specialDownloads.length > 0}
 		<div class="flex space-x-4 mb-4">
-			{#each specialDownloads as download}
+			{#each specialDownloads as download (download.url)}
 				<a
 					href={download.url}
 					download={download.filename}
