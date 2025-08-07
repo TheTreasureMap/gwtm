@@ -1,5 +1,4 @@
 <script>
-	import { auth } from '$lib/stores/auth';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -12,7 +11,7 @@
 			alt: 'GW190814 Alert Skymap - Shows the gravitational wave localization region'
 		},
 		{
-			src: '/GW190814_image.png', 
+			src: '/GW190814_image.png',
 			alt: 'GW190814 Observation Image - Telescope follow-up observation'
 		},
 		{

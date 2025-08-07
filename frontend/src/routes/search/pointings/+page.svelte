@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
@@ -20,7 +19,7 @@
 	// Handle search form submission
 	async function handleSearch(event: CustomEvent) {
 		const { graceid, bands, statuses, my_points_only } = event.detail;
-		
+
 		isSearching = true;
 		searchError = '';
 		lastSearchParams = event.detail;
@@ -36,10 +35,10 @@
 			// Get the pointing results (now includes instrument_name and username from API)
 			const results = await api.search.searchPointings(searchParams);
 			console.log('Search results with joined data:', results);
-			
+
 			// Process results to extract RA/DEC if needed
 			if (results && results.length > 0) {
-				searchResults = results.map(pointing => {
+				searchResults = results.map((pointing) => {
 					// Extract ra/dec from position if not already present
 					if (pointing.position && !pointing.ra && !pointing.dec) {
 						const coords = extractRaDecFromPosition(pointing.position);
@@ -50,7 +49,7 @@
 			} else {
 				searchResults = results || [];
 			}
-			
+
 			hasSearched = true;
 			selectedPointings.clear();
 			selectedPointings = selectedPointings; // Trigger reactivity
@@ -63,7 +62,7 @@
 		}
 	}
 
-	function extractRaDecFromPosition(position: string): { ra?: number, dec?: number } {
+	function extractRaDecFromPosition(position: string): { ra?: number; dec?: number } {
 		// Extract RA/DEC from POINT(ra dec) string
 		if (position && position.startsWith('POINT(')) {
 			try {
@@ -92,7 +91,7 @@
 			});
 
 			// Update the results table with the new DOI URL
-			searchResults = searchResults.map(pointing => {
+			searchResults = searchResults.map((pointing) => {
 				if (pointing_ids.includes(pointing.id)) {
 					return { ...pointing, doi_url: result.doi_url };
 				}
@@ -107,7 +106,8 @@
 			alert('DOI request completed successfully');
 		} catch (err) {
 			console.error('DOI request failed:', err);
-			const errorMessage = err instanceof Error ? err.message : 'DOI request failed. Please try again.';
+			const errorMessage =
+				err instanceof Error ? err.message : 'DOI request failed. Please try again.';
 			alert(errorMessage);
 		}
 	}
@@ -123,7 +123,7 @@
 </svelte:head>
 
 <PageContainer>
-	<PageHeader 
+	<PageHeader
 		title="Search Pointings"
 		description="Search and manage telescope pointing observations for gravitational wave events"
 	/>
@@ -134,11 +134,7 @@
 
 		<!-- Search Error -->
 		{#if searchError}
-			<ErrorMessage 
-				title="Search Error"
-				message={searchError}
-				type="error"
-			/>
+			<ErrorMessage title="Search Error" message={searchError} type="error" />
 		{/if}
 
 		<!-- DOI Request Panel -->
@@ -164,17 +160,16 @@
 				<!-- Results Summary -->
 				<div class="bg-white rounded-lg border border-gray-200 px-6 py-4">
 					<div class="flex items-center justify-between">
-						<h3 class="text-lg font-medium text-gray-900">
-							Search Results
-						</h3>
+						<h3 class="text-lg font-medium text-gray-900">Search Results</h3>
 						<span class="text-sm text-gray-500">
 							{searchResults.length} pointing{searchResults.length === 1 ? '' : 's'} found
 						</span>
 					</div>
-					
+
 					{#if lastSearchParams}
 						<div class="mt-2 text-sm text-gray-600">
-							<strong>Grace ID:</strong> {lastSearchParams.graceid}
+							<strong>Grace ID:</strong>
+							{lastSearchParams.graceid}
 							{#if lastSearchParams.bands.length > 0}
 								• <strong>Bands:</strong> {lastSearchParams.bands.join(', ')}
 							{/if}
@@ -202,8 +197,18 @@
 		<!-- Initial State -->
 		{#if !hasSearched && !isSearching}
 			<div class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-				<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+				<svg
+					class="mx-auto h-12 w-12 text-gray-400"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+					/>
 				</svg>
 				<h3 class="mt-2 text-sm font-medium text-gray-900">No search performed yet</h3>
 				<p class="mt-1 text-sm text-gray-500">

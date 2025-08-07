@@ -116,9 +116,9 @@ import requests
 API_TOKEN = "your_api_token_here"
 BASE_URL = "https://treasuremap.space/api/v1"
 
-headers = {'{'}"Authorization": f"Bearer {'{'}{API_TOKEN}{'}'}",
+headers = {'{'}"Authorization": f"Bearer {'{'}{API_TOKEN}}",
     "Content-Type": "application/json"
-{'}'}</code
+}</code
 						></pre>
 				</div>
 			</div>
@@ -130,13 +130,13 @@ headers = {'{'}"Authorization": f"Bearer {'{'}{API_TOKEN}{'}'}",
 					<pre class="text-green-400 text-sm"><code
 							># Get pointings for a specific GW event
 response = requests.get(
-    f"{'{'}{BASE_URL}{'}'}/pointings",
-    params={'{'}"graceid": "S190425z"{'}'},
+    f"{'{'}{BASE_URL}}/pointings",
+    params={'{'}"graceid": "S190425z"},
     headers=headers
 )
 
 pointings = response.json()
-print(f"Found {'{'}{len(pointings)}{'}'} pointings for S190425z")</code
+print(f"Found {'{'}{len(pointings)}} pointings for S190425z")</code
 						></pre>
 				</div>
 			</div>
@@ -156,10 +156,10 @@ pointing_data = {'{'}"graceid": "S190425z",
     "depth": 20.5,
     "depth_unit": "ab_mag",
     "band": "r"
-{'}'}
+}
 
 response = requests.post(
-    f"{'{'}{BASE_URL}{'}'}/pointings",
+    f"{'{'}{BASE_URL}}/pointings",
     json=pointing_data,
     headers=headers
 )

@@ -12,7 +12,7 @@
 	// Form state
 	let searchName: string = '';
 	let selectedType: string = 'all';
-	
+
 	// Results state
 	let searchResults: InstrumentSchema[] = [];
 	let isSearching = false;
@@ -72,7 +72,9 @@
 
 	async function handleSearch() {
 		if (!searchName.trim() && selectedType === 'all') {
-			errorHandler.showToast('Please enter an instrument name or select a type to search.', { type: 'warning' });
+			errorHandler.showToast('Please enter an instrument name or select a type to search.', {
+				type: 'warning'
+			});
 			return;
 		}
 
@@ -95,7 +97,7 @@
 
 			console.log('Searching instruments with filters:', filters);
 			searchResults = await api.instruments.getInstruments(filters);
-			
+
 			console.log(`Found ${searchResults.length} instruments`);
 		} catch (error) {
 			console.error('Error searching instruments:', error);
@@ -116,7 +118,10 @@
 
 <svelte:head>
 	<title>Search Instruments - GWTM</title>
-	<meta name="description" content="Search and browse registered instruments in the GWTM database" />
+	<meta
+		name="description"
+		content="Search and browse registered instruments in the GWTM database"
+	/>
 </svelte:head>
 
 <PageContainer>
@@ -131,7 +136,7 @@
 	<!-- Search Form -->
 	<Card class="mb-8">
 		<h3 class="text-lg font-semibold text-gray-900 mb-6">Search Filters</h3>
-		
+
 		<form on:submit|preventDefault={handleSearch} class="space-y-4">
 			<div class="grid md:grid-cols-2 gap-4">
 				<!-- Instrument Name -->
@@ -157,25 +162,26 @@
 
 			<!-- Action buttons -->
 			<div class="flex gap-4 pt-4">
-				<Button
-					type="submit"
-					loading={isSearching}
-					disabled={isSearching}
-				>
+				<Button type="submit" loading={isSearching} disabled={isSearching}>
 					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+						/>
 					</svg>
 					{isSearching ? 'Searching...' : 'Search'}
 				</Button>
-				
-				<Button
-					type="button"
-					variant="secondary"
-					on:click={handleReset}
-					disabled={isSearching}
-				>
+
+				<Button type="button" variant="secondary" on:click={handleReset} disabled={isSearching}>
 					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+						/>
 					</svg>
 					Reset
 				</Button>
@@ -217,7 +223,9 @@
 								{item.instrument_name}
 							</a>
 						{:else if column.key === 'instrument_type'}
-							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+							<span
+								class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+							>
 								{getInstrumentTypeName(item.instrument_type)}
 							</span>
 						{:else if column.key === 'nickname'}
