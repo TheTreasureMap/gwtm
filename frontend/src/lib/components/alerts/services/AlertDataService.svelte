@@ -5,15 +5,15 @@
 	 * Handles alert loading, grouping by graceid, classification logic, and pointing counts
 	 */
 	import { createEventDispatcher } from 'svelte';
-	import { api } from '$lib/api';
+	import { api, type GWAlertSchema } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
 	// Data state
-	export let alerts = [];
-	export let groupedAlerts = [];
-	export let loading = false;
-	export let error = null;
+	export let alerts: GWAlertSchema[] = [];
+	export let groupedAlerts: any[] = [];
+	export let loading: boolean = false;
+	export let error: string | null = null;
 
 	/**
 	 * Load alerts with given parameters
@@ -97,7 +97,7 @@
 	 * Group alerts by graceid for display
 	 */
 	function groupAlertsByGraceid(alertsList: any[]) {
-		const grouped = {};
+		const grouped: Record<string, GWAlertSchema[]> = {};
 
 		// Group alerts by graceid (or alternateid if available)
 		alertsList.forEach((alert) => {
@@ -109,13 +109,14 @@
 		});
 
 		// Process each group to create the grouped alert format
-		const result = [];
-		for (const [graceid, alerts] of Object.entries(grouped)) {
+		const result: any[] = [];
+		for (const [graceid, alertGroup] of Object.entries(grouped)) {
+			const alerts = alertGroup as GWAlertSchema[];
 			// Sort alerts by date created, most recent first
-			alerts.sort((a, b) => new Date(b.datecreated) - new Date(a.datecreated));
+			alerts.sort((a: GWAlertSchema, b: GWAlertSchema) => new Date(b.datecreated || '').getTime() - new Date(a.datecreated || '').getTime());
 
 			const mostRecentAlert = alerts[0];
-			const alertTypes = alerts.map((a) => a.alert_type).filter(Boolean);
+			const alertTypes = alerts.map((a: GWAlertSchema) => a.alert_type).filter(Boolean);
 			const hasRetraction = alertTypes.includes('Retraction');
 
 			// Calculate classification (like Flask version)

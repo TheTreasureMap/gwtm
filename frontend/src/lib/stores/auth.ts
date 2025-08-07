@@ -21,6 +21,13 @@ interface AuthState {
 	token: string | null;
 }
 
+// Define result types for auth operations
+interface AuthResult {
+	success: boolean;
+	error?: string;
+	user?: User;
+}
+
 function createAuthStore() {
 	const { subscribe, update, set } = writable<AuthState>({
 		isAuthenticated: false,
@@ -60,7 +67,7 @@ function createAuthStore() {
 		}
 	};
 
-	const login = async (email: string, password: string) => {
+	const login = async (email: string, password: string): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
 			const response = await api.auth.login(email, password);
@@ -81,6 +88,7 @@ function createAuthStore() {
 
 				errorHandler.showToast('Login successful!', { type: 'info', duration: 3000 });
 				goto('/alerts'); // Redirect to a protected route
+				return { success: true, user };
 			} else {
 				throw new Error('Login response did not contain an API token.');
 			}
@@ -96,6 +104,7 @@ function createAuthStore() {
 				token: null,
 				loading: false
 			}));
+			return { success: false, error: errorMessage };
 		}
 	};
 
@@ -114,7 +123,7 @@ function createAuthStore() {
 		goto('/'); // Redirect to home or login page
 	};
 
-	const register = async (userData: any) => {
+	const register = async (userData: any): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
 			await api.auth.register(userData);
@@ -123,13 +132,15 @@ function createAuthStore() {
 				duration: 5000
 			});
 			goto('/login');
+			update((state) => ({ ...state, loading: false }));
+			return { success: true };
 		} catch (err) {
 			console.error('Registration failed:', err);
 			const errorMessage =
 				(err as any).response?.data?.detail || 'Registration failed. Please try again.';
 			errorHandler.showToast(errorMessage, { type: 'error' });
-		} finally {
 			update((state) => ({ ...state, loading: false }));
+			return { success: false, error: errorMessage };
 		}
 	};
 

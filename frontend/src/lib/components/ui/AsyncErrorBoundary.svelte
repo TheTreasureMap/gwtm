@@ -58,7 +58,7 @@
 	let:reset
 >
 	{#if loading}
-		<LoadingSpinner text={loadingText} />
+		<LoadingSpinner message={loadingText} />
 	{:else if loaded || !asyncFunction}
 		<slot {captureError} {reset} {executeAsync} />
 	{:else}

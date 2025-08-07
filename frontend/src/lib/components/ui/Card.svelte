@@ -74,6 +74,14 @@
 	 */
 	export let clickable: boolean = false;
 
+	/**
+	 * Additional CSS classes to apply to the card
+	 * @type {string}
+	 * @default ''
+	 */
+	let className: string = '';
+	export { className as class };
+
 	const paddingClasses = {
 		none: '',
 		sm: 'p-4',
@@ -93,7 +101,8 @@
 		shadowClasses[shadow],
 		paddingClasses[padding],
 		hover ? 'hover:shadow-xl transition-shadow duration-200' : '',
-		clickable ? 'cursor-pointer' : ''
+		clickable ? 'cursor-pointer' : '',
+		className
 	]
 		.filter(Boolean)
 		.join(' ');
