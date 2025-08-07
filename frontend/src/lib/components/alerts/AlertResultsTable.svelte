@@ -96,7 +96,7 @@ Displays alert results with badges, pagination, and loading states.
 					on:change={handlePerPageChange}
 					class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
-					{#each perPageOptions as option}
+					{#each perPageOptions as option (option.value)}
 						<option value={option.value}>{option.label}</option>
 					{/each}
 				</select>
@@ -152,7 +152,7 @@ Displays alert results with badges, pagination, and loading states.
 						</tr>
 					</thead>
 					<tbody class="bg-white divide-y divide-gray-200">
-						{#each groupedAlerts as groupedAlert}
+						{#each groupedAlerts as groupedAlert (groupedAlert.alertname)}
 							<tr class="hover:bg-gray-50">
 								<!-- Alert column with name and type badges -->
 								<td class="px-6 py-4 whitespace-nowrap">
@@ -166,7 +166,7 @@ Displays alert results with badges, pagination, and loading states.
 											</a>
 										</div>
 										<div class="flex space-x-1">
-											{#each getAlertTypeBadges(groupedAlert.alert_types) as badge}
+											{#each getAlertTypeBadges(groupedAlert.alert_types) as badge (badge.color + badge.icon)}
 												<span
 													class="inline-flex px-1 py-0.5 text-xs font-semibold rounded-full {badge.color}"
 												>
@@ -224,7 +224,7 @@ Displays alert results with badges, pagination, and loading states.
 					</button>
 
 					<div class="flex items-center space-x-1">
-						{#each getDisplayPages().pages as page}
+						{#each getDisplayPages().pages as page (page)}
 							<button
 								on:click={() => goToPage(page)}
 								class="px-3 py-2 border rounded-md text-sm font-medium
