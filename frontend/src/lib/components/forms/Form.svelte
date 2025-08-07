@@ -150,7 +150,7 @@
 
 		// Extract field errors
 		for (const [fieldName, result] of Object.entries(results)) {
-			if (fieldName !== 'isValid' && !result.isValid) {
+			if (fieldName !== 'isValid' && typeof result === 'object' && result !== null && 'isValid' in result && !result.isValid) {
 				fieldErrors[fieldName] = result.errors;
 			}
 		}
@@ -354,8 +354,7 @@
 	</div>
 </form>
 
-<!-- Field validation event handling -->
-<svelte:window on:field-validate={handleFieldValidation} />
+<!-- Field validation is handled through component props and events -->
 
 <style>
 	.form-content {
