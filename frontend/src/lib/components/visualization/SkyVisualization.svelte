@@ -14,6 +14,7 @@
     import DataLoaderService from './services/DataLoaderService.svelte';
     import AlertTypeManager from './services/AlertTypeManager.svelte';
     import VisualizationDataManager from './services/VisualizationDataManager.svelte';
+    import AlertDataProcessingService from '../alerts/services/AlertDataProcessingService.svelte';
 
     // Import utilities
     import {
@@ -37,6 +38,7 @@
     let sunMoonData: SunMoonData | null = null;
     let alertTypes: any[] = [];
     let selectedAlert: GWAlertSchema | null = null;
+    let processedSelectedAlert: GWAlertSchema | null = null; // For SummaryTab with Flask-compatible processing
     let galaxyData: any[] = [];
     let candidateData: any[] = [];
     let icecubeData: any[] = [];
@@ -70,6 +72,7 @@
     let dataLoaderService: DataLoaderService;
     let alertTypeManager: AlertTypeManager;
     let visualizationDataManager: VisualizationDataManager;
+    let alertDataProcessingService: AlertDataProcessingService;
     let plotlyContainer: HTMLDivElement | null = null;
 
     onMount(async () => {
@@ -260,6 +263,11 @@
 
         console.log(`Alert switched from '${previousAlertType}' to '${newAlertType}'`);
 
+        // Load processed alert data for SummaryTab
+        if (newSelectedAlert && graceid) {
+            loadProcessedAlertData();
+        }
+
         // Clear existing data and reload visualization
         clearDataForAlertSwitch();
         loadVisualizationData();
@@ -279,6 +287,11 @@
         selectedAlert = initSelectedAlert;
 
         console.log('AlertTypeManager initialized with', alertTypes.length, 'alert types');
+
+        // Load processed alert data for SummaryTab
+        if (initSelectedAlert && graceid) {
+            loadProcessedAlertData();
+        }
 
         // Load visualization data after initialization
         if (selectedAlert) {
@@ -309,6 +322,17 @@
             } catch (err) {
                 console.warn('Error clearing overlays during alert switch:', err);
             }
+        }
+    }
+
+    async function loadProcessedAlertData() {
+        if (!selectedAlert || !graceid || !alertDataProcessingService) return;
+
+        try {
+            console.log('Loading processed alert data for SummaryTab...');
+            await alertDataProcessingService.loadAlert(graceid);
+        } catch (err) {
+            console.error('Failed to load processed alert data:', err);
         }
     }
 
@@ -729,6 +753,23 @@
         }
     }
 
+    // AlertDataProcessingService event handlers
+    function handleProcessedAlertLoaded(event: CustomEvent) {
+        const { alert: loadedAlert } = event.detail;
+        processedSelectedAlert = loadedAlert;
+        console.log('Processed alert data loaded for SummaryTab:', processedSelectedAlert);
+    }
+
+    function handleProcessedAlertCleared() {
+        processedSelectedAlert = null;
+        console.log('Processed alert data cleared');
+    }
+
+    function handleProcessedAlertError(event: CustomEvent) {
+        console.error('Processed alert loading error:', event.detail.error);
+        processedSelectedAlert = null;
+    }
+
     // Event Explorer event handlers
     async function handleCalculateCoverage() {
         if (!graceid || !visualizationDataManager) return;
@@ -889,6 +930,13 @@
             on:coverage-calculated={handleCoverageCalculated}
     />
 
+    <AlertDataProcessingService
+            bind:this={alertDataProcessingService}
+            on:alert-loaded={handleProcessedAlertLoaded}
+            on:alert-cleared={handleProcessedAlertCleared}
+            on:alert-error={handleProcessedAlertError}
+    />
+
     <!-- Alert Type Tabs -->
     <AlertTypeTabs
             {availableAlertTypes}
@@ -961,7 +1009,7 @@
 
         <!-- Event Explorer -->
         <EventExplorer
-                {selectedAlert}
+                selectedAlert={processedSelectedAlert || selectedAlert}
                 {loading}
                 {error}
                 {plotlyContainer}
