@@ -32,10 +32,12 @@ async def query_alerts(
         False, description="Filter to only alerts with completed pointings"
     ),
     instrument_id: Optional[int] = Query(
-        None, description="Filter to only alerts with pointings from specific instrument"
+        None,
+        description="Filter to only alerts with pointings from specific instrument",
     ),
     include_pointing_count: Optional[bool] = Query(
-        False, description="Include pointing count for each alert (when filtered by instrument)"
+        False,
+        description="Include pointing count for each alert (when filtered by instrument)",
     ),
     format: Optional[str] = Query(
         "simple",
@@ -131,28 +133,32 @@ async def query_alerts(
             pointing_counts_query = (
                 db.query(
                     PointingEvent.graceid,
-                    func.count(Pointing.id).label('pointing_count')
+                    func.count(Pointing.id).label("pointing_count"),
                 )
                 .join(Pointing, PointingEvent.pointingid == Pointing.id)
                 .filter(
                     Pointing.instrumentid == instrument_id,
-                    Pointing.status == pointing_status.completed
+                    Pointing.status == pointing_status.completed,
                 )
                 .group_by(PointingEvent.graceid)
                 .all()
             )
-            
+
             # Extract unique graceids and create count mapping
             if pointing_counts_query:
                 gids = [x.graceid for x in pointing_counts_query]
-                pointing_counts_map = {x.graceid: x.pointing_count for x in pointing_counts_query}
+                pointing_counts_map = {
+                    x.graceid: x.pointing_count for x in pointing_counts_query
+                }
 
                 # Query GWAlerts for these grace IDs, ordering by date to get the latest one first
                 results = (
                     db.query(GWAlert)
                     .filter(GWAlert.graceid.in_(gids))
                     .filter(*filter_conditions)
-                    .order_by(GWAlert.graceid.desc(), GWAlert.datecreated.desc())  # Get latest alert first for each graceid
+                    .order_by(
+                        GWAlert.graceid.desc(), GWAlert.datecreated.desc()
+                    )  # Get latest alert first for each graceid
                     .all()
                 )
 
@@ -162,7 +168,9 @@ async def query_alerts(
                 for alert in results:
                     if alert.graceid not in seen_graceids:
                         alert_dict = {**alert.__dict__}
-                        alert_dict['pointing_count'] = pointing_counts_map.get(alert.graceid, 0)
+                        alert_dict["pointing_count"] = pointing_counts_map.get(
+                            alert.graceid, 0
+                        )
                         alerts_with_counts.append(GWAlertSchema(**alert_dict))
                         seen_graceids.add(alert.graceid)
 
@@ -189,7 +197,7 @@ async def query_alerts(
                 .join(Pointing, Pointing.id == PointingEvent.pointingid)
                 .filter(
                     Pointing.status == pointing_status.completed,
-                    Pointing.instrumentid == instrument_id
+                    Pointing.instrumentid == instrument_id,
                 )
                 .distinct()
                 .subquery()
@@ -198,7 +206,7 @@ async def query_alerts(
             # Filter by any instrument
             pointing_subquery = (
                 db.query(PointingEvent.graceid)
-                .join(Pointing, Pointing.id == PointingEvent.pointingid)  
+                .join(Pointing, Pointing.id == PointingEvent.pointingid)
                 .filter(Pointing.status == pointing_status.completed)
                 .distinct()
                 .subquery()
@@ -214,12 +222,12 @@ async def query_alerts(
             .join(Pointing, Pointing.id == PointingEvent.pointingid)
             .filter(
                 Pointing.instrumentid == instrument_id,
-                Pointing.status == pointing_status.completed
+                Pointing.status == pointing_status.completed,
             )
             .distinct()
             .subquery()
         )
-        
+
         base_query = base_query.filter(
             GWAlert.graceid.in_(db.query(pointing_subquery.c.graceid))
         )
@@ -249,7 +257,7 @@ async def query_alerts(
                 pointing_count = result[1]  # pointing count
                 # Create alert dict and add pointing count
                 alert_dict = {**alert.__dict__}
-                alert_dict['pointing_count'] = pointing_count
+                alert_dict["pointing_count"] = pointing_count
                 alerts.append(GWAlertSchema(**alert_dict))
         else:
             alerts = [GWAlertSchema.model_validate(alert) for alert in results]
@@ -266,7 +274,7 @@ async def query_alerts(
     else:
         # Simple format (backwards compatible) - return all results as list
         results = base_query.order_by(GWAlert.datecreated.desc()).all()
-        
+
         # Process results based on whether we have pointing counts
         if include_pointing_count and instrument_id is not None:
             alerts = []
@@ -275,7 +283,7 @@ async def query_alerts(
                 pointing_count = result[1]  # pointing count
                 # Create alert dict and add pointing count
                 alert_dict = {**alert.__dict__}
-                alert_dict['pointing_count'] = pointing_count
+                alert_dict["pointing_count"] = pointing_count
                 alerts.append(GWAlertSchema(**alert_dict))
             return alerts
         else:

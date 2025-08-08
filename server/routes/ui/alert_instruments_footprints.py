@@ -56,10 +56,13 @@ async def get_alert_instruments_footprints(
 
     # Status filtering
     from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
-    
+
     if pointing_status == "pandc":
         pointing_filter.append(
-            or_(Pointing.status == pointing_status_enum.completed, Pointing.status == pointing_status_enum.planned)
+            or_(
+                Pointing.status == pointing_status_enum.completed,
+                Pointing.status == pointing_status_enum.planned,
+            )
         )
     elif pointing_status not in ["all", ""]:
         if pointing_status == "completed":
@@ -174,12 +177,15 @@ async def get_alert_instruments_footprints(
                 # Fallback: try to calculate using alert time_of_signal
                 if alert and alert.time_of_signal:
                     import astropy.time
+
                     alert_time = astropy.time.Time(alert.time_of_signal)
                     time_value = round(t.mjd[0] - alert_time.mjd, 3)
                 else:
                     # Last resort: use days from Unix epoch as a relative measure
                     # This will at least give different time values for different pointings
-                    time_value = round(t.mjd[0] - 40587.0, 3)  # Days since Unix epoch (1970-01-01)
+                    time_value = round(
+                        t.mjd[0] - 40587.0, 3
+                    )  # Days since Unix epoch (1970-01-01)
 
             for ccd in sanatized_ccds:
                 pointing_footprint = project_footprint(ccd, ra, dec, p.pos_angle)

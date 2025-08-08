@@ -66,16 +66,16 @@ def decode_token(token: str) -> dict:
 
 
 def get_current_user(
-    api_token: Optional[str] = Depends(api_key_header), 
+    api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> Optional[Users]:
     """
     Validate JWT token or API token and return the associated user.
     JWT tokens take precedence over API tokens.
     """
     user = None
-    
+
     # Try JWT token first (from Authorization header)
     if jwt_token:
         try:
@@ -88,13 +88,13 @@ def get_current_user(
         except HTTPException:
             # JWT token is invalid, continue to try API token
             pass
-    
+
     # Fall back to API token (from api_token header)
     if api_token:
         user = db.query(Users).filter(Users.api_token == api_token).first()
         if user:
             return user
-    
+
     # Neither token worked
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

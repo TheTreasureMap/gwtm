@@ -144,7 +144,7 @@ class PointingSchema(PointingBase):
     dateupdated: Optional[datetime] = None
     doi_url: Optional[str] = None
     doi_id: Optional[int] = None
-    
+
     # Additional fields from joins
     instrument_name: Optional[str] = None
     username: Optional[str] = None

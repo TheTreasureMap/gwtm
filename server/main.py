@@ -226,6 +226,7 @@ async def service_status(db: Session = Depends(get_db)):
 
         # Test actual connection
         from sqlalchemy import text
+
         result = db.execute(text("SELECT 1")).first()
         if result and result[0] == 1:
             status["database_status"] = "connected"
