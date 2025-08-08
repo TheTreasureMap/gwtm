@@ -61,11 +61,11 @@
 	export let helpText: string = '';
 
 	/**
-	 * API base URL for loading pointing data
+	 * API base URL for loading pointing data (unused - kept for external reference)
 	 * @type {string}
 	 * @default '/api/v1'
 	 */
-	export let apiBaseUrl: string = '/api/v1';
+	export const apiBaseUrl: string = '/api/v1';
 
 	// Internal state
 	let loading = false;
@@ -82,21 +82,21 @@
 	// Load pointing data from API
 	async function loadPointingData(pointingId: number) {
 		if (pointingId === lastLoadedId) return; // Already loaded
-		
+
 		loading = true;
 		loadError = null;
 
 		try {
 			const response = await fetch(`/ajax_pointingfromid?id=${pointingId}`, {
 				headers: {
-					'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+					Authorization: `Bearer ${localStorage.getItem('access_token')}`
 				}
 			});
-			
+
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => null);
 				const errorMessage = errorData?.detail || response.statusText;
-				
+
 				if (response.status === 404) {
 					throw new Error(errorMessage);
 				} else if (response.status === 403) {
@@ -109,7 +109,7 @@
 
 			const data = await response.json();
 			lastLoadedId = pointingId;
-			
+
 			dispatch('load', { pointingId, data });
 		} catch (error) {
 			loadError = error instanceof Error ? error.message : 'Failed to load pointing data';
@@ -172,8 +172,8 @@
 	});
 
 	// Help text based on state
-	$: dynamicHelpText = loading 
-		? 'Loading pointing data...' 
+	$: dynamicHelpText = loading
+		? 'Loading pointing data...'
 		: helpText || 'Enter a pointing ID to pre-load existing data';
 </script>
 
@@ -208,12 +208,7 @@
 		</button>
 
 		{#if value}
-			<button
-				type="button"
-				class="btn-secondary btn-sm"
-				on:click={handleClear}
-				{disabled}
-			>
+			<button type="button" class="btn-secondary btn-sm" on:click={handleClear} {disabled}>
 				Clear
 			</button>
 		{/if}
@@ -247,7 +242,8 @@
 		margin-top: 0.5rem;
 	}
 
-	.btn-primary, .btn-secondary {
+	.btn-primary,
+	.btn-secondary {
 		padding: 0.375rem 0.75rem;
 		font-size: 0.875rem;
 		border-radius: 0.375rem;

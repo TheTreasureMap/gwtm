@@ -82,18 +82,22 @@
 	// Validation
 	const timeValidators: ValidatorFunction[] = [
 		validators.date('Invalid datetime format'),
-		...(min ? [validators.minDate(new Date(min), `Date must be after ${formatDisplayDate(min)}`)] : []),
-		...(max ? [validators.maxDate(new Date(max), `Date must be before ${formatDisplayDate(max)}`)] : [])
+		...(min
+			? [validators.minDate(new Date(min), `Date must be after ${formatDisplayDate(min)}`)]
+			: []),
+		...(max
+			? [validators.maxDate(new Date(max), `Date must be before ${formatDisplayDate(max)}`)]
+			: [])
 	];
 
 	// Format ISO string to datetime-local format (YYYY-MM-DDTHH:mm:ss.sss)
 	function formatToDatetimeLocal(isoString: string | null): string {
 		if (!isoString) return '';
-		
+
 		try {
 			const date = new Date(isoString);
 			if (isNaN(date.getTime())) return '';
-			
+
 			// Format to YYYY-MM-DDTHH:mm:ss.sss
 			const year = date.getFullYear();
 			const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -102,7 +106,7 @@
 			const minutes = String(date.getMinutes()).padStart(2, '0');
 			const seconds = String(date.getSeconds()).padStart(2, '0');
 			const ms = String(date.getMilliseconds()).padStart(3, '0');
-			
+
 			return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}`;
 		} catch {
 			return '';
@@ -112,12 +116,12 @@
 	// Convert datetime-local format to ISO string
 	function formatToISO(datetimeLocal: string): string | null {
 		if (!datetimeLocal) return null;
-		
+
 		try {
 			// Parse the datetime-local format and convert to ISO
 			const date = new Date(datetimeLocal);
 			if (isNaN(date.getTime())) return null;
-			
+
 			return date.toISOString();
 		} catch {
 			return null;
@@ -137,7 +141,7 @@
 	function handleChange(event: CustomEvent) {
 		formattedValue = event.detail.value;
 		value = formatToISO(formattedValue);
-		
+
 		dispatch('change', { name, value });
 	}
 
@@ -181,12 +185,7 @@
 
 	<!-- Additional controls -->
 	<div class="time-controls">
-		<button
-			type="button"
-			class="btn-secondary btn-sm"
-			on:click={setCurrentTime}
-			{disabled}
-		>
+		<button type="button" class="btn-secondary btn-sm" on:click={setCurrentTime} {disabled}>
 			Set Current Time
 		</button>
 

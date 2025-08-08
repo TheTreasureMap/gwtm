@@ -113,7 +113,10 @@
 		for (const [graceid, alertGroup] of Object.entries(grouped)) {
 			const alerts = alertGroup as GWAlertSchema[];
 			// Sort alerts by date created, most recent first
-			alerts.sort((a: GWAlertSchema, b: GWAlertSchema) => new Date(b.datecreated || '').getTime() - new Date(a.datecreated || '').getTime());
+			alerts.sort(
+				(a: GWAlertSchema, b: GWAlertSchema) =>
+					new Date(b.datecreated || '').getTime() - new Date(a.datecreated || '').getTime()
+			);
 
 			const mostRecentAlert = alerts[0];
 			const alertTypes = alerts.map((a: GWAlertSchema) => a.alert_type).filter(Boolean);

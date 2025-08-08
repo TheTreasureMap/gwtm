@@ -12,6 +12,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
+	import { API_ENDPOINTS } from '$lib/config/api';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/ui/ErrorBoundary.svelte';
 	import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
@@ -51,12 +52,13 @@
 	}
 
 	// Filtered users for admin view
-	$: filteredUsers = searchTerm 
-		? allUsers.filter(user => 
-			user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			`${user.lastname},${user.firstname}`.toLowerCase().includes(searchTerm.toLowerCase())
-		)
+	$: filteredUsers = searchTerm
+		? allUsers.filter(
+				(user) =>
+					user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					`${user.lastname},${user.firstname}`.toLowerCase().includes(searchTerm.toLowerCase())
+			)
 		: allUsers;
 
 	// Load profile data
@@ -72,7 +74,7 @@
 
 			// Load DOI author groups
 			try {
-				const doiResponse = await api.client.get('/api/v1/doi_author_groups');
+				const doiResponse = await api.client.get(API_ENDPOINTS.doiAuthorGroups);
 				doiGroups = doiResponse.data || [];
 			} catch (err) {
 				console.warn('Failed to load DOI groups:', err);
@@ -81,7 +83,7 @@
 
 			// Check if user is admin and load all users if so
 			try {
-				const adminResponse = await api.client.get('/admin/users');
+				const adminResponse = await api.client.get(API_ENDPOINTS.adminUsers);
 				if (adminResponse.data) {
 					allUsers = adminResponse.data;
 					isAdmin = true;
@@ -90,7 +92,6 @@
 				// Not admin or endpoint doesn't exist
 				isAdmin = false;
 			}
-
 		} catch (err) {
 			console.error('Failed to load profile data:', err);
 			error = 'Failed to load profile data';
@@ -128,9 +129,9 @@
 
 <ErrorBoundary>
 	<div class="profile-page">
-		<PageHeader 
-			title="User Profile" 
-			description="Manage your account settings and DOI author groups" 
+		<PageHeader
+			title="User Profile"
+			description="Manage your account settings and DOI author groups"
 		/>
 
 		{#if loading}
@@ -149,14 +150,12 @@
 				<h2>User: {currentUser.username}</h2>
 				<p><strong>Email:</strong> {currentUser.email}</p>
 				<p><strong>Name:</strong> {currentUser.firstname} {currentUser.lastname}</p>
-				
+
 				{#if currentUser.api_token}
 					<div class="api-token-section">
 						<p><strong>Your API Token:</strong></p>
 						<code class="api-token">{currentUser.api_token}</code>
-						<p class="api-token-help">
-							Use this token for API authentication. Keep it secure!
-						</p>
+						<p class="api-token-help">Use this token for API authentication. Keep it secure!</p>
 					</div>
 				{:else}
 					<div class="verification-needed">
@@ -172,9 +171,7 @@
 			<Card className="doi-groups-card">
 				<div class="section-header">
 					<h3>DOI Author Groups</h3>
-					<Button href="/doi/author-group" variant="primary">
-						Create New DOI Author Group
-					</Button>
+					<Button href="/doi/author-group" variant="primary">Create New DOI Author Group</Button>
 				</div>
 
 				{#if doiGroups.length > 0}
@@ -193,12 +190,7 @@
 										<td>{group.id}</td>
 										<td>{group.name}</td>
 										<td>
-											<a 
-												href="/doi/author-group?id={group.id}"
-												class="link-button"
-											>
-												Edit
-											</a>
+											<a href="/doi/author-group?id={group.id}" class="link-button"> Edit </a>
 										</td>
 									</tr>
 								{/each}
@@ -250,15 +242,19 @@
 											<td>{user.email}</td>
 											<td>{formatDate(user.datecreated)}</td>
 											<td>
-												<span class="verification-badge {user.verified ? 'verified' : 'unverified'}">
+												<span
+													class="verification-badge {user.verified ? 'verified' : 'unverified'}"
+												>
 													{user.verified ? 'Yes' : 'No'}
 												</span>
 											</td>
 											<td>
 												{#if !user.verified}
-													<button 
+													<button
 														class="resend-button"
-														on:click={() => {/* TODO: Implement resend for specific user */}}
+														on:click={() => {
+															/* TODO: Implement resend for specific user */
+														}}
 													>
 														Resend
 													</button>
@@ -285,7 +281,8 @@
 		padding: 2rem;
 	}
 
-	.loading-container, .error-container {
+	.loading-container,
+	.error-container {
 		display: flex;
 		flex-direction: column;
 		align-items: center;

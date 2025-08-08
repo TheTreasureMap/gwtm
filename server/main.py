@@ -28,6 +28,7 @@ from server.routes.event.router import router as event
 from server.routes.ui.router import router as ui_router
 from server.routes.celestial.router import router as celestial_router
 from server.routes.auth.router import router as auth_router
+from server.routes.enums.router import router as enums_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
@@ -224,7 +225,8 @@ async def service_status(db: Session = Depends(get_db)):
         }
 
         # Test actual connection
-        result = db.execute("SELECT 1").first()
+        from sqlalchemy import text
+        result = db.execute(text("SELECT 1")).first()
         if result and result[0] == 1:
             status["database_status"] = "connected"
         else:
@@ -281,6 +283,7 @@ app.include_router(icecube_router, prefix=API_V1_PREFIX)
 app.include_router(doi_router, prefix=API_V1_PREFIX)
 app.include_router(event, prefix=API_V1_PREFIX)
 app.include_router(celestial_router, prefix=API_V1_PREFIX)
+app.include_router(enums_router, prefix=API_V1_PREFIX)
 
 # Include admin router without API prefix (matches original endpoint)
 app.include_router(admin_router)

@@ -7,8 +7,8 @@
  * @since 2024-01-25
  */
 
-// API configuration
-const API_BASE_URL = '/api/v1';
+import { API_ENDPOINTS } from '$lib/config/api';
+import { api } from '$lib/api';
 
 // Types
 export interface PointingData {
@@ -73,72 +73,67 @@ export interface DoiAuthorGroup {
 	userid: number;
 }
 
-// Authentication helper
-function getAuthHeaders(): HeadersInit {
-	const token = localStorage.getItem('access_token');
-	return {
-		'Content-Type': 'application/json',
-		...(token && { 'Authorization': `Bearer ${token}` })
-	};
-}
-
-// API response helper
-async function handleApiResponse<T>(response: Response): Promise<T> {
-	if (!response.ok) {
-		const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-		throw new Error(errorData.detail || errorData.message || 'API request failed');
-	}
-	return response.json();
-}
+// Note: Authentication and error handling is now managed by the axios client
 
 /**
  * Submit a new pointing observation
  */
 export async function submitPointing(pointingData: PointingData): Promise<PointingResponse> {
-	const request: PointingCreateRequest = {
-		graceid: pointingData.graceid,
-		pointings: [pointingData],
-		request_doi: pointingData.request_doi,
-		...(pointingData.doi_creator_groups && pointingData.doi_creator_groups !== 'None' && {
-			doi_group_id: parseInt(pointingData.doi_creator_groups)
-		})
+	// Transform the data to match the API schema
+	const transformedPointing = {
+		ra: pointingData.ra,
+		dec: pointingData.dec,
+		instrumentid: parseInt(pointingData.instrumentid), // Convert string to int
+		status: pointingData.obs_status, // Map obs_status to status
+		band: pointingData.obs_bandpass, // Map obs_bandpass to band
+		depth: pointingData.depth,
+		depth_err: pointingData.depth_err,
+		depth_unit: pointingData.depth_unit,
+		pos_angle: pointingData.pos_angle,
+		// Use appropriate time field based on status
+		time:
+			pointingData.obs_status === 'planned'
+				? pointingData.planned_obs_time
+				: pointingData.completed_obs_time
 	};
 
-	const response = await fetch(`${API_BASE_URL}/pointings`, {
-		method: 'POST',
-		headers: getAuthHeaders(),
-		body: JSON.stringify(request)
-	});
+	const request: PointingCreateRequest = {
+		graceid: pointingData.graceid,
+		pointings: [transformedPointing],
+		request_doi: pointingData.request_doi,
+		...(pointingData.doi_creator_groups &&
+			pointingData.doi_creator_groups !== 'None' && {
+				doi_group_id: parseInt(pointingData.doi_creator_groups)
+			})
+	};
 
-	return handleApiResponse<PointingResponse>(response);
+	// Debug logging
+	console.log('Original pointing data:', pointingData);
+	console.log('Transformed pointing:', transformedPointing);
+	console.log('Final request payload:', request);
+
+	const response = await api.client.post(API_ENDPOINTS.pointings, request);
+	return response.data;
 }
 
 /**
  * Load existing pointing data by ID
  */
 export async function loadPointingById(pointingId: number): Promise<any> {
-	const response = await fetch(`/ajax_pointingfromid?id=${pointingId}`, {
-		method: 'GET',
-		headers: getAuthHeaders()
-	});
-
-	return handleApiResponse<any>(response);
+	const response = await api.client.get(`${API_ENDPOINTS.pointingFromId}?id=${pointingId}`);
+	return response.data;
 }
 
 /**
  * Get available Grace IDs
  */
 export async function getGraceIds(): Promise<GraceIdOption[]> {
-	const response = await fetch(`${API_BASE_URL}/query_alerts?role=observation`, {
-		method: 'GET',
-		headers: getAuthHeaders()
-	});
+	const response = await api.client.get(`${API_ENDPOINTS.queryAlerts}?role=observation`);
+	const data = response.data;
 
-	const data = await handleApiResponse<any[]>(response);
-	
 	// Process alerts to get unique Grace IDs
 	const graceIds = new Map<string, GraceIdOption>();
-	
+
 	data.forEach((alert: any) => {
 		if (alert.graceid && !alert.graceid.includes('TEST')) {
 			const graceid = alert.alternateid || alert.graceid;
@@ -150,8 +145,9 @@ export async function getGraceIds(): Promise<GraceIdOption[]> {
 	});
 
 	// Convert to array and sort
-	const sortedGraceIds = Array.from(graceIds.values())
-		.sort((a, b) => b.graceid.localeCompare(a.graceid));
+	const sortedGraceIds = Array.from(graceIds.values()).sort((a, b) =>
+		b.graceid.localeCompare(a.graceid)
+	);
 
 	// Add test event
 	sortedGraceIds.push({ graceid: 'TEST_EVENT' });
@@ -163,46 +159,47 @@ export async function getGraceIds(): Promise<GraceIdOption[]> {
  * Get available instruments
  */
 export async function getInstruments(): Promise<InstrumentOption[]> {
-	const response = await fetch(`${API_BASE_URL}/instruments`, {
-		method: 'GET',
-		headers: getAuthHeaders()
-	});
-
-	return handleApiResponse<InstrumentOption[]>(response);
+	const response = await api.client.get(API_ENDPOINTS.instruments);
+	return response.data;
 }
 
 /**
  * Get available bandpass options
  */
 export async function getBandpassOptions(): Promise<BandpassOption[]> {
-	// These are typically static enum values
+	// These match the FastAPI Bandpass enum exactly
 	return [
+		{ name: 'U', value: 'U' },
+		{ name: 'B', value: 'B' },
+		{ name: 'V', value: 'V' },
+		{ name: 'R', value: 'R' },
+		{ name: 'I', value: 'I' },
+		{ name: 'J', value: 'J' },
+		{ name: 'H', value: 'H' },
+		{ name: 'K', value: 'K' },
 		{ name: 'u', value: 'u' },
 		{ name: 'g', value: 'g' },
 		{ name: 'r', value: 'r' },
 		{ name: 'i', value: 'i' },
 		{ name: 'z', value: 'z' },
-		{ name: 'y', value: 'y' },
-		{ name: 'J', value: 'J' },
-		{ name: 'H', value: 'H' },
-		{ name: 'K', value: 'K' },
-		{ name: 'L', value: 'L' },
-		{ name: 'Lp', value: 'Lp' },
-		{ name: 'Mp', value: 'Mp' },
-		{ name: 'B', value: 'B' },
-		{ name: 'V', value: 'V' },
-		{ name: 'R', value: 'R' },
-		{ name: 'I', value: 'I' },
 		{ name: 'UVW1', value: 'UVW1' },
-		{ name: 'UVM2', value: 'UVM2' },
 		{ name: 'UVW2', value: 'UVW2' },
-		{ name: 'U', value: 'U' },
+		{ name: 'UVM2', value: 'UVM2' },
+		{ name: 'XRT', value: 'XRT' },
 		{ name: 'clear', value: 'clear' },
 		{ name: 'open', value: 'open' },
+		{ name: 'UHF', value: 'UHF' },
+		{ name: 'VHF', value: 'VHF' },
+		{ name: 'L', value: 'L' },
+		{ name: 'S', value: 'S' },
 		{ name: 'C', value: 'C' },
-		{ name: 'o', value: 'o' },
-		{ name: 'Ha', value: 'Ha' },
-		{ name: 'other', value: 'other' }
+		{ name: 'X', value: 'X' },
+		{ name: 'other', value: 'other' },
+		{ name: 'TESS', value: 'TESS' },
+		{ name: 'BAT', value: 'BAT' },
+		{ name: 'HESS', value: 'HESS' },
+		{ name: 'WISEL', value: 'WISEL' },
+		{ name: 'q', value: 'q' }
 	];
 }
 
@@ -210,12 +207,12 @@ export async function getBandpassOptions(): Promise<BandpassOption[]> {
  * Get available depth unit options
  */
 export async function getDepthUnitOptions(): Promise<DepthUnitOption[]> {
-	// These are typically static enum values
+	// These match the FastAPI enum values
 	return [
-		{ name: 'mag', value: 'mag' },
-		{ name: 'flux', value: 'flux' },
-		{ name: 'flux_density', value: 'flux_density' },
-		{ name: 'other', value: 'other' }
+		{ name: 'AB Magnitude', value: 'ab_mag' },
+		{ name: 'Vega Magnitude', value: 'vega_mag' },
+		{ name: 'Flux (erg/cm²/s)', value: 'flux_erg' },
+		{ name: 'Flux (Jy)', value: 'flux_jy' }
 	];
 }
 
@@ -224,12 +221,8 @@ export async function getDepthUnitOptions(): Promise<DepthUnitOption[]> {
  */
 export async function getDoiAuthorGroups(): Promise<DoiAuthorGroup[]> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/doi_author_groups`, {
-			method: 'GET',
-			headers: getAuthHeaders()
-		});
-
-		return handleApiResponse<DoiAuthorGroup[]>(response);
+		const response = await api.client.get(API_ENDPOINTS.doiAuthorGroups);
+		return response.data;
 	} catch (error) {
 		// Return empty array if endpoint doesn't exist or user has no groups
 		console.warn('Failed to load DOI author groups:', error);
@@ -247,7 +240,7 @@ export async function loadFormOptions(): Promise<{
 	depthUnitOptions: DepthUnitOption[];
 	doiAuthorGroups: DoiAuthorGroup[];
 }> {
-	const [graceIds, instruments, bandpassOptions, depthUnitOptions, doiAuthorGroups] = 
+	const [graceIds, instruments, bandpassOptions, depthUnitOptions, doiAuthorGroups] =
 		await Promise.all([
 			getGraceIds(),
 			getInstruments(),
@@ -268,7 +261,10 @@ export async function loadFormOptions(): Promise<{
 /**
  * Validate coordinates
  */
-export function validateCoordinates(ra: number, dec: number): { isValid: boolean; errors: string[] } {
+export function validateCoordinates(
+	ra: number,
+	dec: number
+): { isValid: boolean; errors: string[] } {
 	const errors: string[] = [];
 
 	if (ra < 0 || ra > 360) {
@@ -290,12 +286,12 @@ export function validateCoordinates(ra: number, dec: number): { isValid: boolean
  */
 export function formatDateTimeForApi(dateTime: string | null): string | undefined {
 	if (!dateTime) return undefined;
-	
+
 	try {
 		// Ensure the datetime is in ISO format
 		const date = new Date(dateTime);
 		if (isNaN(date.getTime())) return undefined;
-		
+
 		return date.toISOString();
 	} catch {
 		return undefined;
@@ -307,13 +303,13 @@ export function formatDateTimeForApi(dateTime: string | null): string | undefine
  */
 export function parseInstrumentId(instrumentValue: string): { id: number; type: string } | null {
 	if (!instrumentValue) return null;
-	
+
 	const parts = instrumentValue.split('_');
 	if (parts.length !== 2) return null;
-	
+
 	const id = parseInt(parts[0]);
 	if (isNaN(id)) return null;
-	
+
 	return {
 		id,
 		type: parts[1]

@@ -494,6 +494,7 @@
 				{disabled}
 				{readonly}
 				{required}
+				step={type === 'number' ? 'any' : undefined}
 				class={inputClasses}
 				bind:value
 				on:input={handleInput}

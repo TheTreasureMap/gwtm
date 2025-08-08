@@ -12,17 +12,17 @@
 	import { goto } from '$app/navigation';
 	import { createFormStore } from '$lib/stores/formStore';
 	import { validators } from '$lib/validation/validators';
-	
+
 	// Form components
 	import FormField from '$lib/components/forms/FormField.svelte';
 	import CoordinateFields from '$lib/components/forms/CoordinateFields.svelte';
 	import TimeField from '$lib/components/forms/TimeField.svelte';
 	import LoadPointingField from '$lib/components/forms/LoadPointingField.svelte';
 	import ConditionalSection from '$lib/components/forms/ConditionalSection.svelte';
-	
+
 	// UI components
 	import ErrorBoundary from '$lib/components/ui/ErrorBoundary.svelte';
-	
+
 	// Services
 	import {
 		submitPointing,
@@ -104,16 +104,17 @@
 					completed_obs_time: formatDateTimeForApi(data.completed_obs_time),
 					pos_angle: data.pos_angle || undefined,
 					request_doi: data.request_doi,
-					doi_creator_groups: data.doi_creator_groups !== 'None' ? data.doi_creator_groups : undefined,
+					doi_creator_groups:
+						data.doi_creator_groups !== 'None' ? data.doi_creator_groups : undefined,
 					doi_url: data.doi_url || undefined
 				};
 
 				const result = await submitPointing(pointingData);
 				return { success: true, result };
 			} catch (error) {
-				return { 
-					success: false, 
-					error: error instanceof Error ? error.message : 'Submission failed' 
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : 'Submission failed'
 				};
 			}
 		}
@@ -154,7 +155,7 @@
 			// Grace IDs
 			graceIdOptions = [
 				{ value: '', label: 'Select Grace ID' },
-				...options.graceIds.map(grace => ({
+				...options.graceIds.map((grace) => ({
 					value: grace.graceid,
 					label: grace.graceid
 				}))
@@ -163,7 +164,7 @@
 			// Instruments
 			instrumentOptions = [
 				{ value: '', label: 'Select Instrument' },
-				...options.instruments.map(inst => ({
+				...options.instruments.map((inst) => ({
 					value: `${inst.id}_${inst.instrument_type}`,
 					label: inst.instrument_name
 				}))
@@ -172,7 +173,7 @@
 			// Bandpass options
 			bandpassOptions = [
 				{ value: '', label: 'Select Bandpass' },
-				...options.bandpassOptions.map(band => ({
+				...options.bandpassOptions.map((band) => ({
 					value: band.value,
 					label: band.name
 				}))
@@ -181,7 +182,7 @@
 			// Depth units
 			depthUnitOptions = [
 				{ value: '', label: 'Select Unit' },
-				...options.depthUnitOptions.map(unit => ({
+				...options.depthUnitOptions.map((unit) => ({
 					value: unit.value,
 					label: unit.name
 				}))
@@ -190,12 +191,11 @@
 			// DOI author groups
 			doiGroupOptions = [
 				{ value: 'None', label: 'None' },
-				...options.doiAuthorGroups.map(group => ({
+				...options.doiAuthorGroups.map((group) => ({
 					value: group.id.toString(),
 					label: group.name
 				}))
 			];
-			
 		} catch (error) {
 			console.error('Failed to load form options:', error);
 		} finally {
@@ -206,7 +206,7 @@
 	// Handle loading existing pointing data
 	function handleLoadPointingData(event: CustomEvent) {
 		const { data } = event.detail;
-		
+
 		// Update form with loaded data using the format from ajax_pointingfromid
 		formStore.setFieldValue('ra', parseFloat(data.ra));
 		formStore.setFieldValue('dec', parseFloat(data.dec));
@@ -221,7 +221,7 @@
 	// Form submission
 	async function handleSubmit() {
 		const result = await formStore.submit();
-		
+
 		if (result.success) {
 			// Redirect to success page or show success message
 			alert('Pointing submitted successfully!');
@@ -281,11 +281,7 @@
 					</div>
 
 					<!-- Coordinates -->
-					<CoordinateFields
-						bind:ra={formData.ra}
-						bind:dec={formData.dec}
-						required
-					/>
+					<CoordinateFields bind:ra={formData.ra} bind:dec={formData.dec} required />
 
 					<div class="form-row">
 						<FormField
@@ -341,7 +337,11 @@
 				</div>
 
 				<!-- Conditional sections based on observation status -->
-				<ConditionalSection show={showPlannedSection} className="planned" title="Planned Observation">
+				<ConditionalSection
+					show={showPlannedSection}
+					className="planned"
+					title="Planned Observation"
+				>
 					<TimeField
 						name="planned_obs_time"
 						label="Planned Observation Time"
@@ -350,7 +350,11 @@
 					/>
 				</ConditionalSection>
 
-				<ConditionalSection show={showCompletedSection} className="completed" title="Completed Observation">
+				<ConditionalSection
+					show={showCompletedSection}
+					className="completed"
+					title="Completed Observation"
+				>
 					<div class="form-section">
 						<TimeField
 							name="completed_obs_time"
@@ -421,11 +425,7 @@
 						{/if}
 					</button>
 
-					<button
-						type="button"
-						class="btn-secondary"
-						on:click={() => goto('/search/pointings')}
-					>
+					<button type="button" class="btn-secondary" on:click={() => goto('/search/pointings')}>
 						Cancel
 					</button>
 				</div>
@@ -484,9 +484,7 @@
 		margin-bottom: 1rem;
 	}
 
-	.form-row:has(.form-field:only-child) {
-		grid-template-columns: 1fr;
-	}
+	/* Removed unused :has() selector - not needed in current implementation */
 
 	.doi-section {
 		background: #f9fafb;
@@ -506,7 +504,8 @@
 		border-top: 1px solid #e5e7eb;
 	}
 
-	.btn-primary, .btn-secondary {
+	.btn-primary,
+	.btn-secondary {
 		padding: 0.75rem 1.5rem;
 		border-radius: 0.375rem;
 		font-weight: 500;
@@ -588,7 +587,8 @@
 			flex-direction: column-reverse;
 		}
 
-		.btn-primary, .btn-secondary {
+		.btn-primary,
+		.btn-secondary {
 			width: 100%;
 			justify-content: center;
 		}
