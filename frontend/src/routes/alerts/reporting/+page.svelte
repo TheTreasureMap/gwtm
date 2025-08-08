@@ -11,7 +11,6 @@
 
 	async function loadReportingInstruments() {
 		instruments = await api.instruments.getReportingInstruments();
-		return instruments;
 	}
 </script>
 

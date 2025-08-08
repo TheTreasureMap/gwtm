@@ -16,12 +16,18 @@
 <script lang="ts">
 	import type { GWAlertSchema } from '$lib/api';
 
+	// Extended interface for processed alert data with Flask-compatible fields
+	interface ProcessedGWAlert extends GWAlertSchema {
+		far_human?: string;
+		distance_with_error?: string;
+	}
+
 	/**
 	 * The selected gravitational wave alert
 	 * @type {GWAlertSchema | null}
 	 * @default null
 	 */
-	export let selectedAlert: GWAlertSchema | null = null;
+	export let selectedAlert: ProcessedGWAlert | null = null;
 
 	// Format date for display
 	function formatDate(dateString: string | null): string {
@@ -101,7 +107,7 @@
 									Time of Signal
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_time_of_signal">
-									{formatDate(selectedAlert?.time_of_signal)}
+									{formatDate(selectedAlert?.time_of_signal ?? null)}
 								</td>
 							</tr>
 
@@ -110,7 +116,7 @@
 									Time Sent
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_timesent">
-									{formatDate(selectedAlert?.timesent)}
+									{formatDate(selectedAlert?.timesent ?? null)}
 								</td>
 							</tr>
 
@@ -119,7 +125,7 @@
 									False Alarm Rate
 								</td>
 								<td class="px-6 py-3 text-sm text-gray-700" id="alert_human_far">
-									{selectedAlert?.far_human || formatFalseAlarmRate(selectedAlert?.far)}
+									{selectedAlert?.far_human || formatFalseAlarmRate(selectedAlert?.far ?? null)}
 								</td>
 							</tr>
 
@@ -160,7 +166,7 @@
 									</td>
 									<td class="px-6 py-3 text-sm text-gray-700" id="alert_distance_plus_error">
 										{selectedAlert?.distance_with_error ||
-											formatDistance(selectedAlert?.distance, selectedAlert?.distance_error)}
+											formatDistance(selectedAlert?.distance ?? null, selectedAlert?.distance_error ?? null)}
 									</td>
 								</tr>
 							{:else}

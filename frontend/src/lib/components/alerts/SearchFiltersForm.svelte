@@ -70,11 +70,11 @@ Handles all filter inputs with autocomplete search functionality.
 
 	// Event handlers
 	function handleFilterChange() {
-		dispatch('filter-change');
+		dispatch('filter-change', {});
 	}
 
 	function handleHasPointingsChange() {
-		dispatch('has-pointings-change');
+		dispatch('has-pointings-change', {});
 	}
 
 	function handleSearchInputChange(event: Event) {
@@ -86,11 +86,11 @@ Handles all filter inputs with autocomplete search functionality.
 	}
 
 	function handleSearch() {
-		dispatch('search');
+		dispatch('search', {});
 	}
 
 	function handleClearFilters() {
-		dispatch('clear-filters');
+		dispatch('clear-filters', {});
 	}
 </script>
 
@@ -102,6 +102,7 @@ Handles all filter inputs with autocomplete search functionality.
 		<div class="grid md:grid-cols-5 gap-4">
 			<!-- Observing Run -->
 			<FormField
+				name="observing_run"
 				label="Observing Run"
 				id="observing_run"
 				type="select"
@@ -114,6 +115,7 @@ Handles all filter inputs with autocomplete search functionality.
 
 			<!-- Role -->
 			<FormField
+				name="role"
 				label="Role"
 				id="role"
 				type="select"
@@ -126,7 +128,7 @@ Handles all filter inputs with autocomplete search functionality.
 
 			<!-- FAR -->
 			<FormField
-				label="FAR"
+				name="far"\n\t\t\t\tlabel="FAR"
 				id="far"
 				type="select"
 				bind:value={filters.far}

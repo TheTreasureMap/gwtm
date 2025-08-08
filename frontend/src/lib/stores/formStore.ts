@@ -60,12 +60,12 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	// Initialize form state
 	const initialState: FormState<T> = {
 		data: { ...initialValues } as T,
-		fields: {},
+		fields: {} as Record<keyof T, FormFieldState>,
 		isValid: true,
 		isSubmitting: false,
 		isDirty: false,
 		submitCount: 0,
-		errors: {},
+		errors: {} as Record<keyof T, string[]>,
 		globalError: ''
 	};
 
@@ -117,7 +117,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 
 		store.update((state) => {
 			const newFields = { ...state.fields };
-			const newErrors: Record<keyof T, string[]> = {};
+			const newErrors = {} as Record<keyof T, string[]>;
 
 			// Update field states and errors
 			for (const [fieldName, result] of Object.entries(results)) {

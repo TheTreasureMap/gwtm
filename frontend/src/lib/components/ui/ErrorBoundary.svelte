@@ -23,7 +23,7 @@
 		hasError = false;
 		errorMessage = '';
 		errorDetails = '';
-		dispatch('reset');
+		dispatch('reset', {});
 	}
 
 	export function captureError(error: Error, context?: string) {

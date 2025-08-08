@@ -240,7 +240,7 @@
 
 			<!-- Calculate Button -->
 			<div class="mt-8 flex justify-center">
-				<Button variant="primary" size="large" on:click={handleCalculate}>
+				<Button variant="primary" size="lg" on:click={handleCalculate}>
 					Calculate Coverage
 				</Button>
 			</div>

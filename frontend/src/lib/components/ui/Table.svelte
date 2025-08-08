@@ -259,7 +259,7 @@
 						>
 							<Button
 								variant="secondary"
-								size="small"
+								size="sm"
 								disabled={currentPage === 1}
 								on:click={() => handlePageChange(currentPage - 1)}
 							>
@@ -270,7 +270,7 @@
 								{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
 									<Button
 										variant={page === currentPage ? 'primary' : 'secondary'}
-										size="small"
+										size="sm"
 										on:click={() => handlePageChange(page)}
 									>
 										{page}
@@ -282,7 +282,7 @@
 
 							<Button
 								variant="secondary"
-								size="small"
+								size="sm"
 								disabled={currentPage === totalPages}
 								on:click={() => handlePageChange(currentPage + 1)}
 							>
