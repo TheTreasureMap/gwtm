@@ -141,22 +141,24 @@
 			<div class="grid md:grid-cols-2 gap-4">
 				<!-- Instrument Name -->
 				<FormField
+					name="search-name"
 					label="Instrument Name"
 					id="search-name"
 					type="text"
 					bind:value={searchName}
 					placeholder="e.g., ZTF, Swift, GOTO..."
-					help="Search by instrument name or nickname (case-insensitive, partial matches)"
+					helpText="Search by instrument name or nickname (case-insensitive, partial matches)"
 				/>
 
 				<!-- Instrument Type -->
 				<FormField
+					name="search-type"
 					label="Instrument Type"
 					id="search-type"
 					type="select"
 					bind:value={selectedType}
 					options={instrumentTypeOptions}
-					help="Filter by instrument type"
+					helpText="Filter by instrument type"
 				/>
 			</div>
 

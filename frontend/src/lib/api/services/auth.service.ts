@@ -2,10 +2,11 @@ import client from '../client';
 import { browser } from '$app/environment';
 
 export const authService = {
-	login: async (email: string, password: string): Promise<any> => {
-		const response = await client.post('/api/v1/login', {
-			email,
-			password
+	login: async (username: string, password: string, rememberMe = false): Promise<any> => {
+		const response = await client.post('/api/v1/auth/login', {
+			username,
+			password,
+			remember_me: rememberMe
 		});
 		return response;
 	},
@@ -21,19 +22,36 @@ export const authService = {
 		return response;
 	},
 
+	logout: async (): Promise<any> => {
+		// Call the logout endpoint (optional in JWT systems)
+		try {
+			const response = await client.post('/api/v1/auth/logout');
+			return response;
+		} catch (error) {
+			// Logout endpoint might fail if token is invalid, but we still want to clear local storage
+			console.warn('Logout endpoint failed:', error);
+		}
+	},
+
+	getCurrentUser: async (): Promise<any> => {
+		const response = await client.get('/api/v1/auth/me');
+		return response;
+	},
+
 	setApiToken: (token: string): void => {
 		if (browser) {
-			localStorage.setItem('api_token', token);
+			localStorage.setItem('access_token', token);
 		}
 	},
 
 	getApiToken: (): string | null => {
-		return browser ? localStorage.getItem('api_token') : null;
+		return browser ? localStorage.getItem('access_token') : null;
 	},
 
 	clearApiToken: (): void => {
 		if (browser) {
-			localStorage.removeItem('api_token');
+			localStorage.removeItem('access_token');
+			localStorage.removeItem('user');
 		}
 	},
 

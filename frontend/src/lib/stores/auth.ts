@@ -4,13 +4,15 @@ import { goto } from '$app/navigation';
 import { api } from '$lib/api';
 import { errorHandler } from '$lib/utils/errorHandling';
 
-// Define the User interface based on the previous file
+// Define the User interface based on the FastAPI response
 interface User {
 	id: number;
 	email: string;
 	username: string;
-	first_name?: string;
-	last_name?: string;
+	firstname: string;
+	lastname: string;
+	verified: boolean;
+	api_token?: string;
 }
 
 // Define the state for our auth store
@@ -67,13 +69,15 @@ function createAuthStore() {
 		}
 	};
 
-	const login = async (email: string, password: string): Promise<AuthResult> => {
+	const login = async (username: string, password: string, rememberMe = false): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
-			const response = await api.auth.login(email, password);
-			if (response.data && response.data.api_token) {
-				const { api_token: token, user } = response.data;
+			const response = await api.auth.login(username, password, rememberMe);
+			
+			if (response.data && response.data.access_token) {
+				const { access_token: token, user } = response.data;
 
+				// Store the JWT token
 				api.auth.setApiToken(token);
 				if (browser) {
 					localStorage.setItem('user', JSON.stringify(user));
@@ -90,7 +94,7 @@ function createAuthStore() {
 				goto('/alerts'); // Redirect to a protected route
 				return { success: true, user };
 			} else {
-				throw new Error('Login response did not contain an API token.');
+				throw new Error('Login response did not contain an access token.');
 			}
 		} catch (err) {
 			console.error('Login failed:', err);
@@ -108,11 +112,17 @@ function createAuthStore() {
 		}
 	};
 
-	const logout = () => {
-		api.auth.clearApiToken();
-		if (browser) {
-			localStorage.removeItem('user');
+	const logout = async () => {
+		try {
+			// Call the logout endpoint (optional for JWT)
+			await api.auth.logout();
+		} catch (error) {
+			// Ignore logout endpoint errors
+			console.warn('Logout endpoint error:', error);
 		}
+
+		// Clear local storage and state
+		api.auth.clearApiToken();
 		set({
 			isAuthenticated: false,
 			user: null,

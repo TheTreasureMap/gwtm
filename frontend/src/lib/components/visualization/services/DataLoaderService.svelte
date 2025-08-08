@@ -6,7 +6,7 @@
 	 */
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
-	import type { GWAlertSchema } from '../../../types/api.js';
+	import type { GWAlertSchema } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 

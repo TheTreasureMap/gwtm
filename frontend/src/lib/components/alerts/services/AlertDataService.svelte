@@ -84,7 +84,7 @@
 				};
 			}
 		} catch (err) {
-			error = err.message || 'Failed to load alerts';
+			error = (err as Error)?.message || 'Failed to load alerts';
 			console.error('Error loading alerts:', err);
 			dispatch('alerts-error', { error });
 			throw err;
@@ -209,7 +209,7 @@
 		};
 
 		return alertTypes.map((type) => {
-			const config = badgeConfig[type] || {
+			const config = (badgeConfig as any)[type] || {
 				color: 'bg-gray-100 text-gray-800',
 				icon: type?.substring(0, 2) || '?'
 			};

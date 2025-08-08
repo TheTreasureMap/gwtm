@@ -45,7 +45,7 @@
 		if (result.success) {
 			goto('/login?message=Registration successful! Please login.');
 		} else {
-			error = result.error;
+			error = result.error || 'Registration failed';
 			loading = false;
 		}
 	}

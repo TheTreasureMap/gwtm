@@ -234,7 +234,8 @@
 
 	let validationResult: ValidationResult = { isValid: true, errors: [] };
 	let touched = false;
-	let validationTimeout: NodeJS.Timeout;
+	let focused = false;
+	let validationTimeout: ReturnType<typeof setTimeout>;
 
 	// Computed states
 	$: hasError = !validationResult.isValid || externalErrors.length > 0;

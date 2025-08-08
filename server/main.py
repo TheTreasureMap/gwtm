@@ -27,6 +27,7 @@ from server.routes.icecube.router import router as icecube_router
 from server.routes.event.router import router as event
 from server.routes.ui.router import router as ui_router
 from server.routes.celestial.router import router as celestial_router
+from server.routes.auth.router import router as auth_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
@@ -270,6 +271,7 @@ async def service_status(db: Session = Depends(get_db)):
 
 
 # Include routers with the API prefix
+app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(pointing_router, prefix=API_V1_PREFIX)
 app.include_router(gw_alert_router, prefix=API_V1_PREFIX)
 app.include_router(candidate_router, prefix=API_V1_PREFIX)
