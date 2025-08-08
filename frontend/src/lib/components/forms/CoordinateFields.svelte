@@ -95,7 +95,7 @@
 
 	function dispatchChange() {
 		const isValid = raValid && decValid;
-		const allErrors = [...raErrors, ...decErrors];
+		const allErrors = [...(raErrors || []), ...(decErrors || [])];
 
 		dispatch('change', { ra, dec });
 		dispatch('validate', { isValid, errors: allErrors });
@@ -103,7 +103,7 @@
 
 	// Computed properties
 	$: isValid = raValid && decValid;
-	$: allErrors = [...raErrors, ...decErrors];
+	$: allErrors = [...(raErrors || []), ...(decErrors || [])];
 </script>
 
 <div class="coordinate-fields {className}">

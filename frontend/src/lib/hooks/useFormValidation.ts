@@ -313,7 +313,13 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 
 		// Extract field errors
 		for (const [fieldName, result] of Object.entries(results)) {
-			if (fieldName !== 'isValid' && typeof result === 'object' && result !== null && 'isValid' in result && !result.isValid) {
+			if (
+				fieldName !== 'isValid' &&
+				typeof result === 'object' &&
+				result !== null &&
+				'isValid' in result &&
+				!result.isValid
+			) {
 				newErrors[fieldName as keyof T] = result.errors;
 			}
 		}

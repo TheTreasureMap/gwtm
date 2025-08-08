@@ -12,18 +12,19 @@ export default defineConfig({
 			port: 3000
 		},
 		proxy: {
+			// Only proxy in development - use environment-aware target
 			'/api/v1': {
-				target: 'http://localhost:8000',
+				target: process.env.FASTAPI_URL || 'http://fastapi-backend:8000',
 				changeOrigin: true,
 				secure: false
 			},
 			'/ajax_pointingfromid': {
-				target: 'http://localhost:8000',
+				target: process.env.FASTAPI_URL || 'http://fastapi-backend:8000',
 				changeOrigin: true,
 				secure: false
 			},
 			'/admin': {
-				target: 'http://localhost:8000',
+				target: process.env.FASTAPI_URL || 'http://fastapi-backend:8000',
 				changeOrigin: true,
 				secure: false
 			}

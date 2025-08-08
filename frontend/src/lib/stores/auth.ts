@@ -69,11 +69,15 @@ function createAuthStore() {
 		}
 	};
 
-	const login = async (username: string, password: string, rememberMe = false): Promise<AuthResult> => {
+	const login = async (
+		username: string,
+		password: string,
+		rememberMe = false
+	): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
 			const response = await api.auth.login(username, password, rememberMe);
-			
+
 			if (response.data && response.data.access_token) {
 				const { access_token: token, user } = response.data;
 
