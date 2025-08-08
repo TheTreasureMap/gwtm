@@ -26,7 +26,9 @@ class UserResponse(BaseModel):
     firstname: Optional[str] = Field(None, description="First name of the user")
     lastname: Optional[str] = Field(None, description="Last name of the user")
     email: Optional[str] = Field(None, description="Email address of the user")
-    verified: Optional[bool] = Field(None, description="Whether the user's email is verified")
+    verified: Optional[bool] = Field(
+        None, description="Whether the user's email is verified"
+    )
     api_token: Optional[str] = Field(None, description="User's API token")
     datecreated: Optional[datetime] = Field(
         None, description="Date when the user account was created"
