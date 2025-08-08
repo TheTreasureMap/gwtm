@@ -14,12 +14,11 @@ router = APIRouter(tags=["admin"])
 
 @router.get("/users", response_model=List[UserResponse])
 async def get_all_users(
-    db: Session = Depends(get_db), 
-    admin_user: Users = Depends(verify_admin)
+    db: Session = Depends(get_db), admin_user: Users = Depends(verify_admin)
 ):
     """
     Get all users in the system. Admin only.
-    
+
     Returns:
     - List of all users with basic information
     """

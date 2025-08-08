@@ -608,41 +608,43 @@ def get_pointings(
         # Query the database with explicit joins and field selection (like Flask version)
         # Check if we need to join PointingEvent table (when graceid filters are used)
         has_graceid_filters = graceid or graceids
-        
+
         # Build query with explicit field selection and joins (matches Flask approach)
         from sqlalchemy import func
-        
+
         # Select specific fields including joined ones
-        base_query = db.query(
-            Pointing.id,
-            func.ST_AsText(Pointing.position).label('position'),
-            Pointing.instrumentid,
-            Pointing.band,
-            Pointing.pos_angle,
-            Pointing.depth,
-            Pointing.depth_err,
-            Pointing.depth_unit,
-            Pointing.time,
-            Pointing.status,
-            Pointing.doi_url,
-            Pointing.doi_id,
-            Pointing.submitterid,
-            Pointing.datecreated,
-            Pointing.dateupdated,
-            Pointing.central_wave,
-            Pointing.bandwidth,
-            Instrument.instrument_name,
-            Instrument.nickname.label('instrument_nickname'),
-            Users.username
-        ).join(
-            Instrument, Pointing.instrumentid == Instrument.id
-        ).outerjoin(
-            Users, Pointing.submitterid == Users.id
+        base_query = (
+            db.query(
+                Pointing.id,
+                func.ST_AsText(Pointing.position).label("position"),
+                Pointing.instrumentid,
+                Pointing.band,
+                Pointing.pos_angle,
+                Pointing.depth,
+                Pointing.depth_err,
+                Pointing.depth_unit,
+                Pointing.time,
+                Pointing.status,
+                Pointing.doi_url,
+                Pointing.doi_id,
+                Pointing.submitterid,
+                Pointing.datecreated,
+                Pointing.dateupdated,
+                Pointing.central_wave,
+                Pointing.bandwidth,
+                Instrument.instrument_name,
+                Instrument.nickname.label("instrument_nickname"),
+                Users.username,
+            )
+            .join(Instrument, Pointing.instrumentid == Instrument.id)
+            .outerjoin(Users, Pointing.submitterid == Users.id)
         )
 
         if has_graceid_filters:
             # Join with PointingEvent table when filtering by graceid
-            base_query = base_query.join(PointingEvent, Pointing.id == PointingEvent.pointingid)
+            base_query = base_query.join(
+                PointingEvent, Pointing.id == PointingEvent.pointingid
+            )
 
         # Apply filters and execute query
         results = base_query.filter(*filter_conditions).all()
@@ -651,26 +653,30 @@ def get_pointings(
         pointings_data = []
         for row in results:
             pointing_dict = {
-                'id': row.id,
-                'position': row.position,
-                'instrumentid': row.instrumentid,
-                'band': row.band.name if row.band else None,
-                'pos_angle': row.pos_angle,
-                'depth': row.depth,
-                'depth_err': row.depth_err,
-                'depth_unit': row.depth_unit.name if row.depth_unit else None,
-                'time': row.time,
-                'status': row.status.name if row.status else None,
-                'doi_url': row.doi_url,
-                'doi_id': row.doi_id,
-                'submitterid': row.submitterid,
-                'datecreated': row.datecreated,
-                'dateupdated': row.dateupdated,
-                'central_wave': row.central_wave,
-                'bandwidth': row.bandwidth,
+                "id": row.id,
+                "position": row.position,
+                "instrumentid": row.instrumentid,
+                "band": row.band.name if row.band else None,
+                "pos_angle": row.pos_angle,
+                "depth": row.depth,
+                "depth_err": row.depth_err,
+                "depth_unit": row.depth_unit.name if row.depth_unit else None,
+                "time": row.time,
+                "status": row.status.name if row.status else None,
+                "doi_url": row.doi_url,
+                "doi_id": row.doi_id,
+                "submitterid": row.submitterid,
+                "datecreated": row.datecreated,
+                "dateupdated": row.dateupdated,
+                "central_wave": row.central_wave,
+                "bandwidth": row.bandwidth,
                 # Use nickname if available, otherwise fall back to instrument_name (like Flask)
-                'instrument_name': row.instrument_nickname if row.instrument_nickname else row.instrument_name,
-                'username': row.username
+                "instrument_name": (
+                    row.instrument_nickname
+                    if row.instrument_nickname
+                    else row.instrument_name
+                ),
+                "username": row.username,
             }
             pointings_data.append(pointing_dict)
 

@@ -107,8 +107,8 @@ async def get_instruments(
             # This enhances Flask's behavior by also searching nicknames
             filter_conditions.append(
                 or_(
-                    Instrument.instrument_name.ilike(f'%{name}%'),
-                    Instrument.nickname.ilike(f'%{name}%')
+                    Instrument.instrument_name.ilike(f"%{name}%"),
+                    Instrument.nickname.ilike(f"%{name}%"),
                 )
             )
 
