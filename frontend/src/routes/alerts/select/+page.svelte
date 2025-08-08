@@ -29,9 +29,9 @@
 		roles: string[];
 		alert_types: string[];
 	} = {
-		observing_runs: [],
-		roles: [],
-		alert_types: []
+		observing_runs: [] as string[],
+		roles: [] as string[],
+		alert_types: [] as string[]
 	};
 	let filterOptionsLoading: boolean = true;
 	let alerts: any[] = [];

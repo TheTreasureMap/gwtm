@@ -65,7 +65,7 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	const isValid = derived(state, ($state) => $state.isValid);
 	const isValidating = derived(state, ($state) => $state.isValidating);
 
-	let validationTimeout: NodeJS.Timeout;
+	let validationTimeout: ReturnType<typeof setTimeout>;
 	let validationContext: any = {};
 
 	/**
@@ -237,8 +237,8 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	// Create stores
 	const state = writable<FormValidationState<T>>({
 		values: { ...initialValues } as T,
-		errors: {},
-		touched: {},
+		errors: {} as Record<keyof T, string[]>,
+		touched: {} as Record<keyof T, boolean>,
 		isValid: true,
 		isValidating: false,
 		isDirty: false
@@ -251,7 +251,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	const isValidating = derived(state, ($state) => $state.isValidating);
 	const isDirty = derived(state, ($state) => $state.isDirty);
 
-	let fieldValidators: Record<string, NodeJS.Timeout> = {};
+	let fieldValidators: Record<string, ReturnType<typeof setTimeout>> = {};
 
 	/**
 	 * Validate specific field
@@ -309,7 +309,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 		const currentValues = derived(state, (s) => s.values);
 		const results = validateSchema(currentValues, schema);
 
-		const newErrors: Record<keyof T, string[]> = {};
+		const newErrors = {} as Record<keyof T, string[]>;
 
 		// Extract field errors
 		for (const [fieldName, result] of Object.entries(results)) {
@@ -403,7 +403,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	function clearErrors() {
 		state.update((s) => ({
 			...s,
-			errors: {},
+			errors: {} as Record<keyof T, string[]>,
 			isValid: true
 		}));
 	}
@@ -418,8 +418,8 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 
 		state.set({
 			values: { ...initialValues } as T,
-			errors: {},
-			touched: {},
+			errors: {} as Record<keyof T, string[]>,
+			touched: {} as Record<keyof T, boolean>,
 			isValid: true,
 			isValidating: false,
 			isDirty: false
@@ -485,7 +485,7 @@ export function useValidation(
 	const isValid = writable(true);
 	const isValidating = writable(false);
 
-	let validationTimeout: NodeJS.Timeout;
+	let validationTimeout: ReturnType<typeof setTimeout>;
 
 	function validate(val?: any, context?: any): ValidationResult {
 		isValidating.set(true);

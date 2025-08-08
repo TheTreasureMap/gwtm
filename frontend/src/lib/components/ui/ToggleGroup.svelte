@@ -67,7 +67,7 @@
 	 * @type {'small' | 'medium' | 'large'}
 	 * @default 'small'
 	 */
-	export let size: 'small' | 'medium' | 'large' = 'small';
+	export let size: 'sm' | 'md' | 'lg' = 'sm';
 
 	/**
 	 * Whether the toggle is disabled
@@ -107,10 +107,7 @@
 		{variant}
 		{size}
 		{disabled}
-		class={buttonClass}
 		on:click={handleToggle}
-		aria-expanded={expanded}
-		aria-controls="toggle-content"
 	>
 		<div class="flex items-center gap-2">
 			{#if $$slots.icon}

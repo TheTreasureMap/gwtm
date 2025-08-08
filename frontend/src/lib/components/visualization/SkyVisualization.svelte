@@ -2,6 +2,14 @@
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { api, type GWAlertSchema } from '$lib/api';
 
+	// Extended interface for processed alerts with original_alert data
+	interface ProcessedGWAlert extends GWAlertSchema {
+		original_alert?: {
+			avgra?: number;
+			avgdec?: number;
+		};
+	}
+
 	// Import modular components
 	import AlertTypeTabs from './AlertTypeTabs.svelte';
 	import AladinVisualization from './AladinVisualization.svelte';
@@ -37,7 +45,7 @@
 	let coverageData: any = null;
 	let sunMoonData: SunMoonData | null = null;
 	let alertTypes: any[] = [];
-	let selectedAlert: GWAlertSchema | null = null;
+	let selectedAlert: ProcessedGWAlert | null = null;
 	let processedSelectedAlert: GWAlertSchema | null = null; // For SummaryTab with Flask-compatible processing
 	let galaxyData: any[] = [];
 	let candidateData: any[] = [];

@@ -13,14 +13,14 @@ const client: AxiosInstance = axios.create({
 	}
 });
 
-// Request interceptor - add API token (unless explicitly disabled)
+// Request interceptor - add JWT token (unless explicitly disabled)
 client.interceptors.request.use(
 	(config) => {
 		// Skip auth if explicitly disabled via custom header
 		if (!config.headers['skip-auth']) {
-			const token = browser ? localStorage.getItem('api_token') : null;
+			const token = browser ? localStorage.getItem('access_token') : null;
 			if (token) {
-				config.headers['api_token'] = token;
+				config.headers['Authorization'] = `Bearer ${token}`;
 			}
 		}
 

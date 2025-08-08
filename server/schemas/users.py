@@ -18,6 +18,23 @@ class UserSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserResponse(BaseModel):
+    """Schema for returning user information including verification status."""
+
+    id: int = Field(..., description="Unique identifier for the user")
+    username: str = Field(..., description="Username of the user")
+    firstname: Optional[str] = Field(None, description="First name of the user")
+    lastname: Optional[str] = Field(None, description="Last name of the user")
+    email: Optional[str] = Field(None, description="Email address of the user")
+    verified: Optional[bool] = Field(None, description="Whether the user's email is verified")
+    api_token: Optional[str] = Field(None, description="User's API token")
+    datecreated: Optional[datetime] = Field(
+        None, description="Date when the user account was created"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserGroupSchema(BaseModel):
     """Schema for returning a user group association."""
 

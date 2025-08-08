@@ -265,8 +265,8 @@
 
 		<!-- Action Buttons -->
 		<div class="flex justify-center gap-4">
-			<Button variant="primary" size="large" on:click={handleDownload}>Download Skymap</Button>
-			<Button variant="secondary" size="large" on:click={handleVisualize}>Visualize</Button>
+			<Button variant="primary" size="lg" on:click={handleDownload}>Download Skymap</Button>
+			<Button variant="secondary" size="lg" on:click={handleVisualize}>Visualize</Button>
 		</div>
 	</div>
 </div>

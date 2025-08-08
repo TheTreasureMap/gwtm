@@ -6,8 +6,9 @@
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	let email = '';
+	let username = '';
 	let password = '';
+	let rememberMe = false;
 	let error = '';
 	let loading = false;
 
@@ -23,7 +24,7 @@
 	});
 
 	async function handleLogin() {
-		if (!email || !password) {
+		if (!username || !password) {
 			error = 'Please fill in all fields';
 			return;
 		}
@@ -31,12 +32,12 @@
 		loading = true;
 		error = '';
 
-		const result = await auth.login(email, password);
+		const result = await auth.login(username, password, rememberMe);
 
 		if (result.success) {
 			goto('/');
 		} else {
-			error = result.error;
+			error = result.error || 'Login failed';
 			loading = false;
 		}
 	}
@@ -59,17 +60,17 @@
 		<form class="mt-8 space-y-6" on:submit|preventDefault={handleLogin}>
 			<div class="rounded-md shadow-sm -space-y-px">
 				<div>
-					<label for="email" class="sr-only">Email address</label>
+					<label for="username" class="sr-only">Username or Email</label>
 					<input
-						id="email"
-						name="email"
-						type="email"
+						id="username"
+						name="username"
+						type="text"
 						required
-						bind:value={email}
+						bind:value={username}
 						on:keydown={handleKeydown}
 						class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none
   focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-						placeholder="Email address"
+						placeholder="Username or Email"
 					/>
 				</div>
 				<div>
@@ -85,6 +86,21 @@
   focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
 						placeholder="Password"
 					/>
+				</div>
+			</div>
+
+			<div class="flex items-center justify-between">
+				<div class="flex items-center">
+					<input
+						id="remember-me"
+						name="remember-me"
+						type="checkbox"
+						bind:checked={rememberMe}
+						class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+					/>
+					<label for="remember-me" class="ml-2 block text-sm text-gray-900">
+						Remember me
+					</label>
 				</div>
 			</div>
 

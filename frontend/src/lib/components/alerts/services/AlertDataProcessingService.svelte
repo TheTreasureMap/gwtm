@@ -29,7 +29,7 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 	 */
 	export async function loadAlert(graceid: string): Promise<void> {
 		if (!graceid || graceid === 'None') {
-			dispatch('alert-cleared');
+			dispatch('alert-cleared', {});
 			return;
 		}
 
@@ -97,7 +97,7 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 					alertExists: true
 				});
 			} else {
-				dispatch('alert-cleared');
+				dispatch('alert-cleared', {});
 			}
 		} catch (error) {
 			console.error('Error loading alert:', error);

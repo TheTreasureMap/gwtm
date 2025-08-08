@@ -1,9 +1,17 @@
 <script lang="ts">
 	import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
-	import type { GWAlertSchema } from '$lib/api.js';
+	import type { GWAlertSchema } from '$lib/api';
+
+	// Extended interface for processed alert data
+	interface ProcessedGWAlert extends GWAlertSchema {
+		original_alert?: {
+			avgra?: number;
+			avgdec?: number;
+		};
+	}
 
 	export let graceid: string;
-	export let selectedAlert: GWAlertSchema | null = null;
+	export let selectedAlert: ProcessedGWAlert | null = null;
 	export const loading: boolean = false;
 	export const error: string = '';
 

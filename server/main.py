@@ -26,6 +26,7 @@ from server.routes.icecube.router import router as icecube_router
 from server.routes.event.router import router as event
 from server.routes.ui.router import router as ui_router
 from server.routes.celestial.router import router as celestial_router
+from server.routes.auth.router import router as auth_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
