@@ -103,12 +103,7 @@
 </script>
 
 <div class="space-y-0">
-	<Button
-		{variant}
-		{size}
-		{disabled}
-		on:click={handleToggle}
-	>
+	<Button {variant} {size} {disabled} on:click={handleToggle}>
 		<div class="flex items-center gap-2">
 			{#if $$slots.icon}
 				<slot name="icon" />

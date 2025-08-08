@@ -1,3 +1,4 @@
+import client from './client';
 import { pointingService } from './services/pointing.service';
 import { alertService } from './services/alert.service';
 import { candidateService } from './services/candidate.service';
@@ -11,6 +12,7 @@ import { authService } from './services/auth.service';
 import { searchService } from './services/search.service';
 
 export const api = {
+	client,
 	pointings: pointingService,
 	alerts: alertService,
 	candidates: candidateService,
