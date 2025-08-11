@@ -34,7 +34,7 @@ async def get_instrument_type_options():
         options.append(
             EnumOption(
                 name=type_display_names.get(inst_type.name, inst_type.name.title()),
-                value=inst_type.name,
+                value=str(inst_type.value),  # Convert integer to string for EnumOption compatibility
                 description=type_descriptions.get(
                     inst_type.name, f"Instrument type: {inst_type.name}"
                 ),

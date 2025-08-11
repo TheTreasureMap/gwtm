@@ -14,6 +14,8 @@ from .bandpass import router as bandpass_router
 from .depth_unit import router as depth_unit_router
 from .pointing_status import router as pointing_status_router
 from .instrument_type import router as instrument_type_router
+from .footprint_type import router as footprint_type_router
+from .footprint_unit import router as footprint_unit_router
 
 # Create main enums router
 router = APIRouter(prefix="/enums", tags=["enums"])
@@ -23,6 +25,8 @@ router.include_router(bandpass_router)
 router.include_router(depth_unit_router)
 router.include_router(pointing_status_router)
 router.include_router(instrument_type_router)
+router.include_router(footprint_type_router)
+router.include_router(footprint_unit_router)
 
 
 def _get_bandpass_options() -> List[EnumOption]:
@@ -134,6 +138,56 @@ def _get_instrument_type_options() -> List[EnumOption]:
     return options
 
 
+def _get_footprint_type_options() -> List[EnumOption]:
+    """Get footprint type options (shared logic)."""
+    options = []
+    type_descriptions = {
+        "Rectangular": "Rectangular footprint with specified height and width",
+        "Circular": "Circular footprint with specified radius",
+        "Polygon": "Custom polygon footprint with user-defined vertices",
+    }
+
+    footprint_types = ["Rectangular", "Circular", "Polygon"]
+    
+    for ftype in footprint_types:
+        options.append(
+            EnumOption(
+                name=ftype,
+                value=ftype,
+                description=type_descriptions.get(ftype, f"Footprint type: {ftype}"),
+            )
+        )
+    return options
+
+
+def _get_footprint_unit_options() -> List[EnumOption]:
+    """Get footprint unit options (shared logic)."""
+    options = []
+    unit_descriptions = {
+        "deg": "Degrees - Standard angular measurement",
+        "arcmin": "Arc Minutes - 1/60th of a degree",
+        "arcsec": "Arc Seconds - 1/3600th of a degree",
+    }
+
+    unit_display_names = {
+        "deg": "Degrees",
+        "arcmin": "Arc Minutes",
+        "arcsec": "Arc Seconds",
+    }
+
+    footprint_units = ["deg", "arcmin", "arcsec"]
+    
+    for unit in footprint_units:
+        options.append(
+            EnumOption(
+                name=unit_display_names.get(unit, unit),
+                value=unit,
+                description=unit_descriptions.get(unit, f"Footprint unit: {unit}"),
+            )
+        )
+    return options
+
+
 @router.get("/all", response_model=AllEnumsResponse)
 async def get_all_enums():
     """
@@ -148,5 +202,7 @@ async def get_all_enums():
             "depth_unit": _get_depth_unit_options(),
             "pointing_status": _get_pointing_status_options(),
             "instrument_type": _get_instrument_type_options(),
+            "footprint_type": _get_footprint_type_options(),
+            "footprint_unit": _get_footprint_unit_options(),
         }
     )

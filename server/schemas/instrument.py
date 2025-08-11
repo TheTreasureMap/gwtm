@@ -1,7 +1,22 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List, Tuple
 from datetime import datetime
+from enum import Enum
 from server.core.enums.instrumenttype import InstrumentType as instrument_type_enum
+
+
+class FootprintType(str, Enum):
+    """Valid footprint shape types."""
+    rectangular = "Rectangular"
+    circular = "Circular"
+    polygon = "Polygon"
+
+
+class FootprintUnit(str, Enum):
+    """Valid footprint units."""
+    deg = "deg"
+    arcmin = "arcmin"
+    arcsec = "arcsec"
 
 
 class InstrumentSchema(BaseModel):
@@ -36,7 +51,7 @@ class InstrumentSchema(BaseModel):
 
 
 class InstrumentCreate(BaseModel):
-    """Schema for creating a new instrument."""
+    """Schema for creating a new instrument with footprint."""
 
     instrument_name: str = Field(..., description="Name of the instrument")
     nickname: Optional[str] = Field(
@@ -44,6 +59,73 @@ class InstrumentCreate(BaseModel):
     )
     instrument_type: instrument_type_enum = Field(
         ..., description="Type of the instrument"
+    )
+    
+    # Footprint fields
+    footprint_type: FootprintType = Field(
+        ..., description="Type of footprint shape (Rectangular, Circular, Polygon)"
+    )
+    unit: FootprintUnit = Field(
+        ..., description="Unit for footprint dimensions (deg, arcmin, arcsec)"
+    )
+    
+    # Rectangular footprint fields
+    height: Optional[float] = Field(
+        None, description="Height for rectangular footprint"
+    )
+    width: Optional[float] = Field(
+        None, description="Width for rectangular footprint"
+    )
+    
+    # Circular footprint fields
+    radius: Optional[float] = Field(
+        None, description="Radius for circular footprint"
+    )
+    
+    # Polygon footprint field
+    polygon: Optional[str] = Field(
+        None, description="Polygon coordinates as text (supports multi-polygon format)"
+    )
+
+    @field_validator("height", "width", mode="before")
+    def validate_rectangular_fields(cls, value, info):
+        """Validate rectangular footprint fields."""
+        if info.data.get("footprint_type") == FootprintType.rectangular:
+            if value is None:
+                raise ValueError("Height and width are required for rectangular footprint")
+            if not isinstance(value, (int, float)) or value <= 0:
+                raise ValueError("Height and width must be positive numbers")
+        return value
+    
+    @field_validator("radius", mode="before")
+    def validate_circular_fields(cls, value, info):
+        """Validate circular footprint fields."""
+        if info.data.get("footprint_type") == FootprintType.circular:
+            if value is None:
+                raise ValueError("Radius is required for circular footprint")
+            if not isinstance(value, (int, float)) or value <= 0:
+                raise ValueError("Radius must be a positive number")
+        return value
+    
+    @field_validator("polygon", mode="before")
+    def validate_polygon_fields(cls, value, info):
+        """Validate polygon footprint fields."""
+        if info.data.get("footprint_type") == FootprintType.polygon:
+            if not value:
+                raise ValueError("Polygon coordinates are required for polygon footprint")
+        return value
+
+
+class InstrumentCreateResponse(BaseModel):
+    """Response schema for instrument creation."""
+    
+    success: bool = Field(..., description="Whether the operation was successful")
+    message: str = Field(..., description="Success or error message")
+    instrument: Optional[InstrumentSchema] = Field(
+        None, description="Created instrument (if successful)"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="List of validation errors (if any)"
     )
 
 

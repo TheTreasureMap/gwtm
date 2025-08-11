@@ -15,7 +15,7 @@ async def preview_footprint(
     radius: float = None,
     height: float = None,
     width: float = None,
-    shape: str = "circle",
+    shape: str = "Circular",
     polygon: str = None,
     db: Session = Depends(get_db),
 ):
@@ -29,7 +29,7 @@ async def preview_footprint(
     # It generates the appropriate visualization for the given parameters
     vertices = []
 
-    if shape.lower() == "circle" and radius:
+    if shape == "Circular" and radius:
         # For circle, generate points around the circumference
         circle_points = []
         for i in range(36):  # 36 points for a smooth circle
@@ -51,7 +51,7 @@ async def preview_footprint(
         circle_points.append(circle_points[0])
         vertices.append(circle_points)
 
-    elif shape.lower() == "rectangle" and height and width:
+    elif shape == "Rectangular" and height and width:
         # For rectangle, generate corners
         # Convert height/width in degrees to ra/dec coordinates
         # Proper calculation accounting for coordinate system
@@ -70,7 +70,7 @@ async def preview_footprint(
         ]
         vertices.append(rect_points)
 
-    elif shape.lower() == "polygon" and polygon:
+    elif shape == "Polygon" and polygon:
         # For custom polygon, parse the points
         try:
             poly_points = json.loads(polygon)
@@ -104,6 +104,5 @@ async def preview_footprint(
         ),
     )
 
-    # Convert to JSON for return
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    return graphJSON
+    # Return the figure object directly - FastAPI will serialize it properly
+    return fig.to_dict()

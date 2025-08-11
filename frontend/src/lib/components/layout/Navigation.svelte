@@ -87,7 +87,7 @@
 							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pointings</a
 						>
 						<a
-							href="/submit/instrument"
+							href="/submit/instruments"
 							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Instruments</a
 						>
 					</div>

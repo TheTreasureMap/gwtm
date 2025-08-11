@@ -10,7 +10,7 @@
 import { API_ENDPOINTS } from '$lib/config/api';
 import { api } from '$lib/api';
 
-// Types
+// Frontend form data types (using frontend field names)
 export interface PointingData {
 	id?: number;
 	graceid: string;
@@ -30,9 +30,23 @@ export interface PointingData {
 	doi_url?: string;
 }
 
+// API schema types (matching FastAPI PointingBase schema)
+export interface ApiPointingData {
+	ra: number;
+	dec: number;
+	instrumentid: number;
+	status: string;
+	band: string;
+	depth?: number;
+	depth_err?: number;
+	depth_unit: string;
+	pos_angle?: number;
+	time?: string;
+}
+
 export interface PointingCreateRequest {
 	graceid: string;
-	pointings: PointingData[];
+	pointings: ApiPointingData[];
 	request_doi?: boolean;
 	creators?: string[];
 	doi_group_id?: number;
@@ -73,14 +87,19 @@ export interface DoiAuthorGroup {
 	userid: number;
 }
 
+export interface StatusOption {
+	name: string;
+	value: string;
+}
+
 // Note: Authentication and error handling is now managed by the axios client
 
 /**
  * Submit a new pointing observation
  */
 export async function submitPointing(pointingData: PointingData): Promise<PointingResponse> {
-	// Transform the data to match the API schema
-	const transformedPointing = {
+	// Transform frontend data to API schema
+	const apiPointing: ApiPointingData = {
 		ra: pointingData.ra,
 		dec: pointingData.dec,
 		instrumentid: parseInt(pointingData.instrumentid), // Convert string to int
@@ -99,7 +118,7 @@ export async function submitPointing(pointingData: PointingData): Promise<Pointi
 
 	const request: PointingCreateRequest = {
 		graceid: pointingData.graceid,
-		pointings: [transformedPointing],
+		pointings: [apiPointing], // Now properly typed!
 		request_doi: pointingData.request_doi,
 		...(pointingData.doi_creator_groups &&
 			pointingData.doi_creator_groups !== 'None' && {
@@ -109,7 +128,7 @@ export async function submitPointing(pointingData: PointingData): Promise<Pointi
 
 	// Debug logging
 	console.log('Original pointing data:', pointingData);
-	console.log('Transformed pointing:', transformedPointing);
+	console.log('API pointing data:', apiPointing);
 	console.log('Final request payload:', request);
 
 	const response = await api.client.post(API_ENDPOINTS.pointings, request);
@@ -167,53 +186,33 @@ export async function getInstruments(): Promise<InstrumentOption[]> {
  * Get available bandpass options
  */
 export async function getBandpassOptions(): Promise<BandpassOption[]> {
-	// These match the FastAPI Bandpass enum exactly
-	return [
-		{ name: 'U', value: 'U' },
-		{ name: 'B', value: 'B' },
-		{ name: 'V', value: 'V' },
-		{ name: 'R', value: 'R' },
-		{ name: 'I', value: 'I' },
-		{ name: 'J', value: 'J' },
-		{ name: 'H', value: 'H' },
-		{ name: 'K', value: 'K' },
-		{ name: 'u', value: 'u' },
-		{ name: 'g', value: 'g' },
-		{ name: 'r', value: 'r' },
-		{ name: 'i', value: 'i' },
-		{ name: 'z', value: 'z' },
-		{ name: 'UVW1', value: 'UVW1' },
-		{ name: 'UVW2', value: 'UVW2' },
-		{ name: 'UVM2', value: 'UVM2' },
-		{ name: 'XRT', value: 'XRT' },
-		{ name: 'clear', value: 'clear' },
-		{ name: 'open', value: 'open' },
-		{ name: 'UHF', value: 'UHF' },
-		{ name: 'VHF', value: 'VHF' },
-		{ name: 'L', value: 'L' },
-		{ name: 'S', value: 'S' },
-		{ name: 'C', value: 'C' },
-		{ name: 'X', value: 'X' },
-		{ name: 'other', value: 'other' },
-		{ name: 'TESS', value: 'TESS' },
-		{ name: 'BAT', value: 'BAT' },
-		{ name: 'HESS', value: 'HESS' },
-		{ name: 'WISEL', value: 'WISEL' },
-		{ name: 'q', value: 'q' }
-	];
+	const response = await api.client.get('/api/v1/enums/bandpass');
+	return response.data.options.map((option: any) => ({
+		name: option.name,
+		value: option.value
+	}));
 }
 
 /**
  * Get available depth unit options
  */
 export async function getDepthUnitOptions(): Promise<DepthUnitOption[]> {
-	// These match the FastAPI enum values
-	return [
-		{ name: 'AB Magnitude', value: 'ab_mag' },
-		{ name: 'Vega Magnitude', value: 'vega_mag' },
-		{ name: 'Flux (erg/cm²/s)', value: 'flux_erg' },
-		{ name: 'Flux (Jy)', value: 'flux_jy' }
-	];
+	const response = await api.client.get('/api/v1/enums/depth_unit');
+	return response.data.options.map((option: any) => ({
+		name: option.name,
+		value: option.value
+	}));
+}
+
+/**
+ * Get available pointing status options
+ */
+export async function getPointingStatusOptions(): Promise<StatusOption[]> {
+	const response = await api.client.get('/api/v1/enums/pointing_status');
+	return response.data.options.map((option: any) => ({
+		name: option.name,
+		value: option.value
+	}));
 }
 
 /**
@@ -238,14 +237,16 @@ export async function loadFormOptions(): Promise<{
 	instruments: InstrumentOption[];
 	bandpassOptions: BandpassOption[];
 	depthUnitOptions: DepthUnitOption[];
+	statusOptions: StatusOption[];
 	doiAuthorGroups: DoiAuthorGroup[];
 }> {
-	const [graceIds, instruments, bandpassOptions, depthUnitOptions, doiAuthorGroups] =
+	const [graceIds, instruments, bandpassOptions, depthUnitOptions, statusOptions, doiAuthorGroups] =
 		await Promise.all([
 			getGraceIds(),
 			getInstruments(),
 			getBandpassOptions(),
 			getDepthUnitOptions(),
+			getPointingStatusOptions(),
 			getDoiAuthorGroups()
 		]);
 
@@ -254,6 +255,7 @@ export async function loadFormOptions(): Promise<{
 		instruments,
 		bandpassOptions,
 		depthUnitOptions,
+		statusOptions,
 		doiAuthorGroups
 	};
 }
