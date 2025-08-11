@@ -90,6 +90,10 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	const isSubmitting = derived(store, ($store) => $store.isSubmitting);
 	const isDirty = derived(store, ($store) => $store.isDirty);
 	const errors = derived(store, ($store) => $store.errors);
+	const globalError = derived(store, ($store) => $store.globalError);
+
+	// Submit result store for tracking submission results
+	const submitResult = writable<{ success: boolean; error?: string; result?: any } | null>(null);
 
 	/**
 	 * Validate a single field
@@ -398,6 +402,9 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 					globalError: result.success ? '' : result.error || 'Submission failed'
 				}));
 
+				// Update submit result store
+				submitResult.set(result);
+
 				if (result.success && resetOnSubmit) {
 					reset();
 				}
@@ -457,6 +464,12 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 		);
 	}
 
+	// Handle form submission (wrapper around submit for form events)
+	async function handleSubmit(event?: Event) {
+		event?.preventDefault();
+		return await submit();
+	}
+
 	return {
 		// Stores
 		subscribe: store.subscribe,
@@ -465,6 +478,8 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 		isSubmitting,
 		isDirty,
 		errors,
+		globalError,
+		submitResult,
 
 		// Actions
 		setFieldValue,
@@ -475,6 +490,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 		validateAll: validateAllFields,
 		reset,
 		submit,
+		handleSubmit,
 		setGlobalError,
 		clearGlobalError,
 		getFieldState,

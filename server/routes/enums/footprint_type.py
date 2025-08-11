@@ -26,18 +26,20 @@ async def get_footprint_type_options():
 
     type_display_names = {
         "Rectangular": "Rectangular",
-        "Circular": "Circular",
+        "Circular": "Circular", 
         "Polygon": "Polygon",
     }
 
     footprint_types = ["Rectangular", "Circular", "Polygon"]
-
+    
     for ftype in footprint_types:
         options.append(
             EnumOption(
                 name=type_display_names.get(ftype, ftype),
                 value=ftype,
-                description=type_descriptions.get(ftype, f"Footprint type: {ftype}"),
+                description=type_descriptions.get(
+                    ftype, f"Footprint type: {ftype}"
+                ),
             )
         )
 

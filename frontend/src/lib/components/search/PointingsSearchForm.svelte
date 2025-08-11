@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { api } from '$lib/api';
+	import { getBandpassOptions, getPointingStatusOptions } from '$lib/services/pointingService';
 	import Form from '$lib/components/forms/Form.svelte';
 	import FormField from '$lib/components/forms/FormField.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -76,25 +77,24 @@
 				...uniqueGraceIds.map((gid: string) => ({ value: gid, label: gid }))
 			];
 
-			// Standard band options
+			// Load band options from API
+			const bandpassData = await getBandpassOptions();
 			bandOptions = [
 				{ value: 'all', label: 'All' },
-				{ value: 'g', label: 'g' },
-				{ value: 'r', label: 'r' },
-				{ value: 'i', label: 'i' },
-				{ value: 'z', label: 'z' },
-				{ value: 'y', label: 'y' },
-				{ value: 'J', label: 'J' },
-				{ value: 'H', label: 'H' },
-				{ value: 'K', label: 'K' }
+				...bandpassData.map((band) => ({
+					value: band.value,
+					label: band.name
+				}))
 			];
 
-			// Standard status options
+			// Load status options from API
+			const statusData = await getPointingStatusOptions();
 			statusOptions = [
 				{ value: 'all', label: 'All' },
-				{ value: 'planned', label: 'Planned' },
-				{ value: 'completed', label: 'Completed' },
-				{ value: 'cancelled', label: 'Cancelled' }
+				...statusData.map((status) => ({
+					value: status.value,
+					label: status.name
+				}))
 			];
 		} catch (err) {
 			console.error('Failed to load form options:', err);
