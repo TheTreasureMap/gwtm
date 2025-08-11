@@ -130,11 +130,7 @@
 	let instrumentOptions: SelectOption[] = [];
 	let bandpassOptions: SelectOption[] = [];
 	let depthUnitOptions: SelectOption[] = [];
-	let statusOptions: SelectOption[] = [
-		{ value: '', label: 'Select Status' },
-		{ value: 'planned', label: 'Planned' },
-		{ value: 'completed', label: 'Completed' }
-	];
+	let statusOptions: SelectOption[] = [];
 	let doiGroupOptions: SelectOption[] = [{ value: 'None', label: 'None' }];
 
 	// Loading states
@@ -185,6 +181,15 @@
 				...options.depthUnitOptions.map((unit) => ({
 					value: unit.value,
 					label: unit.name
+				}))
+			];
+
+			// Status options
+			statusOptions = [
+				{ value: '', label: 'Select Status' },
+				...options.statusOptions.map((status) => ({
+					value: status.value,
+					label: status.name
 				}))
 			];
 
