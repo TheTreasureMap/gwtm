@@ -7,18 +7,44 @@
 	import { createEventDispatcher } from 'svelte';
 	import { api, type GWAlertSchema } from '$lib/api';
 
+	// Type definitions
+	interface AlertQueryParams {
+		graceid?: string;
+		alert_type?: string;
+		group?: string;
+		status?: string;
+		page?: number;
+		per_page?: number;
+		[key: string]: unknown;
+	}
+
+	interface GroupedAlert {
+		alertname: string;
+		classification: string;
+		distance: string;
+		pcounts: number;
+		alert_types: string[];
+		has_icecube: boolean;
+		mostRecentAlert: GWAlertSchema;
+	}
+
+	interface BadgeConfig {
+		color: string;
+		icon: string;
+	}
+
 	const dispatch = createEventDispatcher();
 
 	// Data state
 	export let alerts: GWAlertSchema[] = [];
-	export let groupedAlerts: any[] = [];
+	export let groupedAlerts: GroupedAlert[] = [];
 	export let loading: boolean = false;
 	export let error: string | null = null;
 
 	/**
 	 * Load alerts with given parameters
 	 */
-	export async function loadAlerts(queryParams: any) {
+	export async function loadAlerts(queryParams: AlertQueryParams) {
 		try {
 			loading = true;
 			error = null;
@@ -96,7 +122,7 @@
 	/**
 	 * Group alerts by graceid for display
 	 */
-	function groupAlertsByGraceid(alertsList: any[]) {
+	function groupAlertsByGraceid(alertsList: GWAlertSchema[]) {
 		const grouped: Record<string, GWAlertSchema[]> = {};
 
 		// Group alerts by graceid (or alternateid if available)
@@ -109,7 +135,7 @@
 		});
 
 		// Process each group to create the grouped alert format
-		const result: any[] = [];
+		const result: GroupedAlert[] = [];
 		for (const [graceid, alertGroup] of Object.entries(grouped)) {
 			const alerts = alertGroup as GWAlertSchema[];
 			// Sort alerts by date created, most recent first
@@ -158,7 +184,7 @@
 	/**
 	 * Get alert classification based on probabilities
 	 */
-	function getAlertClassification(alert: any) {
+	function getAlertClassification(alert: GWAlertSchema) {
 		// Classification logic matching Flask version
 		if (!alert) return 'Unknown';
 
@@ -211,8 +237,11 @@
 			Publication: { color: 'bg-gray-100 text-gray-800', icon: 'PU' }
 		};
 
-		return alertTypes.map((type) => {
-			const config = (badgeConfig as any)[type] || {
+		// Deduplicate alert types to prevent duplicate keys
+		const uniqueAlertTypes = [...new Set(alertTypes)];
+
+		return uniqueAlertTypes.map((type) => {
+			const config = (badgeConfig as Record<string, BadgeConfig>)[type] || {
 				color: 'bg-gray-100 text-gray-800',
 				icon: type?.substring(0, 2) || '?'
 			};
@@ -274,7 +303,7 @@
 	/**
 	 * Format number for display
 	 */
-	export function formatNumber(num: any) {
+	export function formatNumber(num: unknown) {
 		if (num === null || num === undefined) return 'N/A';
 		if (typeof num === 'number') {
 			return num.toFixed(3);

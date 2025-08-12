@@ -34,7 +34,7 @@
 	const dispatch = createEventDispatcher<{
 		success: { instrument: InstrumentSchema };
 		error: { error: string };
-		cancel: {};
+		cancel: Record<string, never>;
 	}>();
 
 	/**

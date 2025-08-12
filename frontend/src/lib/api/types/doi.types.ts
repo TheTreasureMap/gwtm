@@ -16,7 +16,7 @@ export interface DOIRequest {
 
 export interface DOIRequestResponse {
 	DOI_URL?: string;
-	WARNINGS?: any[];
+	WARNINGS?: string[];
 }
 
 export interface DOIAuthorGroupSchema {

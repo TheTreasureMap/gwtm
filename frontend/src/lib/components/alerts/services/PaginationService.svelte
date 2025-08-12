@@ -8,6 +8,15 @@
 
 	const dispatch = createEventDispatcher();
 
+	// Type definitions
+	interface PaginationData {
+		currentPage?: number;
+		total?: number;
+		totalPages?: number;
+		hasNext?: boolean;
+		hasPrev?: boolean;
+	}
+
 	// Pagination state
 	export let currentPage = 1;
 	export let perPage = 25;
@@ -19,7 +28,7 @@
 	/**
 	 * Update pagination state from API response
 	 */
-	export function updatePaginationState(paginationData: any) {
+	export function updatePaginationState(paginationData: PaginationData) {
 		currentPage = paginationData.currentPage || 1;
 		totalItems = paginationData.total || 0;
 		totalPages = paginationData.totalPages || 0;

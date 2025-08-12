@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { auth } from '$lib/stores/auth';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
@@ -11,14 +12,23 @@
 	let rememberMe = false;
 	let error = '';
 	let loading = false;
+	let successMessage = '';
 
-	// Redirect if already authenticated
+	// Redirect if already authenticated and handle success messages
 	onMount(() => {
 		const unsubscribe = auth.subscribe((state) => {
 			if (state.isAuthenticated) {
 				goto('/');
 			}
 		});
+
+		// Check for success message from registration
+		const message = $page.url.searchParams.get('message');
+		if (message) {
+			successMessage = message;
+			// Clear the URL parameter for cleaner URLs
+			window.history.replaceState({}, '', '/login');
+		}
 
 		return unsubscribe;
 	});
@@ -101,6 +111,10 @@
 					<label for="remember-me" class="ml-2 block text-sm text-gray-900"> Remember me </label>
 				</div>
 			</div>
+
+			{#if successMessage}
+				<ErrorMessage message={successMessage} type="info" />
+			{/if}
 
 			{#if error}
 				<ErrorMessage message={error} />

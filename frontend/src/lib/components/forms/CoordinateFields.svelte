@@ -151,7 +151,7 @@
 	<!-- Validation summary -->
 	{#if !isValid && allErrors.length > 0}
 		<div class="coordinate-errors" role="alert">
-			{#each allErrors as error}
+			{#each allErrors as error, index (index)}
 				<p class="error-text">{error}</p>
 			{/each}
 		</div>

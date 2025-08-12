@@ -20,8 +20,13 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 			alertExists: boolean;
 		};
 		'alert-error': { error: string };
-		'alert-cleared': {};
+		'alert-cleared': Record<string, never>;
+		'alert-loading-start': Record<string, never>;
+		'alert-loading-end': Record<string, never>;
 	}>();
+
+	// Loading state
+	export let loading = false;
 
 	/**
 	 * Load and process alert data for a given graceid
@@ -34,6 +39,8 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 		}
 
 		try {
+			loading = true;
+			dispatch('alert-loading-start', {});
 			// Query for ALL alerts with this graceid (matching Flask logic)
 			const alertsResponse = await api.alerts.queryAlerts({ graceid });
 
@@ -104,6 +111,9 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 			dispatch('alert-error', { error: errorMessage });
 			errorHandler.showToast('Failed to load alert data. Please try again.', { type: 'error' });
+		} finally {
+			loading = false;
+			dispatch('alert-loading-end', {});
 		}
 	}
 
@@ -139,9 +149,9 @@ Manages alert loading, filtering, and Flask-compatible data processing.
 			'prob_hasremenant'
 		];
 		probFields.forEach((field) => {
-			const value = (processed as any)[field];
+			const value = (processed as Record<string, unknown>)[field];
 			if (value !== null && value !== undefined && typeof value === 'number') {
-				(processed as any)[field] = Math.round(value * 100000) / 100000; // 5 decimal places
+				(processed as Record<string, unknown>)[field] = Math.round(value * 100000) / 100000; // 5 decimal places
 			}
 		});
 

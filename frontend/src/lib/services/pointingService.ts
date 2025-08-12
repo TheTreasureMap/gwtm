@@ -138,7 +138,7 @@ export async function submitPointing(pointingData: PointingData): Promise<Pointi
 /**
  * Load existing pointing data by ID
  */
-export async function loadPointingById(pointingId: number): Promise<any> {
+export async function loadPointingById(pointingId: number): Promise<PointingData> {
 	const response = await api.client.get(`${API_ENDPOINTS.pointingFromId}?id=${pointingId}`);
 	return response.data;
 }
@@ -153,7 +153,7 @@ export async function getGraceIds(): Promise<GraceIdOption[]> {
 	// Process alerts to get unique Grace IDs
 	const graceIds = new Map<string, GraceIdOption>();
 
-	data.forEach((alert: any) => {
+	data.forEach((alert: { graceid: string; alternateid?: string }) => {
 		if (alert.graceid && !alert.graceid.includes('TEST')) {
 			const graceid = alert.alternateid || alert.graceid;
 			graceIds.set(graceid, {
@@ -187,7 +187,7 @@ export async function getInstruments(): Promise<InstrumentOption[]> {
  */
 export async function getBandpassOptions(): Promise<BandpassOption[]> {
 	const response = await api.client.get('/api/v1/enums/bandpass');
-	return response.data.options.map((option: any) => ({
+	return response.data.options.map((option: { name: string; value: string }) => ({
 		name: option.name,
 		value: option.value
 	}));
@@ -198,7 +198,7 @@ export async function getBandpassOptions(): Promise<BandpassOption[]> {
  */
 export async function getDepthUnitOptions(): Promise<DepthUnitOption[]> {
 	const response = await api.client.get('/api/v1/enums/depth_unit');
-	return response.data.options.map((option: any) => ({
+	return response.data.options.map((option: { name: string; value: string }) => ({
 		name: option.name,
 		value: option.value
 	}));
@@ -209,7 +209,7 @@ export async function getDepthUnitOptions(): Promise<DepthUnitOption[]> {
  */
 export async function getPointingStatusOptions(): Promise<StatusOption[]> {
 	const response = await api.client.get('/api/v1/enums/pointing_status');
-	return response.data.options.map((option: any) => ({
+	return response.data.options.map((option: { name: string; value: string }) => ({
 		name: option.name,
 		value: option.value
 	}));

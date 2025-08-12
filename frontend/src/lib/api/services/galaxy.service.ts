@@ -6,6 +6,7 @@ import type {
 	GalaxyFilters,
 	GladeFilters
 } from '../types/galaxy.types';
+import type { GLADEGalaxiesResponse } from '../types/api-responses';
 
 export const galaxyService = {
 	getEventGalaxies: async (filters: GalaxyFilters): Promise<GWGalaxyEntrySchema[]> => {
@@ -32,8 +33,8 @@ export const galaxyService = {
 		return response.data;
 	},
 
-	getGladeGalaxies: async (filters?: GladeFilters): Promise<any> => {
-		const response = await client.get<any>('/api/v1/glade', { params: filters });
+	getGladeGalaxies: async (filters?: GladeFilters): Promise<GLADEGalaxiesResponse> => {
+		const response = await client.get<GLADEGalaxiesResponse>('/api/v1/glade', { params: filters });
 		return response.data;
 	}
 };

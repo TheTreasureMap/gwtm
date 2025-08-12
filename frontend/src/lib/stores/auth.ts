@@ -103,7 +103,8 @@ function createAuthStore() {
 		} catch (err) {
 			console.error('Login failed:', err);
 			const errorMessage =
-				(err as any).response?.data?.detail || 'Invalid credentials. Please try again.';
+				(err as { response?: { data?: { detail?: string } } }).response?.data?.detail ||
+				'Invalid credentials. Please try again.';
 			errorHandler.showToast(errorMessage, { type: 'error' });
 			update((state) => ({
 				...state,
@@ -137,22 +138,63 @@ function createAuthStore() {
 		goto('/'); // Redirect to home or login page
 	};
 
-	const register = async (userData: any): Promise<AuthResult> => {
+	const register = async (userData: {
+		email: string;
+		password: string;
+		username: string;
+		first_name?: string;
+		last_name?: string;
+	}): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
-			await api.auth.register(userData);
-			errorHandler.showToast('Registration successful! Please check your email for verification.', {
+			const response = await api.auth.register(userData);
+
+			// Show success message based on response
+			const successMessage =
+				response.data?.message ||
+				'Registration successful! Please check your email for verification.';
+
+			errorHandler.showToast(successMessage, {
 				type: 'info',
-				duration: 5000
+				duration: 8000 // Longer duration for important verification message
 			});
-			goto('/login');
+
 			update((state) => ({ ...state, loading: false }));
 			return { success: true };
 		} catch (err) {
 			console.error('Registration failed:', err);
-			const errorMessage =
-				(err as any).response?.data?.detail || 'Registration failed. Please try again.';
-			errorHandler.showToast(errorMessage, { type: 'error' });
+
+			// Enhanced error handling for better user experience
+			let errorMessage = 'Registration failed. Please try again.';
+
+			if (err && typeof err === 'object' && 'response' in err) {
+				const response = err.response as any;
+
+				// Handle validation errors from FastAPI
+				if (response?.data?.errors && Array.isArray(response.data.errors)) {
+					const errors = response.data.errors.map((error: any) => error.message).join(', ');
+					errorMessage = errors;
+				} else if (response?.data?.detail) {
+					// Handle single error detail
+					if (Array.isArray(response.data.detail)) {
+						// Pydantic validation errors format
+						const validationErrors = response.data.detail
+							.map((error: any) => `${error.loc?.[1] || error.loc?.[0] || 'Field'}: ${error.msg}`)
+							.join(', ');
+						errorMessage = validationErrors;
+					} else if (typeof response.data.detail === 'string') {
+						errorMessage = response.data.detail;
+					}
+				} else if (response?.status === 400) {
+					errorMessage = 'Please check your information and try again.';
+				} else if (response?.status === 409) {
+					errorMessage = 'An account with this email or username already exists.';
+				} else if (response?.status >= 500) {
+					errorMessage = 'Server error. Please try again later.';
+				}
+			}
+
+			errorHandler.showToast(errorMessage, { type: 'error', duration: 6000 });
 			update((state) => ({ ...state, loading: false }));
 			return { success: false, error: errorMessage };
 		}

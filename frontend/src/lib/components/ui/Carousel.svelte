@@ -93,7 +93,7 @@
 	});
 
 	// Restart autoplay when settings change
-	$: {
+	$: if (autoPlay !== undefined && interval !== undefined && totalImages !== undefined) {
 		stopAutoPlay();
 		startAutoPlay();
 	}
@@ -109,7 +109,7 @@
 	{#if totalImages > 0}
 		<!-- Images -->
 		<div class="relative w-full h-full">
-			{#each images as image, index}
+			{#each images as image, index (image.src)}
 				<div
 					class="absolute inset-0 transition-opacity duration-500 ease-in-out"
 					class:opacity-100={index === currentIndex}

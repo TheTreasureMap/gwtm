@@ -74,7 +74,7 @@ export interface TableColumn {
 }
 
 export interface TableProps {
-	data?: Array<Record<string, any>>;
+	data?: Array<Record<string, unknown>>;
 	columns?: TableColumn[];
 	sortable?: boolean;
 	paginated?: boolean;

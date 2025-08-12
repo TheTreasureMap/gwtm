@@ -185,7 +185,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each doiGroups as group}
+								{#each doiGroups as group (group.id)}
 									<tr>
 										<td>{group.id}</td>
 										<td>{group.name}</td>
@@ -234,7 +234,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each filteredUsers as user}
+									{#each filteredUsers as user (user.id)}
 										<tr>
 											<td>{user.id}</td>
 											<td>{user.username}</td>
