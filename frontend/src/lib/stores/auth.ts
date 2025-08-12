@@ -11,7 +11,7 @@ interface User {
 	username: string;
 	firstname: string;
 	lastname: string;
-	verified: boolean;
+	verified?: boolean; // Optional during Flask/FastAPI transition
 	api_token?: string;
 }
 

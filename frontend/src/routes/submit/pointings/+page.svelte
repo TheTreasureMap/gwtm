@@ -446,7 +446,7 @@
 	}
 
 	.page-header {
-		margin-bottom: 2rem;
+		margin-bottom: 1.5rem;
 	}
 
 	.page-header h1 {
@@ -470,8 +470,8 @@
 	}
 
 	.form-section {
-		margin-bottom: 2rem;
-		padding-bottom: 2rem;
+		margin-bottom: 1.5rem;
+		padding-bottom: 1.5rem;
 		border-bottom: 1px solid #f3f4f6;
 	}
 
@@ -503,8 +503,8 @@
 		gap: 1rem;
 		align-items: center;
 		justify-content: flex-end;
-		margin-top: 2rem;
-		padding-top: 2rem;
+		margin-top: 1.5rem;
+		padding-top: 1.5rem;
 		border-top: 1px solid #e5e7eb;
 	}
 
