@@ -273,6 +273,10 @@ async def service_status(db: Session = Depends(get_db)):
     return status
 
 
+# Include registration route directly (without auth prefix for frontend compatibility)
+from server.routes.auth.register import register
+app.add_api_route(f"{API_V1_PREFIX}/register", register, methods=["POST"])
+
 # Include routers with the API prefix
 app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(pointing_router, prefix=API_V1_PREFIX)

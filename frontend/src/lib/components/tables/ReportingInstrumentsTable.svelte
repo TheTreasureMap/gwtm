@@ -33,7 +33,7 @@
 	export let loading: boolean = false;
 
 	// Table configuration
-	$: columns = [
+	const columns = [
 		{
 			key: 'instrument_name',
 			label: 'Instrument Name',

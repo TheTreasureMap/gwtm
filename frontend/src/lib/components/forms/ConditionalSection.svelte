@@ -8,10 +8,6 @@
 	 * @since 2024-01-25
 	 */
 
-	import { createEventDispatcher } from 'svelte';
-
-	const dispatch = createEventDispatcher();
-
 	/**
 	 * Whether the section should be visible
 	 * @type {boolean}

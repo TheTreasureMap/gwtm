@@ -6,7 +6,7 @@ export interface AppError {
 	type: 'error' | 'warning' | 'info';
 	timestamp: Date;
 	context?: string;
-	details?: any;
+	details?: unknown;
 	dismissible: boolean;
 	duration?: number; // Auto-dismiss after ms (0 = no auto-dismiss)
 }
@@ -16,7 +16,7 @@ export interface ErrorToastOptions {
 	duration?: number;
 	dismissible?: boolean;
 	context?: string;
-	details?: any;
+	details?: unknown;
 }
 
 // Global error store
@@ -60,7 +60,7 @@ export const errorHandler = {
 	},
 
 	// Handle API errors with consistent formatting
-	handleApiError(error: any, context?: string): string {
+	handleApiError(error: unknown, context?: string): string {
 		console.error('API Error:', error, context);
 
 		let message = 'An unexpected error occurred';
@@ -81,7 +81,7 @@ export const errorHandler = {
 				// Validation errors
 				if (data?.detail && Array.isArray(data.detail)) {
 					const validationErrors = data.detail
-						.map((err: any) => `${err.loc?.join('.')}: ${err.msg}`)
+						.map((err: { loc?: string[]; msg: string }) => `${err.loc?.join('.')}: ${err.msg}`)
 						.join(', ');
 					message = `Validation error: ${validationErrors}`;
 				} else if (data?.detail) {
@@ -160,7 +160,7 @@ function generateErrorId(): string {
 
 // Error logging utilities
 export const errorLogger = {
-	log(error: Error | string, context?: string, extra?: any) {
+	log(error: Error | string, context?: string, extra?: unknown) {
 		const timestamp = new Date().toISOString();
 		const errorObj =
 			error instanceof Error
@@ -180,7 +180,7 @@ export const errorLogger = {
 		}
 	},
 
-	logApiError(error: any, endpoint?: string) {
+	logApiError(error: unknown, endpoint?: string) {
 		this.log(error, `API Error${endpoint ? ` (${endpoint})` : ''}`, {
 			status: error?.response?.status,
 			data: error?.response?.data,
@@ -191,7 +191,7 @@ export const errorLogger = {
 
 // Validation utilities
 export const validation = {
-	isRequired(value: any, fieldName: string): string | null {
+	isRequired(value: unknown, fieldName: string): string | null {
 		if (value === null || value === undefined || value === '') {
 			return `${fieldName} is required`;
 		}
@@ -220,7 +220,7 @@ export const validation = {
 		return null;
 	},
 
-	isNumber(value: any, fieldName: string): string | null {
+	isNumber(value: unknown, fieldName: string): string | null {
 		if (isNaN(value) || value === '') {
 			return `${fieldName} must be a valid number`;
 		}
@@ -237,8 +237,8 @@ export const validation = {
 
 // Form validation helper
 export function validateForm(
-	values: Record<string, any>,
-	rules: Record<string, ((value: any) => string | null)[]>
+	values: Record<string, unknown>,
+	rules: Record<string, ((value: unknown) => string | null)[]>
 ): Record<string, string> {
 	const errors: Record<string, string> = {};
 

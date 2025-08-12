@@ -164,7 +164,7 @@
 	}
 
 	// Validation helpers
-	$: placeholder = 'YYYY-MM-DDTHH:MM:SS.sss (e.g., 2001-01-01T12:30:15.500)';
+	const placeholder = 'YYYY-MM-DDTHH:MM:SS.sss (e.g., 2001-01-01T12:30:15.500)';
 	$: finalHelpText = helpText || 'Enter date and time in the format shown';
 </script>
 

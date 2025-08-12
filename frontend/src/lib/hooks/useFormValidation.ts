@@ -16,17 +16,17 @@ import type {
 } from '$lib/validation/validators';
 import { validateField, validateSchema } from '$lib/validation/validators';
 
-export interface UseFieldValidationOptions {
+export interface UseFieldValidationOptions<T = unknown> {
 	validators?: ValidatorFunction[];
 	required?: boolean;
 	validateOnChange?: boolean;
 	validateOnBlur?: boolean;
 	debounceMs?: number;
-	initialValue?: any;
+	initialValue?: T;
 }
 
-export interface FieldValidationState {
-	value: any;
+export interface FieldValidationState<T = unknown> {
+	value: T;
 	errors: string[];
 	warnings: string[];
 	isValid: boolean;
@@ -38,7 +38,7 @@ export interface FieldValidationState {
 /**
  * Hook for managing individual field validation
  */
-export function useFieldValidation(options: UseFieldValidationOptions = {}) {
+export function useFieldValidation<T = unknown>(options: UseFieldValidationOptions<T> = {}) {
 	const {
 		validators = [],
 		required = false,
@@ -49,8 +49,8 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	} = options;
 
 	// Create stores
-	const state = writable<FieldValidationState>({
-		value: initialValue,
+	const state = writable<FieldValidationState<T>>({
+		value: initialValue as T,
 		errors: [],
 		warnings: [],
 		isValid: true,
@@ -66,16 +66,16 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	const isValidating = derived(state, ($state) => $state.isValidating);
 
 	let validationTimeout: ReturnType<typeof setTimeout>;
-	let validationContext: any = {};
+	let validationContext: Record<string, unknown> = {};
 
 	/**
 	 * Validate the field
 	 */
-	function validate(context?: any): ValidationResult {
+	function validate(context?: Record<string, unknown>): ValidationResult {
 		state.update((s) => ({ ...s, isValidating: true }));
 
 		const currentState = state.subscribe ? state : { subscribe: () => ({}) };
-		let currentValue: any;
+		let currentValue: T;
 
 		// Get current value from state
 		const unsubscribe = state.subscribe((s) => {
@@ -100,7 +100,7 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	/**
 	 * Debounced validation
 	 */
-	function debouncedValidate(context?: any) {
+	function debouncedValidate(context?: Record<string, unknown>) {
 		clearTimeout(validationTimeout);
 		validationTimeout = setTimeout(() => validate(context), debounceMs);
 	}
@@ -108,7 +108,7 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	/**
 	 * Set field value
 	 */
-	function setValue(newValue: any, shouldValidate = validateOnChange) {
+	function setValue(newValue: T, shouldValidate = validateOnChange) {
 		state.update((s) => ({ ...s, value: newValue }));
 
 		if (shouldValidate) {
@@ -137,7 +137,7 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	/**
 	 * Set validation context
 	 */
-	function setValidationContext(context: any) {
+	function setValidationContext(context: Record<string, unknown>) {
 		validationContext = context;
 	}
 
@@ -203,7 +203,7 @@ export function useFieldValidation(options: UseFieldValidationOptions = {}) {
 	};
 }
 
-export interface UseFormValidationOptions<T = Record<string, any>> {
+export interface UseFormValidationOptions<T = Record<string, unknown>> {
 	schema?: ValidationSchema<T>;
 	initialValues?: Partial<T>;
 	validateOnChange?: boolean;
@@ -211,7 +211,7 @@ export interface UseFormValidationOptions<T = Record<string, any>> {
 	mode?: 'onChange' | 'onBlur' | 'onSubmit';
 }
 
-export interface FormValidationState<T = Record<string, any>> {
+export interface FormValidationState<T = Record<string, unknown>> {
 	values: T;
 	errors: Record<keyof T, string[]>;
 	touched: Record<keyof T, boolean>;
@@ -223,7 +223,7 @@ export interface FormValidationState<T = Record<string, any>> {
 /**
  * Hook for managing form-level validation
  */
-export function useFormValidation<T extends Record<string, any> = Record<string, any>>(
+export function useFormValidation<T extends Record<string, unknown> = Record<string, unknown>>(
 	options: UseFormValidationOptions<T> = {}
 ) {
 	const {
@@ -256,13 +256,16 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	/**
 	 * Validate specific field
 	 */
-	function validateFormField(fieldName: keyof T, context?: any): ValidationResult {
+	function validateFormField(
+		fieldName: keyof T,
+		context?: Record<string, unknown>
+	): ValidationResult {
 		if (!schema || !schema[fieldName]) {
 			return { isValid: true, errors: [] };
 		}
 
 		let currentValues: T;
-		let fieldValue: any;
+		let fieldValue: T[keyof T];
 
 		// Get current values from state
 		const unsubscribe = state.subscribe((s) => {
@@ -306,8 +309,13 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 
 		state.update((s) => ({ ...s, isValidating: true }));
 
-		const currentValues = derived(state, (s) => s.values);
-		const results = validateSchema(currentValues, schema);
+		let currentValues: T;
+		const unsubscribe = state.subscribe((s) => {
+			currentValues = s.values;
+		});
+		unsubscribe();
+		
+		const results = validateSchema(currentValues!, schema);
 
 		const newErrors = {} as Record<keyof T, string[]>;
 
@@ -337,7 +345,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	/**
 	 * Set field value
 	 */
-	function setFieldValue(fieldName: keyof T, value: any) {
+	function setFieldValue(fieldName: keyof T, value: T[keyof T]) {
 		state.update((s) => ({
 			...s,
 			values: { ...s.values, [fieldName]: value },
@@ -437,7 +445,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 	 */
 	function getFieldHelpers(fieldName: keyof T) {
 		return {
-			setValue: (value: any) => setFieldValue(fieldName, value),
+			setValue: (value: T[keyof T]) => setFieldValue(fieldName, value),
 			setTouched: (touched = true) => setFieldTouched(fieldName, touched),
 			setError: (errors: string[]) => setFieldError(fieldName, errors),
 			validate: () => validateFormField(fieldName),
@@ -462,7 +470,7 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 		setFieldTouched,
 		setFieldError,
 		clearErrors,
-		validateField,
+		validateField: validateFormField,
 		validateAll,
 		reset,
 
@@ -479,9 +487,9 @@ export function useFormValidation<T extends Record<string, any> = Record<string,
 /**
  * Simple validation hook for single values
  */
-export function useValidation(
+export function useValidation<T = unknown>(
 	validators: ValidatorFunction[],
-	initialValue: any = '',
+	initialValue: T,
 	options: { debounceMs?: number; validateOnChange?: boolean } = {}
 ) {
 	const { debounceMs = 300, validateOnChange = true } = options;
@@ -493,7 +501,7 @@ export function useValidation(
 
 	let validationTimeout: ReturnType<typeof setTimeout>;
 
-	function validate(val?: any, context?: any): ValidationResult {
+	function validate(val?: T, context?: Record<string, unknown>): ValidationResult {
 		isValidating.set(true);
 
 		const currentValue = val !== undefined ? val : value;
@@ -518,12 +526,12 @@ export function useValidation(
 		return combinedResult;
 	}
 
-	function debouncedValidate(val?: any, context?: any) {
+	function debouncedValidate(val?: T, context?: Record<string, unknown>) {
 		clearTimeout(validationTimeout);
 		validationTimeout = setTimeout(() => validate(val, context), debounceMs);
 	}
 
-	function setValue(newValue: any, shouldValidate = validateOnChange) {
+	function setValue(newValue: T, shouldValidate = validateOnChange) {
 		value.set(newValue);
 
 		if (shouldValidate) {

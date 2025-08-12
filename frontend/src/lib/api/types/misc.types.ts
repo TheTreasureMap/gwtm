@@ -5,8 +5,8 @@ export interface ApiKeyAuth {
 export interface ApiResponse<T> {
 	data?: T;
 	message?: string;
-	errors?: any[];
-	warnings?: any[];
+	errors?: string[];
+	warnings?: string[];
 }
 
 export interface HealthResponse {
@@ -17,5 +17,5 @@ export interface HealthResponse {
 export interface ServiceStatusResponse {
 	database: 'connected' | 'disconnected';
 	redis: 'connected' | 'disconnected';
-	details?: Record<string, any>;
+	details?: Record<string, unknown>;
 }

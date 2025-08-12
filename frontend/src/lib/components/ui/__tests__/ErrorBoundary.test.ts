@@ -60,7 +60,7 @@ export function testErrorHandling() {
 	}
 
 	// Test validation functions
-	const isRequired = (value: any, fieldName: string): string | null => {
+	const isRequired = (value: unknown, fieldName: string): string | null => {
 		if (value === null || value === undefined || value === '') {
 			return `${fieldName} is required`;
 		}

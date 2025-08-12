@@ -26,7 +26,18 @@ export interface InstrumentData {
 export interface InstrumentResponse {
 	success: boolean;
 	message?: string;
-	instrument?: any;
+	instrument?: {
+		id: number;
+		instrument_name: string;
+		nickname?: string;
+		instrument_type: number;
+		footprint_type: string;
+		unit: string;
+		height?: number;
+		width?: number;
+		radius?: number;
+		polygon?: string;
+	};
 	errors?: string[];
 }
 
@@ -60,11 +71,17 @@ export async function submitInstrument(
 
 		const response = await api.client.post(API_ENDPOINTS.instruments, apiData);
 		return response.data;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		// Handle validation errors from the API
-		if (error.response?.status === 422 && error.response.data?.detail) {
-			const validationErrors = error.response.data.detail.map(
-				(err: any) => `${err.loc?.[1] || 'Field'}: ${err.msg || err}`
+		const axiosError = error as {
+			response?: {
+				status?: number;
+				data?: { detail?: Array<{ loc?: string[]; msg?: string }> | string };
+			};
+		};
+		if (axiosError.response?.status === 422 && Array.isArray(axiosError.response.data?.detail)) {
+			const validationErrors = axiosError.response.data.detail.map(
+				(err) => `${err.loc?.[1] || 'Field'}: ${err.msg || err}`
 			);
 			return {
 				success: false,
@@ -74,20 +91,29 @@ export async function submitInstrument(
 		}
 
 		// Handle 400 Bad Request errors
-		if (error.response?.status === 400) {
+		if (axiosError.response?.status === 400) {
+			const detail =
+				typeof axiosError.response.data?.detail === 'string'
+					? axiosError.response.data.detail
+					: 'Bad request - invalid data';
 			return {
 				success: false,
-				message: error.response.data?.detail || 'Bad request - invalid data',
-				errors: error.response.data?.detail
-					? [error.response.data.detail]
-					: ['Invalid request data']
+				message: detail,
+				errors: [detail]
 			};
 		}
 
+		const errorMessage =
+			axiosError.response?.data &&
+			typeof axiosError.response.data === 'object' &&
+			'message' in axiosError.response.data
+				? String(axiosError.response.data.message)
+				: 'Instrument submission failed';
+		const errorDetail = error instanceof Error ? error.message : String(error);
 		return {
 			success: false,
-			message: error.response?.data?.message || 'Instrument submission failed',
-			errors: error.response?.data?.errors || [error.message]
+			message: errorMessage,
+			errors: [errorDetail]
 		};
 	}
 }
@@ -110,11 +136,13 @@ export async function getInstruments(): Promise<InstrumentOption[]> {
  */
 export async function getInstrumentTypeOptions(): Promise<EnumOption[]> {
 	const response = await api.client.get('/api/v1/enums/instrument_type');
-	return response.data.options.map((option: any) => ({
-		name: option.name,
-		value: option.value,
-		description: option.description
-	}));
+	return response.data.options.map(
+		(option: { name: string; value: string; description?: string }) => ({
+			name: option.name,
+			value: option.value,
+			description: option.description
+		})
+	);
 }
 
 /**
@@ -122,11 +150,13 @@ export async function getInstrumentTypeOptions(): Promise<EnumOption[]> {
  */
 export async function getFootprintTypeOptions(): Promise<EnumOption[]> {
 	const response = await api.client.get('/api/v1/enums/footprint_type');
-	return response.data.options.map((option: any) => ({
-		name: option.name,
-		value: option.value,
-		description: option.description
-	}));
+	return response.data.options.map(
+		(option: { name: string; value: string; description?: string }) => ({
+			name: option.name,
+			value: option.value,
+			description: option.description
+		})
+	);
 }
 
 /**
@@ -134,17 +164,21 @@ export async function getFootprintTypeOptions(): Promise<EnumOption[]> {
  */
 export async function getFootprintUnitOptions(): Promise<EnumOption[]> {
 	const response = await api.client.get('/api/v1/enums/footprint_unit');
-	return response.data.options.map((option: any) => ({
-		name: option.name,
-		value: option.value,
-		description: option.description
-	}));
+	return response.data.options.map(
+		(option: { name: string; value: string; description?: string }) => ({
+			name: option.name,
+			value: option.value,
+			description: option.description
+		})
+	);
 }
 
 /**
  * Preview footprint visualization
  */
-export async function previewFootprint(instrumentData: Partial<InstrumentData>): Promise<any> {
+export async function previewFootprint(
+	instrumentData: Partial<InstrumentData>
+): Promise<{ data: unknown; layout: unknown }> {
 	try {
 		const params = new URLSearchParams();
 

@@ -10,6 +10,7 @@ import type {
 	GWCandidateSchema,
 	GWCandidateCreate
 } from '../types/candidate.types';
+import type { CandidateEventResponse } from '../types/api-responses';
 
 export const candidateService = {
 	getCandidates: async (filters?: CandidateFilters, ids?: number[]): Promise<CandidateSchema[]> => {
@@ -44,18 +45,31 @@ export const candidateService = {
 		return response.data;
 	},
 
-	createCandidateEvent: async (candidate: GWCandidateCreate): Promise<any> => {
-		const response = await client.post<any>('/api/v1/candidate/event', candidate);
+	createCandidateEvent: async (candidate: GWCandidateCreate): Promise<CandidateEventResponse> => {
+		const response = await client.post<CandidateEventResponse>(
+			'/api/v1/candidate/event',
+			candidate
+		);
 		return response.data;
 	},
 
-	updateCandidateEvent: async (candidateId: number, candidate: GWCandidateSchema): Promise<any> => {
-		const response = await client.put<any>(`/api/v1/candidate/event/${candidateId}`, candidate);
+	updateCandidateEvent: async (
+		candidateId: number,
+		candidate: GWCandidateSchema
+	): Promise<CandidateEventResponse> => {
+		const response = await client.put<CandidateEventResponse>(
+			`/api/v1/candidate/event/${candidateId}`,
+			candidate
+		);
 		return response.data;
 	},
 
-	deleteCandidateEvent: async (candidateId: number): Promise<any> => {
-		const response = await client.delete<any>(`/api/v1/candidate/event/${candidateId}`);
+	deleteCandidateEvent: async (
+		candidateId: number
+	): Promise<{ success: boolean; message: string }> => {
+		const response = await client.delete<{ success: boolean; message: string }>(
+			`/api/v1/candidate/event/${candidateId}`
+		);
 		return response.data;
 	}
 };

@@ -7,7 +7,7 @@ export interface GWGalaxyEntrySchema {
 	score: number;
 	position?: string;
 	rank: number;
-	info?: Record<string, any>;
+	info?: Record<string, unknown>;
 }
 
 export interface GalaxyEntryCreate {
@@ -17,7 +17,7 @@ export interface GalaxyEntryCreate {
 	ra?: number;
 	dec?: number;
 	rank: number;
-	info?: Record<string, any>;
+	info?: Record<string, unknown>;
 }
 
 export interface PostEventGalaxiesRequest {
@@ -33,8 +33,8 @@ export interface PostEventGalaxiesRequest {
 
 export interface PostEventGalaxiesResponse {
 	message: string;
-	errors: any[];
-	warnings: any[];
+	errors: string[];
+	warnings: string[];
 }
 
 export interface GalaxyFilters {

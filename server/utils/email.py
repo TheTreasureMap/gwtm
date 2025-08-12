@@ -222,3 +222,170 @@ def send_password_reset_email(user, db: Session) -> None:
     user.reset_token = token
     user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
     db.commit()
+
+
+async def send_verification_email(email: str, username: str, verification_token: str) -> bool:
+    """
+    Send a verification email to a newly registered user.
+    Uses the verification token directly instead of generating a JWT.
+    """
+    # Create verification URL using the token
+    verification_url = f"{BASE_URL}/verify-email?token={verification_token}"
+    
+    subject = "Verify your GWTM account"
+    
+    # Email content - HTML
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }}
+            .container {{ 
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 40px 20px;
+                background-color: #f8fafc;
+            }}
+            .email-card {{
+                background: white;
+                border-radius: 8px;
+                padding: 40px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            .title {{ 
+                color: #1a202c;
+                font-size: 24px;
+                font-weight: 600;
+                margin: 0 0 10px 0;
+            }}
+            .subtitle {{
+                color: #4a5568;
+                font-size: 16px;
+                margin: 0;
+            }}
+            .button {{ 
+                display: inline-block;
+                background-color: #3182ce; 
+                color: white; 
+                padding: 14px 28px; 
+                text-decoration: none; 
+                border-radius: 6px; 
+                font-weight: 500;
+                font-size: 16px;
+                margin: 24px 0;
+                transition: background-color 0.2s;
+            }}
+            .button:hover {{
+                background-color: #2c5aa0;
+            }}
+            .info-text {{
+                color: #4a5568;
+                font-size: 14px;
+                margin: 20px 0 0 0;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e2e8f0;
+                color: #718096;
+                font-size: 14px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="email-card">
+                <div class="header">
+                    <h1 class="title">Welcome to GWTM!</h1>
+                    <p class="subtitle">Gravitational-Wave Treasure Map</p>
+                </div>
+                
+                <p>Hi {username},</p>
+                
+                <p>Thank you for registering with the Gravitational-Wave Treasure Map. To complete your registration and start coordinating telescope observations, please verify your email address.</p>
+                
+                <div style="text-align: center;">
+                    <a href="{verification_url}" class="button">Verify Email Address</a>
+                </div>
+                
+                <p class="info-text">This verification link will expire in 24 hours for security reasons.</p>
+                
+                <p class="info-text">If you didn't create a GWTM account, you can safely ignore this email.</p>
+                
+                <div class="footer">
+                    <p>GWTM Team<br>
+                    Gravitational-Wave Treasure Map Platform</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Email content - Plain text
+    text_content = f"""
+    Welcome to GWTM!
+    
+    Hi {username},
+    
+    Thank you for registering with the Gravitational-Wave Treasure Map. To complete your registration and start coordinating telescope observations, please verify your email address.
+    
+    Please click the link below to verify your account:
+    {verification_url}
+    
+    This verification link will expire in 24 hours for security reasons.
+    
+    If you didn't create a GWTM account, you can safely ignore this email.
+    
+    ---
+    GWTM Team
+    Gravitational-Wave Treasure Map Platform
+    """
+
+    # In development environment, log the verification URL
+    print(f"[DEVELOPMENT] Verification URL for {email}: {verification_url}")
+    
+    try:
+        # Create message
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = SENDER_EMAIL
+        message["To"] = email
+
+        # Attach parts
+        part1 = MIMEText(text_content, "plain")
+        part2 = MIMEText(html_content, "html")
+        message.attach(part1)
+        message.attach(part2)
+
+        # In development, we don't send actual emails
+        # In production, uncomment the SMTP sending code below
+        """
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, email, message.as_string())
+        """
+        
+        # For development, optionally save email to file
+        # from pathlib import Path
+        # email_path = Path(f"./emails/verification_{username}_{datetime.now().strftime('%Y%m%d%H%M%S')}.html")
+        # email_path.parent.mkdir(exist_ok=True)
+        # email_path.write_text(html_content)
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error sending verification email to {email}: {e}")
+        return False

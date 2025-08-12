@@ -13,10 +13,11 @@ class Users(Base):
     lastname = Column(String(25))
     password_hash = Column(String(128))
     datecreated = Column(DateTime)
-    email = Column(String(100))
+    email = Column(String(100), index=True, unique=True)
     api_token = Column(String(128))
     verification_key = Column(String(128))
-    verified = Column(Boolean)
+    verification_expires = Column(DateTime)
+    verified = Column(Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

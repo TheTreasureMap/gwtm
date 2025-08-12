@@ -12,8 +12,8 @@ import type { Writable, Readable } from 'svelte/store';
 import type { ValidationSchema, ValidationResult } from '$lib/validation/validators';
 import { validateSchema, validateField } from '$lib/validation/validators';
 
-export interface FormFieldState {
-	value: any;
+export interface FormFieldState<T = unknown> {
+	value: T;
 	errors: string[];
 	warnings: string[];
 	touched: boolean;
@@ -22,9 +22,9 @@ export interface FormFieldState {
 	isValidating: boolean;
 }
 
-export interface FormState<T = Record<string, any>> {
+export interface FormState<T = Record<string, unknown>> {
 	data: T;
-	fields: Record<keyof T, FormFieldState>;
+	fields: Record<keyof T, FormFieldState<T[keyof T]>>;
 	isValid: boolean;
 	isSubmitting: boolean;
 	isDirty: boolean;
@@ -33,19 +33,19 @@ export interface FormState<T = Record<string, any>> {
 	globalError: string;
 }
 
-export interface FormOptions<T = Record<string, any>> {
+export interface FormOptions<T = Record<string, unknown>> {
 	initialValues?: Partial<T>;
 	validationSchema?: ValidationSchema<T>;
 	validateOnChange?: boolean;
 	validateOnBlur?: boolean;
 	resetOnSubmit?: boolean;
-	submitHandler?: (data: T) => Promise<{ success: boolean; error?: string; result?: any }>;
+	submitHandler?: (data: T) => Promise<{ success: boolean; error?: string; result?: unknown }>;
 }
 
 /**
  * Create a reactive form store with validation
  */
-export function createFormStore<T extends Record<string, any> = Record<string, any>>(
+export function createFormStore<T extends Record<string, unknown> = Record<string, unknown>>(
 	options: FormOptions<T> = {}
 ) {
 	const {
@@ -60,7 +60,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	// Initialize form state
 	const initialState: FormState<T> = {
 		data: { ...initialValues } as T,
-		fields: {} as Record<keyof T, FormFieldState>,
+		fields: {} as Record<keyof T, FormFieldState<T[keyof T]>>,
 		isValid: true,
 		isSubmitting: false,
 		isDirty: false,
@@ -93,7 +93,9 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	const globalError = derived(store, ($store) => $store.globalError);
 
 	// Submit result store for tracking submission results
-	const submitResult = writable<{ success: boolean; error?: string; result?: any } | null>(null);
+	const submitResult = writable<{ success: boolean; error?: string; result?: unknown } | null>(
+		null
+	);
 
 	/**
 	 * Validate a single field
@@ -168,7 +170,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	/**
 	 * Set field value and optionally validate
 	 */
-	function setFieldValue(fieldName: keyof T, value: any, validate = validateOnChange): void {
+	function setFieldValue(fieldName: keyof T, value: T[keyof T], validate = validateOnChange): void {
 		store.update((state) => {
 			const newData = { ...state.data, [fieldName]: value };
 			const newFields = { ...state.fields };
@@ -360,7 +362,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 					};
 					return acc;
 				},
-				{} as Record<keyof T, FormFieldState>
+				{} as Record<keyof T, FormFieldState<T[keyof T]>>
 			),
 			isValid: true,
 			isSubmitting: false,
@@ -374,7 +376,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	/**
 	 * Submit form
 	 */
-	async function submit(): Promise<{ success: boolean; error?: string; result?: any }> {
+	async function submit(): Promise<{ success: boolean; error?: string; result?: unknown }> {
 		store.update((state) => ({ ...state, isSubmitting: true, globalError: '' }));
 
 		try {
@@ -449,7 +451,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 	/**
 	 * Get field state
 	 */
-	function getFieldState(fieldName: keyof T): FormFieldState {
+	function getFieldState(fieldName: keyof T): FormFieldState<T[keyof T]> {
 		const currentState = get(store);
 		return (
 			currentState.fields[fieldName] || {
@@ -505,7 +507,7 @@ export function createFormStore<T extends Record<string, any> = Record<string, a
 /**
  * Form hook for easier usage in components
  */
-export function useForm<T extends Record<string, any> = Record<string, any>>(
+export function useForm<T extends Record<string, unknown> = Record<string, unknown>>(
 	options: FormOptions<T> = {}
 ) {
 	return createFormStore<T>(options);
