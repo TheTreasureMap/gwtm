@@ -49,8 +49,8 @@ export interface PointingCreateRequest {
 
 export interface PointingResponse {
 	pointing_ids: number[];
-	ERRORS?: any[];
-	WARNINGS?: any[];
+	ERRORS?: string[];
+	WARNINGS?: string[];
 	DOI?: string;
 }
 

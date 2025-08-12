@@ -1,6 +1,8 @@
 import { pointingService } from './pointing.service';
 import { doiService } from './doi.service';
 import { ajaxService } from './ajax.service';
+import type { PointingSearchFilters, DOIAuthorGroup } from '../types/api-responses';
+import type { PointingSchema } from '../types/pointing.types';
 
 export const searchService = {
 	searchPointings: async (params: {
@@ -8,8 +10,8 @@ export const searchService = {
 		bands?: string[];
 		statuses?: string[];
 		my_points_only?: boolean;
-	}): Promise<any[]> => {
-		const filters: any = {
+	}): Promise<PointingSchema[]> => {
+		const filters: PointingSearchFilters = {
 			graceid: params.graceid
 		};
 
@@ -31,7 +33,7 @@ export const searchService = {
 	getUserCreatorGroups: async (): Promise<Array<{ id: string; name: string }>> => {
 		try {
 			const groups = await doiService.getDOIAuthorGroups();
-			return groups.map((group: any) => ({
+			return groups.map((group: DOIAuthorGroup) => ({
 				id: group.id.toString(),
 				name: group.name
 			}));

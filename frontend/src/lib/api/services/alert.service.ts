@@ -4,9 +4,10 @@ import type {
 	GWAlertQueryResponse,
 	GWAlertFilterOptionsResponse
 } from '../types/alert.types';
+import type { GWContourResponse, GRBMOCResponse } from '../types/api-responses';
 
 export const alertService = {
-	queryAlerts: async (params?: Record<string, any>): Promise<GWAlertQueryResponse> => {
+	queryAlerts: async (params?: Record<string, unknown>): Promise<GWAlertQueryResponse> => {
 		// Always use paginated format for frontend
 		const paginatedParams = { ...params, format: 'paginated' };
 		const response = await client.get<GWAlertQueryResponse>('/api/v1/query_alerts', {
@@ -51,13 +52,15 @@ export const alertService = {
 		return response.data;
 	},
 
-	getGWContour: async (graceid: string): Promise<any> => {
-		const response = await client.get<any>('/api/v1/gw_contour', { params: { graceid } });
+	getGWContour: async (graceid: string): Promise<GWContourResponse> => {
+		const response = await client.get<GWContourResponse>('/api/v1/gw_contour', {
+			params: { graceid }
+		});
 		return response.data;
 	},
 
-	getGRBMOCFile: async (graceid: string, instrument: string): Promise<any> => {
-		const response = await client.get<any>('/api/v1/grb_moc_file', {
+	getGRBMOCFile: async (graceid: string, instrument: string): Promise<GRBMOCResponse> => {
+		const response = await client.get<GRBMOCResponse>('/api/v1/grb_moc_file', {
 			params: { graceid, instrument },
 			headers: { 'skip-auth': 'true' }
 		});

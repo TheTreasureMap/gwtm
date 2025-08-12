@@ -14,10 +14,20 @@ Displays alert results with badges, pagination, and loading states.
 		'page-change': { page: number };
 	}>();
 
+	// Type definitions
+	interface GroupedAlert {
+		alertname: string;
+		classification: string;
+		distance: string;
+		pcounts: number;
+		alert_types: string[];
+		has_icecube: boolean;
+	}
+
 	// Props
 	export let loading: boolean = false;
 	export let error: string | null = null;
-	export let groupedAlerts: any[] = [];
+	export let groupedAlerts: GroupedAlert[] = [];
 	export let totalItems: number = 0;
 	export let totalPages: number = 0;
 	export let currentPage: number = 1;
@@ -166,7 +176,7 @@ Displays alert results with badges, pagination, and loading states.
 											</a>
 										</div>
 										<div class="flex space-x-1">
-											{#each getAlertTypeBadges(groupedAlert.alert_types) as badge (badge.color + badge.icon)}
+											{#each getAlertTypeBadges(groupedAlert.alert_types) as badge (badge.type)}
 												<span
 													class="inline-flex px-1 py-0.5 text-xs font-semibold rounded-full {badge.color}"
 												>

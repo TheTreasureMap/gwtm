@@ -50,8 +50,8 @@ export interface PostCandidateRequest {
 
 export interface CandidateResponse {
 	candidate_ids: number[];
-	ERRORS: any[][];
-	WARNINGS: any[][];
+	ERRORS: string[][];
+	WARNINGS: string[][];
 }
 
 export interface PutCandidateRequest {

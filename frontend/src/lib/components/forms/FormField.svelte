@@ -70,14 +70,14 @@
 	import { validateField } from '$lib/validation/validators';
 
 	/**
-	 * @event {CustomEvent<{name: string, value: any, isValid: boolean}>} validate - Fired when field validation changes
-	 * @event {CustomEvent<{name: string, value: any}>} change - Fired when field value changes
+	 * @event {CustomEvent<{name: string, value: unknown, isValid: boolean}>} validate - Fired when field validation changes
+	 * @event {CustomEvent<{name: string, value: unknown}>} change - Fired when field value changes
 	 * @event {CustomEvent<{name: string}>} focus - Fired when field receives focus
 	 * @event {CustomEvent<{name: string}>} blur - Fired when field loses focus
 	 */
 	const dispatch = createEventDispatcher<{
-		validate: { name: string; value: any; isValid: boolean; errors: string[] };
-		change: { name: string; value: any };
+		validate: { name: string; value: unknown; isValid: boolean; errors: string[] };
+		change: { name: string; value: unknown };
 		focus: { name: string };
 		blur: { name: string };
 	}>();
@@ -125,10 +125,10 @@
 
 	/**
 	 * The field value
-	 * @type {any}
+	 * @type {unknown}
 	 * @default ''
 	 */
-	export let value: any = '';
+	export let value: unknown = '';
 
 	/**
 	 * Placeholder text
@@ -177,11 +177,11 @@
 
 	/**
 	 * Options for select/radio fields
-	 * @type {Array<{value: any, label: string, disabled?: boolean}>}
+	 * @type {Array<{value: unknown, label: string, disabled?: boolean}>}
 	 * @default []
 	 * @optional
 	 */
-	export let options: Array<{ value: any; label: string; disabled?: boolean }> = [];
+	export let options: Array<{ value: unknown; label: string; disabled?: boolean }> = [];
 
 	/**
 	 * Number of rows for textarea
@@ -223,10 +223,10 @@
 
 	/**
 	 * Context data for validation (e.g., other form fields)
-	 * @type {any}
+	 * @type {Record<string, unknown>}
 	 * @optional
 	 */
-	export let validationContext: any = {};
+	export let validationContext: Record<string, unknown> = {};
 
 	// ================================================================================================
 	// STATE
@@ -234,7 +234,6 @@
 
 	let validationResult: ValidationResult = { isValid: true, errors: [] };
 	let touched = false;
-	let focused = false;
 	let validationTimeout: ReturnType<typeof setTimeout>;
 
 	// Computed states
@@ -321,7 +320,6 @@
 	 * Handle focus events
 	 */
 	function handleFocus() {
-		focused = true;
 		dispatch('focus', { name });
 	}
 
@@ -329,7 +327,6 @@
 	 * Handle blur events
 	 */
 	function handleBlur() {
-		focused = false;
 		touched = true;
 
 		dispatch('blur', { name });
@@ -428,7 +425,7 @@
 				{#if placeholder}
 					<option value="" disabled selected>{placeholder}</option>
 				{/if}
-				{#each options as option}
+				{#each options as option, index (index)}
 					<option value={option.value} disabled={option.disabled}>
 						{option.label}
 					</option>
@@ -460,7 +457,7 @@
 		{:else if type === 'radio'}
 			<fieldset class="space-y-2">
 				<legend class="sr-only">{label}</legend>
-				{#each options as option}
+				{#each options as option, index (index)}
 					<div class="flex items-center">
 						<input
 							id="{fieldId}-{option.value}"
@@ -526,7 +523,7 @@
 	<!-- Error Messages -->
 	{#if showErrors}
 		<div id={errorId} class="mt-2 space-y-1" role="alert" aria-live="polite">
-			{#each allErrors as error}
+			{#each allErrors as error, index (index)}
 				<p class="text-sm text-red-600">{error}</p>
 			{/each}
 		</div>
@@ -535,7 +532,7 @@
 	<!-- Validation Warnings -->
 	{#if validationResult.warnings && validationResult.warnings.length > 0}
 		<div class="mt-2 space-y-1">
-			{#each validationResult.warnings as warning}
+			{#each validationResult.warnings as warning, index (index)}
 				<p class="text-sm text-yellow-600">{warning}</p>
 			{/each}
 		</div>

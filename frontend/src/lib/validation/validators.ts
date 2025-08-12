@@ -13,16 +13,19 @@ export type ValidationResult = {
 	warnings?: string[];
 };
 
-export type ValidatorFunction<T = any> = (value: T, context?: any) => ValidationResult;
+export type ValidatorFunction<T = unknown> = (
+	value: T,
+	context?: Record<string, unknown>
+) => ValidationResult;
 
-export type FieldValidator<T = any> = {
+export type FieldValidator<T = unknown> = {
 	required?: boolean;
 	validators?: ValidatorFunction<T>[];
 	customMessage?: string;
 	dependsOn?: string[];
 };
 
-export type ValidationSchema<T = Record<string, any>> = {
+export type ValidationSchema<T = Record<string, unknown>> = {
 	[K in keyof T]?: FieldValidator<T[K]>;
 };
 
@@ -33,7 +36,7 @@ export class ValidationUtils {
 	/**
 	 * Check if a value is empty (null, undefined, empty string, empty array)
 	 */
-	static isEmpty(value: any): boolean {
+	static isEmpty(value: unknown): boolean {
 		if (value === null || value === undefined) return true;
 		if (typeof value === 'string') return value.trim().length === 0;
 		if (Array.isArray(value)) return value.length === 0;
@@ -78,7 +81,7 @@ export const validators = {
 	 * Required field validator
 	 */
 	required: (message = 'This field is required'): ValidatorFunction => {
-		return (value: any) => {
+		return (value: unknown) => {
 			const isEmpty = ValidationUtils.isEmpty(value);
 			return ValidationUtils.createResult(!isEmpty, isEmpty ? [message] : []);
 		};

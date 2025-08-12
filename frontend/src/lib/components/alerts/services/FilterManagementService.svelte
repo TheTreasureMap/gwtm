@@ -112,7 +112,7 @@
 	/**
 	 * Update a specific filter
 	 */
-	export function updateFilter(key: string, value: any) {
+	export function updateFilter(key: string, value: unknown) {
 		filters = { ...filters, [key]: value };
 		dispatch('filter-changed', { key, value, filters });
 	}

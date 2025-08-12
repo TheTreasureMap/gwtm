@@ -6,18 +6,18 @@
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 
 	/**
-	 * @event {CustomEvent<{data: any, isValid: boolean}>} change - Fired when form data changes
-	 * @event {CustomEvent<{data: any}>} submit - Fired when form is submitted (before onSubmit)
-	 * @event {CustomEvent<{result: any}>} success - Fired when submission succeeds
+	 * @event {CustomEvent<{data: Record<string, unknown>, isValid: boolean}>} change - Fired when form data changes
+	 * @event {CustomEvent<{data: Record<string, unknown>}>} submit - Fired when form is submitted (before onSubmit)
+	 * @event {CustomEvent<{result: unknown}>} success - Fired when submission succeeds
 	 * @event {CustomEvent<{error: Error | string}>} error - Fired when submission fails
-	 * @event {CustomEvent<{field: string, value: any, isValid: boolean}>} fieldChange - Fired when individual field changes
+	 * @event {CustomEvent<{field: string, value: unknown, isValid: boolean}>} fieldChange - Fired when individual field changes
 	 */
 	const dispatch = createEventDispatcher<{
-		change: { data: any; isValid: boolean };
-		submit: { data: any };
-		success: { result: any };
+		change: { data: Record<string, unknown>; isValid: boolean };
+		submit: { data: Record<string, unknown> };
+		success: { result: unknown };
 		error: { error: Error | string };
-		fieldChange: { field: string; value: any; isValid: boolean };
+		fieldChange: { field: string; value: unknown; isValid: boolean };
 	}>();
 
 	// ================================================================================================
@@ -26,10 +26,10 @@
 
 	/**
 	 * Form data object
-	 * @type {Record<string, any>}
+	 * @type {Record<string, unknown>}
 	 * @default {}
 	 */
-	export let data: Record<string, any> = {};
+	export let data: Record<string, unknown> = {};
 
 	/**
 	 * Validation schema for the form
@@ -40,11 +40,13 @@
 
 	/**
 	 * Function called when form is submitted
-	 * @type {(data: any) => Promise<{success: boolean, error?: string, result?: any}>}
+	 * @type {(data: Record<string, unknown>) => Promise<{success: boolean, error?: string, result?: unknown}>}
 	 * @optional
 	 */
 	export let onSubmit:
-		| ((data: any) => Promise<{ success: boolean; error?: string; result?: any }>)
+		| ((
+				data: Record<string, unknown>
+		  ) => Promise<{ success: boolean; error?: string; result?: unknown }>)
 		| undefined = undefined;
 
 	/**
@@ -113,10 +115,10 @@
 
 	/**
 	 * Initial values for the form
-	 * @type {Record<string, any>}
+	 * @type {Record<string, unknown>}
 	 * @optional
 	 */
-	export let initialValues: Record<string, any> = {};
+	export let initialValues: Record<string, unknown> = {};
 
 	// ================================================================================================
 	// STATE
@@ -186,35 +188,6 @@
 	 */
 	export function getFieldConfig(fieldName: string) {
 		return schema?.[fieldName] || {};
-	}
-
-	/**
-	 * Handle field validation events
-	 */
-	function handleFieldValidation(
-		event: CustomEvent<{ name: string; value: any; isValid: boolean; errors: string[] }>
-	) {
-		const { name, value, isValid, errors } = event.detail;
-
-		// Update field validation state
-		fieldValidationStates[name] = isValid;
-
-		// Update field errors
-		if (errors.length > 0) {
-			fieldErrors[name] = errors;
-		} else {
-			delete fieldErrors[name];
-		}
-
-		// Update data
-		data[name] = value;
-
-		// Trigger reactive updates
-		fieldErrors = { ...fieldErrors };
-		fieldValidationStates = { ...fieldValidationStates };
-
-		dispatch('fieldChange', { field: name, value, isValid });
-		dispatch('change', { data, isValid });
 	}
 
 	/**
@@ -291,7 +264,7 @@
 <!--
 @slot default - Form content (fields and other elements)
 @slot footer - Custom footer content (overrides default submit button)
-@slot {Record<string, any>} data - Current form data
+@slot {Record<string, unknown>} data - Current form data
 @slot {boolean} isValid - Whether form is currently valid
 @slot {boolean} isSubmitting - Whether form is currently being submitted
 @slot {Record<string, string[]>} fieldErrors - Current field validation errors

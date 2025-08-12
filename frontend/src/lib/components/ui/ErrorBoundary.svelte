@@ -16,7 +16,7 @@
 	const dispatch = createEventDispatcher<{
 		error: { error: Error; retry: () => void };
 		retry: { count: number };
-		reset: {};
+		reset: Record<string, never>;
 	}>();
 
 	export function reset() {

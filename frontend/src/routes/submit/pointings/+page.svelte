@@ -26,7 +26,6 @@
 	// Services
 	import {
 		submitPointing,
-		loadPointingById,
 		loadFormOptions,
 		formatDateTimeForApi,
 		parseInstrumentId,
