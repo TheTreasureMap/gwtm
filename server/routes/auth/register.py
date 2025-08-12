@@ -48,20 +48,20 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
                     detail="This username is already taken"
                 )
         
-        # Generate verification token
-        verification_token = secrets.token_urlsafe(32)
-        verification_expires = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
+        # TODO: Re-enable verification when database is migrated
+        # verification_token = secrets.token_urlsafe(32)
+        # verification_expires = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
         
-        # Create new user
+        # Create new user (without verification for Flask compatibility)
         new_user = Users(
             username=register_data.username,
             email=register_data.email,
             firstname=register_data.first_name or "",
             lastname=register_data.last_name or "",
-            verified=False,  # Account starts unverified
+            # verified=False,  # Account starts unverified
             datecreated=datetime.utcnow(),
-            verification_key=verification_token,
-            verification_expires=verification_expires
+            # verification_key=verification_token,
+            # verification_expires=verification_expires
         )
         
         # Set password (this will hash it automatically via the model)
@@ -72,22 +72,22 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
         db.commit()
         db.refresh(new_user)
         
-        # Send verification email
-        try:
-            await send_verification_email(
-                email=new_user.email,
-                username=new_user.username,
-                verification_token=verification_token
-            )
-        except Exception as e:
-            # Log the error but don't fail registration
-            print(f"Failed to send verification email: {e}")
-            # In production, you might want to queue this for retry
+        # TODO: Re-enable email verification when database is migrated
+        # try:
+        #     await send_verification_email(
+        #         email=new_user.email,
+        #         username=new_user.username,
+        #         verification_token=verification_token
+        #     )
+        # except Exception as e:
+        #     # Log the error but don't fail registration
+        #     print(f"Failed to send verification email: {e}")
+        #     # In production, you might want to queue this for retry
         
         return RegisterResponse(
-            message="Registration successful! Please check your email to verify your account.",
+            message="Registration successful! You can now log in with your credentials.",
             email=new_user.email,
-            verification_required=True
+            verification_required=False
         )
         
     except IntegrityError:

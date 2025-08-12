@@ -448,7 +448,12 @@
 						</form>
 					{/if}
 				</Card>
+			</div>
 
+			<!-- Right Column: Existing Instruments & Preview -->
+			<div class="table-column">
+				<ExistingInstrumentsTable instruments={existingInstruments} isLoading={loadingOptions} />
+				
 				<!-- Preview Section -->
 				{#if previewData || previewError}
 					<Card class="preview-card">
@@ -467,11 +472,6 @@
 					</Card>
 				{/if}
 			</div>
-
-			<!-- Right Column: Existing Instruments -->
-			<div class="table-column">
-				<ExistingInstrumentsTable instruments={existingInstruments} isLoading={loadingOptions} />
-			</div>
 		</div>
 	</div>
 </ErrorBoundary>
@@ -484,7 +484,7 @@
 	}
 
 	.page-header {
-		margin-bottom: 2rem;
+		margin-bottom: 1.5rem;
 		text-align: center;
 	}
 
@@ -515,7 +515,13 @@
 	.form-column {
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
+		gap: 1.5rem;
+	}
+
+	.table-column {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
 
 	:global(.form-card) {
@@ -534,13 +540,13 @@
 	.instrument-form {
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
+		gap: 1.5rem;
 	}
 
 	.form-section {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
 	}
 
 	.form-section h3 {
