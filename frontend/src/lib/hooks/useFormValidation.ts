@@ -314,7 +314,7 @@ export function useFormValidation<T extends Record<string, unknown> = Record<str
 			currentValues = s.values;
 		});
 		unsubscribe();
-		
+
 		const results = validateSchema(currentValues!, schema);
 
 		const newErrors = {} as Record<keyof T, string[]>;

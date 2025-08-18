@@ -66,23 +66,19 @@
 	 */
 	export let padding: 'sm' | 'md' | 'lg' = 'md';
 
-	const maxWidthClasses = {
-		sm: 'max-w-sm',
-		md: 'max-w-md',
-		lg: 'max-w-lg',
-		xl: 'max-w-xl',
-		'2xl': 'max-w-2xl',
-		'4xl': 'max-w-4xl',
-		'7xl': 'max-w-7xl'
-	};
+	import { classBuilder } from '$lib/design-system';
 
-	const paddingClasses = {
-		sm: 'px-4 py-4',
-		md: 'px-4 py-8',
-		lg: 'px-6 py-12'
-	};
+	// Map maxWidth to container size
+	$: containerSize =
+		maxWidth === '7xl'
+			? 'responsive'
+			: maxWidth === '4xl'
+				? 'lg'
+				: maxWidth === '2xl'
+					? 'md'
+					: 'sm';
 
-	$: containerClass = `${maxWidthClasses[maxWidth]} mx-auto ${paddingClasses[padding]}`;
+	$: containerClass = classBuilder.container(containerSize, padding);
 </script>
 
 <!--

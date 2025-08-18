@@ -103,9 +103,9 @@
 					}
 				});
 
-				// Sort by timesent DESC for display (newest first, matching Flask)
+				// Sort by timesent ASC for display (oldest first, matching Flask chronological order)
 				availableAlertTypes = alertTypeTabs.sort(
-					(a, b) => new Date(b.timesent).getTime() - new Date(a.timesent).getTime()
+					(a, b) => new Date(a.timesent).getTime() - new Date(b.timesent).getTime()
 				);
 			} else {
 				availableAlertTypes = [];
@@ -191,27 +191,19 @@
 
 	/**
 	 * Auto-select the most appropriate alert type from available options
+	 * Matches Flask logic: select the last (most recent) non-retraction alert
 	 */
 	export function autoSelectAlertType(): string {
 		if (!availableAlertTypes.length) {
 			return '';
 		}
 
-		// Priority order for auto-selection (matching Flask logic)
-		const priorityOrder = ['Update', 'Initial', 'Preliminary', 'Retraction'];
-
-		for (const priority of priorityOrder) {
-			const alert = availableAlertTypes.find((alert) => alert.alert_type === priority);
-			if (alert) {
-				console.log(`Auto-selected alert type: ${priority}`);
-				return priority;
-			}
-		}
-
-		// Fallback to first available alert type
-		const fallback = availableAlertTypes[0].alert_type;
-		console.log(`Auto-selected fallback alert type: ${fallback}`);
-		return fallback;
+		// Flask logic: select the last alert in chronological order (most recent)
+		// Since availableAlertTypes is now sorted chronologically (oldest first),
+		// the last item is the most recent
+		const lastAlert = availableAlertTypes[availableAlertTypes.length - 1];
+		console.log(`Auto-selected alert type (most recent): ${lastAlert.alert_type}`);
+		return lastAlert.alert_type;
 	}
 
 	/**
