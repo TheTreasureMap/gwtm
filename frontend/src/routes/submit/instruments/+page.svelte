@@ -453,7 +453,7 @@
 			<!-- Right Column: Existing Instruments & Preview -->
 			<div class="table-column">
 				<ExistingInstrumentsTable instruments={existingInstruments} isLoading={loadingOptions} />
-				
+
 				<!-- Preview Section -->
 				{#if previewData || previewError}
 					<Card class="preview-card">
