@@ -82,25 +82,10 @@
 	let className: string = '';
 	export { className as class };
 
-	const paddingClasses = {
-		none: '',
-		sm: 'p-4',
-		md: 'p-6',
-		lg: 'p-8'
-	};
-
-	const shadowClasses = {
-		none: '',
-		sm: 'shadow-sm',
-		md: 'shadow-md',
-		lg: 'shadow-lg'
-	};
+	import { classBuilder } from '$lib/design-system';
 
 	$: cardClass = [
-		'bg-white rounded-lg',
-		shadowClasses[shadow],
-		paddingClasses[padding],
-		hover ? 'hover:shadow-xl transition-shadow duration-200' : '',
+		classBuilder.card(padding, hover, shadow !== 'none'),
 		clickable ? 'cursor-pointer' : '',
 		className
 	]

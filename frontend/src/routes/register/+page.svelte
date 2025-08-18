@@ -106,9 +106,7 @@
 		});
 
 		if (result.success) {
-			goto(
-				'/login?message=Registration successful! You can now log in with your credentials.'
-			);
+			goto('/login?message=Registration successful! You can now log in with your credentials.');
 		} else {
 			error = result.error || 'Registration failed';
 			loading = false;
