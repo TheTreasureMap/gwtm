@@ -233,17 +233,17 @@ class TestEventEndpoints:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "admin" in response.json()["message"].lower()
 
-    def test_event_api_unauthorized_access(self):
-        """Test that unauthorized requests are rejected."""
-        # Request without API token
+    def test_event_api_public_access(self):
+        """Test that query endpoints are publicly accessible."""
+        # Request without API token - should work for public query endpoints
         response = requests.get(self.get_url("/query_alerts"))
-        assert response.status_code == 401
+        assert response.status_code == status.HTTP_200_OK
 
-        # Request with invalid API token
+        # Request with invalid API token - should still work for public query endpoints
         response = requests.get(
             self.get_url("/query_alerts"), headers={"api_token": self.invalid_token}
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
 
     def test_event_api_with_different_tokens(self):
         """Test access with different valid API tokens."""

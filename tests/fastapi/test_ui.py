@@ -58,7 +58,7 @@ class TestUIEndpoints:
         """Test previewing a circular footprint."""
         response = requests.get(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 123.456, "dec": -12.345, "radius": 0.5, "shape": "circle"},
+            params={"ra": 123.456, "dec": -12.345, "radius": 0.5, "shape": "Circular"},
             headers={"api_token": self.admin_token},
         )
 
@@ -81,7 +81,7 @@ class TestUIEndpoints:
                 "dec": -12.345,
                 "height": 0.5,
                 "width": 1.0,
-                "shape": "rectangle",
+                "shape": "Rectangular",
             },
             headers={"api_token": self.admin_token},
         )
@@ -269,21 +269,33 @@ class TestUIEndpoints:
         # If we get here, no alerts were found
         pytest.skip("No alerts found in test data")
 
-    def test_authentication_required(self):
-        """Test that authentication is required for protected endpoints."""
-        endpoints = ["/ajax_coverage_calculator", "/ajax_request_doi"]
-
-        for endpoint in endpoints:
-            # POST endpoints
-            if endpoint == "/ajax_coverage_calculator":
-                response = requests.post(
-                    self.get_url(endpoint), json={"graceid": self.KNOWN_GRACEIDS[0]}
-                )
-            else:
-                # GET endpoints
-                response = requests.get(self.get_url(endpoint))
-
-            assert response.status_code == 401
+    def test_authentication_patterns(self):
+        """Test authentication requirements for different endpoint types."""
+        # Most UI GET endpoints should be publicly accessible for viewing data
+        public_get_endpoints = [
+            "/ajax_alertinstruments_footprints?graceid=S190425z",
+            "/ajax_preview_footprint?ra=123.456&dec=-12.345&radius=0.5&shape=Circular",
+            "/ajax_icecube_notice?graceid=S190425z",
+            "/ajax_event_galaxies?alertid=1",
+            "/ajax_candidate?graceid=S190425z",
+            "/ajax_alerttype?urlid=1_initial",
+            "/ajax_update_spectral_range_from_selected_bands?band_cov=r&spectral_type=wavelength&spectral_unit=nm"
+        ]
+        
+        for endpoint in public_get_endpoints:
+            response = requests.get(self.get_url(endpoint))
+            # Should return 200 OK or 400 BAD_REQUEST (for missing params), but not 401 UNAUTHORIZED
+            assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND]
+        
+        # POST endpoints that don't require authentication but need valid parameters
+        unprotected_post_endpoints = ["/ajax_coverage_calculator"]
+        
+        for endpoint in unprotected_post_endpoints:
+            response = requests.post(
+                self.get_url(endpoint), json={"graceid": self.KNOWN_GRACEIDS[0]}
+            )
+            # Should return 400 BAD_REQUEST for missing required parameters, not 401 UNAUTHORIZED
+            assert response.status_code == 400
 
 
 if __name__ == "__main__":

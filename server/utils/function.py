@@ -448,6 +448,8 @@ def create_doi(payload):
         doi_url = return_json["doi_url"]
     except:  # noqa: E722
         doi_url = None
+
+    return d_id, doi_url
     return int(d_id), doi_url
 
 
