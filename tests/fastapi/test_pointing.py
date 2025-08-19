@@ -4,7 +4,7 @@ Tests use specific data from test-data.sql.
 """
 
 import os
-
+import pytest
 import requests
 
 from fastapi import status
@@ -402,6 +402,7 @@ class TestPointingEndpoints:
         # Store the planned pointing ID for later tests
         self.planned_pointing_id = data["pointing_ids"][0]
 
+    @pytest.mark.skip(reason="Skipping test that requires external Zenodo API calls")
     def test_post_pointing_with_doi_request(self):
         """Test posting a pointing with DOI request."""
 
@@ -604,6 +605,7 @@ class TestPointingEndpoints:
         assert "Updated" in data["message"]
         assert "3" in data["message"]  # Should cancel 3 pointings
 
+    @pytest.mark.skip(reason="Skipping test that requires external Zenodo API calls")
     def test_request_doi_for_pointings(self):
         """Test requesting DOI for existing pointings."""
         # First create some completed pointings
