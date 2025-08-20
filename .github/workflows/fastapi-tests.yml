@@ -2,9 +2,9 @@ name: FastAPI Tests
 
 on:
   push:
-    branches: [ master, fastapi ]
+    branches: [ master, fastapi, svelte ]
   pull_request:
-    branches: [ master, fastapi ]
+    branches: [ master, fastapi, svelte ]
 
 jobs:
   test:
