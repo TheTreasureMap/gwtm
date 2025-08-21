@@ -21,14 +21,15 @@ shapely>=2.0.0
 pytz>=2023.3
 requests>=2.31.0
 validators>=0.20.0
-boto3>=1.26.90
+# AWS and storage libraries - compatible versions
+boto3==1.34.131
+botocore==1.34.131
+fsspec==2024.6.1
+s3fs==2024.6.1
+# Other dependencies
 redis>=4.6.0
 mocpy>=0.12.0
 pygcn>=0.1.8
-# Fixed version compatibility for storage libraries
-fsspec>=2021.10.1,<2023.0.0
-adlfs>=0.7.9,<2023.0.0
-s3fs==0.6.0
 python-dotenv>=1.0.0
 aiofiles>=0.8.0
 pytest>=7.3.1

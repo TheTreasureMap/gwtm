@@ -29,14 +29,16 @@ Werkzeug==2.0.3
 WTForms
 WTForms-Components
 gunicorn
-boto3==1.26.90
+# AWS and storage libraries - compatible versions
+boto3==1.34.131
+botocore==1.34.131
+fsspec==2024.6.1
+s3fs==2024.6.1
+# Other dependencies
 pygcn
 MOCpy
 redis
 emails
 gcn-kafka
-fsspec
-adlfs
-s3fs==0.6.0
 markupsafe>=2.1.1
 flask_profiler==1.8.1
