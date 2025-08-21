@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - svelte  # Temporary for testing
   workflow_dispatch:
     inputs:
       version:
@@ -46,7 +48,8 @@ jobs:
         tags: |
           type=match,pattern=v(.*),group=1
           type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
-          type=raw,value=latest
+          type=ref,event=branch
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
 
     - name: Build and push Docker image
       id: build
@@ -92,7 +95,8 @@ jobs:
         tags: |
           type=match,pattern=v(.*),group=1
           type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
-          type=raw,value=latest
+          type=ref,event=branch
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
 
     - name: Build and push Docker image
       id: build
@@ -138,7 +142,8 @@ jobs:
         tags: |
           type=match,pattern=v(.*),group=1
           type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
-          type=raw,value=latest
+          type=ref,event=branch
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
 
     - name: Build and push Docker image
       id: build
