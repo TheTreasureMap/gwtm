@@ -64,10 +64,6 @@ jobs:
           gwtm_fastapi:latest \
           python -c "from server.db.init_db import create_database_tables; create_database_tables()"
         
-    - name: Load test data
-      run: |
-        docker compose -p gwtm exec -T db psql -U treasuremap -d treasuremap < tests/test-data.sql
-        
     - name: Start FastAPI server
       run: |
         docker run -d --name fastapi-server \
@@ -83,6 +79,24 @@ jobs:
     - name: Wait for FastAPI server to be ready
       run: |
         timeout 120 bash -c 'until curl -f http://localhost:8000/health; do echo "Waiting for FastAPI..."; sleep 5; done'
+        
+    - name: Load test data
+      run: |
+        docker compose -p gwtm exec -T db psql -U treasuremap -d treasuremap < tests/test-data.sql
+        
+    - name: Verify test data loaded
+      run: |
+        echo "Checking if test users exist in database..."
+        docker compose -p gwtm exec -T db psql -U treasuremap -d treasuremap -c "SELECT COUNT(*) FROM users;" || echo "Users table query failed"
+        echo "Checking if test tokens exist..."
+        docker compose -p gwtm exec -T db psql -U treasuremap -d treasuremap -c "SELECT username, api_token FROM users LIMIT 3;" || echo "API token query failed"
+        
+    - name: Test API authentication
+      run: |
+        echo "Testing API authentication with test token..."
+        curl -f -H "api_token: test_token_admin_001" http://localhost:8000/api/v1/pointings | head -5 || echo "API auth test failed"
+        echo "Testing health endpoint..."
+        curl -f http://localhost:8000/health || echo "Health check failed"
         
     - name: Run FastAPI tests
       run: |
