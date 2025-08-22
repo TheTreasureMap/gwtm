@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
         None, description="Whether the user's email is verified"
     )
     api_token: Optional[str] = Field(None, description="User's API token")
+    verification_key: Optional[str] = Field(None, description="Email verification key")
     datecreated: Optional[datetime] = Field(
         None, description="Date when the user account was created"
     )
