@@ -130,6 +130,7 @@ export function createFormStore<T extends Record<string, unknown> = Record<strin
 				if (fieldName === 'isValid') continue;
 
 				const typedFieldName = fieldName as keyof T;
+				const validationResult = result as ValidationResult; // Type assertion since we know it's ValidationResult (not boolean)
 
 				if (!newFields[typedFieldName]) {
 					newFields[typedFieldName] = {
@@ -145,14 +146,14 @@ export function createFormStore<T extends Record<string, unknown> = Record<strin
 
 				newFields[typedFieldName] = {
 					...newFields[typedFieldName],
-					errors: result.errors,
-					warnings: result.warnings || [],
-					isValid: result.isValid,
+					errors: validationResult.errors,
+					warnings: validationResult.warnings || [],
+					isValid: validationResult.isValid,
 					isValidating: false
 				};
 
-				if (!result.isValid) {
-					newErrors[typedFieldName] = result.errors;
+				if (!validationResult.isValid) {
+					newErrors[typedFieldName] = validationResult.errors;
 				}
 			}
 

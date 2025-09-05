@@ -68,10 +68,10 @@
 	let className: string = '';
 	export { className as class };
 
-	import { classBuilder } from '$lib/design-system';
+	import { classBuilder, type SizeVariant } from '$lib/design-system';
 
 	// Map size prop to design system size
-	$: designSystemSize = size === 'small' ? 'sm' : size === 'medium' ? 'md' : 'lg';
+	$: designSystemSize = (size === 'small' ? 'sm' : size === 'medium' ? 'md' : 'lg') as SizeVariant;
 
 	// Icon sizes
 	$: iconSize = {

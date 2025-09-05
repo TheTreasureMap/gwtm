@@ -18,9 +18,12 @@ export type ValidatorFunction<T = unknown> = (
 	context?: Record<string, unknown>
 ) => ValidationResult;
 
+// More flexible validator type that accepts any validator function
+export type AnyValidatorFunction = ValidatorFunction<any>;
+
 export type FieldValidator<T = unknown> = {
 	required?: boolean;
-	validators?: ValidatorFunction<T>[];
+	validators?: AnyValidatorFunction[];
 	customMessage?: string;
 	dependsOn?: string[];
 };

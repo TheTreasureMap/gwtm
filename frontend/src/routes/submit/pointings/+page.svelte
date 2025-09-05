@@ -33,7 +33,7 @@
 	} from '$lib/services/pointingService';
 
 	// Types and interfaces
-	interface PointingFormData {
+	interface PointingFormData extends Record<string, unknown> {
 		loadid: number | null;
 		graceid: string;
 		obs_status: string;
