@@ -66,7 +66,7 @@
 	 */
 
 	import { createEventDispatcher, onMount } from 'svelte';
-	import type { ValidatorFunction, ValidationResult } from '$lib/validation/validators';
+	import type { AnyValidatorFunction, ValidationResult } from '$lib/validation/validators';
 	import { validateField } from '$lib/validation/validators';
 
 	/**
@@ -165,7 +165,7 @@
 	 * @default []
 	 * @optional
 	 */
-	export let validators: ValidatorFunction[] = [];
+	export let validators: AnyValidatorFunction[] = [];
 
 	/**
 	 * Help text to display below the field
@@ -440,7 +440,7 @@
 					{disabled}
 					{required}
 					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-					bind:checked={value}
+					bind:checked={value as boolean}
 					on:change={handleInput}
 					on:focus={handleFocus}
 					on:blur={handleBlur}

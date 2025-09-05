@@ -3,22 +3,12 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { api } from '$lib/api';
 import { errorHandler } from '$lib/utils/errorHandling';
-
-// Define the User interface based on the FastAPI response
-interface User {
-	id: number;
-	email: string;
-	username: string;
-	firstname: string;
-	lastname: string;
-	verified?: boolean; // Optional during Flask/FastAPI transition
-	api_token?: string;
-}
+import type { UserProfile } from '$lib/api/types/api-responses';
 
 // Define the state for our auth store
 interface AuthState {
 	isAuthenticated: boolean;
-	user: User | null;
+	user: UserProfile | null;
 	loading: boolean;
 	token: string | null;
 }

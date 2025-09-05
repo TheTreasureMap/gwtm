@@ -58,7 +58,7 @@ export const searchService = {
 		);
 
 		return {
-			doi_url: result.doi_url || result
+			doi_url: result.doi_url || ''
 		};
 	}
 };
