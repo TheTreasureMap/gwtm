@@ -1,63 +1,68 @@
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<title>Code coverage report for validation/validators.ts</title>
-		<meta charset="utf-8" />
-		<link rel="stylesheet" href="../prettify.css" />
-		<link rel="stylesheet" href="../base.css" />
-		<link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<style type="text/css">
-			.coverage-summary .sorter {
-				background-image: url(../sort-arrow-sprite.png);
-			}
-		</style>
-	</head>
 
-	<body>
-		<div class="wrapper">
-			<div class="pad1">
-				<h1>
-					<a href="../index.html">All files</a> / <a href="index.html">validation</a> validators.ts
-				</h1>
-				<div class="clearfix">
-					<div class="fl pad1y space-right2">
-						<span class="strong">95.42% </span>
-						<span class="quiet">Statements</span>
-						<span class="fraction">334/350</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">99.2% </span>
-						<span class="quiet">Branches</span>
-						<span class="fraction">125/126</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">90.9% </span>
-						<span class="quiet">Functions</span>
-						<span class="fraction">20/22</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">95.42% </span>
-						<span class="quiet">Lines</span>
-						<span class="fraction">334/350</span>
-					</div>
-				</div>
-				<p class="quiet">
-					Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>,
-					<em>p</em> or <em>k</em> for the previous block.
-				</p>
-				<template id="filterTemplate">
-					<div class="quiet">
-						Filter:
-						<input type="search" id="fileSearch" />
-					</div>
-				</template>
-			</div>
-			<div class="status-line high"></div>
-			<pre><table class="coverage">
+<head>
+    <title>Code coverage report for validation/validators.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">validation</a> validators.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">95.42% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>334/350</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">99.2% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>125/126</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">90.9% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>20/22</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">95.42% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>334/350</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
 <a name='L3'></a><a href='#L3'>3</a>
@@ -579,7 +584,13 @@
 <a name='L519'></a><a href='#L519'>519</a>
 <a name='L520'></a><a href='#L520'>520</a>
 <a name='L521'></a><a href='#L521'>521</a>
-<a name='L522'></a><a href='#L522'>522</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L522'></a><a href='#L522'>522</a>
+<a name='L523'></a><a href='#L523'>523</a>
+<a name='L524'></a><a href='#L524'>524</a>
+<a name='L525'></a><a href='#L525'>525</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1120,9 +1131,12 @@ export type ValidatorFunction&lt;T = unknown&gt; = (
 	context?: Record&lt;string, unknown&gt;
 ) =&gt; ValidationResult;
 &nbsp;
+// More flexible validator type that accepts any validator function
+export type AnyValidatorFunction = ValidatorFunction&lt;any&gt;;
+&nbsp;
 export type FieldValidator&lt;T = unknown&gt; = {
 	required?: boolean;
-	validators?: ValidatorFunction&lt;T&gt;[];
+	validators?: AnyValidatorFunction[];
 	customMessage?: string;
 	dependsOn?: string[];
 };
@@ -1623,22 +1637,21 @@ export function validateSchema&lt;T extends Record&lt;string, any&gt;&gt;(
 }
 &nbsp;</pre></td></tr></table></pre>
 
-			<div class="push"></div>
-			<!-- for sticky footer -->
-		</div>
-		<!-- /wrapper -->
-		<div class="footer quiet pad2 space-top1 center small">
-			Code coverage generated by
-			<a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-			at 2025-09-04T09:06:48.767Z
-		</div>
-		<script src="../prettify.js"></script>
-		<script>
-			window.onload = function () {
-				prettyPrint();
-			};
-		</script>
-		<script src="../sorter.js"></script>
-		<script src="../block-navigation.js"></script>
-	</body>
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-09-05T10:46:28.097Z
+            </div>
+        <script src="../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
+    </body>
 </html>
+    
