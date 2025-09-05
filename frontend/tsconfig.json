@@ -28,7 +28,7 @@
 		"src/lib/components/ui/FootprintVisualization.svelte",
 		"src/lib/components/ui/PageContainer.svelte",
 		"src/lib/components/search/PointingsSearchForm.svelte",
-		"src/lib/components/search/DoiRequestPanel.svelte", 
+		"src/lib/components/search/DoiRequestPanel.svelte",
 		"src/lib/components/search/PointingsTable.svelte",
 		"src/routes/documentation/**/*",
 		"src/routes/manage/**/*"

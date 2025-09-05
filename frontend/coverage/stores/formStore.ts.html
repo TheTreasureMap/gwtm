@@ -1,63 +1,68 @@
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<title>Code coverage report for stores/formStore.ts</title>
-		<meta charset="utf-8" />
-		<link rel="stylesheet" href="../prettify.css" />
-		<link rel="stylesheet" href="../base.css" />
-		<link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<style type="text/css">
-			.coverage-summary .sorter {
-				background-image: url(../sort-arrow-sprite.png);
-			}
-		</style>
-	</head>
 
-	<body>
-		<div class="wrapper">
-			<div class="pad1">
-				<h1>
-					<a href="../index.html">All files</a> / <a href="index.html">stores</a> formStore.ts
-				</h1>
-				<div class="clearfix">
-					<div class="fl pad1y space-right2">
-						<span class="strong">0% </span>
-						<span class="quiet">Statements</span>
-						<span class="fraction">0/351</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">100% </span>
-						<span class="quiet">Branches</span>
-						<span class="fraction">1/1</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">100% </span>
-						<span class="quiet">Functions</span>
-						<span class="fraction">1/1</span>
-					</div>
-
-					<div class="fl pad1y space-right2">
-						<span class="strong">0% </span>
-						<span class="quiet">Lines</span>
-						<span class="fraction">0/351</span>
-					</div>
-				</div>
-				<p class="quiet">
-					Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>,
-					<em>p</em> or <em>k</em> for the previous block.
-				</p>
-				<template id="filterTemplate">
-					<div class="quiet">
-						Filter:
-						<input type="search" id="fileSearch" />
-					</div>
-				</template>
-			</div>
-			<div class="status-line low"></div>
-			<pre><table class="coverage">
+<head>
+    <title>Code coverage report for stores/formStore.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">stores</a> formStore.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/352</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>1/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>1/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/352</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
 <a name='L3'></a><a href='#L3'>3</a>
@@ -572,7 +577,8 @@
 <a name='L512'></a><a href='#L512'>512</a>
 <a name='L513'></a><a href='#L513'>513</a>
 <a name='L514'></a><a href='#L514'>514</a>
-<a name='L515'></a><a href='#L515'>515</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L515'></a><a href='#L515'>515</a>
+<a name='L516'></a><a href='#L516'>516</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -703,6 +709,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1218,6 +1225,7 @@ export interface FormOptions&lt;T = Record&lt;string, unknown&gt;&gt; {
 <span class="cstat-no" title="statement not covered" >				if (fieldName === 'isValid') continue;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >				const typedFieldName = fieldName as keyof T;</span>
+<span class="cstat-no" title="statement not covered" >				const validationResult = result as ValidationResult; // Type assertion since we know it's ValidationResult (not boolean)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >				if (!newFields[typedFieldName]) {</span>
 <span class="cstat-no" title="statement not covered" >					newFields[typedFieldName] = {</span>
@@ -1233,14 +1241,14 @@ export interface FormOptions&lt;T = Record&lt;string, unknown&gt;&gt; {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >				newFields[typedFieldName] = {</span>
 <span class="cstat-no" title="statement not covered" >					...newFields[typedFieldName],</span>
-<span class="cstat-no" title="statement not covered" >					errors: result.errors,</span>
-<span class="cstat-no" title="statement not covered" >					warnings: result.warnings || [],</span>
-<span class="cstat-no" title="statement not covered" >					isValid: result.isValid,</span>
+<span class="cstat-no" title="statement not covered" >					errors: validationResult.errors,</span>
+<span class="cstat-no" title="statement not covered" >					warnings: validationResult.warnings || [],</span>
+<span class="cstat-no" title="statement not covered" >					isValid: validationResult.isValid,</span>
 <span class="cstat-no" title="statement not covered" >					isValidating: false</span>
 <span class="cstat-no" title="statement not covered" >				};</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >				if (!result.isValid) {</span>
-<span class="cstat-no" title="statement not covered" >					newErrors[typedFieldName] = result.errors;</span>
+<span class="cstat-no" title="statement not covered" >				if (!validationResult.isValid) {</span>
+<span class="cstat-no" title="statement not covered" >					newErrors[typedFieldName] = validationResult.errors;</span>
 <span class="cstat-no" title="statement not covered" >				}</span>
 <span class="cstat-no" title="statement not covered" >			}</span>
 &nbsp;
@@ -1440,7 +1448,7 @@ export interface FormOptions&lt;T = Record&lt;string, unknown&gt;&gt; {
 <span class="cstat-no" title="statement not covered" >			fields: Object.keys(initialValues).reduce(</span>
 <span class="cstat-no" title="statement not covered" >				(acc, key) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >					acc[key as keyof T] = {</span>
-<span class="cstat-no" title="statement not covered" >						value: initialValues[key as keyof T],</span>
+<span class="cstat-no" title="statement not covered" >						value: initialValues[key as keyof T] as T[keyof T],</span>
 <span class="cstat-no" title="statement not covered" >						errors: [],</span>
 <span class="cstat-no" title="statement not covered" >						warnings: [],</span>
 <span class="cstat-no" title="statement not covered" >						touched: false,</span>
@@ -1456,7 +1464,7 @@ export interface FormOptions&lt;T = Record&lt;string, unknown&gt;&gt; {
 <span class="cstat-no" title="statement not covered" >			isSubmitting: false,</span>
 <span class="cstat-no" title="statement not covered" >			isDirty: false,</span>
 <span class="cstat-no" title="statement not covered" >			submitCount: 0,</span>
-<span class="cstat-no" title="statement not covered" >			errors: {},</span>
+<span class="cstat-no" title="statement not covered" >			errors: {} as Record&lt;keyof T, string[]&gt;,</span>
 <span class="cstat-no" title="statement not covered" >			globalError: ''</span>
 <span class="cstat-no" title="statement not covered" >		});</span>
 <span class="cstat-no" title="statement not covered" >	}</span>
@@ -1602,22 +1610,21 @@ export interface FormOptions&lt;T = Record&lt;string, unknown&gt;&gt; {
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
-			<div class="push"></div>
-			<!-- for sticky footer -->
-		</div>
-		<!-- /wrapper -->
-		<div class="footer quiet pad2 space-top1 center small">
-			Code coverage generated by
-			<a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-			at 2025-09-04T09:06:48.767Z
-		</div>
-		<script src="../prettify.js"></script>
-		<script>
-			window.onload = function () {
-				prettyPrint();
-			};
-		</script>
-		<script src="../sorter.js"></script>
-		<script src="../block-navigation.js"></script>
-	</body>
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2025-09-05T10:46:28.097Z
+            </div>
+        <script src="../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
+    </body>
 </html>
+    
