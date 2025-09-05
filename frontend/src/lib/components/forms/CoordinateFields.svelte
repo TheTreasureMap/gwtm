@@ -10,7 +10,7 @@
 
 	import { createEventDispatcher } from 'svelte';
 	import FormField from './FormField.svelte';
-	import type { ValidatorFunction } from '$lib/validation/validators';
+	import type { AnyValidatorFunction } from '$lib/validation/validators';
 	import { validators } from '$lib/validation/validators';
 
 	const dispatch = createEventDispatcher<{
@@ -65,14 +65,14 @@
 	let decErrors: string[] = [];
 
 	// RA validators (0-360 degrees)
-	const raValidators: ValidatorFunction[] = [
+	const raValidators: AnyValidatorFunction[] = [
 		validators.number(),
 		validators.min(0, 'RA must be between 0 and 360 degrees'),
 		validators.max(360, 'RA must be between 0 and 360 degrees')
 	];
 
 	// Dec validators (-90 to +90 degrees)
-	const decValidators: ValidatorFunction[] = [
+	const decValidators: AnyValidatorFunction[] = [
 		validators.number(),
 		validators.min(-90, 'Dec must be between -90 and +90 degrees'),
 		validators.max(90, 'Dec must be between -90 and +90 degrees')

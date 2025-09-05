@@ -2,7 +2,7 @@
  * Test utility functions and helpers
  */
 
-import { vi } from 'vitest';
+import { vi, beforeEach, afterEach, expect } from 'vitest';
 
 /**
  * Generate test data for validation tests

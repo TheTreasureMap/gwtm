@@ -74,7 +74,7 @@ export function useFieldValidation<T = unknown>(options: UseFieldValidationOptio
 	function validate(context?: Record<string, unknown>): ValidationResult {
 		state.update((s) => ({ ...s, isValidating: true }));
 
-		let currentValue: T;
+		let currentValue: T = initialValue;
 
 		// Get current value from state
 		const unsubscribe = state.subscribe((s) => {

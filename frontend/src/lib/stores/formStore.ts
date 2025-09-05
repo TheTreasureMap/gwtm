@@ -353,7 +353,7 @@ export function createFormStore<T extends Record<string, unknown> = Record<strin
 			fields: Object.keys(initialValues).reduce(
 				(acc, key) => {
 					acc[key as keyof T] = {
-						value: initialValues[key as keyof T],
+						value: initialValues[key as keyof T] as T[keyof T],
 						errors: [],
 						warnings: [],
 						touched: false,
@@ -369,7 +369,7 @@ export function createFormStore<T extends Record<string, unknown> = Record<strin
 			isSubmitting: false,
 			isDirty: false,
 			submitCount: 0,
-			errors: {},
+			errors: {} as Record<keyof T, string[]>,
 			globalError: ''
 		});
 	}
