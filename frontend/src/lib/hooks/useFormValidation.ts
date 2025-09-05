@@ -45,7 +45,7 @@ export function useFieldValidation<T = unknown>(options: UseFieldValidationOptio
 		validateOnChange = true,
 		validateOnBlur = true,
 		debounceMs = 300,
-		initialValue = ''
+		initialValue = '' as T
 	} = options;
 
 	// Create stores
@@ -74,7 +74,6 @@ export function useFieldValidation<T = unknown>(options: UseFieldValidationOptio
 	function validate(context?: Record<string, unknown>): ValidationResult {
 		state.update((s) => ({ ...s, isValidating: true }));
 
-		const currentState = state.subscribe ? state : { subscribe: () => ({}) };
 		let currentValue: T;
 
 		// Get current value from state
@@ -265,7 +264,7 @@ export function useFormValidation<T extends Record<string, unknown> = Record<str
 		}
 
 		let currentValues: T;
-		let fieldValue: T[keyof T];
+		let fieldValue: T[keyof T] | undefined;
 
 		// Get current values from state
 		const unsubscribe = state.subscribe((s) => {
@@ -273,6 +272,11 @@ export function useFormValidation<T extends Record<string, unknown> = Record<str
 			fieldValue = s.values[fieldName];
 		});
 		unsubscribe();
+
+		// Ensure we have a field value
+		if (fieldValue === undefined) {
+			return { isValid: true, errors: [] }; // Return valid if no value present
+		}
 
 		const result = validateField(
 			fieldValue,
