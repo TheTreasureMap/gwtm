@@ -47,6 +47,7 @@ router.include_router(scimma_xrt_router)
 router.include_router(candidate_fetch_router)
 router.include_router(request_doi_router)
 router.include_router(alert_type_router)
+router.include_router(fermi_coverage_router)
 
 
 # Temporary sun/moon position endpoint for testing
