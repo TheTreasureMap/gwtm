@@ -228,6 +228,30 @@
 	 */
 	export let validationContext: Record<string, unknown> = {};
 
+	/**
+	 * Step attribute for number inputs
+	 * @type {string}
+	 * @default 'any'
+	 * @optional
+	 */
+	export let step: string = 'any';
+
+	/**
+	 * External error override (for backward compatibility)
+	 * @type {string}
+	 * @default ''
+	 * @optional
+	 */
+	export let error: string = '';
+
+	/**
+	 * Min attribute for number inputs
+	 * @type {string}
+	 * @default undefined
+	 * @optional
+	 */
+	export let min: string | undefined = undefined;
+
 	// ================================================================================================
 	// STATE
 	// ================================================================================================
@@ -237,8 +261,8 @@
 	let validationTimeout: ReturnType<typeof setTimeout>;
 
 	// Computed states
-	$: hasError = !validationResult.isValid || externalErrors.length > 0;
-	$: allErrors = [...validationResult.errors, ...externalErrors];
+	$: hasError = !validationResult.isValid || externalErrors.length > 0 || error !== '';
+	$: allErrors = [...validationResult.errors, ...externalErrors, ...(error ? [error] : [])];
 	$: showErrors = touched && hasError;
 	$: fieldId = id || `field-${name}`;
 	$: helpId = `${fieldId}-help`;
@@ -491,7 +515,8 @@
 				{disabled}
 				{readonly}
 				{required}
-				step={type === 'number' ? 'any' : undefined}
+				step={type === 'number' ? step : undefined}
+				min={type === 'number' ? min : undefined}
 				class={inputClasses}
 				bind:value
 				on:input={handleInput}

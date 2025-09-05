@@ -17,7 +17,7 @@ interface AuthState {
 interface AuthResult {
 	success: boolean;
 	error?: string;
-	user?: User;
+	user?: UserProfile;
 }
 
 function createAuthStore() {
