@@ -47,17 +47,6 @@ jobs:
       - name: Generate coverage report
         run: npm run test:coverage
       
-      - name: Upload coverage to Codecov (optional)
-        uses: codecov/codecov-action@v4
-        if: success()
-        with:
-          directory: ./frontend/coverage
-          flags: frontend
-          fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Comment PR with coverage
         uses: marocchino/sticky-pull-request-comment@v2
         if: github.event_name == 'pull_request'

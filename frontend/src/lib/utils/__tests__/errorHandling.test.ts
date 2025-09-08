@@ -11,6 +11,7 @@ import {
 } from '../errorHandling';
 import { testErrors, mockConsole } from '../../../test-utils/helpers';
 
+// Tests for error handling utilities including validation, logging, and global error management
 describe('Error Handling Utilities', () => {
 	beforeEach(() => {
 		// Clear the global error store before each test
@@ -22,6 +23,7 @@ describe('Error Handling Utilities', () => {
 		vi.restoreAllMocks();
 	});
 
+	// Core error handler functionality
 	describe('errorHandler', () => {
 		describe('showToast', () => {
 			it('should add error to global store', () => {
@@ -284,6 +286,7 @@ describe('Error Handling Utilities', () => {
 		});
 	});
 
+	// Error logging functionality
 	describe('errorLogger', () => {
 		beforeEach(() => {
 			vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -346,6 +349,7 @@ describe('Error Handling Utilities', () => {
 		});
 	});
 
+	// Field validation with error handling
 	describe('validation utilities', () => {
 		describe('isRequired', () => {
 			it('should pass for non-empty values', () => {
@@ -430,6 +434,7 @@ describe('Error Handling Utilities', () => {
 		});
 	});
 
+	// Form-level validation
 	describe('validateForm', () => {
 		it('should validate form with multiple rules', () => {
 			const values = {
