@@ -10,6 +10,7 @@ import {
 } from '../validators';
 import { testData, createMockContext, expectValidationResult } from '../../../test-utils/helpers';
 
+// Tests for form validation utilities and field validators
 describe('ValidationUtils', () => {
 	describe('isEmpty', () => {
 		it('should return true for null and undefined', () => {
@@ -90,6 +91,7 @@ describe('ValidationUtils', () => {
 	});
 });
 
+// Individual field validators
 describe('Core Validators', () => {
 	describe('required validator', () => {
 		it('should pass for non-empty values', () => {
