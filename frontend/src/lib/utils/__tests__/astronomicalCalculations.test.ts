@@ -11,6 +11,7 @@ import {
 	expectApproximatelyEqual
 } from '../../../test-utils/helpers';
 
+// Tests for astronomical calculation utilities including MJD conversion and sun/moon positioning
 describe('Astronomical Calculations', () => {
 	let mockDateHelper: { mockDate: Date; restore: () => void };
 
@@ -25,6 +26,7 @@ describe('Astronomical Calculations', () => {
 		vi.restoreAllMocks();
 	});
 
+	// Modified Julian Date conversion
 	describe('convertToMJD', () => {
 		it('should convert Unix epoch to correct MJD', () => {
 			const unixEpoch = new Date('1970-01-01T00:00:00.000Z');
@@ -80,6 +82,7 @@ describe('Astronomical Calculations', () => {
 		});
 	});
 
+	// Default fallback positions
 	describe('getDefaultSunMoonPositions', () => {
 		it('should return expected default positions', () => {
 			const defaults = getDefaultSunMoonPositions();
@@ -100,6 +103,7 @@ describe('Astronomical Calculations', () => {
 		});
 	});
 
+	// API fetching with fallback calculations
 	describe('fetchSunMoonPositions', () => {
 		beforeEach(() => {
 			global.fetch = vi.fn();
@@ -172,6 +176,7 @@ describe('Astronomical Calculations', () => {
 		});
 	});
 
+	// Offline calculation algorithms
 	describe('Fallback sun/moon calculations', () => {
 		beforeEach(() => {
 			// Mock fetch to always fail so we test the fallback
@@ -291,6 +296,7 @@ describe('Astronomical Calculations', () => {
 		});
 	});
 
+	// TypeScript interface validation
 	describe('Type safety and interface compliance', () => {
 		it('should return SunMoonData interface compliant objects', async () => {
 			global.fetch = vi.fn().mockRejectedValue(new Error('No network'));
