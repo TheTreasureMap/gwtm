@@ -113,7 +113,7 @@ describe('Astronomical Calculations', () => {
 			const result = await fetchSunMoonPositions('');
 			expect(result).toBeNull();
 
-			const result2 = await fetchSunMoonPositions(null as any);
+			const result2 = await fetchSunMoonPositions(null as unknown as string);
 			expect(result2).toBeNull();
 		});
 
@@ -125,7 +125,9 @@ describe('Astronomical Calculations', () => {
 				moon_dec: 15.2
 			};
 
-			(global.fetch as any).mockResolvedValue(createMockFetchResponse(mockResponse));
+			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+				createMockFetchResponse(mockResponse)
+			);
 
 			const result = await fetchSunMoonPositions('2024-01-01T12:00:00.000Z');
 
@@ -136,7 +138,7 @@ describe('Astronomical Calculations', () => {
 		});
 
 		it('should handle API errors gracefully', async () => {
-			(global.fetch as any).mockRejectedValue(new Error('Network error'));
+			(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
 			const result = await fetchSunMoonPositions('2024-01-01T12:00:00.000Z');
 
@@ -149,7 +151,7 @@ describe('Astronomical Calculations', () => {
 		});
 
 		it('should handle HTTP error responses', async () => {
-			(global.fetch as any).mockResolvedValue({
+			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
 				ok: false,
 				status: 500,
 				statusText: 'Internal Server Error',
@@ -165,7 +167,9 @@ describe('Astronomical Calculations', () => {
 
 		it('should encode URL parameters correctly', async () => {
 			const mockResponse = { sun_ra: 0, sun_dec: 0, moon_ra: 0, moon_dec: 0 };
-			(global.fetch as any).mockResolvedValue(createMockFetchResponse(mockResponse));
+			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+				createMockFetchResponse(mockResponse)
+			);
 
 			const timeWithSpecialChars = '2024-01-01T12:00:00+05:30';
 			await fetchSunMoonPositions(timeWithSpecialChars);

@@ -83,7 +83,7 @@
 
 		try {
 			// Build search filters (matching Flask logic)
-			const filters: any = {};
+			const filters: Record<string, unknown> = {};
 
 			// Name filter (partial match like Flask's ilike)
 			if (searchName.trim()) {

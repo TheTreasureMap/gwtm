@@ -5,7 +5,6 @@
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { api } from '$lib/api';
 
 	let loading = true;
 	let error = '';

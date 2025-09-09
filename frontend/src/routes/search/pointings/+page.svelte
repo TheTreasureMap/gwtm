@@ -9,12 +9,12 @@
 	import PointingsTable from '$lib/components/search/PointingsTable.svelte';
 
 	// State
-	let searchResults: any[] = [];
+	let searchResults: unknown[] = [];
 	let selectedPointings: Set<number> = new Set();
 	let isSearching = false;
 	let hasSearched = false;
 	let searchError = '';
-	let lastSearchParams: any = null;
+	let lastSearchParams: Record<string, unknown> | null = null;
 
 	// Handle search form submission
 	async function handleSearch(event: CustomEvent) {

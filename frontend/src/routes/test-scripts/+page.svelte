@@ -37,7 +37,7 @@
 			try {
 				const container = document.getElementById('test-aladin');
 				if (container) {
-					const A = (window as any).A;
+					const A = (window as { A: { aladin: (selector: string, config: unknown) => unknown } }).A;
 					const aladin = A.aladin('#test-aladin', {
 						fov: 60,
 						target: '0 0',
