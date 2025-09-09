@@ -91,14 +91,6 @@
 		dispatch('toggle', { expanded });
 	}
 
-	$: buttonClass = [
-		'flex items-center justify-between w-full text-left',
-		expanded ? 'rounded-b-none' : '',
-		className
-	]
-		.filter(Boolean)
-		.join(' ');
-
 	$: chevronTransform = expanded ? 'rotate-180' : 'rotate-0';
 </script>
 

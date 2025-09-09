@@ -58,7 +58,7 @@
 	 * @type {Array<Record<string, any>>}
 	 * @default []
 	 */
-	export let data: Array<Record<string, any>> = [];
+	export let data: Array<Record<string, unknown>> = [];
 
 	/**
 	 * Column configuration array
@@ -183,7 +183,7 @@
 		<table class={tableClass}>
 			<thead class="bg-gray-50">
 				<tr>
-					{#each columns as column}
+					{#each columns as column (column.key)}
 						<th
 							scope="col"
 							class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -206,9 +206,9 @@
 				</tr>
 			</thead>
 			<tbody class="bg-white divide-y divide-gray-200">
-				{#each displayData as item, index}
+				{#each displayData as item, index (item.id || index)}
 					<tr class="hover:bg-gray-50">
-						{#each columns as column}
+						{#each columns as column (column.key)}
 							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
 								<slot name="cell" {item} {column} {index}>
 									{item[column.key] || '—'}
@@ -266,7 +266,7 @@
 								Previous
 							</Button>
 
-							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page}
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page (page)}
 								{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
 									<Button
 										variant={page === currentPage ? 'primary' : 'secondary'}

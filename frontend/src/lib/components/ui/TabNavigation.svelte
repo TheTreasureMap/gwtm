@@ -89,7 +89,7 @@
 			</li>
 		{/if}
 
-		{#each tabs as tab}
+		{#each tabs as tab (tab.id)}
 			<li class="nav-item cursor-pointer" role="presentation">
 				<button
 					class="nav-link px-4 py-3 text-sm font-medium border-b-2 transition-colors
