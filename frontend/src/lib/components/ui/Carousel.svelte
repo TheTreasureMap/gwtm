@@ -123,7 +123,7 @@
 		{#if totalImages > 1}
 			<!-- Navigation dots -->
 			<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-				{#each images as _, index}
+				{#each images as _, index (index)}
 					<button
 						class="w-3 h-3 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 {index ===
 						currentIndex
