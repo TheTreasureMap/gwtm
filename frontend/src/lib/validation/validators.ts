@@ -21,7 +21,7 @@ export type ValidatorFunction<T = unknown> = (
 // More flexible validator type that accepts any validator function
 export type AnyValidatorFunction = ValidatorFunction<unknown>;
 
-export type FieldValidator = {
+export type FieldValidator<T = unknown> = {
 	required?: boolean;
 	validators?: AnyValidatorFunction[];
 	customMessage?: string;
@@ -29,7 +29,7 @@ export type FieldValidator = {
 };
 
 export type ValidationSchema<T = Record<string, unknown>> = {
-	[K in keyof T]?: FieldValidator;
+	[K in keyof T]?: FieldValidator<T[K]>;
 };
 
 /**

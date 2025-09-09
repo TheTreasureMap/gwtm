@@ -159,6 +159,7 @@ function createAuthStore() {
 
 			if (err && typeof err === 'object' && 'response' in err) {
 				const response = err.response as {
+					status?: number;
 					data?: { errors?: Array<{ message: string }>; detail?: unknown };
 				};
 
