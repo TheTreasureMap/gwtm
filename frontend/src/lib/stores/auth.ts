@@ -47,7 +47,7 @@ function createAuthStore() {
 					token: token,
 					loading: false
 				});
-			} catch (e) {
+			} catch {
 				// If parsing fails, clear everything
 				api.auth.clearApiToken();
 				localStorage.removeItem('user');
@@ -158,18 +158,25 @@ function createAuthStore() {
 			let errorMessage = 'Registration failed. Please try again.';
 
 			if (err && typeof err === 'object' && 'response' in err) {
-				const response = err.response as any;
+				const response = err.response as {
+					data?: { errors?: Array<{ message: string }>; detail?: unknown };
+				};
 
 				// Handle validation errors from FastAPI
 				if (response?.data?.errors && Array.isArray(response.data.errors)) {
-					const errors = response.data.errors.map((error: any) => error.message).join(', ');
+					const errors = response.data.errors
+						.map((error: { message: string }) => error.message)
+						.join(', ');
 					errorMessage = errors;
 				} else if (response?.data?.detail) {
 					// Handle single error detail
 					if (Array.isArray(response.data.detail)) {
 						// Pydantic validation errors format
 						const validationErrors = response.data.detail
-							.map((error: any) => `${error.loc?.[1] || error.loc?.[0] || 'Field'}: ${error.msg}`)
+							.map(
+								(error: { loc?: (string | number)[]; msg: string }) =>
+									`${error.loc?.[1] || error.loc?.[0] || 'Field'}: ${error.msg}`
+							)
 							.join(', ');
 						errorMessage = validationErrors;
 					} else if (typeof response.data.detail === 'string') {

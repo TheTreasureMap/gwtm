@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
 	ValidationUtils,
 	validators,
 	validationSchemas,
 	validateField,
 	validateSchema,
-	type ValidationResult,
 	type FieldValidator
 } from '../validators';
 import { testData, createMockContext, expectValidationResult } from '../../../test-utils/helpers';
@@ -46,12 +45,12 @@ describe('ValidationUtils', () => {
 		});
 
 		it('should handle null and undefined', () => {
-			expect(ValidationUtils.sanitizeString(null as any)).toBe('');
-			expect(ValidationUtils.sanitizeString(undefined as any)).toBe('');
+			expect(ValidationUtils.sanitizeString(null as unknown as string)).toBe('');
+			expect(ValidationUtils.sanitizeString(undefined as unknown as string)).toBe('');
 		});
 
 		it('should convert non-strings to strings', () => {
-			expect(ValidationUtils.sanitizeString(123 as any)).toBe('123');
+			expect(ValidationUtils.sanitizeString(123 as unknown as string)).toBe('123');
 		});
 	});
 
@@ -481,7 +480,7 @@ describe('Field Validation', () => {
 	});
 
 	it('should collect warnings from validators', () => {
-		const warningValidator = validators.custom((value) => ({
+		const warningValidator = validators.custom(() => ({
 			isValid: true,
 			errors: [],
 			warnings: ['This is a warning']

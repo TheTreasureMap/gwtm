@@ -60,7 +60,7 @@ export const errorHandler = {
 	},
 
 	// Handle API errors with consistent formatting
-	handleApiError(error: any, context?: string): string {
+	handleApiError(error: unknown, context?: string): string {
 		console.error('API Error:', error, context);
 
 		let message = 'An unexpected error occurred';
@@ -160,7 +160,7 @@ function generateErrorId(): string {
 
 // Error logging utilities
 export const errorLogger = {
-	log(error: any, context?: string, extra?: unknown) {
+	log(error: unknown, context?: string, extra?: unknown) {
 		const timestamp = new Date().toISOString();
 		const errorObj =
 			error instanceof Error
@@ -180,7 +180,7 @@ export const errorLogger = {
 		}
 	},
 
-	logApiError(error: any, endpoint?: string) {
+	logApiError(error: unknown, endpoint?: string) {
 		this.log(error, `API Error${endpoint ? ` (${endpoint})` : ''}`, {
 			status: error?.response?.status,
 			data: error?.response?.data,

@@ -6,10 +6,9 @@ import {
 	validation,
 	validateForm,
 	globalErrors,
-	type AppError,
 	type ErrorToastOptions
 } from '../errorHandling';
-import { testErrors, mockConsole } from '../../../test-utils/helpers';
+import { testErrors } from '../../../test-utils/helpers';
 
 // Tests for error handling utilities including validation, logging, and global error management
 describe('Error Handling Utilities', () => {
@@ -37,7 +36,7 @@ describe('Error Handling Utilities', () => {
 			});
 
 			it('should create error with correct default properties', () => {
-				const errorId = errorHandler.showToast('Test message');
+				errorHandler.showToast('Test message');
 
 				const errors = get(globalErrors);
 				const error = errors[0];
@@ -89,7 +88,7 @@ describe('Error Handling Utilities', () => {
 			it('should auto-dismiss when duration is set', () => {
 				vi.useFakeTimers();
 
-				const errorId = errorHandler.showToast('Auto-dismiss message', { duration: 1000 });
+				errorHandler.showToast('Auto-dismiss message', { duration: 1000 });
 
 				// Error should be present initially
 				expect(get(globalErrors)).toHaveLength(1);

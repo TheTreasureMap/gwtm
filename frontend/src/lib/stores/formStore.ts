@@ -8,7 +8,6 @@
  */
 
 import { writable, derived, get } from 'svelte/store';
-import type { Writable, Readable } from 'svelte/store';
 import type { ValidationSchema, ValidationResult } from '$lib/validation/validators';
 import { validateSchema, validateField } from '$lib/validation/validators';
 
