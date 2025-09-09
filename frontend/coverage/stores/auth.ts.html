@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/149</span>
+                <span class='fraction'>0/154</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/149</span>
+                <span class='fraction'>0/154</span>
             </div>
         
             
@@ -268,7 +268,15 @@
 <a name='L203'></a><a href='#L203'>203</a>
 <a name='L204'></a><a href='#L204'>204</a>
 <a name='L205'></a><a href='#L205'>205</a>
-<a name='L206'></a><a href='#L206'>206</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -431,6 +439,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -438,6 +451,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -522,7 +538,7 @@ interface AuthResult {
 <span class="cstat-no" title="statement not covered" >					token: token,</span>
 <span class="cstat-no" title="statement not covered" >					loading: false</span>
 <span class="cstat-no" title="statement not covered" >				});</span>
-<span class="cstat-no" title="statement not covered" >			} catch (e) {</span>
+<span class="cstat-no" title="statement not covered" >			} catch {</span>
 				// If parsing fails, clear everything
 <span class="cstat-no" title="statement not covered" >				api.auth.clearApiToken();</span>
 <span class="cstat-no" title="statement not covered" >				localStorage.removeItem('user');</span>
@@ -633,18 +649,26 @@ interface AuthResult {
 <span class="cstat-no" title="statement not covered" >			let errorMessage = 'Registration failed. Please try again.';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >			if (err &amp;&amp; typeof err === 'object' &amp;&amp; 'response' in err) {</span>
-<span class="cstat-no" title="statement not covered" >				const response = err.response as any;</span>
+<span class="cstat-no" title="statement not covered" >				const response = err.response as {</span>
+					status?: number;
+					data?: { errors?: Array&lt;{ message: string }&gt;; detail?: unknown };
+				};
 &nbsp;
 				// Handle validation errors from FastAPI
 <span class="cstat-no" title="statement not covered" >				if (response?.data?.errors &amp;&amp; Array.isArray(response.data.errors)) {</span>
-<span class="cstat-no" title="statement not covered" >					const errors = response.data.errors.map((error: any) =&gt; error.message).join(', ');</span>
+<span class="cstat-no" title="statement not covered" >					const errors = response.data.errors</span>
+<span class="cstat-no" title="statement not covered" >						.map((error: { message: string }) =&gt; error.message)</span>
+<span class="cstat-no" title="statement not covered" >						.join(', ');</span>
 <span class="cstat-no" title="statement not covered" >					errorMessage = errors;</span>
 <span class="cstat-no" title="statement not covered" >				} else if (response?.data?.detail) {</span>
 					// Handle single error detail
 <span class="cstat-no" title="statement not covered" >					if (Array.isArray(response.data.detail)) {</span>
 						// Pydantic validation errors format
 <span class="cstat-no" title="statement not covered" >						const validationErrors = response.data.detail</span>
-<span class="cstat-no" title="statement not covered" >							.map((error: any) =&gt; `${error.loc?.[1] || error.loc?.[0] || 'Field'}: ${error.msg}`)</span>
+<span class="cstat-no" title="statement not covered" >							.map(</span>
+<span class="cstat-no" title="statement not covered" >								(error: { loc?: (string | number)[]; msg: string }) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >									`${error.loc?.[1] || error.loc?.[0] || 'Field'}: ${error.msg}`</span>
+<span class="cstat-no" title="statement not covered" >							)</span>
 <span class="cstat-no" title="statement not covered" >							.join(', ');</span>
 <span class="cstat-no" title="statement not covered" >						errorMessage = validationErrors;</span>
 <span class="cstat-no" title="statement not covered" >					} else if (typeof response.data.detail === 'string') {</span>
@@ -685,7 +709,7 @@ interface AuthResult {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-05T12:51:57.339Z
+                at 2025-09-09T15:00:59.317Z
             </div>
         <script src="../prettify.js"></script>
         <script>
