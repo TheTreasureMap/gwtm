@@ -68,7 +68,11 @@ export const errorHandler = {
 
 		if (error && typeof error === 'object' && 'response' in error && error.response) {
 			// Axios response error
-			const response = error.response as { status?: number; data?: unknown; config?: { url?: string; method?: string } };
+			const response = error.response as {
+				status?: number;
+				data?: unknown;
+				config?: { url?: string; method?: string };
+			};
 			const status = response.status;
 			const data = response.data;
 
@@ -80,21 +84,43 @@ export const errorHandler = {
 				message = 'The requested resource was not found.';
 			} else if (status === 422) {
 				// Validation errors
-				if (data && typeof data === 'object' && 'detail' in data && Array.isArray((data as { detail: unknown }).detail)) {
-					const validationErrors = (data as { detail: Array<{ loc?: string[]; msg: string }> }).detail
+				if (
+					data &&
+					typeof data === 'object' &&
+					'detail' in data &&
+					Array.isArray((data as { detail: unknown }).detail)
+				) {
+					const validationErrors = (
+						data as { detail: Array<{ loc?: string[]; msg: string }> }
+					).detail
 						.map((err: { loc?: string[]; msg: string }) => `${err.loc?.join('.')}: ${err.msg}`)
 						.join(', ');
 					message = `Validation error: ${validationErrors}`;
-				} else if (data && typeof data === 'object' && 'detail' in data && typeof (data as { detail: unknown }).detail === 'string') {
+				} else if (
+					data &&
+					typeof data === 'object' &&
+					'detail' in data &&
+					typeof (data as { detail: unknown }).detail === 'string'
+				) {
 					message = (data as { detail: string }).detail;
 				} else {
 					message = 'Invalid input data';
 				}
 			} else if (status === 500) {
 				message = 'Internal server error. Please try again later.';
-			} else if (data && typeof data === 'object' && 'message' in data && typeof (data as { message: unknown }).message === 'string') {
+			} else if (
+				data &&
+				typeof data === 'object' &&
+				'message' in data &&
+				typeof (data as { message: unknown }).message === 'string'
+			) {
 				message = (data as { message: string }).message;
-			} else if (data && typeof data === 'object' && 'detail' in data && typeof (data as { detail: unknown }).detail === 'string') {
+			} else if (
+				data &&
+				typeof data === 'object' &&
+				'detail' in data &&
+				typeof (data as { detail: unknown }).detail === 'string'
+			) {
 				message = (data as { detail: string }).detail;
 			} else if (status >= 400) {
 				message = `Request failed with status ${status}`;
@@ -110,7 +136,12 @@ export const errorHandler = {
 			// Network error
 			message = 'Network error. Please check your connection and try again.';
 			details = { type: 'network', request: (error as { request: unknown }).request };
-		} else if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
+		} else if (
+			error &&
+			typeof error === 'object' &&
+			'message' in error &&
+			typeof (error as { message?: unknown }).message === 'string'
+		) {
 			// Other errors
 			message = (error as { message: string }).message;
 		}
