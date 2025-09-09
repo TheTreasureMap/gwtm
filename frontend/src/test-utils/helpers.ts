@@ -64,7 +64,7 @@ export const testData = {
 /**
  * Create mock validation context
  */
-export function createMockContext(overrides: Record<string, any> = {}) {
+export function createMockContext(overrides: Record<string, unknown> = {}) {
 	return {
 		email: 'test@example.com',
 		password: 'TestPassword123',
@@ -113,7 +113,7 @@ export function mockDate(dateString: string = '2024-01-01T12:00:00.000Z') {
 /**
  * Create mock fetch responses for API-related tests
  */
-export function createMockFetchResponse(data: any, status = 200, ok = true) {
+export function createMockFetchResponse(data: unknown, status = 200, ok = true) {
 	return Promise.resolve({
 		ok,
 		status,
@@ -183,7 +183,7 @@ export function expectApproximatelyEqual(actual: number, expected: number, toler
 /**
  * Create test user data
  */
-export function createTestUser(overrides: Partial<any> = {}) {
+export function createTestUser(overrides: Record<string, unknown> = {}) {
 	return {
 		id: '123',
 		email: 'test@example.com',
@@ -197,7 +197,7 @@ export function createTestUser(overrides: Partial<any> = {}) {
 /**
  * Create test instrument data
  */
-export function createTestInstrument(overrides: Partial<any> = {}) {
+export function createTestInstrument(overrides: Record<string, unknown> = {}) {
 	return {
 		id: 1,
 		instrument_name: 'Test Telescope',
@@ -210,7 +210,7 @@ export function createTestInstrument(overrides: Partial<any> = {}) {
 /**
  * Create test pointing data
  */
-export function createTestPointing(overrides: Partial<any> = {}) {
+export function createTestPointing(overrides: Record<string, unknown> = {}) {
 	return {
 		id: 1,
 		ra: 180.0,

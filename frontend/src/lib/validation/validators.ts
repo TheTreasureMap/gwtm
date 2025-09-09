@@ -19,9 +19,9 @@ export type ValidatorFunction<T = unknown> = (
 ) => ValidationResult;
 
 // More flexible validator type that accepts any validator function
-export type AnyValidatorFunction = ValidatorFunction<any>;
+export type AnyValidatorFunction = ValidatorFunction<unknown>;
 
-export type FieldValidator<T = unknown> = {
+export type FieldValidator = {
 	required?: boolean;
 	validators?: AnyValidatorFunction[];
 	customMessage?: string;
@@ -29,7 +29,7 @@ export type FieldValidator<T = unknown> = {
 };
 
 export type ValidationSchema<T = Record<string, unknown>> = {
-	[K in keyof T]?: FieldValidator<T[K]>;
+	[K in keyof T]?: FieldValidator;
 };
 
 /**
@@ -59,7 +59,7 @@ export class ValidationUtils {
 	 */
 	static isSafeString(value: string): boolean {
 		// Allow alphanumeric, spaces, basic punctuation, but block script injection
-		const safePattern = /^[a-zA-Z0-9\s\-_.@#$%&()\[\]{},;:!?'"+=<>\/\\]*$/;
+		const safePattern = /^[a-zA-Z0-9\s\-_.@#$%&()[\]{},;:!?'"+=<>/\\]*$/;
 		const scriptPattern = /<script|javascript:|data:|vbscript:/i;
 		return safePattern.test(value) && !scriptPattern.test(value);
 	}
@@ -169,7 +169,7 @@ export const validators = {
 				errors.push('Password must contain at least one number');
 			}
 
-			if (requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(sanitized)) {
+			if (requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(sanitized)) {
 				errors.push('Password must contain at least one special character');
 			}
 
@@ -184,7 +184,7 @@ export const validators = {
 		passwordField: string,
 		message = 'Passwords do not match'
 	): ValidatorFunction<string> => {
-		return (value: string, context: any) => {
+		return (value: string, context: Record<string, unknown>) => {
 			const sanitized = ValidationUtils.sanitizeString(value);
 			const originalPassword = context?.[passwordField];
 			const isValid = sanitized === originalPassword;
@@ -265,10 +265,13 @@ export const validators = {
 	 * Custom validator
 	 */
 	custom: (
-		validatorFn: (value: any, context?: any) => boolean | string | ValidationResult,
+		validatorFn: (
+			value: unknown,
+			context?: Record<string, unknown>
+		) => boolean | string | ValidationResult,
 		message = 'Invalid value'
 	): ValidatorFunction => {
-		return (value: any, context?: any) => {
+		return (value: unknown, context?: Record<string, unknown>) => {
 			const result = validatorFn(value, context);
 
 			if (typeof result === 'boolean') {
@@ -470,7 +473,7 @@ export const validationSchemas = {
 export function validateField<T>(
 	value: T,
 	fieldConfig: FieldValidator<T>,
-	context?: any,
+	context?: Record<string, unknown>,
 	fieldName?: string
 ): ValidationResult {
 	const errors: string[] = [];
@@ -503,7 +506,7 @@ export function validateField<T>(
 /**
  * Schema validation function
  */
-export function validateSchema<T extends Record<string, any>>(
+export function validateSchema<T extends Record<string, unknown>>(
 	data: T,
 	schema: ValidationSchema<T>
 ): Record<keyof T, ValidationResult> & { isValid: boolean } {
