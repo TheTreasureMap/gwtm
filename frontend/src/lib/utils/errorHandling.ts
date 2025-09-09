@@ -66,10 +66,11 @@ export const errorHandler = {
 		let message = 'An unexpected error occurred';
 		let details = error;
 
-		if (error?.response) {
+		if (error && typeof error === 'object' && 'response' in error && error.response) {
 			// Axios response error
-			const status = error.response.status;
-			const data = error.response.data;
+			const response = error.response as { status?: number; data?: unknown; config?: { url?: string; method?: string } };
+			const status = response.status;
+			const data = response.data;
 
 			if (status === 401) {
 				message = 'Authentication required. Please log in.';
@@ -79,39 +80,39 @@ export const errorHandler = {
 				message = 'The requested resource was not found.';
 			} else if (status === 422) {
 				// Validation errors
-				if (data?.detail && Array.isArray(data.detail)) {
-					const validationErrors = data.detail
+				if (data && typeof data === 'object' && 'detail' in data && Array.isArray((data as { detail: unknown }).detail)) {
+					const validationErrors = (data as { detail: Array<{ loc?: string[]; msg: string }> }).detail
 						.map((err: { loc?: string[]; msg: string }) => `${err.loc?.join('.')}: ${err.msg}`)
 						.join(', ');
 					message = `Validation error: ${validationErrors}`;
-				} else if (data?.detail) {
-					message = data.detail;
+				} else if (data && typeof data === 'object' && 'detail' in data && typeof (data as { detail: unknown }).detail === 'string') {
+					message = (data as { detail: string }).detail;
 				} else {
 					message = 'Invalid input data';
 				}
 			} else if (status === 500) {
 				message = 'Internal server error. Please try again later.';
-			} else if (data?.message) {
-				message = data.message;
-			} else if (data?.detail) {
-				message = data.detail;
+			} else if (data && typeof data === 'object' && 'message' in data && typeof (data as { message: unknown }).message === 'string') {
+				message = (data as { message: string }).message;
+			} else if (data && typeof data === 'object' && 'detail' in data && typeof (data as { detail: unknown }).detail === 'string') {
+				message = (data as { detail: string }).detail;
 			} else if (status >= 400) {
 				message = `Request failed with status ${status}`;
 			}
 
 			details = {
 				status,
-				url: error.response.config?.url,
-				method: error.response.config?.method,
+				url: response.config?.url,
+				method: response.config?.method,
 				data: data
 			};
-		} else if (error?.request) {
+		} else if (error && typeof error === 'object' && 'request' in error && error.request) {
 			// Network error
 			message = 'Network error. Please check your connection and try again.';
-			details = { type: 'network', request: error.request };
-		} else if (error?.message) {
+			details = { type: 'network', request: (error as { request: unknown }).request };
+		} else if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: unknown }).message === 'string') {
 			// Other errors
-			message = error.message;
+			message = (error as { message: string }).message;
 		}
 
 		this.showToast(message, {
@@ -181,11 +182,18 @@ export const errorLogger = {
 	},
 
 	logApiError(error: unknown, endpoint?: string) {
-		this.log(error, `API Error${endpoint ? ` (${endpoint})` : ''}`, {
-			status: error?.response?.status,
-			data: error?.response?.data,
-			config: error?.config
-		});
+		const errorInfo: Record<string, unknown> = {};
+		if (error && typeof error === 'object') {
+			if ('response' in error && error.response && typeof error.response === 'object') {
+				const response = error.response as { status?: number; data?: unknown };
+				errorInfo.status = response.status;
+				errorInfo.data = response.data;
+			}
+			if ('config' in error) {
+				errorInfo.config = (error as { config: unknown }).config;
+			}
+		}
+		this.log(error, `API Error${endpoint ? ` (${endpoint})` : ''}`, errorInfo);
 	}
 };
 
