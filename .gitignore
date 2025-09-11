@@ -23,7 +23,9 @@ __pycache__
 #config
 #-
 
-config
+# Backend config files (not frontend config)
+src/config
+server/config
 scratch/
 environment_variables.sh
 envars.sh
