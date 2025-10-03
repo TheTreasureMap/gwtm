@@ -67,6 +67,8 @@ manifests:
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          fastapi.image.repository: gwtm-fastapi
+          fastapi.image.tag: latest
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
           global.createNamespace: "true"
@@ -93,6 +95,8 @@ deploy:
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          fastapi.image.repository: gwtm-fastapi
+          fastapi.image.tag: latest
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
           global.createNamespace: "true"
