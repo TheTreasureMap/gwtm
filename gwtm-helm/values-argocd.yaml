@@ -11,7 +11,7 @@ backend:
   name: flask-backend
   replicas: 2
   image:
-    repository: ghcr.io/thetreasuremap/gwtm
+    repository: ghcr.io/thetreasuremap/gwtm/flask-app
     tag: latest
     pullPolicy: Always
 
@@ -19,7 +19,7 @@ fastapi:
   name: fastapi-backend
   replicas: 2
   image:
-    repository: ghcr.io/thetreasuremap/gwtm-fastapi
+    repository: ghcr.io/thetreasuremap/gwtm/fastapi-backend
     tag: latest
     pullPolicy: Always
 
@@ -27,7 +27,7 @@ frontend:
   name: frontend
   replicas: 2
   image:
-    repository: ghcr.io/thetreasuremap/gwtm-frontend
+    repository: ghcr.io/thetreasuremap/gwtm/svelte-frontend
     tag: latest
     pullPolicy: Always
 
