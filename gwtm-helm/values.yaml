@@ -10,7 +10,7 @@ backend:
   name: flask-backend
   replicas: 2
   image:
-    repository: gwtm
+    repository: ghcr.io/thetreasuremap/gwtm
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -36,7 +36,7 @@ fastapi:
   name: fastapi-backend
   replicas: 2
   image:
-    repository: gwtm-fastapi
+    repository: ghcr.io/thetreasuremap/gwtm-fastapi
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -65,7 +65,7 @@ frontend:
   name: frontend
   replicas: 2
   image:
-    repository: gwtm-frontend
+    repository: ghcr.io/thetreasuremap/gwtm-frontend
     tag: latest
     pullPolicy: IfNotPresent
   service:
