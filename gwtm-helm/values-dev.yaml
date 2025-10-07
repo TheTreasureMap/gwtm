@@ -66,6 +66,8 @@ fastapi:
   workers: 1
 
 frontend:
+  env:
+    PUBLIC_API_BASE_URL: "/api/v1"
   replicas: 1
   resources:
     limits:
