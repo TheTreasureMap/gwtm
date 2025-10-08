@@ -22,6 +22,8 @@ fastapi:
     repository: ghcr.io/thetreasuremap/gwtm/fastapi-backend
     tag: latest
     pullPolicy: Always
+  env:
+    BASE_URL: "https://gwtm.example.com"
 
 frontend:
   name: frontend

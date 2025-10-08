@@ -20,7 +20,7 @@ SMTP_PORT = settings.MAIL_PORT
 SMTP_USERNAME = settings.MAIL_USERNAME
 SMTP_PASSWORD = settings.MAIL_PASSWORD
 SENDER_EMAIL = settings.MAIL_DEFAULT_SENDER
-BASE_URL = "http://localhost:8000"  # This should be configured in settings as well
+BASE_URL = settings.BASE_URL
 
 
 def create_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

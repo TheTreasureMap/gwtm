@@ -55,6 +55,7 @@ backend:
 fastapi:
   env:
     PUBLIC_API_BASE_URL: "/"
+    BASE_URL: "http://gwtm.local:8081"
   replicas: 1
   resources:
     limits:

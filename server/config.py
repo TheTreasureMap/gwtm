@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Application settings
     APP_NAME: str = "GWTM API"
     DEBUG: bool = Field(False, env="DEBUG")
+    BASE_URL: str = Field("http://localhost:8000", env="BASE_URL")
 
     # Database settings
     DB_USER: str = Field("treasuremap", env="DB_USER")

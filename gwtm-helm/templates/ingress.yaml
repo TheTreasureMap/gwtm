@@ -62,6 +62,20 @@ spec:
                 name: {{ .Values.fastapi.name }}
                 port:
                   number: {{ .Values.fastapi.service.port }}
+          - path: /temp_sun_moon_positions
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
+          - path: /ajax_pointingfromid
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
           - path: /
             pathType: Prefix
             backend:

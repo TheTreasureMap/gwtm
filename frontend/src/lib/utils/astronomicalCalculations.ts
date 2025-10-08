@@ -31,7 +31,8 @@ export async function fetchSunMoonPositions(timeOfSignal: string): Promise<SunMo
 		console.log('Fetching sun/moon positions from FastAPI backend for:', timeOfSignal);
 
 		// Call our temporary FastAPI endpoint (same calculation as Flask version)
-		const url = `http://localhost:8000/temp_sun_moon_positions?time_of_signal=${encodeURIComponent(timeOfSignal)}`;
+		// Use relative URL so it works in all environments (local dev, K8s, production)
+		const url = `/temp_sun_moon_positions?time_of_signal=${encodeURIComponent(timeOfSignal)}`;
 		console.log('Calling URL:', url);
 		const response = await fetch(url);
 
