@@ -25,9 +25,9 @@ spec:
         - containerPort: {{ .Values.frontend.service.targetPort }}
         env:
         - name: NODE_ENV
-          value: "development"
+          value: {{ .Values.global.environment | quote }}
         - name: PUBLIC_API_BASE_URL
-          value: "http://localhost:8000"
+          value: {{ .Values.frontend.env.PUBLIC_API_BASE_URL | quote }}
         resources:
           {{- toYaml .Values.frontend.resources | nindent 12 }}
         readinessProbe:
