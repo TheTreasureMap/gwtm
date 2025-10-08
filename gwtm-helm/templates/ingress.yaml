@@ -69,8 +69,8 @@ spec:
                 name: {{ .Values.fastapi.name }}
                 port:
                   number: {{ .Values.fastapi.service.port }}
-          - path: /ajax_pointingfromid
-            pathType: Exact
+          - path: /ajax_
+            pathType: Prefix
             backend:
               service:
                 name: {{ .Values.fastapi.name }}
