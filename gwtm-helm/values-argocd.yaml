@@ -31,7 +31,7 @@ frontend:
     tag: latest
     pullPolicy: Always
   env:
-    PUBLIC_API_BASE_URL: "http://fastapi-backend:8000"
+    PUBLIC_API_BASE_URL: "/api/v1"
 
 # Enable persistence for production
 database:
