@@ -82,7 +82,7 @@ frontend:
 
 database:
   persistence:
-    enabled: false
+    enabled: true
     size: 1Gi
   initScripts:
     enabled: true
