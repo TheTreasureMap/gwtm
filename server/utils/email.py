@@ -21,7 +21,6 @@ SENDER_EMAIL = settings.MAIL_DEFAULT_SENDER
 BASE_URL = settings.BASE_URL
 
 
-
 def create_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT token with optional expiration
