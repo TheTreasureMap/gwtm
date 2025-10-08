@@ -53,6 +53,8 @@ backend:
     enabled: false
 
 fastapi:
+  env:
+    PUBLIC_API_BASE_URL: "/"
   replicas: 1
   resources:
     limits:
