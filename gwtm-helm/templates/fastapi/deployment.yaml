@@ -167,6 +167,8 @@ spec:
               key: STORAGE_BUCKET_SOURCE
         - name: DEBUG
           value: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
+        - name: BASE_URL
+          value: {{ .Values.fastapi.env.BASE_URL | default (printf "https://%s" .Values.ingress.host) | quote }}
         {{- if .Values.fastapi.extraEnv }}
         {{- toYaml .Values.fastapi.extraEnv | nindent 8 }}
         {{- end }}

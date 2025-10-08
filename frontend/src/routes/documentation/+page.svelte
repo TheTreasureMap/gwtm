@@ -87,7 +87,7 @@
 				Explore and test all API endpoints with our auto-generated documentation.
 			</p>
 			<a
-				href="http://localhost:8000/docs"
+				href="/docs"
 				target="_blank"
 				class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
 			>
@@ -239,7 +239,7 @@
 				<h3 class="font-semibold mb-2">Start Observing</h3>
 				<p class="text-sm text-gray-600">Report your planned and completed pointings</p>
 				<a
-					href="http://localhost:8000/docs"
+					href="/docs"
 					target="_blank"
 					class="text-blue-600 hover:text-blue-800 text-sm underline">View API docs →</a
 				>
