@@ -238,10 +238,8 @@
 				</div>
 				<h3 class="font-semibold mb-2">Start Observing</h3>
 				<p class="text-sm text-gray-600">Report your planned and completed pointings</p>
-				<a
-					href="/docs"
-					target="_blank"
-					class="text-blue-600 hover:text-blue-800 text-sm underline">View API docs →</a
+				<a href="/docs" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm underline"
+					>View API docs →</a
 				>
 			</div>
 		</div>
