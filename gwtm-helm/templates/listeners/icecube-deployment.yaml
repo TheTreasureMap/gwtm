@@ -1,0 +1,147 @@
+{{- if .Values.listeners.enabled }}
+# templates/listeners/icecube-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gwtm.fullname" . }}-icecube-listener
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: icecube-listener
+    app.kubernetes.io/component: icecube-listener
+spec:
+  replicas: 1  # Only one replica per listener to avoid duplicate processing
+  strategy:
+    type: Recreate  # Important: don't run multiple simultaneously
+  selector:
+    matchLabels:
+      app: icecube-listener
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/listeners/listener-secrets.yaml") . | sha256sum }}
+      labels:
+        app: icecube-listener
+        app.kubernetes.io/component: icecube-listener
+    spec:
+      containers:
+      - name: icecube-listener
+        image: "{{ .Values.listeners.image.repository }}:{{ .Values.listeners.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.listeners.image.pullPolicy }}
+        command: ["python", "docker/run_icecube_listener.py"]
+
+        env:
+        # Kafka Configuration
+        - name: KAFKA_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: kafka-client-id
+        - name: KAFKA_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: kafka-client-secret
+
+        # GWTM API Configuration
+        - name: API_BASE
+          value: {{ .Values.listeners.api.base | quote }}
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: api-token
+
+        # Storage Configuration
+        - name: STORAGE_BUCKET_SOURCE
+          value: {{ .Values.listeners.storage.type | quote }}
+
+        {{- if eq .Values.listeners.storage.type "s3" }}
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: aws-secret-access-key
+        - name: AWS_DEFAULT_REGION
+          value: {{ .Values.listeners.storage.s3.region | quote }}
+        - name: AWS_BUCKET
+          value: {{ .Values.listeners.storage.s3.bucket | quote }}
+        {{- end }}
+
+        {{- if eq .Values.listeners.storage.type "swift" }}
+        - name: OS_AUTH_URL
+          value: {{ .Values.listeners.storage.swift.authUrl | quote }}
+        - name: OS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: swift-username
+        - name: OS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "gwtm.fullname" . }}-listener-secrets
+              key: swift-password
+        - name: OS_PROJECT_NAME
+          value: {{ .Values.listeners.storage.swift.projectName | quote }}
+        - name: OS_USER_DOMAIN_NAME
+          value: {{ .Values.listeners.storage.swift.userDomainName | default "Default" | quote }}
+        - name: OS_PROJECT_DOMAIN_NAME
+          value: {{ .Values.listeners.storage.swift.projectDomainName | default "Default" | quote }}
+        - name: OS_CONTAINER_NAME
+          value: {{ .Values.listeners.storage.swift.containerName | default "gwtreasuremap" | quote }}
+        {{- end }}
+
+        # Observing Run
+        - name: OBSERVING_RUN
+          value: {{ .Values.listeners.observingRun | default "O4" | quote }}
+
+        # Listener behavior controls
+        - name: DRY_RUN
+          value: {{ .Values.listeners.dryRun | default "false" | quote }}
+        - name: WRITE_TO_STORAGE
+          value: {{ .Values.listeners.writeToStorage | default "true" | quote }}
+        - name: VERBOSE
+          value: {{ .Values.listeners.verbose | default "true" | quote }}
+
+        # Logging configuration
+        - name: LOG_FORMAT
+          value: {{ .Values.listeners.logging.format | default "json" | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.listeners.logging.level | default "INFO" | quote }}
+
+        # Galaxy Catalog (optional)
+        {{- if .Values.listeners.galaxyCatalogConfig }}
+        - name: PATH_TO_GALAXY_CATALOG_CONFIG
+          value: {{ .Values.listeners.galaxyCatalogConfig | quote }}
+        {{- end }}
+
+        resources:
+          {{- toYaml .Values.listeners.icecube.resources | nindent 10 }}
+
+        # Health checks (file-based, no code changes needed)
+        livenessProbe:
+          exec:
+            command: ["pgrep", "-f", "run_icecube_listener.py"]
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      # Pod termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 30
+
+      {{- with .Values.listeners.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.listeners.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
