@@ -86,3 +86,32 @@ database:
     size: 1Gi
   initScripts:
     enabled: true
+
+# Listener configuration for development
+listeners:
+  image:
+    tag: "latest"
+
+  api:
+    base: "http://flask-backend:8080/api/v0/"
+    token: ""  # Set this for dev testing
+
+  kafka:
+    clientId: ""  # Set this for dev testing
+    clientSecret: ""  # Set this for dev testing
+
+  storage:
+    type: "s3"  # Use S3 for dev, or set to "swift" if available
+    s3:
+      accessKeyId: ""  # Set this for dev testing
+      secretAccessKey: ""  # Set this for dev testing
+
+  # Dev environment - use dry run for initial testing
+  dryRun: true  # Override to false once validated
+  writeToStorage: false  # Override to true once storage is configured
+  verbose: true
+
+  # Dev logging
+  logging:
+    format: "json"
+    level: "DEBUG"  # More verbose for debugging
