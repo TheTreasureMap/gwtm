@@ -42,6 +42,8 @@ fastapi:
   service:
     port: 8000
     targetPort: 8000
+  env:
+    BASE_URL: ""  # Will be set per environment
   readinessProbe:
     enabled: false
     path: /docs
@@ -186,3 +188,83 @@ secrets:
   
   # Additional configuration
   extraSecrets: {}
+
+# Listener configuration
+listeners:
+  enabled: true
+
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm_cron
+    tag: "latest"  # Override in values-prod.yaml with specific version
+    pullPolicy: IfNotPresent
+
+  # GWTM API configuration
+  api:
+    base: "http://flask-backend:8080/api/v0/"  # Internal Kubernetes service
+    token: ""  # Set in values-dev.yaml / values-prod.yaml or use external secret
+
+  # Kafka configuration
+  kafka:
+    clientId: ""  # Set in values-dev.yaml / values-prod.yaml
+    clientSecret: ""  # Set in values-dev.yaml / values-prod.yaml
+
+  # Storage backend
+  storage:
+    type: "swift"  # s3, abfs, or swift
+
+    s3:
+      region: "us-east-2"
+      bucket: "gwtreasuremap"
+      accessKeyId: ""
+      secretAccessKey: ""
+
+    swift:
+      authUrl: "https://openstack.example.com:5000/v3"
+      username: ""
+      password: ""
+      projectName: "gwtm"
+      userDomainName: "Default"
+      projectDomainName: "Default"
+      containerName: "gwtreasuremap"
+
+  # Observing run
+  observingRun: "O4"
+
+  # Listener behavior controls
+  dryRun: false  # Set to true for testing without API calls or storage writes
+  writeToStorage: true  # Set to false to disable storage writes (any backend)
+  verbose: true  # Set to false for minimal output
+
+  # Logging configuration
+  logging:
+    format: "json"  # "json" for Kubernetes, "" for print statements
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+  # Optional: Path to galaxy catalog config (if needed)
+  galaxyCatalogConfig: ""
+
+  # Resource requests/limits for LIGO listener
+  ligo:
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+  # Resource requests/limits for IceCube listener
+  icecube:
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+
+  # Node selector (optional)
+  nodeSelector: {}
+
+  # Tolerations (optional)
+  tolerations: []
