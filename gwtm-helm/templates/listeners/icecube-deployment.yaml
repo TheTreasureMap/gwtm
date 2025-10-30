@@ -76,6 +76,8 @@ spec:
         {{- if eq .Values.listeners.storage.type "swift" }}
         - name: OS_AUTH_URL
           value: {{ .Values.listeners.storage.swift.authUrl | quote }}
+        - name: OS_STORAGE_URL
+          value: {{ .Values.listeners.storage.swift.storageUrl | quote }}
         - name: OS_USERNAME
           valueFrom:
             secretKeyRef:
@@ -87,7 +89,7 @@ spec:
               name: {{ include "gwtm.fullname" . }}-listener-secrets
               key: swift-password
         - name: OS_PROJECT_NAME
-          value: {{ .Values.listeners.storage.swift.projectName | quote }}
+          value: {{ .Values.listeners.storage.swift.projectName | default "" | quote }}
         - name: OS_USER_DOMAIN_NAME
           value: {{ .Values.listeners.storage.swift.userDomainName | default "Default" | quote }}
         - name: OS_PROJECT_DOMAIN_NAME
