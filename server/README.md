@@ -349,3 +349,130 @@ The API uses JWT-based authentication. To authenticate:
 
 1. Send a POST request to `/api/v1/login` with username and password
 2. Use the returned token in the `Authorization` header as `Bearer <token>` for protected endpoints
+
+## Storage Configuration
+
+GWTM supports multiple cloud storage backends for storing gravitational wave skymaps, galaxy catalogs, and other astronomical data files. The storage backend is configured via the `STORAGE_BUCKET_SOURCE` environment variable.
+
+### Supported Storage Backends
+
+- **AWS S3** (`source="s3"`)
+- **Azure Blob Storage** (`source="abfs"`)
+- **OpenStack Swift** (`source="swift"`)
+
+### AWS S3 Configuration
+
+```bash
+STORAGE_BUCKET_SOURCE=s3
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_DEFAULT_REGION=us-east-2
+AWS_BUCKET=gwtreasuremap
+```
+
+### Azure Blob Storage Configuration
+
+```bash
+STORAGE_BUCKET_SOURCE=abfs
+AZURE_ACCOUNT_NAME=your_account_name
+AZURE_ACCOUNT_KEY=your_account_key
+```
+
+### OpenStack Swift Configuration
+
+Swift supports two authentication methods:
+
+#### Application Credentials (Recommended)
+```bash
+STORAGE_BUCKET_SOURCE=swift
+OS_AUTH_URL=https://js2.jetstream-cloud.org:5000/v3
+OS_STORAGE_URL=https://js2.jetstream-cloud.org:8001/swift/v1
+OS_USERNAME=<32_character_app_credential_id>
+OS_PASSWORD=<app_credential_secret>
+OS_CONTAINER_NAME=gwtreasuremap
+```
+
+#### Username/Password Authentication
+```bash
+STORAGE_BUCKET_SOURCE=swift
+OS_AUTH_URL=https://js2.jetstream-cloud.org:5000/v3
+OS_STORAGE_URL=https://js2.jetstream-cloud.org:8001/swift/v1
+OS_USERNAME=your_username
+OS_PASSWORD=your_password
+OS_PROJECT_NAME=your_project
+OS_USER_DOMAIN_NAME=Default
+OS_PROJECT_DOMAIN_NAME=Default
+OS_CONTAINER_NAME=gwtreasuremap
+```
+
+**Important**: The `OS_STORAGE_URL` environment variable is mandatory for Swift. Without it, authentication will fail with "unknown SWIFT url scheme" errors.
+
+### Storage Usage in Code
+
+The storage utilities are located in `server/utils/gwtm_io.py`:
+
+```python
+from server.utils import gwtm_io
+from server.config import get_settings
+
+config = get_settings()
+
+# Upload a file
+gwtm_io.upload_gwtm_file(
+    content=b"file contents",
+    filename="alerts/S200316bj_skymap.fits.gz",
+    source=config.STORAGE_BUCKET_SOURCE,
+    config=config
+)
+
+# Download a file
+content = gwtm_io.download_gwtm_file(
+    filename="alerts/S200316bj_skymap.fits.gz",
+    source=config.STORAGE_BUCKET_SOURCE,
+    config=config,
+    decode=False  # Use False for binary files
+)
+
+# List files in a container/folder
+files = gwtm_io.list_gwtm_bucket(
+    container="alerts",
+    source=config.STORAGE_BUCKET_SOURCE,
+    config=config
+)
+
+# Delete files
+gwtm_io.delete_gwtm_files(
+    keys="alerts/old_file.fits.gz",  # or list of keys
+    source=config.STORAGE_BUCKET_SOURCE,
+    config=config
+)
+```
+
+### Testing Storage
+
+Test your storage configuration with:
+
+```bash
+# Set environment variables
+export STORAGE_BUCKET_SOURCE=swift
+export OS_AUTH_URL=https://js2.jetstream-cloud.org:5000/v3
+export OS_STORAGE_URL=https://js2.jetstream-cloud.org:8001/swift/v1
+export OS_USERNAME=your_username
+export OS_PASSWORD=your_password
+export OS_CONTAINER_NAME=gwtreasuremap
+
+# Run the test script
+source venv/bin/activate
+python scripts/test_swift_storage.py
+```
+
+### Development Mode
+
+For local development without cloud storage access, set:
+
+```bash
+DEVELOPMENT_MODE=true
+DEVELOPMENT_STORAGE_DIR=./dev_storage
+```
+
+This will use a local directory instead of cloud storage for all file operations.

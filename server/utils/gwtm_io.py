@@ -1,7 +1,69 @@
 import fsspec
 import json
 import os
+import re
 import tempfile
+
+
+def _get_swift_conn(config):
+    """
+    Get Swift connection with appropriate authentication method.
+
+    Supports both application credentials and username/password authentication.
+    Application credential IDs are detected as 32-character hex strings.
+
+    Args:
+        config: Configuration object with Swift credentials
+
+    Returns:
+        Swift Connection object
+    """
+    try:
+        from keystoneauth1.identity import v3
+        from keystoneauth1 import session
+        from swiftclient import Connection as SwiftConnection
+    except ImportError:
+        raise Exception(
+            "Swift dependencies not installed. Install python-swiftclient, "
+            "python-keystoneclient, and keystoneauth1"
+        )
+
+    # Detect if using application credentials (32-character hex string)
+    is_app_cred = bool(re.match(r'^[a-f0-9]{32}$', config.OS_USERNAME or ''))
+
+    if is_app_cred:
+        # Use application credential authentication
+        auth = v3.ApplicationCredential(
+            auth_url=config.OS_AUTH_URL,
+            application_credential_id=config.OS_USERNAME,
+            application_credential_secret=config.OS_PASSWORD
+        )
+
+        # Create authenticated session
+        sess = session.Session(auth=auth)
+
+        # Create Swift connection with session
+        conn = SwiftConnection(
+            session=sess,
+            os_options={
+                'object_storage_url': config.OS_STORAGE_URL
+            }
+        )
+    else:
+        # Use username/password authentication
+        conn = SwiftConnection(
+            authurl=config.OS_AUTH_URL,
+            user=config.OS_USERNAME,
+            key=config.OS_PASSWORD,
+            os_options={
+                'user_domain_name': config.OS_USER_DOMAIN_NAME,
+                'project_domain_name': config.OS_PROJECT_DOMAIN_NAME,
+                'project_name': config.OS_PROJECT_NAME,
+            },
+            auth_version='3'
+        )
+
+    return conn
 
 
 def _get_fs(source, config):
@@ -36,13 +98,26 @@ def download_gwtm_file(filename, source="s3", config=None, decode=True):
 
     Args:
         filename: File path/name to download
-        source: Storage source ('s3' or 'abfs')
+        source: Storage source ('s3', 'abfs', or 'swift')
         config: Configuration object with credentials
         decode: Whether to decode the file content to UTF-8
 
     Returns:
         File content (string if decode=True, bytes if decode=False)
     """
+    # Handle Swift separately (doesn't use fsspec)
+    if source == "swift":
+        try:
+            conn = _get_swift_conn(config)
+            headers, content = conn.get_object(config.OS_CONTAINER_NAME, filename)
+            if decode:
+                return content.decode("utf-8")
+            else:
+                return content
+        except Exception as e:
+            raise Exception(f"Error reading Swift file {filename}: {str(e)}")
+
+    # Handle S3 and Azure with fsspec
     fs = _get_fs(source=source, config=config)
 
     if source == "s3" and f"{config.AWS_BUCKET}/" not in filename:
@@ -81,7 +156,7 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
     Args:
         content: File content to upload
         filename: Destination file path/name
-        source: Storage source ('s3' or 'abfs')
+        source: Storage source ('s3', 'abfs', or 'swift')
         config: Configuration object with credentials
 
     Returns:
@@ -99,7 +174,19 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
             f.write(content)
         return True
 
-    # Normal cloud storage upload
+    # Handle Swift separately (doesn't use fsspec)
+    if source == "swift":
+        try:
+            conn = _get_swift_conn(config)
+            # Swift expects bytes, convert if string
+            if isinstance(content, str):
+                content = content.encode('utf-8')
+            conn.put_object(config.OS_CONTAINER_NAME, filename, content)
+            return True
+        except Exception as e:
+            raise Exception(f"Error uploading to Swift file {filename}: {str(e)}")
+
+    # Normal cloud storage upload (S3, Azure)
     fs = _get_fs(source=source, config=config)
 
     if source == "s3" and f"{config.AWS_BUCKET}/" not in filename:
@@ -120,7 +207,7 @@ def list_gwtm_bucket(container, source="s3", config=None):
 
     Args:
         container: Container/folder to list
-        source: Storage source ('s3' or 'abfs')
+        source: Storage source ('s3', 'abfs', or 'swift')
         config: Configuration object with credentials
 
     Returns:
@@ -140,7 +227,27 @@ def list_gwtm_bucket(container, source="s3", config=None):
             return sorted([f for f in os.listdir(dev_dir) if f.startswith(container)])
         return []
 
-    # Normal cloud storage listing
+    # Handle Swift separately (doesn't use fsspec)
+    if source == "swift":
+        try:
+            conn = _get_swift_conn(config)
+            # List objects with the specified prefix
+            headers, objects = conn.get_container(
+                config.OS_CONTAINER_NAME,
+                prefix=f"{container}/"
+            )
+            ret = []
+            for obj in objects:
+                # obj is a dict with 'name', 'bytes', 'content_type', etc.
+                name = obj.get('name', '')
+                if name != f"{container}/":  # Exclude the directory itself
+                    ret.append(name)
+            return sorted(ret)
+        except Exception as e:
+            # If listing fails (e.g., container doesn't exist), return empty list
+            return []
+
+    # Normal cloud storage listing (S3, Azure)
     fs = _get_fs(source=source, config=config)
 
     try:
@@ -166,7 +273,7 @@ def delete_gwtm_files(keys, source="s3", config=None):
 
     Args:
         keys: Single key or list of keys to delete
-        source: Storage source ('s3' or 'abfs')
+        source: Storage source ('s3', 'abfs', or 'swift')
         config: Configuration object with credentials
 
     Returns:
@@ -187,15 +294,26 @@ def delete_gwtm_files(keys, source="s3", config=None):
                 os.remove(local_path)
         return True
 
-    # Normal cloud storage deletion
+    # Convert single key to list
+    if isinstance(keys, str):
+        keys = [keys]
+
+    # Handle Swift separately (doesn't use fsspec)
+    if source == "swift":
+        try:
+            conn = _get_swift_conn(config)
+            for k in keys:
+                conn.delete_object(config.OS_CONTAINER_NAME, k)
+            return True
+        except Exception as e:
+            raise Exception(f"Error deleting from Swift: {str(e)}")
+
+    # Normal cloud storage deletion (S3, Azure)
     if source == "s3":
-        if isinstance(keys, list):
-            for i, k in enumerate(keys):
-                if f"{config.AWS_BUCKET}/" not in k:
-                    keys[i] = f"{config.AWS_BUCKET}/{k}"
-        elif isinstance(keys, str) and f"{config.AWS_BUCKET}/" not in keys:
-            keys = f"{config.AWS_BUCKET}/{keys}"
-            keys = [keys]  # Convert to list for consistency
+        # Add bucket prefix if not present
+        for i, k in enumerate(keys):
+            if f"{config.AWS_BUCKET}/" not in k:
+                keys[i] = f"{config.AWS_BUCKET}/{k}"
 
     fs = _get_fs(source=source, config=config)
 

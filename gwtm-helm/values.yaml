@@ -220,6 +220,7 @@ listeners:
 
     swift:
       authUrl: "https://openstack.example.com:5000/v3"
+      storageUrl: "https://openstack.example.com:8001/swift/v1"
       username: ""
       password: ""
       projectName: "gwtm"

@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     AZURE_ACCOUNT_NAME: str = Field("", env="AZURE_ACCOUNT_NAME")
     AZURE_ACCOUNT_KEY: str = Field("", env="AZURE_ACCOUNT_KEY")
 
+    # Swift/OpenStack settings
+    OS_AUTH_URL: str = Field("", env="OS_AUTH_URL")
+    OS_USERNAME: str = Field("", env="OS_USERNAME")
+    OS_PASSWORD: str = Field("", env="OS_PASSWORD")
+    OS_STORAGE_URL: str = Field("", env="OS_STORAGE_URL")
+    OS_CONTAINER_NAME: str = Field("", env="OS_CONTAINER_NAME")
+    OS_USER_DOMAIN_NAME: str = Field("Default", env="OS_USER_DOMAIN_NAME")
+    OS_PROJECT_DOMAIN_NAME: str = Field("Default", env="OS_PROJECT_DOMAIN_NAME")
+    OS_PROJECT_NAME: str = Field("", env="OS_PROJECT_NAME")
+
     # Storage settings
     STORAGE_BUCKET_SOURCE: str = Field("s3", env="STORAGE_BUCKET_SOURCE")
 
