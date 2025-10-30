@@ -37,6 +37,7 @@ listeners:
     type: "swift"
     swift:
       authUrl: "https://your-openstack.example.com:5000/v3"
+      storageUrl: "https://your-openstack.example.com:8001/swift/v1"
       username: ""  # Will be set via ArgoCD/sealed-secrets
       password: ""  # Will be set via ArgoCD/sealed-secrets
       projectName: "gwtm-production"

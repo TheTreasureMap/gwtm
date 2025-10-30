@@ -109,9 +109,20 @@ data:
   mail-password: base64_encoded_value
   recaptcha-public-key: base64_encoded_value
   recaptcha-private-key: base64_encoded_value
+  zenodo-access-key: base64_encoded_value
+
+  # Storage credentials (choose based on STORAGE_BUCKET_SOURCE)
+  # For S3:
   aws-access-key-id: base64_encoded_value
   aws-secret-access-key: base64_encoded_value
-  zenodo-access-key: base64_encoded_value
+
+  # For Azure Blob Storage:
+  azure-account-name: base64_encoded_value
+  azure-account-key: base64_encoded_value
+
+  # For Swift/OpenStack:
+  swift-username: base64_encoded_value
+  swift-password: base64_encoded_value
 ```
 
 You can encode values to base64 using:
