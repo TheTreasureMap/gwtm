@@ -60,4 +60,10 @@ async def get_gw_contour(
         )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        raise not_found_exception(f"Error in retrieving Contour file: {contour_path}")
+        # Include detailed error information for debugging
+        error_msg = (
+            f"Error retrieving contour file: {contour_path} "
+            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
+            f"Error: {type(e).__name__}: {str(e)}"
+        )
+        raise not_found_exception(error_msg)

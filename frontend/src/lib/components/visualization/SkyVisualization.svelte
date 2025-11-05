@@ -490,14 +490,7 @@
 				}
 			}
 
-			// Add gravitational wave contours (detection overlays)
-			if (showContours && (contourData || detectionContours)) {
-				if (overlayManager) {
-					overlayManager.addContourLayer();
-				}
-			}
-
-			// Add telescope footprints
+			// Add telescope footprints first (so contours appear on top)
 			console.log('Checking footprints:', {
 				showFootprints,
 				footprintData: !!footprintData,
@@ -510,6 +503,13 @@
 				}
 			} else {
 				console.log('Not adding footprints - conditions not met');
+			}
+
+			// Add gravitational wave contours (detection overlays) on top
+			if (showContours && (contourData || detectionContours)) {
+				if (overlayManager) {
+					overlayManager.addContourLayer();
+				}
 			}
 
 			// Add galaxy markers

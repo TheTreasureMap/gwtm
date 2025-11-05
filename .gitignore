@@ -44,3 +44,6 @@ frontend/.env
 # Editor directories
 .vscode/
 .idea/
+
+# Helm secrets - contains sensitive credentials
+gwtm-helm/values-secrets.yaml
