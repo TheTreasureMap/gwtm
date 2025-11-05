@@ -55,6 +55,7 @@ manifests:
         chartPath: .
         valuesFiles:
           - values-dev.yaml
+          - values-secrets.yaml
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
@@ -83,6 +84,7 @@ deploy:
         chartPath: .
         valuesFiles:
           - values-dev.yaml
+          - values-secrets.yaml
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest

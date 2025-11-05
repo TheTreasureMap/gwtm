@@ -224,7 +224,8 @@
 
 					aladin.addOverlay(overlay);
 
-					// Add only the footprints within time range
+					// Batch all footprints within time range into a single array
+					const footprintsToAdd: any[] = [];
 					instData.contours.forEach((contour: any) => {
 						if (
 							typeof contour.time === 'number' &&
@@ -232,10 +233,15 @@
 							contour.time <= timeRange[1]
 						) {
 							if (contour.polygon && Array.isArray(contour.polygon)) {
-								overlay.addFootprints([A.polygon(contour.polygon)]);
+								footprintsToAdd.push(A.polygon(contour.polygon));
 							}
 						}
 					});
+
+					// Add all footprints at once for better performance
+					if (footprintsToAdd.length > 0) {
+						overlay.addFootprints(footprintsToAdd);
+					}
 
 					newOverlays.push({
 						contour: overlay,

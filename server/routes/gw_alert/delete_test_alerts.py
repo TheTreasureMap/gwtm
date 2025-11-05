@@ -8,7 +8,6 @@ from server.db.database import get_db
 from server.auth.auth import verify_admin
 from server.utils.gwtm_io import list_gwtm_bucket, delete_gwtm_files
 from server.config import settings
-from server.core.enums.alertrole import AlertRole
 from server.utils.function import by_chunk
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
