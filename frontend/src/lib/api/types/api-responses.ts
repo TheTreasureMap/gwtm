@@ -332,19 +332,29 @@ export interface CandidateEventResponse {
 	};
 }
 
-// GW contour types
-export interface GWContourResponse {
-	contour_data: Array<{
-		ra: number[];
-		dec: number[];
-		probability_level: number;
+// GW contour types - GeoJSON format from API
+export interface GWContourGeoJSON {
+	type: 'FeatureCollection';
+	features: Array<{
+		type: 'Feature';
+		properties: {
+			credible_level: number;
+		};
+		geometry: {
+			type: 'MultiLineString' | 'LineString';
+			coordinates: number[][][] | number[][];
+		};
 	}>;
-	metadata: {
-		graceid: string;
-		total_probability: number;
-		generation_time: string;
-		coordinate_system: string;
-	};
+}
+
+// Transformed contour format for visualization
+export interface GWContourResponse {
+	contours: Array<{
+		polygon: number[][];
+		probability_level?: number;
+	}>;
+	color?: string;
+	name?: string;
 }
 
 // GRB MOC file response

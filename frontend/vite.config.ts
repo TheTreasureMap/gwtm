@@ -19,7 +19,8 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false
 			},
-			'/ajax_pointingfromid': {
+			// Proxy all /ajax_ endpoints to FastAPI backend (matches ingress.yaml rule)
+			'/ajax_': {
 				target: process.env.FASTAPI_URL || 'http://fastapi-backend:8000',
 				changeOrigin: true,
 				secure: false

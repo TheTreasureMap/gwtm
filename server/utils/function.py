@@ -124,6 +124,62 @@ def sanatize_footprint_ccds(
     return result
 
 
+def ra_dec_to_uvec(ra, dec):
+    """Convert RA/Dec to unit vector on celestial sphere."""
+    phi = np.deg2rad(90 - dec)
+    theta = np.deg2rad(ra)
+    x = np.cos(theta) * np.sin(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(phi)
+    return x, y, z
+
+
+def uvec_to_ra_dec(x, y, z):
+    """Convert unit vector to RA/Dec."""
+    r = np.sqrt(x**2 + y**2 + z**2)
+    x /= r
+    y /= r
+    z /= r
+    theta = np.arctan2(y, x)
+    phi = np.arccos(z)
+    dec = 90 - np.rad2deg(phi)
+    if theta < 0:
+        ra = 360 + np.rad2deg(theta)
+    else:
+        ra = np.rad2deg(theta)
+    return ra, dec
+
+
+def x_rot(theta_deg):
+    """Rotation matrix around x-axis."""
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [1, 0, 0],
+        [0, np.cos(theta), -np.sin(theta)],
+        [0, np.sin(theta), np.cos(theta)]
+    ])
+
+
+def y_rot(theta_deg):
+    """Rotation matrix around y-axis."""
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [np.cos(theta), 0, np.sin(theta)],
+        [0, 1, 0],
+        [-np.sin(theta), 0, np.cos(theta)]
+    ])
+
+
+def z_rot(theta_deg):
+    """Rotation matrix around z-axis."""
+    theta = np.deg2rad(theta_deg)
+    return np.matrix([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta), np.cos(theta), 0],
+        [0, 0, 1]
+    ])
+
+
 def project_footprint(
     footprint: List[Tuple[float, float]],
     ra: float,
@@ -131,7 +187,7 @@ def project_footprint(
     pos_angle: Optional[float] = None,
 ) -> List[Tuple[float, float]]:
     """
-    Project a footprint to a new position with optional rotation.
+    Project a footprint to a new position with optional rotation using spherical geometry.
 
     Args:
         footprint: List of (ra, dec) tuples defining the footprint
@@ -142,43 +198,25 @@ def project_footprint(
     Returns:
         Projected footprint as a list of (ra, dec) tuples
     """
-    # Calculate center of the footprint
-    ra_vals = [p[0] for p in footprint]
-    dec_vals = [p[1] for p in footprint]
-    center_ra = np.mean(ra_vals)
-    center_dec = np.mean(dec_vals)
+    if pos_angle is None:
+        pos_angle = 0.0
 
-    # Calculate offsets from center
-    ra_offsets = [p[0] - center_ra for p in footprint]
-    dec_offsets = [p[1] - center_dec for p in footprint]
+    # Convert footprint coordinates to unit vectors
+    footprint_zero_center_ra = np.asarray([pt[0] for pt in footprint])
+    footprint_zero_center_dec = np.asarray([pt[1] for pt in footprint])
+    footprint_zero_center_uvec = ra_dec_to_uvec(footprint_zero_center_ra, footprint_zero_center_dec)
+    footprint_zero_center_x, footprint_zero_center_y, footprint_zero_center_z = footprint_zero_center_uvec
 
-    # Apply rotation if needed
-    if pos_angle is not None and pos_angle != 0:
-        angle_rad = math.radians(pos_angle)
-        rotated_offsets = []
-        for i in range(len(ra_offsets)):
-            new_ra_offset = ra_offsets[i] * math.cos(angle_rad) - dec_offsets[
-                i
-            ] * math.sin(angle_rad)
-            new_dec_offset = ra_offsets[i] * math.sin(angle_rad) + dec_offsets[
-                i
-            ] * math.cos(angle_rad)
-            rotated_offsets.append((new_ra_offset, new_dec_offset))
-        ra_offsets = [offset[0] for offset in rotated_offsets]
-        dec_offsets = [offset[1] for offset in rotated_offsets]
+    proj_footprint = []
+    for idx in range(footprint_zero_center_x.shape[0]):
+        vec = np.asarray([footprint_zero_center_x[idx], footprint_zero_center_y[idx], footprint_zero_center_z[idx]])
+        # Apply spherical rotations: position angle, declination, then RA
+        new_vec = vec @ x_rot(-pos_angle) @ y_rot(dec) @ z_rot(-ra)
+        new_x, new_y, new_z = new_vec.flat
+        pt_ra, pt_dec = uvec_to_ra_dec(new_x, new_y, new_z)
+        proj_footprint.append((pt_ra, pt_dec))
 
-    # Apply offsets to new center
-    projected_footprint = []
-    for i in range(len(footprint)):
-        projected_ra = ra + ra_offsets[i] / math.cos(math.radians(dec))
-        projected_dec = dec + dec_offsets[i]
-        projected_footprint.append((projected_ra, projected_dec))
-
-    # Make sure the polygon is closed
-    if projected_footprint[0] != projected_footprint[-1]:
-        projected_footprint.append(projected_footprint[0])
-
-    return projected_footprint
+    return proj_footprint
 
 
 def polygons2footprints(

@@ -10,7 +10,7 @@ from server.db.models.gw_alert import GWAlert
 from server.auth.auth import get_current_user
 from server.utils.error_handling import not_found_exception
 from server.utils.gwtm_io import download_gwtm_file
-from server.config import Settings as settings
+from server.config import settings
 
 router = APIRouter(tags=["gw_alerts"])
 
@@ -85,4 +85,10 @@ async def get_gw_skymap(
             },
         )
     except Exception as e:
-        raise not_found_exception(f"Error in retrieving skymap file: {skymap_path}")
+        # Include detailed error information for debugging
+        error_msg = (
+            f"Error retrieving skymap file: {skymap_path} "
+            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
+            f"Error: {type(e).__name__}: {str(e)}"
+        )
+        raise not_found_exception(error_msg)

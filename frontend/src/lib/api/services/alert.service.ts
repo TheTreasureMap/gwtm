@@ -4,7 +4,7 @@ import type {
 	GWAlertQueryResponse,
 	GWAlertFilterOptionsResponse
 } from '../types/alert.types';
-import type { GWContourResponse, GRBMOCResponse } from '../types/api-responses';
+import type { GWContourResponse, GWContourGeoJSON, GRBMOCResponse } from '../types/api-responses';
 
 export const alertService = {
 	queryAlerts: async (params?: Record<string, unknown>): Promise<GWAlertQueryResponse> => {
@@ -53,10 +53,42 @@ export const alertService = {
 	},
 
 	getGWContour: async (graceid: string): Promise<GWContourResponse> => {
-		const response = await client.get<GWContourResponse>('/api/v1/gw_contour', {
+		const response = await client.get<GWContourGeoJSON>('/api/v1/gw_contour', {
 			params: { graceid }
 		});
-		return response.data;
+
+		// Transform GeoJSON to the format expected by OverlayManager
+		const geoJson = response.data;
+		const contours: Array<{ polygon: number[][]; probability_level?: number }> = [];
+
+		// Process each feature in the GeoJSON
+		geoJson.features.forEach((feature) => {
+			const credibleLevel = feature.properties.credible_level;
+			const geometry = feature.geometry;
+
+			if (geometry.type === 'MultiLineString') {
+				// MultiLineString has array of line strings
+				(geometry.coordinates as number[][][]).forEach((lineString) => {
+					contours.push({
+						polygon: lineString,
+						probability_level: credibleLevel
+					});
+				});
+			} else if (geometry.type === 'LineString') {
+				// Single LineString
+				contours.push({
+					polygon: geometry.coordinates as number[][],
+					probability_level: credibleLevel
+				});
+			}
+		});
+
+		// Use the same color as Flask backend for consistency
+		return {
+			contours,
+			color: '#e6194B', // Red - matches Flask backend
+			name: 'GW Contour'
+		};
 	},
 
 	getGRBMOCFile: async (graceid: string, instrument: string): Promise<GRBMOCResponse> => {

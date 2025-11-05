@@ -26,7 +26,18 @@ secrets:
   # Azure storage
   azureAccountName: "your-azure-account-name"
   azureAccountKey: "your-azure-account-key"
-  storageBucketSource: "s3"
+
+  # OpenStack Swift storage - actual credentials in values-secrets.yaml (gitignored)
+  osAuthUrl: ""
+  osStorageUrl: ""
+  osUsername: ""
+  osPassword: ""
+  osContainerName: "gwtreasuremap"
+  osProjectName: ""
+  osUserDomainName: "Default"
+  osProjectDomainName: "Default"
+
+  storageBucketSource: "swift"
 
   # reCAPTCHA keys
   recaptchaPublicKey: "your-recaptcha-public-key"
@@ -88,9 +99,11 @@ database:
     enabled: true
 
 # Listener configuration for development
+# Disabled for local dev - can be enabled once listener issues are resolved
 listeners:
+  enabled: false
   image:
-    tag: "latest"
+    tag: "sha-03353dc"
 
   api:
     base: "http://flask-backend:8080/api/v0/"

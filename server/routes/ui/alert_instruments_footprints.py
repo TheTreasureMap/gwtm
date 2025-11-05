@@ -18,6 +18,7 @@ async def get_alert_instruments_footprints(
     graceid: str = None,
     pointing_status: str = None,
     tos_mjd: float = None,
+    nocache: bool = False,
     db: Session = Depends(get_db),
 ):
     """Get footprints of instruments that observed a specific alert."""
@@ -95,11 +96,12 @@ async def get_alert_instruments_footprints(
     hash_pointing_ids = hashlib.sha1(json.dumps(pointing_ids).encode()).hexdigest()
     cache_key = f"cache/footprint_{graceid}_{pointing_status}_{hash_pointing_ids}"
 
-    # Try to get from cache first
-    cached_overlays = get_cached_file(cache_key, settings)
-
-    if cached_overlays:
-        return json.loads(cached_overlays)
+    # Try to get from cache first (unless nocache parameter is set)
+    cached_overlays = None
+    if not nocache:
+        cached_overlays = get_cached_file(cache_key, settings)
+        if cached_overlays:
+            return json.loads(cached_overlays)
 
     # Not in cache, generate fresh data
     instrument_ids = [p.instrumentid for p in pointing_info]
