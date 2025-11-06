@@ -62,7 +62,6 @@ spec:
           - |
             echo "Starting Flask application..."
             echo "Database settings: DB_HOST=$DB_HOST, DB_PORT=$DB_PORT, DB_USER=$DB_USER, DB_NAME=$DB_NAME"
-            echo "Redis URL: $REDIS_URL"
             gunicorn -b 0.0.0.0:{{ .Values.backend.service.targetPort }} src.api_v1:app -t 1000 --log-level debug
         ports:
         - containerPort: {{ .Values.backend.service.targetPort }}
@@ -86,8 +85,6 @@ spec:
           value: {{ .Values.database.name }}
         - name: DB_PORT
           value: "{{ .Values.database.service.port }}"
-        - name: REDIS_URL
-          value: "redis://{{ .Values.cache.name }}:{{ .Values.cache.service.port }}/0"
         - name: MAIL_PASSWORD
           valueFrom:
             secretKeyRef:

@@ -61,9 +61,6 @@ manifests:
           backend.image.tag: latest
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
-          cache.livenessProbe.enabled: "true"
-          cache.persistence.enabled: "false"
-          cache.readinessProbe.enabled: "true"
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
@@ -90,9 +87,6 @@ deploy:
           backend.image.tag: latest
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
-          cache.livenessProbe.enabled: "true"
-          cache.persistence.enabled: "false"
-          cache.readinessProbe.enabled: "true"
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"

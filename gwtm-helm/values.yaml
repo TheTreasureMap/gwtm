@@ -116,34 +116,6 @@ database:
       # Add any additional SQL or shell commands here
       #
 
-cache:
-  name: redis
-  replicas: 1
-  image:
-    repository: redis
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    port: 6379
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 30
-    periodSeconds: 10
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  persistence:
-    enabled: false  # Set to false for development
-    size: 1Gi      
-
 ingress:
   enabled: true
   className: nginx

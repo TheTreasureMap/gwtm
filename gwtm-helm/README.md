@@ -6,10 +6,91 @@ This repository contains Helm charts for deploying the Gravitational Wave Treasu
 
 The GWTM Helm chart manages the following components:
 
-- **Backend**: Flask application
-- **Frontend**: Nginx web server
-- **Database**: PostgreSQL with PostGIS extension
-- **Cache**: Redis
+- **Flask Backend** (`flask-backend`): Legacy Python [Flask](https://flask.palletsprojects.com/) application (Python 3.9+, Flask 2.1.1) on port 8080
+- **FastAPI Backend** (`fastapi-backend`): Modern high-performance API service with auto-documentation on port 8000 ([FastAPI docs](https://fastapi.tiangolo.com/))
+- **Svelte Frontend** (`frontend`): TypeScript/[SvelteKit](https://kit.svelte.dev/) dashboard with modern reactive UI on port 3000 ([Svelte docs](https://svelte.dev/))
+- **PostgreSQL Database** (`postgres`): [PostgreSQL](https://www.postgresql.org/docs/) 14+ with [PostGIS](https://postgis.net/) 3.x extension for geospatial data on port 5432
+- **Event Listeners** (optional): LIGO and IceCube gravitational wave event listeners
+
+## Deployed Resources
+
+When you run `skaffold dev`, the following Kubernetes resources are created in the `gwtm` namespace:
+
+### Deployments
+- `flask-backend` - 1 replica (configurable)
+- `fastapi-backend` - 1 replica (configurable)
+- `frontend` - 1 replica (configurable)
+- `postgres` - 1 replica (stateful)
+- `ligo-listener` - 1 replica (if enabled)
+- `icecube-listener` - 1 replica (if enabled)
+
+### Services
+- `flask-backend` - ClusterIP on port 8080
+- `fastapi-backend` - ClusterIP on port 8000
+- `frontend` - ClusterIP on port 3000
+- `postgres` - ClusterIP on port 5432
+
+### ConfigMaps & Secrets
+- `gwtm-secrets` - Credentials and API keys
+- `postgres-init-scripts` - Database initialization SQL
+
+### Persistent Volumes (optional)
+- `postgres-data` - Database storage (if persistence enabled)
+
+### Port Forwards (automatic with `skaffold dev`)
+- `localhost:8080` → `flask-backend:8080`
+- `localhost:8000` → `fastapi-backend:8000`
+- `localhost:3000` → `frontend:3000`
+
+### Build Artifacts
+
+Skaffold builds the following Docker images:
+
+1. **gwtm** - Flask backend from main Dockerfile
+2. **gwtm-fastapi** - FastAPI backend from `server/Dockerfile`
+3. **gwtm-frontend** - Svelte frontend from `frontend/Dockerfile`
+
+File sync is configured for hot-reloading without rebuilds:
+- FastAPI: Python files sync to container, uvicorn auto-reloads
+- Frontend: Source files sync to container, Vite HMR handles updates
+- Flask: No sync configured (requires rebuild)
+
+## Quick Reference
+
+**Start the full stack:**
+```bash
+cd gwtm-helm && skaffold dev
+```
+
+**Monitor deployment:**
+```bash
+kubectl get pods -n gwtm --watch
+```
+
+**View logs:**
+```bash
+kubectl logs -n gwtm deployment/frontend -f          # Frontend
+kubectl logs -n gwtm deployment/fastapi-backend -f   # FastAPI
+kubectl logs -n gwtm deployment/flask-backend -f     # Flask
+```
+
+**Access services:**
+- Frontend: http://localhost:3000
+- FastAPI Docs: http://localhost:8000/docs
+- Flask API: http://localhost:8080/api/v0/
+
+**Database operations:**
+```bash
+./restore-db path/to/dump.sql                                          # Restore DB
+kubectl exec -it -n gwtm deployment/postgres -- psql -U treasuremap    # Connect to DB
+```
+
+**Troubleshooting:**
+```bash
+kubectl get all -n gwtm                     # Check all resources
+kubectl describe pod <pod-name> -n gwtm     # Detailed pod info
+skaffold delete && skaffold dev             # Clean restart
+```
 
 ## Prerequisites
 
@@ -57,8 +138,9 @@ This command will:
 
 Once deployed, you can access:
 
-- The frontend dashboard at http://localhost:8081
-- The backend API directly at http://localhost:8080
+- **Svelte Frontend**: http://localhost:3000 - Modern reactive UI dashboard
+- **Flask Backend API**: http://localhost:8080 - Legacy REST API
+- **FastAPI Backend**: http://localhost:8000 - Modern API with docs at http://localhost:8000/docs
 
 ### Database Operations
 
@@ -67,10 +149,200 @@ To restore a database dump to your local development environment:
 ```bash
 ./restore-db /path/to/your/dump.sql
 ```
-To dump a copy of the production database use something like
+
+To dump a copy of the production database:
 
 ```bash
-pg_dump  -h treasuremap.host.org -U treasuremap -d treasuremap -a -f ./dump_latest.sql
+pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap -a -f ./dump_latest.sql
+```
+
+## Monitoring and Debugging
+
+### Checking Deployment Status
+
+View all resources in the GWTM namespace:
+
+```bash
+# Get all pods and their status
+kubectl get pods -n gwtm
+
+# Get all services
+kubectl get services -n gwtm
+
+# Get all deployments with replica counts
+kubectl get deployments -n gwtm
+
+# Get detailed status of all resources
+kubectl get all -n gwtm
+```
+
+### Watching Deployment Progress
+
+Monitor pods as they start up:
+
+```bash
+# Watch all pods in real-time
+kubectl get pods -n gwtm --watch
+
+# Watch with wide output (shows node assignment)
+kubectl get pods -n gwtm -o wide --watch
+
+# Describe a specific pod for detailed events
+kubectl describe pod <pod-name> -n gwtm
+```
+
+### Viewing Logs
+
+**View logs from specific components:**
+
+```bash
+# Frontend (Svelte) logs
+kubectl logs -n gwtm deployment/frontend -f
+
+# FastAPI backend logs (recommended for new development)
+kubectl logs -n gwtm deployment/fastapi-backend -f
+
+# Flask backend logs (legacy)
+kubectl logs -n gwtm deployment/flask-backend -f
+
+# PostgreSQL logs
+kubectl logs -n gwtm deployment/postgres -f
+```
+
+**View logs from a specific pod:**
+
+```bash
+# Get pod names
+kubectl get pods -n gwtm
+
+# View logs from a specific pod
+kubectl logs -n gwtm <pod-name> -f
+
+# View previous container logs (if pod crashed)
+kubectl logs -n gwtm <pod-name> --previous
+```
+
+**View logs from all replicas of a deployment:**
+
+```bash
+# All frontend pods
+kubectl logs -n gwtm -l app=frontend --all-containers=true -f
+
+# All FastAPI backend pods
+kubectl logs -n gwtm -l app=fastapi-backend --all-containers=true -f
+```
+
+**Filter and search logs:**
+
+```bash
+# Search for errors in FastAPI logs
+kubectl logs -n gwtm deployment/fastapi-backend | grep -i error
+
+# View last 100 lines
+kubectl logs -n gwtm deployment/frontend --tail=100
+
+# Logs since specific time
+kubectl logs -n gwtm deployment/fastapi-backend --since=10m
+```
+
+### Checking Resource Usage
+
+```bash
+# View resource usage for all pods
+kubectl top pods -n gwtm
+
+# View resource usage for nodes
+kubectl top nodes
+
+# Describe pod to see resource limits and requests
+kubectl describe pod <pod-name> -n gwtm | grep -A 5 "Limits\|Requests"
+```
+
+### Interactive Debugging
+
+**Execute commands inside containers:**
+
+```bash
+# Open shell in FastAPI backend
+kubectl exec -it -n gwtm deployment/fastapi-backend -- /bin/bash
+
+# Open shell in frontend container
+kubectl exec -it -n gwtm deployment/frontend -- /bin/sh
+
+# Open psql in database
+kubectl exec -it -n gwtm deployment/postgres -- psql -U treasuremap -d treasuremap
+```
+
+**Port forwarding for direct access:**
+
+```bash
+# Forward database port for local access
+kubectl port-forward -n gwtm service/postgres 5432:5432
+
+# Access from local machine
+psql -h localhost -U treasuremap -d treasuremap
+```
+
+### Event Listener Monitoring (if enabled)
+
+```bash
+# LIGO listener logs
+kubectl logs -n gwtm deployment/ligo-listener -f
+
+# IceCube listener logs
+kubectl logs -n gwtm deployment/icecube-listener -f
+
+# Check listener configuration
+kubectl get configmap -n gwtm
+kubectl describe configmap <listener-configmap-name> -n gwtm
+```
+
+### Troubleshooting Skaffold
+
+```bash
+# Verbose output for debugging build/deploy issues
+skaffold dev -v debug
+
+# Skip tests during build
+skaffold dev --skip-tests
+
+# Clean up and restart
+skaffold delete
+skaffold dev
+
+# Build without deploying
+skaffold build
+
+# Deploy without building
+skaffold deploy
+```
+
+### Restarting Components
+
+```bash
+# Restart a specific deployment (triggers rolling restart)
+kubectl rollout restart deployment/frontend -n gwtm
+kubectl rollout restart deployment/fastapi-backend -n gwtm
+kubectl rollout restart deployment/flask-backend -n gwtm
+
+# Check rollout status
+kubectl rollout status deployment/frontend -n gwtm
+
+# View rollout history
+kubectl rollout history deployment/frontend -n gwtm
+```
+
+### Checking Persistent Volumes
+
+```bash
+# View persistent volume claims
+kubectl get pvc -n gwtm
+
+# Describe PVC to see binding status
+kubectl describe pvc postgres-data -n gwtm
+
+# View persistent volumes
+kubectl get pv
 ```
 ## Production Deployment
 
@@ -217,19 +489,174 @@ See `values.yaml` for detailed configuration options for the database, cache, an
 
 ### Common Issues
 
-1. **Database connection errors**: Check that the database pod is running and the service is accessible
-   ```bash
-   kubectl get pods -n gwtm
-   kubectl logs -n gwtm <postgres-pod-name>
-   ```
+#### 1. Database Connection Errors
 
-2. **Backend startup failure**: Check the logs for the flask-backend pod
-   ```bash
-   kubectl logs -n gwtm <backend-pod-name>
-   ```
+Check database pod status and logs:
+```bash
+# Verify postgres pod is running
+kubectl get pods -n gwtm | grep postgres
 
-3. **Persistence issues**: If using persistence, ensure that the storage class exists and is working properly
-   ```bash
-   kubectl get sc
-   kubectl describe pvc -n gwtm
-   ```
+# Check database logs for connection issues
+kubectl logs -n gwtm deployment/postgres
+
+# Test database connectivity from within cluster
+kubectl exec -it -n gwtm deployment/fastapi-backend -- nc -zv postgres 5432
+
+# Verify database service exists
+kubectl get service postgres -n gwtm
+```
+
+#### 2. Backend Startup Failures
+
+**FastAPI Backend:**
+```bash
+# Check FastAPI logs for startup errors
+kubectl logs -n gwtm deployment/fastapi-backend --tail=100
+
+# Verify environment variables
+kubectl exec -n gwtm deployment/fastapi-backend -- env | grep -E 'DB_'
+
+# Check pod events
+kubectl describe pod -n gwtm -l app=fastapi-backend
+```
+
+**Flask Backend:**
+```bash
+# Check Flask logs
+kubectl logs -n gwtm deployment/flask-backend --tail=100
+
+# Verify migrations ran successfully
+kubectl logs -n gwtm deployment/flask-backend | grep -i migration
+```
+
+#### 3. Frontend Issues
+
+```bash
+# Check Svelte frontend logs
+kubectl logs -n gwtm deployment/frontend --tail=100
+
+# Verify frontend can reach backends
+kubectl exec -it -n gwtm deployment/frontend -- wget -O- http://fastapi-backend:8000/health
+kubectl exec -it -n gwtm deployment/frontend -- wget -O- http://flask-backend:8080/api/v0/
+
+# Check environment variables
+kubectl exec -n gwtm deployment/frontend -- env | grep PUBLIC_API
+```
+
+#### 4. Port Forwarding Issues
+
+```bash
+# Kill existing port forwards
+pkill -f "port-forward.*gwtm"
+
+# Restart skaffold
+skaffold delete
+skaffold dev
+
+# Manually set up port forwards
+kubectl port-forward -n gwtm service/frontend 3000:3000 &
+kubectl port-forward -n gwtm service/fastapi-backend 8000:8000 &
+kubectl port-forward -n gwtm service/flask-backend 8080:8080 &
+```
+
+#### 5. Image Pull/Build Issues
+
+```bash
+# Check image pull status
+kubectl describe pod -n gwtm <pod-name> | grep -A 10 Events
+
+# Rebuild images with verbose output
+skaffold build -v debug
+
+# Check if images exist locally
+docker images | grep gwtm
+
+# Force rebuild
+skaffold delete
+skaffold dev --cache-artifacts=false
+```
+
+#### 6. Persistence Issues
+
+If using persistence, ensure storage classes are configured:
+```bash
+# List storage classes
+kubectl get sc
+
+# Check PVC status
+kubectl get pvc -n gwtm
+
+# Describe PVC for detailed status
+kubectl describe pvc postgres-data -n gwtm
+
+# Check PV binding
+kubectl get pv | grep gwtm
+```
+
+#### 7. Resource Constraints
+
+```bash
+# Check if pods are being OOMKilled or CPU throttled
+kubectl describe pod -n gwtm <pod-name> | grep -A 5 "Last State"
+
+# View resource usage
+kubectl top pods -n gwtm
+
+# Temporarily increase resources in values-dev.yaml if needed
+```
+
+#### 8. Secret Issues
+
+```bash
+# Verify secrets exist
+kubectl get secrets -n gwtm
+
+# Check secret contents (base64 encoded)
+kubectl get secret gwtm-secrets -n gwtm -o yaml
+
+# Decode specific secret value
+kubectl get secret gwtm-secrets -n gwtm -o jsonpath='{.data.db-password}' | base64 -d
+```
+
+#### 9. Networking Issues Between Services
+
+```bash
+# Test connectivity between services
+kubectl exec -it -n gwtm deployment/fastapi-backend -- nc -zv postgres 5432
+kubectl exec -it -n gwtm deployment/frontend -- nc -zv fastapi-backend 8000
+
+# Check service endpoints
+kubectl get endpoints -n gwtm
+
+# Verify DNS resolution
+kubectl exec -it -n gwtm deployment/frontend -- nslookup fastapi-backend
+```
+
+#### 10. Complete Reset
+
+If all else fails, clean up and redeploy:
+```bash
+# Delete everything
+skaffold delete
+
+# Delete namespace (optional, removes all data)
+kubectl delete namespace gwtm
+
+# Redeploy
+cd gwtm-helm
+skaffold dev
+```
+
+### Getting More Help
+
+For additional debugging:
+```bash
+# Dump all cluster state for GWTM namespace
+kubectl get all,configmaps,secrets,pvc,pv -n gwtm -o wide > gwtm-cluster-state.txt
+
+# Export pod logs for all components
+kubectl logs -n gwtm deployment/frontend > frontend-logs.txt
+kubectl logs -n gwtm deployment/fastapi-backend > fastapi-logs.txt
+kubectl logs -n gwtm deployment/flask-backend > flask-logs.txt
+kubectl logs -n gwtm deployment/postgres > postgres-logs.txt
+```
