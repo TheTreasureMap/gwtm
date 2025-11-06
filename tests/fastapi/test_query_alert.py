@@ -155,7 +155,7 @@ class TestEventEndpoints:
         if response.status_code == status.HTTP_200_OK:
             assert response.headers["Content-Type"] == "application/fits"
         else:
-            assert "Error in retrieving skymap file" in response.json()["message"]
+            assert "Error retrieving skymap file" in response.json()["message"]
 
     def test_get_gw_contour(self):
         """Test getting alert contour data."""
@@ -170,7 +170,7 @@ class TestEventEndpoints:
         if response.status_code == status.HTTP_200_OK:
             assert response.headers["Content-Type"] == "application/json"
         else:
-            assert "Error in retrieving Contour file" in response.json()["message"]
+            assert "Error retrieving contour file" in response.json()["message"]
 
     def test_get_grb_moc_file(self):
         """Test getting GRB MOC file."""
