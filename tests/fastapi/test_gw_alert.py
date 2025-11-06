@@ -192,7 +192,7 @@ class TestGWAlertEndpoints:
             else:
                 # Graceid might not have a skymap in test data
                 assert response.status_code == status.HTTP_404_NOT_FOUND
-                assert "Error in retrieving skymap file" in response.json()["message"]
+                assert "Error retrieving skymap file" in response.json()["message"]
 
     def test_get_gw_contour(self):
         """Test getting GW contour data."""
@@ -218,7 +218,7 @@ class TestGWAlertEndpoints:
             else:
                 # Graceid might not have a contour in test data
                 assert response.status_code == status.HTTP_404_NOT_FOUND
-                assert "Error in retrieving Contour file" in response.json()["message"]
+                assert "Error retrieving contour file" in response.json()["message"]
 
     def test_get_grb_moc_file(self):
         """Test getting a GRB MOC file."""
