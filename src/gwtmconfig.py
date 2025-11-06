@@ -29,12 +29,6 @@ class Config(object):
     PROFILER_PASSWORD = os.environ.get('PROFILER_PASSWORD', 'admin')
     PROFILER_ENDPOINT = os.environ.get('PROFILER_ENDPOINt', 'gwtm-profiler')
     SECRET_KEY = os.urandom(16)
-    CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://redis:6379')
-    CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://redis:6379')
-    CACHE_TYPE = 'RedisCache'
-    CACHE_KEY_PREFIX = 'cache_'
-    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379')
-    CACHE_DEFAULT_TIMEOUT = 60 * 60 * 24
     AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', '')
     AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY', '')
     STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 's3')

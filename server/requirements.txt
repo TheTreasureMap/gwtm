@@ -31,7 +31,6 @@ python-swiftclient>=4.0.0
 python-keystoneclient>=5.0.0
 keystoneauth1>=5.0.0
 # Other dependencies
-redis>=4.6.0
 mocpy>=0.12.0
 pygcn>=0.1.8
 python-dotenv>=1.0.0
