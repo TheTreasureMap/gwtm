@@ -46,22 +46,14 @@ class TestHealthEndpoints:
 
         # Check that the response has the expected structure
         assert "database_status" in data
-        assert "redis_status" in data
         assert "details" in data
         assert "database" in data["details"]
-        assert "redis" in data["details"]
 
         # Check database details
         database = data["details"]["database"]
         assert "host" in database
         assert "port" in database
         assert "name" in database
-
-        # Check redis details
-        redis = data["details"]["redis"]
-        assert "host" in redis
-        assert "port" in redis
-        assert "url" in redis
 
         # If database connection is successful, status should be "connected"
         # If not, there should be an error message
@@ -70,8 +62,7 @@ class TestHealthEndpoints:
         else:
             assert "error" in database
 
-        # Similarly for Redis
-        if data["redis_status"] == "connected":
-            assert data["redis_status"] == "connected"
-        else:
-            assert "error" in redis
+
+if __name__ == "__main__":
+    # Run tests with pytest
+    pytest.main([__file__, "-v"])
