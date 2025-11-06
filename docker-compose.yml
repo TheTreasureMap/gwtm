@@ -18,12 +18,9 @@ services:
       - ZENODO_ACCESS_KEY=${ZENODO_ACCESS_KEY}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
       - db_init
-      - redis
-      - celery_worker
 
   db:
     image: postgis/postgis:12-3.5
@@ -61,33 +58,6 @@ services:
       interval: 10s
       timeout: 15s
       retries: 5
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
-
-  celery_worker:
-    image: gwtm_web:latest
-    container_name: celery_worker
-    command: celery -A src.tasks.celery worker --loglevel=info
-    environment:
-      - DB_USER=${DB_USER}
-      - DB_PWD=${DB_PWD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - RECAPTCHA_PUBLIC_KEY=${RECAPTCHA_PUBLIC_KEY}
-      - RECAPTCHA_PRIVATE_KEY=${RECAPTCHA_PRIVATE_KEY}
-      - ZENODO_ACCESS_KEY=${ZENODO_ACCESS_KEY}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
 
   db_init:
     image: gwtm_web:latest

@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 import datetime
 import uvicorn
 import logging
-import redis
 
 from server.config import settings
 from server.db.database import get_db, engine, Base
@@ -199,15 +198,14 @@ async def health():
 @app.get("/service-status")
 async def service_status(db: Session = Depends(get_db)):
     """
-    Detailed service status endpoint that checks database and Redis connections.
+    Detailed service status endpoint that checks database connection.
 
     Returns:
-        Dict with status of database and Redis connections, plus detailed info
+        Dict with status of database connection plus detailed info
     """
     status = {
         "database_status": "unknown",
-        "redis_status": "unknown",
-        "details": {"database": {}, "redis": {}},
+        "details": {"database": {}},
     }
 
     # Check database connection with detailed info
@@ -235,40 +233,6 @@ async def service_status(db: Session = Depends(get_db)):
     except Exception as e:
         status["database_status"] = "disconnected"
         status["details"]["database"]["error"] = str(e)
-
-    # Check Redis connection with detailed info
-    try:
-        # Get Redis connection parameters
-        redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
-
-        # Parse the URL for debug info
-        if redis_url.startswith("redis://"):
-            redis_host = redis_url.split("redis://")[1].split(":")[0]
-            redis_port = redis_url.split(":")[-1].split("/")[0]
-        else:
-            redis_host = "unknown"
-            redis_port = "unknown"
-
-        # Store connection info
-        status["details"]["redis"] = {
-            "host": redis_host,
-            "port": redis_port,
-            "url": redis_url,
-        }
-
-        # Test actual connection
-        try:
-            redis_client = redis.from_url(redis_url)
-            if redis_client.ping():
-                status["redis_status"] = "connected"
-            else:
-                status["redis_status"] = "disconnected"
-        except redis.exceptions.ConnectionError:
-            status["redis_status"] = "disconnected"
-            status["details"]["redis"]["error"] = "Connection refused"
-    except Exception as e:
-        status["redis_status"] = "disconnected"
-        status["details"]["redis"]["error"] = str(e)
 
     return status
 
