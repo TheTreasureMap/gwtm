@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from server.db.database import get_db
 from server.db.models import UserGroups, Groups
 from server.db.models.users import Users
@@ -106,9 +107,9 @@ def verify_admin(
     user: Users = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> Users:
     """
-    Check if the user belongs to the admin group.
+    Check if the user belongs to the admin group (case-insensitive).
     """
-    admin_group = db.query(Groups).filter(Groups.name == "admin").first()
+    admin_group = db.query(Groups).filter(func.lower(Groups.name) == "admin").first()
     if not admin_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
