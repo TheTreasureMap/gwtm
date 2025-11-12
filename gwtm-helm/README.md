@@ -81,7 +81,7 @@ kubectl logs -n gwtm deployment/flask-backend -f     # Flask
 
 **Database operations:**
 ```bash
-./restore-db path/to/dump.sql [restrict-key]                           # Restore DB (default key: treasuremap)
+./restore-db path/to/dump.sql                                          # Restore DB (auto-strips incompatible \restrict commands)
 kubectl exec -it -n gwtm deployment/postgres -- psql -U treasuremap    # Connect to DB
 ```
 
@@ -147,33 +147,29 @@ Once deployed, you can access:
 To restore a database dump to your local development environment:
 
 ```bash
-# Using default restrict-key (treasuremap)
 ./restore-db /path/to/your/dump.sql
-
-# Using custom restrict-key (must match key used in pg_dump)
-./restore-db /path/to/your/dump.sql my-custom-key
 ```
+
+The restore script automatically strips out `\restrict` commands that are added by newer pg_dump versions (v16+) but not supported by the PostgreSQL v14 server in the cluster.
 
 To dump a copy of the production database:
 
 ```bash
 # Exclude all Flask profiler tables (large and irrelevant for testing)
 # --no-owner: Don't set ownership (avoids privilege issues)
-# --no-privileges: Don't dump access privileges (avoids ACL/restrict issues)
+# --no-privileges: Don't dump access privileges (avoids ACL issues)
 # --clean: Add DROP commands before CREATE
 # --if-exists: Use IF EXISTS with DROP commands
-# --restrict-key: Use consistent key for dump/restore compatibility
+# Note: \restrict commands from pg_dump v16+ are automatically stripped during restore
 pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap \
   --exclude-table='public.flask*' \
   --no-owner --no-privileges --clean --if-exists \
-  --restrict-key=treasuremap \
   -f ./dump_latest.sql
 
 # For data-only dumps (requires tables to already exist)
 pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap \
   --exclude-table-data='public.flask*' \
   --no-owner --no-privileges \
-  --restrict-key=treasuremap \
   -a -f ./dump_latest.sql
 ```
 
