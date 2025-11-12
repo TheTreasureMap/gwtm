@@ -119,6 +119,44 @@ Make sure you have Docker, Kubernetes (or minikube), Helm, and Skaffold installe
 
 Review and update the `values-dev.yaml` file with appropriate settings for your development environment. The default values should work for most local setups.
 
+4. **Create secrets file (required)**
+
+Create a `values-secrets.yaml` file in the `gwtm-helm/` directory with your storage credentials. This file is gitignored and must be created locally:
+
+```bash
+cd gwtm-helm
+cat > values-secrets.yaml << 'EOF'
+# values-secrets.yaml
+# This file contains sensitive credentials and should NOT be committed to git
+
+secrets:
+  # OpenStack Swift storage credentials (required for storage operations)
+  osAuthUrl: "https://your-auth-url:5000/v3"
+  osStorageUrl: "https://your-storage-url:8001/swift/v1"
+  osUsername: "your-username-or-app-credential-id"
+  osPassword: "your-password-or-app-credential-secret"
+  osContainerName: "gwtreasuremap"
+  osProjectName: "your-project-name"
+  osUserDomainName: "Default"
+  osProjectDomainName: "Default"
+  storageBucketSource: "swift"
+
+  # Alternative: AWS S3 storage credentials
+  # awsAccessKeyId: "your-aws-access-key-id"
+  # awsSecretAccessKey: "your-aws-secret-key"
+  # awsDefaultRegion: "us-east-2"
+  # awsBucket: "gwtreasuremap"
+  # storageBucketSource: "s3"
+
+  # Alternative: Azure Blob storage credentials
+  # azureAccountName: "your-azure-account-name"
+  # azureAccountKey: "your-azure-account-key"
+  # storageBucketSource: "abfs"
+EOF
+```
+
+**Note:** The `values-secrets.yaml` file is required by Skaffold and must contain valid storage credentials. Choose one storage backend (swift, s3, or abfs) and configure accordingly.
+
 ### Running the Application Locally
 
 Skaffold is configured to build the application container and deploy it to your local Kubernetes cluster:
