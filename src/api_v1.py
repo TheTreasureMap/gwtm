@@ -442,8 +442,8 @@ def add_pointings_v1():
 	errors = []
 	warnings = []
 
-	is_valid, response_message = is_graceid_valid(args, db)
-	if not is_valid:
+	valid_gid, response_message = is_graceid_valid(args, db)
+	if not valid_gid:
 		return make_response(response_message, 500)
 	gid = args['graceid']
 
@@ -1705,10 +1705,29 @@ def fixdata_v1():
 	# Validates if user has access to endpoint
 	valid, message, args, user = initial_request_parse(request=request)
 
-	if user.id not in [2]:
-		return make_response("Only admin can access this endpoint", 500)
+	# if user is None:
+	# 	return make_response("Only admin can access this endpoint", 500)
 
-	return make_response("success", 200)
+	# if user.id not in [2]:
+	# 	return make_response("Only admin can access this endpoint", 500)
+
+	# empty_pointings = db.session.query(models.pointing).filter(
+	# 	models.pointing.datecreated > datetime.datetime(2025, 11, 14)
+	# ).all()
+
+	# instruments = list(set([x.instrumentid for x in empty_pointings]))
+	# print(instruments)
+
+
+	# for pointing_id in empty_pointings:
+	# 	db.session.add(
+	# 		models.pointing_event(
+	# 			graceid="S251112cm", pointingid=pointing_id.id
+	# 		)
+	# 	)
+	# db.session.commit()
+
+	return make_response(f"success", 200)
 
 def is_graceid_valid(args, db):
 	if "graceid" in args:
