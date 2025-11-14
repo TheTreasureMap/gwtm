@@ -1,0 +1,61 @@
+# Values file for listeners-only deployment
+# This file provides production-ready defaults for deploying only the GWTM listeners
+# to a dedicated cluster, with all other GWTM components disabled.
+#
+# For testing/debugging, override with:
+#   --helm-set listeners.dryRun=true
+#   --helm-set listeners.writeToStorage=false
+#   --helm-set listeners.logging.level=DEBUG
+
+# Disable all GWTM application components (only run listeners)
+frontend:
+  enabled: false
+
+backend:
+  enabled: false
+
+fastapi:
+  enabled: false
+
+database:
+  enabled: false
+
+# Enable and configure listeners
+listeners:
+  enabled: true
+
+  image:
+    tag: "latest"  # Override with specific version for production (e.g., "0.1.0")
+
+  # GWTM API configuration
+  # NOTE: You MUST override listeners.api.base when creating the ArgoCD app
+  # Example: --helm-set listeners.api.base="http://YOUR_GWTM_IP:80/api/v0/"
+  api:
+    base: ""  # Must be set at deployment time
+
+  # Storage backend configuration
+  storage:
+    type: "swift"  # Default to OpenStack Swift (common for academic deployments)
+
+    # Swift defaults for OpenStack/Jetstream2
+    # NOTE: You MUST override authUrl and projectName when creating the ArgoCD app
+    swift:
+      authUrl: ""  # e.g., "https://js2.jetstream-cloud.org:5000/v3"
+      projectName: ""  # e.g., "your-project-name"
+      containerName: "gwtreasuremap"
+      userDomainName: "Default"
+      projectDomainName: "Default"
+      # username and password come from secrets
+
+  # Listener behavior - production defaults
+  dryRun: false  # Production mode: process alerts and make API calls
+  writeToStorage: true  # Write to storage backend
+  verbose: false  # Minimal output for production
+
+  # Logging configuration
+  logging:
+    format: "json"  # JSON format for Kubernetes log aggregation
+    level: "INFO"  # Production logging level
+
+  # Observing run
+  observingRun: "O4"  # Current LIGO/Virgo observing run
