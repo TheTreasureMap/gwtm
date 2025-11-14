@@ -19,3 +19,36 @@ frontend:
 database:
   persistence:
     size: 20Gi
+
+# Listener configuration for production
+listeners:
+  image:
+    tag: "0.1.0"  # Specific version for prod
+
+  api:
+    base: "http://flask-backend:8080/api/v0/"
+    token: ""  # Will be set via ArgoCD/sealed-secrets
+
+  kafka:
+    clientId: ""  # Will be set via ArgoCD/sealed-secrets
+    clientSecret: ""  # Will be set via ArgoCD/sealed-secrets
+
+  storage:
+    type: "swift"
+    swift:
+      authUrl: "https://your-openstack.example.com:5000/v3"
+      storageUrl: "https://your-openstack.example.com:8001/swift/v1"
+      username: ""  # Will be set via ArgoCD/sealed-secrets
+      password: ""  # Will be set via ArgoCD/sealed-secrets
+      projectName: "gwtm-production"
+      containerName: "gwtreasuremap"
+
+  # Production behavior
+  dryRun: false
+  writeToStorage: true
+  verbose: true
+
+  # Production logging
+  logging:
+    format: "json"
+    level: "INFO"

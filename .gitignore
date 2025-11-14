@@ -23,10 +23,27 @@ __pycache__
 #config
 #-
 
-config
+# Backend config files (not frontend config)
+src/config
+server/config
 scratch/
 environment_variables.sh
 envars.sh
 test
 *.DS_Store
 deploy/
+*venv/
+
+# Frontend build artifacts and dependencies
+frontend/node_modules/
+frontend/build/
+frontend/.svelte-kit/
+frontend/dist/
+frontend/.env
+
+# Editor directories
+.vscode/
+.idea/
+
+# Helm secrets - contains sensitive credentials
+gwtm-helm/values-secrets.yaml

@@ -220,7 +220,7 @@ class SubmitPointingForm(FlaskForm):
         query = models.instrument.query.all()
         self.instruments.choices = [(None, 'Select')]
         for a in query:
-            self.instruments.choices.append((str(a.id)+"_"+a.instrument_type.name, a.instrument_name))
+            self.instruments.choices.append((str(a.id) +"_" + a.InstrumentType.name, a.instrument_name))
 
     def populate_creator_groups(self, current_userid):
         dag = models.doi_author_group.query.filter_by(userid=current_userid).all()

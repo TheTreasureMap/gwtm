@@ -1,6 +1,23 @@
 # GW Treasure Map 
 Website environment
 
+## Quick Start
+
+**For the modern FastAPI backend (recommended):**
+The FastAPI application requires database and cache services. Use Skaffold for the complete development environment:
+```bash
+cd gwtm-helm
+skaffold dev    # Starts full stack including FastAPI, database, and cache
+```
+FastAPI will be available at http://localhost:8000 with API docs at http://localhost:8000/docs
+
+See the [FastAPI README](server/README.md) for detailed setup instructions and testing.
+
+**For the legacy Flask application:**
+```bash
+python gwtm.wsgi            # Development server on :5000
+```
+
 ### Step-by-step installation
 
 ### Python:
@@ -25,12 +42,28 @@ present:
     RECAPTCHA_PUBLIC_KEY
     RECAPTCHA_PRIVATE_KEY
     ZENODO_ACCESS_KEY
+    REDIS_URL
+
+    # Storage backend (choose one: s3, abfs, or swift)
+    STORAGE_BUCKET_SOURCE      # "s3", "abfs", or "swift"
+
+    # AWS S3 credentials (if using s3)
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
-    REDIS_URL
-    ...
 
-See [gwtmconfig.py](src/gwtmconfig.py) for other configration options and defaults for other values.
+    # Azure credentials (if using abfs)
+    AZURE_ACCOUNT_NAME
+    AZURE_ACCOUNT_KEY
+
+    # OpenStack Swift credentials (if using swift)
+    OS_AUTH_URL
+    OS_STORAGE_URL
+    OS_USERNAME
+    OS_PASSWORD
+    OS_CONTAINER_NAME
+
+See [gwtmconfig.py](src/gwtmconfig.py) for legacy Flask configuration options.
+For FastAPI configuration and detailed storage setup, see [server/README.md](server/README.md).
 
 Env vars can be set by using export:
 
