@@ -1,0 +1,1 @@
+"""GW galaxy route module."""

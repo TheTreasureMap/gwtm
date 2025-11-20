@@ -30,3 +30,4 @@ envars.sh
 test
 *.DS_Store
 deploy/
+*venv/
