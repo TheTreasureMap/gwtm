@@ -71,6 +71,7 @@ manifests:
           frontend.image.tag: latest
           global.createNamespace: "true"
           global.namespace: gwtm
+          global.useGeneratedSecrets: "true"
         createNamespace: true
         wait: true
         upgradeOnChange: true
@@ -97,6 +98,7 @@ deploy:
           frontend.image.tag: latest
           global.createNamespace: "true"
           global.namespace: gwtm
+          global.useGeneratedSecrets: "true"
         createNamespace: true
         wait: true
         upgradeOnChange: true
