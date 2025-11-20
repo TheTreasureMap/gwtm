@@ -21,17 +21,17 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}
@@ -40,7 +40,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
       containers:
       - name: db-setup
@@ -53,17 +53,17 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}

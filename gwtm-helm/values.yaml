@@ -5,6 +5,11 @@ fullnameOverride: ""
 global:
   namespace: gwtm
   environment: development
+  # Secret management configuration
+  # When useGeneratedSecrets is true, Helm will generate a secret named <release-name>-secrets
+  # When false, it will use the existing secret specified in existingSecret
+  useGeneratedSecrets: false
+  existingSecret: "gwtm-secrets"
 
 backend:
   name: flask-backend
