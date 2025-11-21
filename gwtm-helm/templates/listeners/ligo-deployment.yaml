@@ -125,14 +125,8 @@ spec:
         resources:
           {{- toYaml .Values.listeners.ligo.resources | nindent 10 }}
 
-        # Health checks
-        livenessProbe:
-          exec:
-            command: ["sh", "-c", "ps aux | grep -v grep | grep run_ligo_listener.py"]
-          initialDelaySeconds: 30
-          periodSeconds: 60
-          timeoutSeconds: 5
-          failureThreshold: 3
+        # Note: Liveness probe removed - container lacks ps/pgrep utilities
+        # Kubernetes will still restart the pod if the process exits with error
 
       # Pod termination grace period for graceful shutdown
       terminationGracePeriodSeconds: 30
