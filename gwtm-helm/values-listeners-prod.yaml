@@ -1,0 +1,35 @@
+# Production values for listeners deployment
+# This file overrides values-listeners.yaml with production-specific settings
+
+global:
+  useGeneratedSecrets: false
+  existingSecret: gwtm-listener-secrets
+
+listeners:
+  image:
+    tag: svelte  # Match the git branch/tag being deployed
+  # GWTM API configuration
+  api:
+    base: "http://149.165.172.5/api/v1/"
+
+  # Storage configuration
+  storage:
+    type: "swift"
+    swift:
+      authUrl: "https://js2.jetstream-cloud.org:5000/v3"
+      storageUrl: "https://js2.jetstream-cloud.org:8001/swift/v1"
+      projectName: "PHY250291"
+      containerName: "gwtreasuremap"
+      userDomainName: "Default"
+      projectDomainName: "Default"
+
+  # Production settings
+  dryRun: false
+  writeToStorage: true
+  verbose: false
+
+  logging:
+    format: "json"
+    level: "INFO"
+
+  observingRun: "O4"
