@@ -1,4 +1,5 @@
 # templates/frontend/deployment.yaml
+{{- if .Values.frontend.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,3 +44,4 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 15
 
+{{- end }}
