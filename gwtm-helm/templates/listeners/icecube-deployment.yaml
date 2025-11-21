@@ -125,10 +125,10 @@ spec:
         resources:
           {{- toYaml .Values.listeners.icecube.resources | nindent 10 }}
 
-        # Health checks (file-based, no code changes needed)
+        # Health checks
         livenessProbe:
           exec:
-            command: ["pgrep", "-f", "run_icecube_listener.py"]
+            command: ["sh", "-c", "ps aux | grep -v grep | grep run_icecube_listener.py"]
           initialDelaySeconds: 30
           periodSeconds: 60
           timeoutSeconds: 5
