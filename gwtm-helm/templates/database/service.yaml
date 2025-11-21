@@ -1,3 +1,4 @@
+{{- if .Values.database.enabled }}
 # templates/database/service.yaml
 apiVersion: v1
 kind: Service
@@ -16,3 +17,4 @@ spec:
   selector:
     app: {{ .Values.database.name }}
 
+{{- end }}
