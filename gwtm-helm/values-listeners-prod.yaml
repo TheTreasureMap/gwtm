@@ -7,7 +7,7 @@ global:
 
 listeners:
   image:
-    tag: latest  # Use latest tag for gwtm_cron images
+    tag: dockerise  # Use dockerise branch tag
   # GWTM API configuration
   api:
     base: "http://149.165.172.5/api/v1/"
