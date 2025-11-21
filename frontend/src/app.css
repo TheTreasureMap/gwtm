@@ -1,0 +1,152 @@
+@import 'tailwindcss';
+
+/* Design System CSS Variables */
+:root {
+	/* Spacing */
+	--spacing-container-sm: 1rem;
+	--spacing-container-md: 2rem;
+	--spacing-container-lg: 3rem;
+
+	/* Transitions */
+	--transition-fast: 150ms ease-in-out;
+	--transition-normal: 200ms ease-in-out;
+	--transition-slow: 300ms ease-in-out;
+
+	/* Z-index layers */
+	--z-dropdown: 50;
+	--z-modal: 100;
+	--z-toast: 200;
+}
+
+/* Common Component Classes */
+@layer components {
+	/* Button Base Styles */
+	.btn-base {
+		@apply inline-flex items-center justify-center font-medium rounded-md transition-colors duration-200;
+		@apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+	}
+
+	.btn-sm {
+		@apply px-3 py-1.5 text-sm;
+	}
+
+	.btn-md {
+		@apply px-4 py-2 text-sm;
+	}
+
+	.btn-lg {
+		@apply px-6 py-3 text-base;
+	}
+
+	/* Button Variants */
+	.btn-primary {
+		@apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+	}
+
+	.btn-secondary {
+		@apply bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-gray-500;
+	}
+
+	.btn-ghost {
+		@apply bg-transparent text-blue-600 hover:bg-blue-50 focus:ring-blue-500;
+	}
+
+	.btn-outline {
+		@apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
+	}
+
+	.btn-danger {
+		@apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+	}
+
+	/* Card Styles */
+	.card-base {
+		@apply bg-white rounded-lg shadow-lg;
+	}
+
+	.card-hover {
+		@apply hover:shadow-xl transition-shadow duration-200;
+	}
+
+	.card-padding-sm {
+		@apply p-4;
+	}
+
+	.card-padding-md {
+		@apply p-6;
+	}
+
+	.card-padding-lg {
+		@apply p-8;
+	}
+
+	/* Form Styles */
+	.form-input {
+		@apply block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300;
+		@apply placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6;
+	}
+
+	.form-input-error {
+		@apply ring-red-500 focus:ring-red-500 text-red-900;
+	}
+
+	.form-label {
+		@apply block text-sm font-medium leading-6 text-gray-900;
+	}
+
+	.form-label-error {
+		@apply text-red-700;
+	}
+
+	/* Navigation Styles */
+	.nav-link {
+		@apply text-gray-700 hover:text-blue-600 transition-colors duration-200;
+	}
+
+	.nav-dropdown {
+		@apply absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible;
+		@apply group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50;
+	}
+
+	.nav-dropdown-item {
+		@apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200;
+	}
+
+	/* Container Styles */
+	.container-responsive {
+		@apply max-w-7xl mx-auto px-4;
+	}
+
+	.container-sm {
+		@apply max-w-md mx-auto;
+	}
+
+	.container-md {
+		@apply max-w-2xl mx-auto;
+	}
+
+	.container-lg {
+		@apply max-w-4xl mx-auto;
+	}
+
+	/* Status Styles */
+	.status-success {
+		@apply bg-green-100 text-green-800 border-green-200;
+	}
+
+	.status-warning {
+		@apply bg-yellow-100 text-yellow-800 border-yellow-200;
+	}
+
+	.status-error {
+		@apply bg-red-100 text-red-800 border-red-200;
+	}
+
+	.status-info {
+		@apply bg-blue-100 text-blue-800 border-blue-200;
+	}
+
+	.status-neutral {
+		@apply bg-gray-100 text-gray-800 border-gray-200;
+	}
+}

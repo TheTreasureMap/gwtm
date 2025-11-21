@@ -5,12 +5,18 @@ fullnameOverride: ""
 global:
   namespace: gwtm
   environment: development
+  # Secret management configuration
+  # When useGeneratedSecrets is true, Helm will generate a secret named <release-name>-secrets
+  # When false, it will use the existing secret specified in existingSecret
+  useGeneratedSecrets: false
+  existingSecret: "gwtm-secrets"
 
 backend:
+  enabled: true  # Set to false to disable backend deployment
   name: flask-backend
   replicas: 2
   image:
-    repository: gwtm
+    repository: ghcr.io/thetreasuremap/gwtm/flask-app
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -32,26 +38,62 @@ backend:
       cpu: 200m
       memory: 256Mi    
 
-frontend:
-  name: frontend
+fastapi:
+  enabled: true  # Set to false to disable fastapi deployment
+  name: fastapi-backend
   replicas: 2
   image:
-    repository: nginx
+    repository: ghcr.io/thetreasuremap/gwtm/fastapi-backend
     tag: latest
     pullPolicy: IfNotPresent
   service:
-    port: 80
-    targetPort: 80
+    port: 8000
+    targetPort: 8000
+  env:
+    BASE_URL: ""  # Will be set per environment
+  readinessProbe:
+    enabled: false
+    path: /docs
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  livenessProbe:
+    enabled: false
+    path: /docs
+    initialDelaySeconds: 30
+    periodSeconds: 15
   resources:
     limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
       cpu: 200m
       memory: 256Mi
+  workers: 4
+
+frontend:
+  enabled: true  # Set to false to disable frontend deployment
+  name: frontend
+  replicas: 2
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm/svelte-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 3000
+    targetPort: 3000
+  env:
+    PUBLIC_API_BASE_URL: "http://localhost:8000"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 200m
+      memory: 256Mi
 
 
 database:
+  enabled: true  # Set to false to disable database deployment
   name: postgres
   image:
     repository: postgis/postgis
@@ -83,37 +125,9 @@ database:
       # Add any additional SQL or shell commands here
       #
 
-cache:
-  name: redis
-  replicas: 1
-  image:
-    repository: redis
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    port: 6379
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 30
-    periodSeconds: 10
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  persistence:
-    enabled: false  # Set to false for development
-    size: 1Gi      
-
 ingress:
   enabled: true
-  className: nginx
+  className: traefik  # K3s default ingress controller
   host: gwtm.local
   tls: false
 
@@ -155,3 +169,84 @@ secrets:
   
   # Additional configuration
   extraSecrets: {}
+
+# Listener configuration
+listeners:
+  enabled: true
+
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm_cron
+    tag: "latest"  # Override in values-prod.yaml with specific version
+    pullPolicy: IfNotPresent
+
+  # GWTM API configuration
+  api:
+    base: "http://flask-backend:8080/api/v0/"  # Internal Kubernetes service
+    token: ""  # Set in values-dev.yaml / values-prod.yaml or use external secret
+
+  # Kafka configuration
+  kafka:
+    clientId: ""  # Set in values-dev.yaml / values-prod.yaml
+    clientSecret: ""  # Set in values-dev.yaml / values-prod.yaml
+
+  # Storage backend
+  storage:
+    type: "swift"  # s3, abfs, or swift
+
+    s3:
+      region: "us-east-2"
+      bucket: "gwtreasuremap"
+      accessKeyId: ""
+      secretAccessKey: ""
+
+    swift:
+      authUrl: "https://openstack.example.com:5000/v3"
+      storageUrl: "https://openstack.example.com:8001/swift/v1"
+      username: ""
+      password: ""
+      projectName: "gwtm"
+      userDomainName: "Default"
+      projectDomainName: "Default"
+      containerName: "gwtreasuremap"
+
+  # Observing run
+  observingRun: "O4"
+
+  # Listener behavior controls
+  dryRun: false  # Set to true for testing without API calls or storage writes
+  writeToStorage: true  # Set to false to disable storage writes (any backend)
+  verbose: true  # Set to false for minimal output
+
+  # Logging configuration
+  logging:
+    format: "json"  # "json" for Kubernetes, "" for print statements
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+  # Optional: Path to galaxy catalog config (if needed)
+  galaxyCatalogConfig: ""
+
+  # Resource requests/limits for LIGO listener
+  ligo:
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+  # Resource requests/limits for IceCube listener
+  icecube:
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+
+  # Node selector (optional)
+  nodeSelector: {}
+
+  # Tolerations (optional)
+  tolerations: []

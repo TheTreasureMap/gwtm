@@ -1,0 +1,83 @@
+# values-argocd.yaml
+# ArgoCD-specific values for production deployment
+# Uses GitHub Container Registry images and auto-generated secrets
+
+global:
+  namespace: gwtm
+  environment: production
+  useGeneratedSecrets: true
+
+backend:
+  name: flask-backend
+  replicas: 2
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm/flask-app
+    tag: latest
+    pullPolicy: Always
+
+fastapi:
+  name: fastapi-backend
+  replicas: 2
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm/fastapi-backend
+    tag: latest
+    pullPolicy: Always
+  env:
+    BASE_URL: "https://gwtm.example.com"
+
+frontend:
+  name: frontend
+  replicas: 2
+  image:
+    repository: ghcr.io/thetreasuremap/gwtm/svelte-frontend
+    tag: latest
+    pullPolicy: Always
+  env:
+    PUBLIC_API_BASE_URL: "/"
+
+# Enable persistence for production
+database:
+  persistence:
+    enabled: true
+    size: 20Gi
+
+cache:
+  persistence:
+    enabled: true
+    size: 2Gi
+
+# Production ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  host: gwtm.example.com  # Update with your actual domain
+  tls: true
+  # Uncomment and configure if using cert-manager
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  # tlsSecretName: gwtm-tls
+
+# Override secrets in production
+# Either provide values here or use external secret management
+secrets:
+  dbUser: "postgres"
+  dbPassword: ""  # Will be auto-generated
+  dbName: "treasuremap"
+
+  # Configure these for production:
+  mailPassword: ""
+  mailUsername: ""
+  mailDefaultSender: ""
+  mailServer: "smtp.gmail.com"
+  mailPort: "465"
+  admins: ""
+
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  awsDefaultRegion: "us-east-2"
+  awsBucket: "gwtreasuremap"
+
+  recaptchaPublicKey: ""
+  recaptchaPrivateKey: ""
+
+  zenodoAccessKey: ""

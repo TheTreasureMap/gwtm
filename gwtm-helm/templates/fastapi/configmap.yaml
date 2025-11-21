@@ -1,0 +1,16 @@
+{{- if .Values.fastapi.enabled }}
+# templates/fastapi/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.fastapi.name }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: {{ .Values.fastapi.name }}
+data:
+  APP_NAME: "GWTM FastAPI"
+  DEBUG: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
+  CORS_ORIGINS: '["https://{{ .Values.ingress.host }}", "http://{{ .Values.ingress.host }}", "http://localhost:3000", "http://localhost:5173"]'
+  BASE_URL: "https://{{ .Values.ingress.host }}"
+  # Add any additional configuration for FastAPI here{{- end }}

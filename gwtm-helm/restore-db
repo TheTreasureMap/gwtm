@@ -14,12 +14,20 @@ DB_USER=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-use
 DB_NAME=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-name"' | base64 -d)
 DB_PASSWORD=$(kubectl get secret gwtm-secrets -n gwtm -o json | jq -r '.data."db-password"' | base64 -d)
 
-# Copy the dump file to the pod
+# Strip out \restrict lines (compatibility issue between pg_dump v16 and PostgreSQL v14)
+echo "Preparing dump file (removing incompatible \restrict commands)..."
+grep -v '\\restrict' "$DUMP_FILE" > /tmp/dump_filtered.sql
+
+# Copy the filtered dump file to the pod
 echo "Copying dump file to pod..."
-kubectl cp $DUMP_FILE $POSTGRES_POD:/tmp/dump.sql -n $NAMESPACE
+kubectl cp /tmp/dump_filtered.sql $POSTGRES_POD:/tmp/dump.sql -n $NAMESPACE
+
+# Clean up local temp file
+rm /tmp/dump_filtered.sql
 
 # Execute restore
 echo "Restoring database..."
-kubectl -n $NAMESPACE exec -it $POSTGRES_POD -- bash -c "PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -f /tmp/dump.sql -a" 
+
+kubectl -n $NAMESPACE exec -it $POSTGRES_POD -- bash -c "PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -f /tmp/dump.sql -a"
 
 echo "Restore completed!"

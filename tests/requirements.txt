@@ -1,0 +1,11 @@
+# Test requirements for GWTM FastAPI tests
+# Minimum dependencies needed to run the test suite
+
+# Core testing framework
+pytest>=7.3.1
+
+# FastAPI for status codes and test utilities
+fastapi>=0.103.0
+
+# HTTP requests for API testing
+requests>=2.31.0

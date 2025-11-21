@@ -1,3 +1,4 @@
+{{- if .Values.backend.enabled }}
 # templates/backend/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -32,17 +33,17 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}
@@ -51,7 +52,7 @@ spec:
         - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
       containers:
       - name: flask-app
@@ -62,7 +63,6 @@ spec:
           - |
             echo "Starting Flask application..."
             echo "Database settings: DB_HOST=$DB_HOST, DB_PORT=$DB_PORT, DB_USER=$DB_USER, DB_NAME=$DB_NAME"
-            echo "Redis URL: $REDIS_URL"
             gunicorn -b 0.0.0.0:{{ .Values.backend.service.targetPort }} src.api_v1:app -t 1000 --log-level debug
         ports:
         - containerPort: {{ .Values.backend.service.targetPort }}
@@ -70,56 +70,119 @@ spec:
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-user
         - name: DB_PWD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-password
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: db-name
         - name: DB_HOST
           value: {{ .Values.database.name }}
         - name: DB_PORT
           value: "{{ .Values.database.service.port }}"
-        - name: REDIS_URL
-          value: "redis://{{ .Values.cache.name }}:{{ .Values.cache.service.port }}/0"
         - name: MAIL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: mail-password
         - name: RECAPTCHA_PUBLIC_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: recaptcha-public-key
         - name: RECAPTCHA_PRIVATE_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: recaptcha-private-key
         - name: ZENODO_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: zenodo-access-key
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: aws-access-key-id
         - name: AWS_SECRET_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: aws-secret-access-key
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: AWS_DEFAULT_REGION
+        - name: AWS_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: AWS_BUCKET
+        - name: AZURE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: AZURE_ACCOUNT_NAME
+        - name: AZURE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: AZURE_ACCOUNT_KEY
+        - name: STORAGE_BUCKET_SOURCE
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: STORAGE_BUCKET_SOURCE
+        - name: OS_AUTH_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_AUTH_URL
+        - name: OS_STORAGE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_STORAGE_URL
+        - name: OS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_USERNAME
+        - name: OS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_PASSWORD
+        - name: OS_CONTAINER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_CONTAINER_NAME
+        - name: OS_PROJECT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_PROJECT_NAME
+        - name: OS_USER_DOMAIN_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_USER_DOMAIN_NAME
+        - name: OS_PROJECT_DOMAIN_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: OS_PROJECT_DOMAIN_NAME
         - name: DEBUG
-          value: "True"
+          value: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
         {{- if .Values.backend.extraEnv }}
         {{- toYaml .Values.backend.extraEnv | nindent 8 }}
         {{- end }}
@@ -150,7 +213,8 @@ spec:
       volumes:
       - name: db-user
         secret:
-          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}gwtm-secrets{{ end }}
+          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
           items:
           - key: db-user
             path: db-user
+{{- end }}

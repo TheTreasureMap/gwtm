@@ -1,0 +1,74 @@
+{{- if .Values.backend.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-setup
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:14-alpine
+        command: ['sh', '-c', 'echo "Waiting for database to be ready...";
+                 until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}; do
+                 echo "$(date) - Waiting for database at ${DB_HOST}:${DB_PORT}...";
+                 sleep 5;
+                 done;
+                 echo "Database is ready!"']
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-password
+      containers:
+      - name: db-setup
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        command: ["python", "-c"]
+        args:
+          - |
+            from src.models import create_database_tables; create_database_tables()
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: db-name
+        - name: DB_HOST
+          value: {{ .Values.database.name }}
+        - name: DB_PORT
+          value: "{{ .Values.database.service.port }}"
+      restartPolicy: OnFailure
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if .Values.database.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,3 +8,4 @@ data:
   postgresql.conf: |
     log_statement = 'all'
 
+{{- end }}
