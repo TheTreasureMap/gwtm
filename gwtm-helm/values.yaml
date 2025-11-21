@@ -12,6 +12,7 @@ global:
   existingSecret: "gwtm-secrets"
 
 backend:
+  enabled: true  # Set to false to disable backend deployment
   name: flask-backend
   replicas: 2
   image:
@@ -38,6 +39,7 @@ backend:
       memory: 256Mi    
 
 fastapi:
+  enabled: true  # Set to false to disable fastapi deployment
   name: fastapi-backend
   replicas: 2
   image:
@@ -69,6 +71,7 @@ fastapi:
   workers: 4
 
 frontend:
+  enabled: true  # Set to false to disable frontend deployment
   name: frontend
   replicas: 2
   image:
@@ -90,6 +93,7 @@ frontend:
 
 
 database:
+  enabled: true  # Set to false to disable database deployment
   name: postgres
   image:
     repository: postgis/postgis
