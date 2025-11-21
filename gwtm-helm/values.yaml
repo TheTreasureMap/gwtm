@@ -123,7 +123,7 @@ database:
 
 ingress:
   enabled: true
-  className: nginx
+  className: traefik  # K3s default ingress controller
   host: gwtm.local
   tls: false
 

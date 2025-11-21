@@ -53,6 +53,8 @@ manifests:
     releases:
       - name: gwtm
         chartPath: .
+        # Note: If your local cluster uses nginx ingress instead of traefik,
+        # add to setValues: ingress.className: "nginx"
         valuesFiles:
           - values-dev.yaml
           - values-secrets.yaml
