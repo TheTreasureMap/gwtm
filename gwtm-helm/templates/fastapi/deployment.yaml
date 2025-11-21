@@ -1,3 +1,4 @@
+{{- if .Values.fastapi.enabled }}
 # templates/fastapi/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -239,4 +240,4 @@ spec:
           secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
           items:
           - key: db-user
-            path: db-user
+            path: db-user{{- end }}

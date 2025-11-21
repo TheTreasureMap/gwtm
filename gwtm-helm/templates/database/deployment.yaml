@@ -1,3 +1,4 @@
+{{- if .Values.database.enabled }}
 # templates/database/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -100,3 +101,4 @@ spec:
         configMap:
           name: {{ .Values.database.name }}-init-scripts
       {{- end }}
+{{- end }}
