@@ -1,4 +1,5 @@
 # templates/database/pvc.yaml
+{{- if .Values.database.enabled }}
 {{- if .Values.database.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,4 +22,5 @@ spec:
   storageClassName: {{ .Values.database.persistence.storageClass }}
   {{- end }}
   {{- end }}
+{{- end }}
 {{- end }}
