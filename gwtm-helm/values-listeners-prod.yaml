@@ -7,7 +7,7 @@ global:
 
 listeners:
   image:
-    tag: svelte  # Match the git branch/tag being deployed
+    tag: latest  # Use latest tag for gwtm_cron images
   # GWTM API configuration
   api:
     base: "http://149.165.172.5/api/v1/"
