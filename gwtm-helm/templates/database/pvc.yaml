@@ -21,6 +21,9 @@ spec:
   {{- else }}
   storageClassName: {{ .Values.database.persistence.storageClass }}
   {{- end }}
+  {{- else }}
+  # Use custom StorageClass with Retain policy to prevent accidental data loss
+  storageClassName: {{ .Values.database.name }}-retain
   {{- end }}
 {{- end }}
 {{- end }}
