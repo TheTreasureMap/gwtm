@@ -96,6 +96,13 @@ database:
     size: 1Gi
   initScripts:
     enabled: true
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi  # Increased for large database restore
+    requests:
+      cpu: 1000m
+      memory: 2Gi
 
 # Listener configuration for development
 # Disabled for local dev - can be enabled once listener issues are resolved
