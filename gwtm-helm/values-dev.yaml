@@ -23,9 +23,9 @@ secrets:
   awsDefaultRegion: "us-east-2"
   awsBucket: "gwtreasuremap"
 
-  # Azure storage
-  azureAccountName: "your-azure-account-name"
-  azureAccountKey: "your-azure-account-key"
+  # Azure storage (used by Flask backend)
+  azureAccountName: ""  # Set your Azure account name here or in sealed secrets
+  azureAccountKey: ""  # Set your Azure account key here or in sealed secrets
 
   # OpenStack Swift storage - actual credentials in values-secrets.yaml (gitignored)
   osAuthUrl: ""
@@ -37,7 +37,7 @@ secrets:
   osUserDomainName: "Default"
   osProjectDomainName: "Default"
 
-  storageBucketSource: "swift"
+  storageBucketSource: "swift"  # Used by FastAPI backend (Flask uses Azure)
 
   # reCAPTCHA keys
   recaptchaPublicKey: "your-recaptcha-public-key"
