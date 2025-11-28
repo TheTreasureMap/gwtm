@@ -133,7 +133,7 @@ describe('Astronomical Calculations', () => {
 
 			expect(result).toEqual(mockResponse);
 			expect(fetch).toHaveBeenCalledWith(
-				'/temp_sun_moon_positions?time_of_signal=2024-01-01T12%3A00%3A00.000Z'
+				'/api/v1/sun_moon_positions?time_of_signal=2024-01-01T12%3A00%3A00.000Z'
 			);
 		});
 
@@ -175,7 +175,7 @@ describe('Astronomical Calculations', () => {
 			await fetchSunMoonPositions(timeWithSpecialChars);
 
 			expect(fetch).toHaveBeenCalledWith(
-				'/temp_sun_moon_positions?time_of_signal=2024-01-01T12%3A00%3A00%2B05%3A30'
+				'/api/v1/sun_moon_positions?time_of_signal=2024-01-01T12%3A00%3A00%2B05%3A30'
 			);
 		});
 	});
