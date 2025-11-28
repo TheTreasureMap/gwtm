@@ -18,7 +18,7 @@ backend:
   image:
     repository: ghcr.io/thetreasuremap/gwtm/flask-app
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 8080
     targetPort: 8080
@@ -45,7 +45,7 @@ fastapi:
   image:
     repository: ghcr.io/thetreasuremap/gwtm/fastapi-backend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 8000
     targetPort: 8000
@@ -77,7 +77,7 @@ frontend:
   image:
     repository: ghcr.io/thetreasuremap/gwtm/svelte-frontend
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 3000
     targetPort: 3000
@@ -98,7 +98,7 @@ database:
   image:
     repository: postgis/postgis
     tag: 12-3.5
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 5432
   persistence:
