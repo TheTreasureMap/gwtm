@@ -38,6 +38,8 @@ s3fs==2024.6.1
 python-swiftclient>=4.0.0
 python-keystoneclient>=5.0.0
 keystoneauth1>=5.0.0
+# Azure Blob Storage
+adlfs>=2024.4.1
 # Other dependencies
 pygcn
 MOCpy
