@@ -61,6 +61,7 @@ manifests:
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
           database.initScripts.enabled: "true"
@@ -69,8 +70,10 @@ manifests:
           database.readinessProbe.enabled: "true"
           fastapi.image.repository: gwtm-fastapi
           fastapi.image.tag: latest
+          fastapi.service.type: ClusterIP
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
+          frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"
@@ -88,6 +91,7 @@ deploy:
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
           database.initScripts.enabled: "true"
@@ -96,8 +100,10 @@ deploy:
           database.readinessProbe.enabled: "true"
           fastapi.image.repository: gwtm-fastapi
           fastapi.image.tag: latest
+          fastapi.service.type: ClusterIP
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
+          frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"
