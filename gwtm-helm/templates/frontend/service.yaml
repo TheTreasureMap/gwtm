@@ -9,6 +9,7 @@ metadata:
     {{- include "gwtm.labels" . | nindent 4 }}
     app: {{ .Values.frontend.name }}
 spec:
+  type: {{ .Values.frontend.service.type | default "ClusterIP" }}
   selector:
     app: {{ .Values.frontend.name }}
   ports:

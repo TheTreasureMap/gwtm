@@ -9,8 +9,10 @@ metadata:
     {{- include "gwtm.labels" . | nindent 4 }}
     app: {{ .Values.fastapi.name }}
 spec:
+  type: {{ .Values.fastapi.service.type | default "ClusterIP" }}
   selector:
     app: {{ .Values.fastapi.name }}
   ports:
   - port: {{ .Values.fastapi.service.port }}
-    targetPort: {{ .Values.fastapi.service.targetPort }}{{- end }}
+    targetPort: {{ .Values.fastapi.service.targetPort }}
+{{- end }}
