@@ -61,18 +61,22 @@ manifests:
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.image.pullPolicy: IfNotPresent
           backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
+          database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
           fastapi.image.repository: gwtm-fastapi
           fastapi.image.tag: latest
+          fastapi.image.pullPolicy: IfNotPresent
           fastapi.service.type: ClusterIP
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
+          frontend.image.pullPolicy: IfNotPresent
           frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
@@ -91,18 +95,22 @@ deploy:
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.image.pullPolicy: IfNotPresent
           backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
+          database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
           fastapi.image.repository: gwtm-fastapi
           fastapi.image.tag: latest
+          fastapi.image.pullPolicy: IfNotPresent
           fastapi.service.type: ClusterIP
           frontend.image.repository: gwtm-frontend
           frontend.image.tag: latest
+          frontend.image.pullPolicy: IfNotPresent
           frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
