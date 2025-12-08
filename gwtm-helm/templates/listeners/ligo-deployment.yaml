@@ -116,6 +116,16 @@ spec:
         - name: LOG_LEVEL
           value: {{ .Values.listeners.logging.level | default "INFO" | quote }}
 
+        # Kafka consumer behavior
+        {{- if .Values.listeners.kafka.offsetReset }}
+        - name: KAFKA_OFFSET_RESET
+          value: {{ .Values.listeners.kafka.offsetReset | quote }}
+        {{- end }}
+        {{- if .Values.listeners.kafka.groupId }}
+        - name: KAFKA_GROUP_ID
+          value: {{ .Values.listeners.kafka.groupId | quote }}
+        {{- end }}
+
         # Galaxy Catalog (optional)
         {{- if .Values.listeners.galaxyCatalogConfig }}
         - name: PATH_TO_GALAXY_CATALOG_CONFIG

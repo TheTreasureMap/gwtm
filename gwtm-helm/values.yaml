@@ -173,6 +173,7 @@ secrets:
 # Listener configuration
 listeners:
   enabled: true
+  createSecret: false  # Set to false when using SealedSecrets, true for direct values
 
   image:
     repository: ghcr.io/thetreasuremap/gwtm_cron
@@ -188,6 +189,8 @@ listeners:
   kafka:
     clientId: ""  # Set in values-dev.yaml / values-prod.yaml
     clientSecret: ""  # Set in values-dev.yaml / values-prod.yaml
+    offsetReset: ""  # Set to "earliest" to replay buffered messages (default: "latest")
+    groupId: ""  # Optional: Consumer group ID for persistent offset tracking
 
   # Storage backend
   storage:

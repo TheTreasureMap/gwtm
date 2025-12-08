@@ -32,6 +32,8 @@ listeners:
   kafka:
     clientId: ""  # Will be set via ArgoCD/sealed-secrets
     clientSecret: ""  # Will be set via ArgoCD/sealed-secrets
+    offsetReset: "earliest"  # Recommended: Replay buffered messages on startup
+    groupId: "gwtm-prod-listeners"  # Persistent offset tracking across restarts
 
   storage:
     type: "swift"
