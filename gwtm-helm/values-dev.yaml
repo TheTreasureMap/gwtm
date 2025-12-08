@@ -124,6 +124,8 @@ listeners:
   kafka:
     clientId: ""  # Set this for dev testing
     clientSecret: ""  # Set this for dev testing
+    offsetReset: "earliest"  # Replay buffered messages for testing
+    groupId: "gwtm-dev-listeners"  # Dev consumer group
 
   storage:
     type: "s3"  # Use S3 for dev, or set to "swift" if available
