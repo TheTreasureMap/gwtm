@@ -110,6 +110,10 @@ database:
       cpu: 1000m
       memory: 2Gi
 
+ingress:
+  enabled: true
+  host: ""  # Empty host = catch-all, works with IP address
+
 # Listener configuration for development
 # Disabled for local dev - can be enabled once listener issues are resolved
 listeners:
