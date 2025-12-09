@@ -8,9 +8,14 @@ global:
 listeners:
   image:
     tag: dockerise  # Use dockerise branch tag
+
   # GWTM API configuration
+  # Currently points to dev cluster external IP
+  # TODO: Replace with DNS name when available (e.g., gwtm-dev.jetstream-cloud.org)
   api:
-    base: "http://149.165.172.5/api/v1/"
+    host: "149.165.172.5"  # Dev cluster floating IP
+    port: 8000  # FastAPI backend
+    path: "/api/v1/"  # FastAPI v1 endpoint
 
   # Storage configuration
   storage:

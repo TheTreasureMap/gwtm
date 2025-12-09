@@ -28,10 +28,14 @@ listeners:
     tag: "latest"  # Override with specific version for production (e.g., "0.1.0")
 
   # GWTM API configuration
-  # NOTE: You MUST override listeners.api.base when creating the ArgoCD app
-  # Example: --helm-set listeners.api.base="http://YOUR_GWTM_IP:80/api/v0/"
+  # NOTE: You MUST override these when creating the ArgoCD app
+  # Example: --helm-set listeners.api.host="YOUR_GWTM_IP" --helm-set listeners.api.port=8000
+  # TODO: Use DNS names instead of IPs (e.g., gwtm-dev.yourdomain.org)
   api:
-    base: ""  # Must be set at deployment time
+    host: ""  # Must be set at deployment time (IP or DNS of GWTM cluster)
+    port: 8000  # 8000 for FastAPI (v1), 8080 for Flask (v0)
+    path: "/api/v1/"  # "/api/v1/" for FastAPI, "/api/v0/" for Flask
+    token: ""  # Set via sealed secrets
 
   # Storage backend configuration
   storage:

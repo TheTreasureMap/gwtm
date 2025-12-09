@@ -514,6 +514,58 @@ cache:
     size: 10Gi
 ```
 
+### Deploying Listeners to a Separate Cluster
+
+For production environments, you may want to deploy the GWTM listeners (LIGO and IceCube) to a dedicated cluster separate from the main GWTM application. This allows listeners to run closer to the Kafka brokers or in a different geographic region.
+
+#### Configuration
+
+Use the `values-listeners.yaml` or `values-listeners-prod.yaml` file which disables all GWTM components except the listeners:
+
+```bash
+helm install gwtm-listeners ./gwtm-helm \
+  -f values-listeners.yaml \
+  -f values-listeners-prod.yaml \
+  --namespace gwtm \
+  --create-namespace
+```
+
+#### API Endpoint Configuration
+
+The listeners need to connect to the GWTM API running in a different cluster. Configure the API endpoint using separate host, port, and path components:
+
+```yaml
+listeners:
+  api:
+    host: "gwtm.yourdomain.com"  # DNS name (preferred) or IP address
+    port: 8000  # 8000 for FastAPI (v1 API), 8080 for Flask (v0 API)
+    path: "/api/v1/"  # "/api/v1/" for FastAPI, "/api/v0/" for Flask
+```
+
+The URL is automatically constructed as: `http://{host}:{port}{path}`
+
+**Important:**
+- Use DNS names instead of hardcoded IPs when possible for better maintainability
+- Ensure firewall rules allow the listeners cluster to access the GWTM API endpoint
+- The API endpoint must be externally accessible (LoadBalancer service or Ingress)
+
+#### Example for OpenStack/Jetstream2 Deployment
+
+```yaml
+listeners:
+  api:
+    host: "149.165.172.5"  # Dev cluster floating IP (TODO: replace with DNS)
+    port: 8000
+    path: "/api/v1/"
+
+  storage:
+    type: "swift"
+    swift:
+      authUrl: "https://js2.jetstream-cloud.org:5000/v3"
+      projectName: "YourProjectName"
+      containerName: "gwtreasuremap"
+```
+
 ## Configuration Reference
 
 The following tables list the configurable parameters of the GWTM chart and their default values.
