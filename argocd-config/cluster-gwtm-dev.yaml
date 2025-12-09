@@ -1,0 +1,22 @@
+# ArgoCD Cluster Connection for gwtm-dev
+# This configures ArgoCD to connect to the dev cluster with TLS verification disabled
+# because the cluster uses a self-signed certificate.
+#
+# TODO: Replace with proper TLS certificates (Let's Encrypt) and remove insecure flag
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-gwtm-dev
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: gwtm-dev
+  server: https://149.165.172.5:6443
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": true
+      }
+    }
