@@ -45,7 +45,7 @@ spec:
 
         # GWTM API Configuration
         - name: API_BASE
-          value: {{ .Values.listeners.api.base | quote }}
+          value: {{ printf "http://%s:%d%s" .Values.listeners.api.host (int .Values.listeners.api.port) .Values.listeners.api.path | quote }}
         - name: API_TOKEN
           valueFrom:
             secretKeyRef:

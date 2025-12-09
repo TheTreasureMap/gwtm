@@ -181,8 +181,13 @@ listeners:
     pullPolicy: Always  # Always pull to get latest images for mutable tags
 
   # GWTM API configuration
+  # For co-located deployments (listeners in same cluster as GWTM), use internal service name
+  # For external deployments (listeners in separate cluster), use external IP or DNS
+  # TODO: Replace hardcoded IPs with DNS names (e.g., gwtm-dev.yourdomain.org)
   api:
-    base: "http://flask-backend:8080/api/v0/"  # Internal Kubernetes service
+    host: "flask-backend"  # Internal service name, or external IP/DNS for remote clusters
+    port: 8080  # 8080 for Flask (v0), 8000 for FastAPI (v1)
+    path: "/api/v0/"  # "/api/v0/" for Flask, "/api/v1/" for FastAPI
     token: ""  # Set in values-dev.yaml / values-prod.yaml or use external secret
 
   # Kafka configuration
