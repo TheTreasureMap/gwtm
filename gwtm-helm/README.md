@@ -119,18 +119,21 @@ Make sure you have Docker, Kubernetes (or minikube), Helm, and Skaffold installe
 
 Review and update the `values-dev.yaml` file with appropriate settings for your development environment. The default values should work for most local setups.
 
-4. **Create secrets file (required)**
+4. **Configure storage credentials (optional)**
 
-Create a `values-secrets.yaml` file in the `gwtm-helm/` directory with your storage credentials. This file is gitignored and must be created locally:
+A `values-secrets.yaml` file exists in the `gwtm-helm/` directory with all credentials commented out. **The applications will start and run without storage credentials**, but file storage operations won't work (e.g., uploading observation data files).
+
+**To enable storage functionality**, edit the existing file and uncomment the section for your storage backend:
 
 ```bash
 cd gwtm-helm
-cat > values-secrets.yaml << 'EOF'
-# values-secrets.yaml
-# This file contains sensitive credentials and should NOT be committed to git
+nano values-secrets.yaml  # or use your preferred editor
+```
 
+**For OpenStack Swift storage** (used by FastAPI backend):
+```yaml
 secrets:
-  # OpenStack Swift storage credentials (required for storage operations)
+  # OpenStack Swift storage credentials
   osAuthUrl: "https://your-auth-url:5000/v3"
   osStorageUrl: "https://your-storage-url:8001/swift/v1"
   osUsername: "your-username-or-app-credential-id"
@@ -140,22 +143,27 @@ secrets:
   osUserDomainName: "Default"
   osProjectDomainName: "Default"
   storageBucketSource: "swift"
-
-  # Alternative: AWS S3 storage credentials
-  # awsAccessKeyId: "your-aws-access-key-id"
-  # awsSecretAccessKey: "your-aws-secret-key"
-  # awsDefaultRegion: "us-east-2"
-  # awsBucket: "gwtreasuremap"
-  # storageBucketSource: "s3"
-
-  # Alternative: Azure Blob storage credentials
-  # azureAccountName: "your-azure-account-name"
-  # azureAccountKey: "your-azure-account-key"
-  # storageBucketSource: "abfs"
-EOF
 ```
 
-**Note:** The `values-secrets.yaml` file is required by Skaffold and must contain valid storage credentials. Choose one storage backend (swift, s3, or abfs) and configure accordingly.
+**For AWS S3 storage**:
+```yaml
+secrets:
+  awsAccessKeyId: "your-aws-access-key-id"
+  awsSecretAccessKey: "your-aws-secret-key"
+  awsDefaultRegion: "us-east-2"
+  awsBucket: "gwtreasuremap"
+  storageBucketSource: "s3"
+```
+
+**For Azure Blob storage** (used by Flask backend):
+```yaml
+secrets:
+  azureAccountName: "your-azure-account-name"
+  azureAccountKey: "your-azure-account-key"
+  storageBucketSource: "abfs"
+```
+
+**Note:** The `values-secrets.yaml` file is gitignored and will not be committed. After updating credentials, restart your deployment with `skaffold dev`.
 
 ### Running the Application Locally
 
