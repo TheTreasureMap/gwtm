@@ -312,18 +312,29 @@ def ajax_event_galaxies():
 	for glist in galLists:
 		markers = []
 		entries = [x for x in galEntries if x.listid == glist.id]
+		name_list = []
+		ra_list = []
+		dec_list = []
+		rank_list = []
+		info_list = []
+
 		for e in entries:
 			ra, dec = function.sanatize_pointing(e.position)
-			markers.append({
-				"name":e.name,
-				"ra": ra,
-				"dec": dec,
-				"info":function.sanatize_gal_info(e, glist)
-			})
+			name_list.append(e.name)
+			ra_list.append(ra)
+			dec_list.append(dec)
+			rank_list.append(int(e.rank))
+			info_list.append(function.sanatize_gal_info(e, glist))
+
+		df = pd.DataFrame({'name': name_list, 'ra':ra_list, 'dec':dec_list, 'rank':rank_list, 'info':info_list})
+		df.sort_values(by=['rank'], inplace=True, ignore_index=True)
+		df.drop(columns = 'rank')
+
+		markers = df.to_dict('records')
 		event_galaxies.append({
-			"name":glist.groupname,
-			"color":"",
-			"markers":markers
+			"name": glist.groupname,
+			"color": "",
+			"markers": markers
 		})
 
 	return(jsonify(event_galaxies))
