@@ -1205,219 +1205,228 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
   $(document).ready(function () {
 
-  $('#alert_event_galaxies').click(function (e) {
-    e.preventDefault();
+    $('#alert_event_galaxies').click(function (e) {
+      e.preventDefault();
 
-    const button = document.getElementById('alert_event_galaxies');
-    const alertid = document.getElementById('hidden_alertid').value;
-    const maxRankInput = document.querySelector('#max_rank');
+      const button = document.getElementById('alert_event_galaxies');
+      const alertid = document.getElementById('hidden_alertid').value;
+      const maxRankInput = document.querySelector('#max_rank');
 
-    // ---------------------------
-    // Helper: limit markers in all groups
-    // ---------------------------
-    function limitAllGroups(galaxies, limit) {
-      return galaxies.map(group => ({
-        ...group,
-        markers: group.markers.slice(0, limit)
-      }));
-    }
+      // ---------------------------
+      // Helper: limit markers in all groups
+      // ---------------------------
+      function limitAllGroups(galaxies, limit) {
+        return galaxies.map(group => ({
+          ...group,
+          markers: group.markers.slice(0, limit)
+        }));
+      }
 
-    // ---------------------------
-    // Helper: parse max-rank (blank = all)
-    // ---------------------------
-    function getMaxRankOrAll(input, maxAvailable) {
-      if (!input) return maxAvailable;
+      // ---------------------------
+      // Helper: parse max-rank
+      // ---------------------------
 
-      const raw = input.value.trim();
+      function getMaxRank(input, maxAvailable) {
+        if (!input) return null;
 
-      // blank → all galaxies
-      if (raw === '') return maxAvailable;
+        // distinguish blank vs invalid string
+        if (input.validity.badInput) return undefined;
 
-      const value = parseInt(raw, 10);
+        const raw = input.value.trim();
 
-      if (!Number.isInteger(value)) return null;
-      if (value < 1 || value > maxAvailable) return null;
+        // blank → explicitly blank
+        if (raw === '') return null;
 
-      return value;
-    }
+        const value = input.valueAsNumber;
 
-    // ---------------------------
-    // Helper: refresh markers IN PLACE
-    // ---------------------------
-    function refreshGalaxyMarkersInCatalog(galaxySets, galaxies) {
-      if (!galaxySets) return;
+        if (Number.isNaN(value)) return undefined;
+        if (!Number.isInteger(value)) return undefined;
+        if (value < 1 || value > maxAvailable) return undefined;
 
-      for (let i = 0; i < galaxySets.length; i++) {
-        const set = galaxySets[i];
-        const markers = galaxies[i].markers;
+        return value;
+      }
 
-        // clear catalog markers
-        set.markerlayer.clear();
+      // ---------------------------
+      // Helper: refresh markers in place
+      // ---------------------------
+      function refreshGalaxyMarkersInCatalog(galaxySets, galaxies) {
+        if (!galaxySets) return;
 
-        // clear overlay graphics
-        if (set.has_overlay && set.overlaylayer) {
-          set.overlaylayer.removeAll();
-        }
+        for (let i = 0; i < galaxySets.length; i++) {
+          const set = galaxySets[i];
+          const markers = galaxies[i].markers;
 
-        // rebuild markers
-        for (let j = 0; j < markers.length; j++) {
-          const m = markers[j];
+          // clear catalog markers
+          set.markerlayer.clear();
 
-          const marker = A.marker(m.ra, m.dec, {
-            popupTitle: m.name,
-            popupDesc: m.info
-          });
+          // clear overlay graphics
+          if (set.has_overlay && set.overlaylayer) {
+            set.overlaylayer.removeAll();
+          }
 
-          set.markerlayer.addSources([marker]);
+          // rebuild markers
+          for (let j = 0; j < markers.length; j++) {
+            const m = markers[j];
 
-          if (set.has_overlay) {
-            set.overlaylayer.add(
-              A.circle(m.ra, m.dec, m.radius, {
-                color: set.markerlayer.color
-              })
-            );
+            const marker = A.marker(m.ra, m.dec, {
+              popupTitle: m.name,
+              popupDesc: m.info
+            });
+
+            set.markerlayer.addSources([marker]);
+
+            if (set.has_overlay) {
+              set.overlaylayer.add(
+                A.circle(m.ra, m.dec, m.radius, {
+                  color: set.markerlayer.color
+                })
+              );
+            }
           }
         }
       }
-    }
 
-    // ---------------------------
-    // GET GALAXIES
-    // ---------------------------
-    if (button.innerHTML === 'Get') {
+      // ---------------------------
+      // GET GALAXIES
+      // ---------------------------
+      if (button.innerHTML === 'Get') {
 
-      $('#alert_event_galaxies').prop('disabled', true);
+        $('#alert_event_galaxies').prop('disabled', true);
 
-      $.ajax({
-        url: '/ajax_event_galaxies',
-        data: 'alertid=' + alertid
-      })
-      .done(function (event_galaxies) {
+        $.ajax({
+          url: '/ajax_event_galaxies',
+          data: 'alertid=' + alertid
+        })
+        .done(function (event_galaxies) {
 
-        try {
-          if (!event_galaxies || !event_galaxies.length) {
-            $('#alert_gal_div').html('<p>No Results</p>');
-            $('#alert_event_galaxies').prop('disabled', false);
-            return;
-          }
+          try {
+            if (!event_galaxies || !event_galaxies.length) {
+              $('#alert_gal_div').html('<p>No Results</p>');
+              $('#alert_event_galaxies').prop('disabled', false);
+              return;
+            }
 
-          const firstGroupMarkers = event_galaxies[0].markers;
+            const firstGroupMarkers = event_galaxies[0].markers;
 
-          // configure bounds (NOT required)
-          if (maxRankInput) {
-            maxRankInput.min = 1;
-            maxRankInput.max = firstGroupMarkers.length;
-          }
+            // configure bounds
+            if (maxRankInput) {
+              maxRankInput.min = 1;
+              maxRankInput.max = firstGroupMarkers.length;
+            }
 
-          // ---------------------------
-          // Initial render
-          // ---------------------------
-          let max_rank = getMaxRankOrAll(maxRankInput, firstGroupMarkers.length);
+            // ---------------------------
+            // Initial render
+            // ---------------------------
+            let max_rank = getMaxRank(maxRankInput, firstGroupMarkers.length);
 
-          if (max_rank === null) {
-            max_rank = firstGroupMarkers.length;
-          }
+            if (max_rank === null) {
+              max_rank = firstGroupMarkers.length;
+            }
 
-          const limited_galaxies = limitAllGroups(event_galaxies, max_rank);
+            const limited_galaxies = limitAllGroups(event_galaxies, max_rank);
 
-          window.CURRENT_GALAXY_LIST = limited_galaxies;
+            window.CURRENT_GALAXY_LIST = limited_galaxies;
 
-          const galaxySets = aladin_setMarkers(aladin, limited_galaxies);
+            const galaxySets = aladin_setMarkers(aladin, limited_galaxies);
 
-          set_aladin_markerlist['alert_gal'] = galaxySets;
-          marker_list['alert_gal'] = limited_galaxies;
+            set_aladin_markerlist['alert_gal'] = galaxySets;
+            marker_list['alert_gal'] = limited_galaxies;
 
-          aladin_setMarkerHtml(limited_galaxies, 'alert_gal_div');
+            aladin_setMarkerHtml(limited_galaxies, 'alert_gal_div');
 
-          // ---------------------------
-          // Max-rank change handler
-          // ---------------------------
-          if (maxRankInput) {
+            // ---------------------------
+            // Max-rank change handler
+            // ---------------------------
+            if (maxRankInput) {
 
-            if (maxRankInput._onMaxRankChange) {
-              maxRankInput.removeEventListener(
+              if (maxRankInput._onMaxRankChange) {
+                maxRankInput.removeEventListener(
+                  'change',
+                  maxRankInput._onMaxRankChange
+                );
+              }
+
+              maxRankInput._onMaxRankChange = function () {
+                const maxAvailable = firstGroupMarkers.length;
+                const result = getMaxRank(maxRankInput, maxAvailable);
+
+                // invalid input → show error
+                if (result === undefined) {
+                  maxRankInput.setCustomValidity(
+                    `Enter a whole number between 1 and ${maxAvailable}, or leave blank`
+                  );
+                  maxRankInput.reportValidity();
+                  return;
+                }
+
+                // ✅ clear any previous error
+                maxRankInput.setCustomValidity('');
+
+                // blank → show all
+                const max_rank =
+                  result === null ? maxAvailable : result;
+
+                const new_limited_galaxies =
+                  limitAllGroups(event_galaxies, max_rank);
+                  
+                window.CURRENT_GALAXY_LIST = new_limited_galaxies;
+
+                refreshGalaxyMarkersInCatalog(
+                  set_aladin_markerlist['alert_gal'],
+                  new_limited_galaxies
+                );
+
+                marker_list['alert_gal'] = new_limited_galaxies;
+                aladin_setMarkerHtml(new_limited_galaxies, 'alert_gal_div');
+              };
+
+              maxRankInput.addEventListener(
                 'change',
                 maxRankInput._onMaxRankChange
               );
             }
 
-            maxRankInput._onMaxRankChange = function () {
+            button.innerHTML = 'Hide';
+            $('#alert_event_galaxies').prop('disabled', false);
 
-              const new_max = getMaxRankOrAll(maxRankInput, firstGroupMarkers.length);
-
-              // invalid (but not blank)
-              if (new_max === null) {
-                maxRankInput.setCustomValidity(
-                  `Enter a number between 1 and ${firstGroupMarkers.length}, or leave blank`
-                );
-                maxRankInput.reportValidity();
-                maxRankInput.setCustomValidity('');
-                return;
-              }
-
-              const new_limited_galaxies = limitAllGroups(event_galaxies, new_max);
-
-              window.CURRENT_GALAXY_LIST = new_limited_galaxies;
-
-              // 🔄 update markers in place
-              refreshGalaxyMarkersInCatalog(
-                set_aladin_markerlist['alert_gal'],
-                new_limited_galaxies
-              );
-
-              marker_list['alert_gal'] = new_limited_galaxies;
-              aladin_setMarkerHtml(new_limited_galaxies, 'alert_gal_div');
-
-              // ❌ removed requestSubmit() → no page reload
-            };
-
-            maxRankInput.addEventListener(
-              'change',
-              maxRankInput._onMaxRankChange
-            );
+          } catch (err) {
+            console.error('Error processing event_galaxies', err);
+            $('#alert_gal_div').html('<p>Error :(</p>');
+            $('#alert_event_galaxies').prop('disabled', false);
           }
-
-          button.innerHTML = 'Hide';
+        })
+        .fail(function () {
           $('#alert_event_galaxies').prop('disabled', false);
+          $('#alert_gal_div').html(
+            '<i><font color="red">Error fetching galaxies</font></i>'
+          );
+        });
 
-        } catch (err) {
-          console.error('Error processing event_galaxies', err);
-          $('#alert_gal_div').html('<p>Error :(</p>');
-          $('#alert_event_galaxies').prop('disabled', false);
-        }
-      })
-      .fail(function () {
-        $('#alert_event_galaxies').prop('disabled', false);
-        $('#alert_gal_div').html(
-          '<i><font color="red">Error fetching galaxies</font></i>'
+        return;
+      }
+
+      // ---------------------------
+      // HIDE / SHOW TOGGLE
+      // ---------------------------
+      if (button.innerHTML === 'Hide') {
+        aladin_markerToggleAll(
+          set_aladin_markerlist['alert_gal'],
+          false
         );
-      });
+        button.innerHTML = 'Show';
+        $('.gal_coll input:checkbox').prop('checked', false);
 
-      return;
-    }
+      } else if (button.innerHTML === 'Show') {
+        aladin_markerToggleAll(
+          set_aladin_markerlist['alert_gal'],
+          true
+        );
+        button.innerHTML = 'Hide';
+        $('.gal_coll input:checkbox').prop('checked', true);
+      }
 
-    // ---------------------------
-    // HIDE / SHOW TOGGLE
-    // ---------------------------
-    if (button.innerHTML === 'Hide') {
-      aladin_markerToggleAll(
-        set_aladin_markerlist['alert_gal'],
-        false
-      );
-      button.innerHTML = 'Show';
-      $('.gal_coll input:checkbox').prop('checked', false);
-
-    } else if (button.innerHTML === 'Show') {
-      aladin_markerToggleAll(
-        set_aladin_markerlist['alert_gal'],
-        true
-      );
-      button.innerHTML = 'Hide';
-      $('.gal_coll input:checkbox').prop('checked', true);
-    }
-
-  });
-});
+    });
+    });
 
 
   //Function that calls the XRT sources and populates them 
