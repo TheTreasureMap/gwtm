@@ -6,7 +6,7 @@
   width: 100%;
 }
 #max_rank {
-  width: 9em;
+  width: 5em;
 }
 .slider {
   width: 100%;
@@ -174,7 +174,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
       <div class="btn-group">
         <button id='alert_gal_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_gal_form, #alert_gal_div'></button> 
-                <!-- <button id='alert_gal_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_gal_div, #alert_gal_form'></button>  -->
         <button type="button" id="alert_event_galaxies" class="btn btn-primary btn-sm my-1">Get</button>
         <h4 style="display: inline-block;">Galaxies</h4> 
       </div>
@@ -183,7 +182,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <div class="collapse in gal_coll" id="alert_gal_form">
           <form id="max_rank_form">
             <div class="rank_inputGroup">
-              <label for="max_rank">Number of Galaxies to show (optional):</label>
+              <label for="max_rank">Number of galaxies to show (optional):</label>
               <input
               id="max_rank"
               type="number"
@@ -194,15 +193,10 @@ text.info:hover span{ /*the span will display just on :hover state*/
               />
               <span class="validity"></span>
             </div>
-            <button type="button">Refresh</button>
           </form>
-          <div class ="alert_gal_div"> 
-          <!-- <button id='alert_gal_coll_get' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_gal_div'></button>  -->
-          </div>
+            <div class ="alert_gal_div"></div>
         </div>
-        
       </div>
-      
       <div class="row">
         <div class="collapse in gal_coll" id='alert_gal_div'></div>
       </div>
@@ -1204,130 +1198,12 @@ text.info:hover span{ /*the span will display just on :hover state*/
     });
   });
   
-  //getting the alert event galaxies
+  // ----------------------------
+  // Global galaxy list accessible across files
+  // ----------------------------
+  window.CURRENT_GALAXY_LIST = null;
 
-// ----------------------------
-// Global galaxy list accessible across files
-// ----------------------------
-// window.CURRENT_GALAXY_LIST = null;
-
-// $(document).ready(function () {
-//   $('#alert_event_galaxies').click(function (e) {
-//     e.preventDefault(); // prevent form submission if inside a form
-
-//     const button = document.getElementById('alert_event_galaxies');
-//     const alertid = document.getElementById('hidden_alertid').value;
-//     const maxRankInput = document.querySelector('#max_rank');
-
-//     // ---------------------------
-//     // GET GALAXIES
-//     // ---------------------------
-//     if (button.innerHTML === 'Get') {
-//       $('#alert_event_galaxies').prop('disabled', true);
-
-//       $.ajax({
-//         url: '/ajax_event_galaxies',
-//         data: 'alertid=' + alertid
-//       })
-//       .done(function (event_galaxies) {
-//         try {
-//           if (!event_galaxies || !event_galaxies.length) {
-//             $('#alert_gal_div').html('<p>No Results</p>');
-//             $('#alert_event_galaxies').prop('disabled', false);
-//             return;
-//           }
-
-//           const firstGroupMarkers = event_galaxies[0].markers;
-//           let max_rank = (maxRankInput && parseInt(maxRankInput.value, 10)) || firstGroupMarkers.length;
-//           if (isNaN(max_rank) || max_rank < 1) max_rank = firstGroupMarkers.length;
-
-//           // ---------------------------
-//           // Function: limit markers in all groups
-//           // ---------------------------
-//           function limitAllGroups(galaxies, limit) {
-//             return galaxies.map(group => ({
-//               ...group,
-//               markers: group.markers.slice(0, limit)
-//             }));
-//           }
-
-//           // Initial limited galaxy list
-//           const limited_galaxies = limitAllGroups(event_galaxies, max_rank);
-//           window.CURRENT_GALAXY_LIST = limited_galaxies; // <- global assignment
-
-//           // ---------------------------
-//           // Max rank input listener
-//           // ---------------------------
-//           if (maxRankInput) {
-//             if (maxRankInput._onMaxRankChange) {
-//               maxRankInput.removeEventListener('change', maxRankInput._onMaxRankChange);
-//             }
-
-//             maxRankInput._onMaxRankChange = function () {
-//               const new_max = parseInt(maxRankInput.value, 10);
-
-//               if (isNaN(new_max) || new_max < 1) return;
-//               if (new_max > firstGroupMarkers.length) return;
-
-//               const new_limited_galaxies = limitAllGroups(event_galaxies, new_max);
-//               window.CURRENT_GALAXY_LIST = new_limited_galaxies;
-
-//               // Update Aladin
-//               const new_markerlist = aladin_setMarkers(aladin, new_limited_galaxies);
-//               marker_list['alert_gal'] = new_limited_galaxies
-//               aladin_setMarkerHtml(new_limited_galaxies, 'alert_gal_div');
-//               set_aladin_markerlist['alert_gal'] = new_markerlist;
-//             };
-
-//             maxRankInput.addEventListener('change', maxRankInput._onMaxRankChange);
-//           }
-
-//           // ---------------------------
-//           // Initial render
-//           // ---------------------------
-//           const gal_markerlist = aladin_setMarkers(aladin, limited_galaxies);
-//           marker_list['alert_gal'] = limited_galaxies
-//           aladin_setMarkerHtml(limited_galaxies, 'alert_gal_div');
-//           set_aladin_markerlist['alert_gal'] = gal_markerlist;
-
-//           button.innerHTML = 'Hide';
-//           $('#alert_event_galaxies').prop('disabled', false);
-
-//         } catch (err) {
-//           console.error('Error processing event_galaxies', err);
-//           $('#alert_gal_div').html('<p>Error :(</p>');
-//           $('#alert_event_galaxies').prop('disabled', false);
-//         }
-//       })
-//       .fail(function () {
-//         $('#alert_event_galaxies').prop('disabled', false);
-//         $('#alert_gal_div').html('<i><font color="red">Error fetching galaxies</font></i>');
-//       });
-
-//       return;
-//     }
-
-//     // ---------------------------
-//     // HIDE / SHOW TOGGLE
-//     // ---------------------------
-//     if (button.innerHTML === 'Hide') {
-//       aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], false);
-//       button.innerHTML = 'Show';
-//       $('.gal_coll input:checkbox').prop('checked', false);
-//     } else if (button.innerHTML === 'Show') {
-//       aladin_markerToggleAll(set_aladin_markerlist['alert_gal'], true);
-//       button.innerHTML = 'Hide';
-//       $('.gal_coll input:checkbox').prop('checked', true);
-//     }
-//   });
-// });
-
-// ----------------------------
-// Global galaxy list accessible across files
-// ----------------------------
-window.CURRENT_GALAXY_LIST = null;
-
-$(document).ready(function () {
+  $(document).ready(function () {
 
   $('#alert_event_galaxies').click(function (e) {
     e.preventDefault();
