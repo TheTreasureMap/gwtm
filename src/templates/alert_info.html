@@ -170,8 +170,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
         <h3> Sources </h3>
       </div>
       <!-- Galaxies block buttons and div -->
-
-
       <div class="btn-group">
         <button id='alert_gal_coll' onclick='changeCollapseButtonText(this.id)' type="button" class="btn btn-primary btn-sm alert_coll down-triangle my-1" data-toggle='collapse' data-target='#alert_gal_form, #alert_gal_div'></button> 
         <button type="button" id="alert_event_galaxies" class="btn btn-primary btn-sm my-1">Get</button>
@@ -670,7 +668,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
   var d = gwtmAladinInit(data)
   data.aladin = d.aladin
   var aladin = d.aladin
-  window.aladin = d.aladin;  // global reference
   var detectionoverlaylist = d.detectionoverlaylist 
   var grboverlaylist = d.grboverlaylist
   var instoverlaylist = {}
@@ -1203,6 +1200,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
   // ----------------------------
   window.CURRENT_GALAXY_LIST = null;
 
+  //Function that generates/refreshes the galaxy visualization
   $(document).ready(function () {
 
     $('#alert_event_galaxies').click(function (e) {
@@ -1212,9 +1210,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
       const alertid = document.getElementById('hidden_alertid').value;
       const maxRankInput = document.querySelector('#max_rank');
 
-      // ---------------------------
-      // Helper: limit markers in all groups
-      // ---------------------------
+      // function to limit markers in all groups
       function limitAllGroups(galaxies, limit) {
         return galaxies.map(group => ({
           ...group,
@@ -1222,10 +1218,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         }));
       }
 
-      // ---------------------------
-      // Helper: parse max-rank
-      // ---------------------------
-
+      // function to parse max-rank
       function getMaxRank(input, maxAvailable) {
         if (!input) return null;
 
@@ -1246,9 +1239,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         return value;
       }
 
-      // ---------------------------
-      // Helper: refresh markers in place
-      // ---------------------------
+      // function to refresh markers in place
       function refreshGalaxyMarkersInCatalog(galaxySets, galaxies) {
         if (!galaxySets) return;
 
@@ -1286,9 +1277,8 @@ text.info:hover span{ /*the span will display just on :hover state*/
         }
       }
 
-      // ---------------------------
-      // GET GALAXIES
-      // ---------------------------
+
+      // get galaxies
       if (button.innerHTML === 'Get') {
 
         $('#alert_event_galaxies').prop('disabled', true);
@@ -1314,9 +1304,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
               maxRankInput.max = firstGroupMarkers.length;
             }
 
-            // ---------------------------
             // Initial render
-            // ---------------------------
             let max_rank = getMaxRank(maxRankInput, firstGroupMarkers.length);
 
             if (max_rank === null) {
@@ -1334,9 +1322,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
             aladin_setMarkerHtml(limited_galaxies, 'alert_gal_div');
 
-            // ---------------------------
             // Max-rank change handler
-            // ---------------------------
             if (maxRankInput) {
 
               if (maxRankInput._onMaxRankChange) {
@@ -1359,7 +1345,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
                   return;
                 }
 
-                // ✅ clear any previous error
+                // clear any previous error
                 maxRankInput.setCustomValidity('');
 
                 // blank → show all
@@ -1368,7 +1354,6 @@ text.info:hover span{ /*the span will display just on :hover state*/
 
                 const new_limited_galaxies =
                   limitAllGroups(event_galaxies, max_rank);
-                  
                 window.CURRENT_GALAXY_LIST = new_limited_galaxies;
 
                 refreshGalaxyMarkersInCatalog(
@@ -1405,9 +1390,7 @@ text.info:hover span{ /*the span will display just on :hover state*/
         return;
       }
 
-      // ---------------------------
       // HIDE / SHOW TOGGLE
-      // ---------------------------
       if (button.innerHTML === 'Hide') {
         aladin_markerToggleAll(
           set_aladin_markerlist['alert_gal'],
