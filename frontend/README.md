@@ -125,16 +125,17 @@ import { render, screen } from '@testing-library/svelte';
 import MyComponent from './MyComponent.svelte';
 
 describe('MyComponent', () => {
-  it('renders correctly', () => {
-    render(MyComponent, { props: { title: 'Test' } });
-    expect(screen.getByText('Test')).toBeInTheDocument();
-  });
+	it('renders correctly', () => {
+		render(MyComponent, { props: { title: 'Test' } });
+		expect(screen.getByText('Test')).toBeInTheDocument();
+	});
 });
 ```
 
 ## API Integration
 
 The API client in `lib/api/client.ts` handles:
+
 - Base URL configuration (environment-aware)
 - JWT token injection from localStorage
 - Request/response interceptors
@@ -170,6 +171,7 @@ skaffold dev
 ```
 
 This runs the full stack with hot reload:
+
 - Frontend: http://localhost:3000
 - FastAPI: http://localhost:8000
 
