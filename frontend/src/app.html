@@ -10,17 +10,11 @@
 		<!-- jQuery - required by Aladin -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-		<!-- Aladin Lite CSS and JS -->
-		<link
-			rel="stylesheet"
-			href="https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css"
-		/>
-		<link href="https://aladin.u-strasbg.fr/AladinLite/css/style.css" rel="stylesheet" />
-		<script
-			type="text/javascript"
-			src="https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js"
-			charset="utf-8"
-		></script>
+		<!-- Aladin Lite v3 (CSS bundled with JS, no separate stylesheet needed) -->
+		<!-- IMPORTANT: Using v3.7.0-beta specifically because v3.6.x has a polygon visibility
+		     culling bug where large GW contours disappear when partially off-screen.
+		     When updating, test that outer contours remain visible when rotating the sky view. -->
+		<script src="https://aladin.u-strasbg.fr/AladinLite/api/v3/3.7.0-beta/aladin.js"></script>
 
 		<!-- Plotly JS - using a recent stable version -->
 		<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>

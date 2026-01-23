@@ -159,20 +159,19 @@
 			await loadVisualizationData();
 			updateVisualization();
 
-			// Animate to new alert coordinates (matching Flask behavior)
+			// Navigate to new alert coordinates (matching Flask behavior)
 			if (
 				aladin &&
 				selectedAlert!.original_alert?.avgra !== undefined &&
 				selectedAlert!.original_alert?.avgdec !== undefined
 			) {
 				try {
-					aladin.animateToRaDec(
+					aladin.gotoRaDec(
 						selectedAlert!.original_alert.avgra,
-						selectedAlert!.original_alert.avgdec,
-						2
-					); // 2-second animation
+						selectedAlert!.original_alert.avgdec
+					);
 				} catch (err) {
-					console.warn('Error animating to coordinates:', err);
+					console.warn('Error navigating to coordinates:', err);
 				}
 			}
 
@@ -549,11 +548,10 @@
 				selectedAlert?.original_alert?.avgdec !== undefined
 			) {
 				try {
-					aladin.animateToRaDec(
+					aladin.gotoRaDec(
 						selectedAlert.original_alert.avgra,
-						selectedAlert.original_alert.avgdec,
-						2
-					); // 2-second animation
+						selectedAlert.original_alert.avgdec
+					);
 					aladin.setFov(200.0); // Set FOV to 200 degrees like Flask does after loading data
 				} catch (err) {
 					console.warn('Failed to center on alert coordinates after data load:', err);

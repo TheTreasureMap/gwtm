@@ -399,11 +399,11 @@
 
 		try {
 			// Use Flask approach: complete removal and recreation like the slider function
-			console.log('Filtering footprints by time, using Flask removeLayers approach');
+			console.log('Filtering footprints by time, using v3 removeOverlays approach');
 
-			// Flask: aladin.removeLayers() - clear ALL overlays except base sky survey
-			// This is the key difference - Flask removes EVERYTHING and rebuilds
-			aladin.removeLayers();
+			// v3: aladin.removeOverlays() - clear ALL overlays except base sky survey
+			// This is the key difference - removes EVERYTHING and rebuilds
+			aladin.removeOverlays();
 
 			// Clear our tracked overlay lists
 			Object.keys(overlayLists).forEach((key) => {

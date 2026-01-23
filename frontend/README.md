@@ -189,3 +189,20 @@ The frontend detects the API endpoint automatically:
 - **Development** (`npm run dev`): Proxies to `http://localhost:8000`
 - **Skaffold**: Uses Kubernetes service discovery
 - **Production**: Set `PUBLIC_API_BASE_URL` environment variable
+
+## External Dependencies
+
+### Aladin Lite (Sky Visualization)
+
+The sky map visualization uses [Aladin Lite v3](https://aladin.cds.unistra.fr/AladinLite/doc/), loaded from CDN in `src/app.html`.
+
+**Current Version**: v3.7.0-beta
+
+**Important**: We use v3.7.0-beta specifically because v3.6.x has a polygon visibility culling bug where large GW contours disappear when partially scrolled off-screen. When updating the Aladin version:
+
+1. Test that outer probability contours remain visible when rotating/panning the sky view
+
+**Dependencies loaded via CDN** (`src/app.html`):
+- jQuery 3.7.1 (required by Aladin Lite)
+- Aladin Lite v3.7.0-beta
+- Plotly 2.35.2 (for coverage plots)
