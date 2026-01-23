@@ -57,10 +57,10 @@
 	}
 
 	onDestroy(() => {
-		// Cleanup Aladin
+		// Cleanup Aladin (v3 uses removeOverlays instead of removeLayers)
 		if (aladin) {
 			try {
-				aladin.removeLayers();
+				aladin.removeOverlays();
 			} catch (e) {
 				console.warn('Error cleaning up Aladin:', e);
 			}
@@ -141,13 +141,13 @@
 
 			// Initialize Aladin sky map
 			console.log('Initializing Aladin...');
-			initAladin();
+			await initAladin();
 			console.log('Aladin initialized successfully:', !!aladin);
 
-			// Ensure Aladin is visible by setting a survey
+			// Ensure Aladin is visible by setting a survey (v3 uses setBaseImageLayer)
 			if (aladin) {
 				try {
-					aladin.setImageSurvey('P/DSS2/color');
+					aladin.setBaseImageLayer('P/DSS2/color');
 					console.log('Set default survey for visibility');
 				} catch (err: any) {
 					console.warn('Failed to set survey:', err);
@@ -165,7 +165,7 @@
 		}
 	}
 
-	function initAladin() {
+	async function initAladin(): Promise<void> {
 		console.log('initAladin called', { aladinContainer: !!aladinContainer, window: typeof window });
 
 		if (!aladinContainer || typeof window === 'undefined') {
@@ -188,7 +188,7 @@
 					: '0 0';
 			console.log('Target coordinates:', target);
 
-			// Use the correct Aladin v2 API syntax matching Flask settings
+			// Aladin Lite v3 options
 			const aladinOptions = {
 				fov: 180, // Match Flask initial field of view (180 degrees, later set to 200 after data loads)
 				target: target,
@@ -203,6 +203,8 @@
 			};
 			console.log('Aladin options:', aladinOptions);
 
+			// v3 requires async initialization via A.init promise (WASM loading)
+			await A.init;
 			aladin = A.aladin('#aladin-lite-div', aladinOptions);
 			console.log('Aladin instance created:', !!aladin);
 		} catch (err) {
@@ -219,12 +221,12 @@
 	}
 
 	// Allow parent to trigger re-initialization
-	export function reinitialize() {
+	export async function reinitialize() {
 		initializationAttempted = false;
 		aladin = null;
 		showLoadingSpinner = true;
 		aladinError = '';
-		initializeAladin();
+		await initializeAladin();
 	}
 
 	// Reset when graceid changes
