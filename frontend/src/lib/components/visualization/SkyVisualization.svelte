@@ -548,10 +548,7 @@
 				selectedAlert?.original_alert?.avgdec !== undefined
 			) {
 				try {
-					aladin.gotoRaDec(
-						selectedAlert.original_alert.avgra,
-						selectedAlert.original_alert.avgdec
-					);
+					aladin.gotoRaDec(selectedAlert.original_alert.avgra, selectedAlert.original_alert.avgdec);
 					aladin.setFov(200.0); // Set FOV to 200 degrees like Flask does after loading data
 				} catch (err) {
 					console.warn('Failed to center on alert coordinates after data load:', err);
