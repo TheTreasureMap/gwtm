@@ -203,6 +203,7 @@ The sky map visualization uses [Aladin Lite v3](https://aladin.cds.unistra.fr/Al
 1. Test that outer probability contours remain visible when rotating/panning the sky view
 
 **Dependencies loaded via CDN** (`src/app.html`):
+
 - jQuery 3.7.1 (required by Aladin Lite)
 - Aladin Lite v3.7.0-beta
 - Plotly 2.35.2 (for coverage plots)
