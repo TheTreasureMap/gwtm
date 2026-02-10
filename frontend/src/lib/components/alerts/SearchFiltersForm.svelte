@@ -129,7 +129,7 @@ Handles all filter inputs with autocomplete search functionality.
 			<!-- FAR -->
 			<FormField
 				name="far"
-				\n\t\t\t\tlabel="FAR"
+				label="FAR"
 				id="far"
 				type="select"
 				bind:value={filters.far}

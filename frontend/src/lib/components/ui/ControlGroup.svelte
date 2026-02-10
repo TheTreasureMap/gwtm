@@ -79,8 +79,20 @@
 	let className: string = '';
 	export { className as class };
 
+	import { onMount } from 'svelte';
+
 	// Generate unique ID for accessibility
-	const controlId = `control_${Math.random().toString(36).substr(2, 9)}`;
+	export let id: string = '';
+	let controlId: string = '';
+	onMount(() => {
+		if (!id) {
+			controlId = `control_${Math.random().toString(36).substring(2, 11)}`;
+		}
+	});
+	$: controlId = id || controlId;
+
+	let containerClass: string = '';
+	let labelClass: string = '';
 
 	$: containerClass = [inline ? 'inline-flex items-center gap-2' : 'space-y-1', className]
 		.filter(Boolean)

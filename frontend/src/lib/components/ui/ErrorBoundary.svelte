@@ -4,7 +4,7 @@
 
 	export let fallback: string = 'Something went wrong. Please try again.';
 	export let showRetry: boolean = true;
-	export let resetOnPropsChange: boolean = true;
+	export let resetKey: unknown = undefined;
 	export let onError: ((error: Error) => void) | undefined = undefined;
 
 	let hasError = false;
@@ -51,9 +51,13 @@
 		}
 	}
 
-	// Reset error state when props change (if enabled)
-	$: if (resetOnPropsChange && hasError) {
-		reset();
+	// Reset error state when resetKey changes
+	let previousResetKey = resetKey;
+	$: if (resetKey !== previousResetKey) {
+		previousResetKey = resetKey;
+		if (hasError) {
+			reset();
+		}
 	}
 
 	onMount(() => {

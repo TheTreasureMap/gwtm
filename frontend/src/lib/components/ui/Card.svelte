@@ -75,6 +75,20 @@
 	export let clickable: boolean = false;
 
 	/**
+	 * Optional title displayed in the card header
+	 * @type {string}
+	 * @default ''
+	 */
+	export let title: string = '';
+
+	/**
+	 * Visual variant for the card
+	 * @type {'default' | 'info' | 'success' | 'warning' | 'error'}
+	 * @default 'default'
+	 */
+	export let variant: 'default' | 'info' | 'success' | 'warning' | 'error' = 'default';
+
+	/**
 	 * Additional CSS classes to apply to the card
 	 * @type {string}
 	 * @default ''
@@ -84,8 +98,17 @@
 
 	import { classBuilder } from '$lib/design-system';
 
+	const variantClasses = {
+		default: '',
+		info: 'border-l-4 border-l-blue-500',
+		success: 'border-l-4 border-l-green-500',
+		warning: 'border-l-4 border-l-yellow-500',
+		error: 'border-l-4 border-l-red-500'
+	};
+
 	$: cardClass = [
 		classBuilder.card(padding, hover, shadow !== 'none'),
+		variantClasses[variant],
 		clickable ? 'cursor-pointer' : '',
 		className
 	]
@@ -102,10 +125,16 @@
 -->
 {#if clickable}
 	<div class={cardClass} on:click on:keydown role="button" tabindex="0" aria-pressed="false">
+		{#if title}
+			<h3 class="text-lg font-semibold mb-3">{title}</h3>
+		{/if}
 		<slot {padding} {shadow} {hover} {clickable} />
 	</div>
 {:else}
 	<div class={cardClass}>
+		{#if title}
+			<h3 class="text-lg font-semibold mb-3">{title}</h3>
+		{/if}
 		<slot {padding} {shadow} {hover} {clickable} />
 	</div>
 {/if}

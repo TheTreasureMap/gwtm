@@ -1,5 +1,5 @@
 # Multi-stage build for production efficiency
-FROM node:18 AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -32,12 +32,12 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/health || exit 1
+  CMD wget -q --spider http://localhost/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
 
 # Development stage (optional - for development with hot reload)
-FROM node:18 AS development
+FROM node:20 AS development
 
 WORKDIR /app
 

@@ -112,7 +112,7 @@
 @slot {string} variant - Current variant
 @slot {string} size - Current size
 -->
-{#if href && !disabled && !loading}
+{#if href && !disabled}
 	<a {href} class={buttonClass} on:click role="button" aria-disabled={disabled} aria-busy={loading}>
 		{#if loading}
 			<svg

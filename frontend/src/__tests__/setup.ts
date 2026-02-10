@@ -28,12 +28,12 @@ Object.defineProperty(window, 'location', {
 
 // Mock environment variables
 vi.mock('$env/static/public', () => ({
-	PUBLIC_API_URL: 'http://localhost:8000'
+	PUBLIC_API_BASE_URL: 'http://localhost:8000'
 }));
 
 vi.mock('$env/dynamic/public', () => ({
 	env: {
-		PUBLIC_API_URL: 'http://localhost:8000'
+		PUBLIC_API_BASE_URL: 'http://localhost:8000'
 	}
 }));
 

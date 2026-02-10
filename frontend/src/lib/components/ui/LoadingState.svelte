@@ -68,6 +68,10 @@
 	 */
 	export let spinnerClass: string = '';
 
+	let containerClass: string = '';
+	let spinnerSize: string = '';
+	let textSize: string = '';
+
 	// Reactive styles based on props
 	$: containerClass = [
 		inline ? 'inline-flex' : 'flex',
