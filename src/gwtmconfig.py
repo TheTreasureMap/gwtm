@@ -33,6 +33,14 @@ class Config(object):
     AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY', '')
     STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 's3')
     GWTM_API_TOKEN = os.environ.get('GWTM_API_TOKEN')
+    OS_AUTH_URL = os.environ.get('OS_AUTH_URL', '')
+    OS_STORAGE_URL = os.environ.get('OS_STORAGE_URL', '')
+    OS_USERNAME = os.environ.get('OS_USERNAME', '')
+    OS_PASSWORD = os.environ.get('OS_PASSWORD', '')
+    OS_CONTAINER_NAME = os.environ.get('OS_CONTAINER_NAME', '')
+    OS_PROJECT_NAME = os.environ.get('OS_PROJECT_NAME', '')
+    OS_USER_DOMAIN_NAME = os.environ.get('OS_USER_DOMAIN_NAME', 'Default')
+    OS_PROJECT_DOMAIN_NAME = os.environ.get('OS_PROJECT_DOMAIN_NAME', 'Default')
 
 
     @property
