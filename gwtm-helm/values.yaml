@@ -32,11 +32,11 @@ backend:
     periodSeconds: 15
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1Gi
     requests:
-      cpu: 200m
-      memory: 256Mi    
+      cpu: 300m
+      memory: 512Mi
 
 fastapi:
   enabled: true  # Set to false to disable fastapi deployment
@@ -63,11 +63,11 @@ fastapi:
     periodSeconds: 15
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1Gi
     requests:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 300m
+      memory: 512Mi
   workers: 4
 
 frontend:
