@@ -37,7 +37,7 @@ secrets:
   osUserDomainName: "Default"
   osProjectDomainName: "Default"
 
-  storageBucketSource: "swift"  # Used by FastAPI backend (Flask uses Azure)
+  storageBucketSource: "swift"
 
   # reCAPTCHA keys
   recaptchaPublicKey: "your-recaptcha-public-key"
