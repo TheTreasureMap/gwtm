@@ -35,20 +35,25 @@
 	export function applyUrlParams() {
 		const urlParams = $page.url.searchParams;
 
-		if (urlParams.get('graceid')) {
-			filters.graceid = urlParams.get('graceid');
+		const graceid = urlParams.get('graceid');
+		if (graceid) {
+			filters.graceid = graceid;
 		}
-		if (urlParams.get('alert_type')) {
-			filters.alert_type = urlParams.get('alert_type');
+		const alertType = urlParams.get('alert_type');
+		if (alertType) {
+			filters.alert_type = alertType;
 		}
-		if (urlParams.get('role')) {
-			filters.role = urlParams.get('role');
+		const role = urlParams.get('role');
+		if (role) {
+			filters.role = role;
 		}
-		if (urlParams.get('observing_run')) {
-			filters.observing_run = urlParams.get('observing_run');
+		const observingRun = urlParams.get('observing_run');
+		if (observingRun) {
+			filters.observing_run = observingRun;
 		}
-		if (urlParams.get('far')) {
-			filters.far = urlParams.get('far');
+		const far = urlParams.get('far');
+		if (far) {
+			filters.far = far;
 		}
 		if (urlParams.get('has_pointings')) {
 			filters.has_pointings = urlParams.get('has_pointings') === 'true';

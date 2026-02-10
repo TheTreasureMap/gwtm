@@ -43,7 +43,7 @@
 			if (filters.far && filters.far !== 'all') searchParams.far = filters.far;
 			if (filters.has_pointings) searchParams.has_pointings = filters.has_pointings;
 
-			const response = await api.alerts.queryAlerts(currentParams);
+			const response = await api.alerts.queryAlerts(searchParams);
 
 			if (response && response.alerts) {
 				// Extract unique graceids/alertnames from the results

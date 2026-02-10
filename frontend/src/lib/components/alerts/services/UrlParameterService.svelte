@@ -4,8 +4,8 @@ Extracted from alerts/+page.svelte to apply service-oriented architecture patter
 Manages URL parameter parsing and reactive updates for alert pages.
 -->
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import type { Readable } from 'svelte/store';
+	import { createEventDispatcher, onDestroy } from 'svelte';
+	import type { Readable, Unsubscriber } from 'svelte/store';
 
 	// Event dispatcher for parameter change notifications
 	const dispatch = createEventDispatcher<{
@@ -23,12 +23,23 @@ Manages URL parameter parsing and reactive updates for alert pages.
 	export let alertType = '';
 	export let renormPath = '';
 
+	let unsubscribe: Unsubscriber | null = null;
+
+	onDestroy(() => {
+		if (unsubscribe) {
+			unsubscribe();
+		}
+	});
+
 	/**
 	 * Parse URL parameters from page store
 	 * Reactive function that updates when page store changes
 	 */
 	export function parseUrlParameters(pageStore: Readable<{ url: URL }>) {
-		pageStore.subscribe(($page) => {
+		if (unsubscribe) {
+			unsubscribe();
+		}
+		unsubscribe = pageStore.subscribe(($page) => {
 			const newGraceid = $page.url.searchParams.get('graceids') || '';
 			const newPointingStatus = $page.url.searchParams.get('pointing_status') || 'completed';
 			const newAlertType = $page.url.searchParams.get('alert_type') || '';

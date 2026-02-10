@@ -55,7 +55,8 @@
 	export { className as class };
 
 	let currentIndex = 0;
-	let intervalId: NodeJS.Timeout | null = null;
+	let intervalId: ReturnType<typeof setInterval> | null = null;
+	let totalImages = 0;
 
 	$: totalImages = images.length;
 
