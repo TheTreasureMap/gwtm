@@ -136,10 +136,11 @@ spec:
             secretKeyRef:
               name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
               key: AZURE_ACCOUNT_KEY
-        # Flask backend always uses Azure storage for backwards compatibility
-        # FastAPI uses configurable storage (set via storageBucketSource in values)
         - name: STORAGE_BUCKET_SOURCE
-          value: "abfs"
+          valueFrom:
+            secretKeyRef:
+              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              key: STORAGE_BUCKET_SOURCE
         - name: OS_AUTH_URL
           valueFrom:
             secretKeyRef:
