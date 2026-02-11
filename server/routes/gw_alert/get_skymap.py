@@ -96,6 +96,7 @@ async def get_gw_skymap(
             str(e),
         )
         raise not_found_exception(
-            f"Skymap file not found: {skymap_path} "
-            f"in {settings.STORAGE_BUCKET_SOURCE} storage."
+            f"Error retrieving skymap file: {skymap_path} "
+            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
+            f"{type(e).__name__}: {str(e)}"
         )
