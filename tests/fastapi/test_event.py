@@ -495,8 +495,3 @@ class TestEventAPIIntegration:
                 self.get_url(f"/candidate/event/{candidate_id}"),
                 headers={"api_token": self.admin_token},
             )
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

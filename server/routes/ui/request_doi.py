@@ -63,7 +63,7 @@ async def ajax_request_doi(
             else:
                 # Fall back to current user if group is invalid
                 creators = [{"name": f"{user.firstname} {user.lastname}"}]
-        except:
+        except Exception:
             # Fall back to current user if there's an error
             creators = [{"name": f"{user.firstname} {user.lastname}"}]
     else:

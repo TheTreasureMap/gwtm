@@ -74,8 +74,3 @@ class TestAdminEndpoints:
             self.get_url("/fixdata"), headers={"api_token": self.invalid_token}
         )
         assert response.status_code == 401
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

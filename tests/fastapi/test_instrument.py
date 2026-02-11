@@ -600,8 +600,3 @@ class TestInstrumentAPIIntegration:
         assert response.status_code == status.HTTP_200_OK
         named_insts = response.json()
         assert len([inst for inst in named_insts if inst["id"] in created_ids]) >= 3
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

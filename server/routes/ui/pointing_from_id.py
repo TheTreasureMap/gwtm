@@ -75,7 +75,7 @@ async def get_pointing_fromID(
         "ra": ra,
         "dec": dec,
         "graceid": pointing_event.graceid,
-        "instrument": f"{pointing.instrumentid}_{instrument.InstrumentType.name if instrument else ''}",
+        "instrument": f"{pointing.instrumentid}_{instrument.instrument_type.name if instrument else ''}",
         "band": pointing.band.name if pointing.band else "",
         "depth": pointing.depth,
         "depth_err": pointing.depth_err,

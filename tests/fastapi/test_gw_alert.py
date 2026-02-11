@@ -315,8 +315,3 @@ class TestGWAlertEndpoints:
                     )
                 except ValueError:
                     assert False, f"Time field {time_field} is not in ISO 8601 format"
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

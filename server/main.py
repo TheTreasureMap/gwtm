@@ -29,7 +29,7 @@ from server.routes.ui.router import router as ui_router
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
