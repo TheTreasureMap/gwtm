@@ -910,8 +910,3 @@ class TestCandidateAPIIntegration:
         assert candidate["tns_name"] == "2019complete"
         assert candidate["associated_galaxy"] == "NGC_Complete"
         assert candidate["associated_galaxy_redshift"] == 0.1
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

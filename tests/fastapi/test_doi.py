@@ -455,8 +455,3 @@ class TestDOIEndpoints:
         # Test POST endpoint
         response = requests.post(self.get_url("/request_doi"), json={"id": 1})
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

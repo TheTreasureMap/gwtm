@@ -42,8 +42,6 @@ async def update_candidate(
         if hasattr(candidate, key):
             setattr(candidate, key, value)
 
-    position = candidate.position
-
     # Update ra or dec in the wkt string position
     if "ra" in update or "dec" in update:
         if update["ra"] is not None and update["dec"] is not None:

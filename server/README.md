@@ -26,8 +26,7 @@ server/
 │   │   ├── get_pointings.py    # GET /pointings endpoint
 │   │   ├── update_pointings.py # POST /update_pointings endpoint
 │   │   ├── cancel_all.py       # POST /cancel_all endpoint
-│   │   ├── request_doi.py      # POST /request_doi endpoint
-│   │   └── test_refactoring.py # GET /test_refactoring endpoint
+│   │   └── request_doi.py      # POST /request_doi endpoint
 │   ├── instrument/  # Instrument management routes
 │   │   ├── router.py           # Consolidated instrument router
 │   │   ├── get_instruments.py  # GET /instruments endpoint

@@ -92,7 +92,7 @@ async def grade_calculator(
                         position_grade = 0.6
                     else:
                         position_grade = 0.3
-                except:
+                except (ValueError, TypeError):
                     position_grade = 0.5
 
         # Depth grade: deeper observations get higher grades

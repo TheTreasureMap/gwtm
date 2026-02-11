@@ -33,7 +33,6 @@ async def preview_footprint(
         # For circle, generate points around the circumference
         circle_points = []
         for i in range(36):  # 36 points for a smooth circle
-            angle = i * 10 * (math.pi / 180)  # 10 degrees in radians
             # Proper spherical coordinate calculation for circles
             # Convert angle to offset in RA/Dec using spherical trigonometry
             x = radius * math.cos(math.radians(90 - i * 10))

@@ -284,8 +284,3 @@ class TestUIEndpoints:
                 response = requests.get(self.get_url(endpoint))
 
             assert response.status_code == 401
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

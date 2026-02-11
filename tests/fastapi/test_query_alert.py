@@ -526,8 +526,3 @@ class TestEventSpecificData:
             assert len(result) > 0
             assert result[0]["graceid"] == sample_bns["graceid"]
             assert result[0]["prob_bns"] > 0.9
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

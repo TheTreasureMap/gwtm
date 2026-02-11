@@ -1,4 +1,3 @@
-import io
 import json
 
 import re
@@ -359,7 +358,7 @@ def floatNone(i):
     if i is not None:
         try:
             return float(i)
-        except:  # noqa: E722
+        except (ValueError, TypeError):
             return 0.0
     else:
         return None
@@ -432,7 +431,7 @@ def create_doi(payload):
         data=data_file,
         files=files,
     )
-    r = requests.put(
+    requests.put(
         "https://zenodo.org/api/deposit/depositions/%s" % d_id,
         data=json.dumps(data),
         params={"access_token": ACCESS_TOKEN},
@@ -446,7 +445,7 @@ def create_doi(payload):
     return_json = r.json()
     try:
         doi_url = return_json["doi_url"]
-    except:  # noqa: E722
+    except (KeyError, TypeError):
         doi_url = None
     return int(d_id), doi_url
 

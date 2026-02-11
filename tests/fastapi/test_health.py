@@ -75,8 +75,3 @@ class TestHealthEndpoints:
             assert data["redis_status"] == "connected"
         else:
             assert "error" in redis
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])
