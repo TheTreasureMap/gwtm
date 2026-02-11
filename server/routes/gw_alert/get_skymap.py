@@ -2,7 +2,7 @@
 
 import io
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -87,20 +87,15 @@ async def get_gw_skymap(
                 "Content-Type": "application/fits",
             },
         )
-    except FileNotFoundError as e:
-        raise not_found_exception(
-            f"Skymap file not found: {skymap_path} "
-            f"in {settings.STORAGE_BUCKET_SOURCE} storage."
-        )
     except Exception as e:
-        logger.error(
-            "Error retrieving skymap file: %s from %s storage: %s: %s",
+        logger.warning(
+            "Could not retrieve skymap file: %s from %s storage: %s: %s",
             skymap_path,
             settings.STORAGE_BUCKET_SOURCE,
             type(e).__name__,
             str(e),
         )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error retrieving skymap file: {type(e).__name__}: {str(e)}",
+        raise not_found_exception(
+            f"Skymap file not found: {skymap_path} "
+            f"in {settings.STORAGE_BUCKET_SOURCE} storage."
         )
