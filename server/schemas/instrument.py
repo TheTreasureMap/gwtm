@@ -7,6 +7,7 @@ from server.core.enums.instrumenttype import InstrumentType as instrument_type_e
 
 class FootprintType(str, Enum):
     """Valid footprint shape types."""
+
     rectangular = "Rectangular"
     circular = "Circular"
     polygon = "Polygon"
@@ -14,6 +15,7 @@ class FootprintType(str, Enum):
 
 class FootprintUnit(str, Enum):
     """Valid footprint units."""
+
     deg = "deg"
     arcmin = "arcmin"
     arcsec = "arcsec"
@@ -60,7 +62,7 @@ class InstrumentCreate(BaseModel):
     instrument_type: instrument_type_enum = Field(
         ..., description="Type of the instrument"
     )
-    
+
     # Footprint fields
     footprint_type: FootprintType = Field(
         ..., description="Type of footprint shape (Rectangular, Circular, Polygon)"
@@ -68,20 +70,16 @@ class InstrumentCreate(BaseModel):
     unit: FootprintUnit = Field(
         ..., description="Unit for footprint dimensions (deg, arcmin, arcsec)"
     )
-    
+
     # Rectangular footprint fields
     height: Optional[float] = Field(
         None, description="Height for rectangular footprint"
     )
-    width: Optional[float] = Field(
-        None, description="Width for rectangular footprint"
-    )
-    
+    width: Optional[float] = Field(None, description="Width for rectangular footprint")
+
     # Circular footprint fields
-    radius: Optional[float] = Field(
-        None, description="Radius for circular footprint"
-    )
-    
+    radius: Optional[float] = Field(None, description="Radius for circular footprint")
+
     # Polygon footprint field
     polygon: Optional[str] = Field(
         None, description="Polygon coordinates as text (supports multi-polygon format)"
@@ -92,11 +90,13 @@ class InstrumentCreate(BaseModel):
         """Validate rectangular footprint fields."""
         if info.data.get("footprint_type") == FootprintType.rectangular:
             if value is None:
-                raise ValueError("Height and width are required for rectangular footprint")
+                raise ValueError(
+                    "Height and width are required for rectangular footprint"
+                )
             if not isinstance(value, (int, float)) or value <= 0:
                 raise ValueError("Height and width must be positive numbers")
         return value
-    
+
     @field_validator("radius", mode="before")
     def validate_circular_fields(cls, value, info):
         """Validate circular footprint fields."""
@@ -106,19 +106,21 @@ class InstrumentCreate(BaseModel):
             if not isinstance(value, (int, float)) or value <= 0:
                 raise ValueError("Radius must be a positive number")
         return value
-    
+
     @field_validator("polygon", mode="before")
     def validate_polygon_fields(cls, value, info):
         """Validate polygon footprint fields."""
         if info.data.get("footprint_type") == FootprintType.polygon:
             if not value:
-                raise ValueError("Polygon coordinates are required for polygon footprint")
+                raise ValueError(
+                    "Polygon coordinates are required for polygon footprint"
+                )
         return value
 
 
 class InstrumentCreateResponse(BaseModel):
     """Response schema for instrument creation."""
-    
+
     success: bool = Field(..., description="Whether the operation was successful")
     message: str = Field(..., description="Success or error message")
     instrument: Optional[InstrumentSchema] = Field(

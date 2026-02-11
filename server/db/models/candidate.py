@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, Float, String, DateTime, Enum
 from server.core.enums.depthunit import DepthUnit as depth_unit_enum
 from geoalchemy2 import Geography
 from sqlalchemy.ext.hybrid import hybrid_property
 from ..database import Base
 import shapely.wkb
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Optional
 
 
 class ValidationResult:

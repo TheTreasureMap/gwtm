@@ -296,8 +296,3 @@ class TestUIEndpoints:
             )
             # Should return 400 BAD_REQUEST for missing required parameters, not 401 UNAUTHORIZED
             assert response.status_code == 400
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

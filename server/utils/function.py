@@ -1,4 +1,3 @@
-import io
 import json
 
 import re
@@ -153,31 +152,37 @@ def uvec_to_ra_dec(x, y, z):
 def x_rot(theta_deg):
     """Rotation matrix around x-axis."""
     theta = np.deg2rad(theta_deg)
-    return np.matrix([
-        [1, 0, 0],
-        [0, np.cos(theta), -np.sin(theta)],
-        [0, np.sin(theta), np.cos(theta)]
-    ])
+    return np.matrix(
+        [
+            [1, 0, 0],
+            [0, np.cos(theta), -np.sin(theta)],
+            [0, np.sin(theta), np.cos(theta)],
+        ]
+    )
 
 
 def y_rot(theta_deg):
     """Rotation matrix around y-axis."""
     theta = np.deg2rad(theta_deg)
-    return np.matrix([
-        [np.cos(theta), 0, np.sin(theta)],
-        [0, 1, 0],
-        [-np.sin(theta), 0, np.cos(theta)]
-    ])
+    return np.matrix(
+        [
+            [np.cos(theta), 0, np.sin(theta)],
+            [0, 1, 0],
+            [-np.sin(theta), 0, np.cos(theta)],
+        ]
+    )
 
 
 def z_rot(theta_deg):
     """Rotation matrix around z-axis."""
     theta = np.deg2rad(theta_deg)
-    return np.matrix([
-        [np.cos(theta), -np.sin(theta), 0],
-        [np.sin(theta), np.cos(theta), 0],
-        [0, 0, 1]
-    ])
+    return np.matrix(
+        [
+            [np.cos(theta), -np.sin(theta), 0],
+            [np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1],
+        ]
+    )
 
 
 def project_footprint(
@@ -204,12 +209,22 @@ def project_footprint(
     # Convert footprint coordinates to unit vectors
     footprint_zero_center_ra = np.asarray([pt[0] for pt in footprint])
     footprint_zero_center_dec = np.asarray([pt[1] for pt in footprint])
-    footprint_zero_center_uvec = ra_dec_to_uvec(footprint_zero_center_ra, footprint_zero_center_dec)
-    footprint_zero_center_x, footprint_zero_center_y, footprint_zero_center_z = footprint_zero_center_uvec
+    footprint_zero_center_uvec = ra_dec_to_uvec(
+        footprint_zero_center_ra, footprint_zero_center_dec
+    )
+    footprint_zero_center_x, footprint_zero_center_y, footprint_zero_center_z = (
+        footprint_zero_center_uvec
+    )
 
     proj_footprint = []
     for idx in range(footprint_zero_center_x.shape[0]):
-        vec = np.asarray([footprint_zero_center_x[idx], footprint_zero_center_y[idx], footprint_zero_center_z[idx]])
+        vec = np.asarray(
+            [
+                footprint_zero_center_x[idx],
+                footprint_zero_center_y[idx],
+                footprint_zero_center_z[idx],
+            ]
+        )
         # Apply spherical rotations: position angle, declination, then RA
         new_vec = vec @ x_rot(-pos_angle) @ y_rot(dec) @ z_rot(-ra)
         new_x, new_y, new_z = new_vec.flat
@@ -397,7 +412,7 @@ def floatNone(i):
     if i is not None:
         try:
             return float(i)
-        except:  # noqa: E722
+        except (ValueError, TypeError):
             return 0.0
     else:
         return None
@@ -464,13 +479,13 @@ def create_doi(payload):
         return None, None
 
     d_id = r.json()["id"]
-    r = requests.post(
+    requests.post(
         "https://zenodo.org/api/deposit/depositions/%s/files" % d_id,
         params={"access_token": ACCESS_TOKEN},
         data=data_file,
         files=files,
     )
-    r = requests.put(
+    requests.put(
         "https://zenodo.org/api/deposit/depositions/%s" % d_id,
         data=json.dumps(data),
         params={"access_token": ACCESS_TOKEN},
@@ -484,7 +499,7 @@ def create_doi(payload):
     return_json = r.json()
     try:
         doi_url = return_json["doi_url"]
-    except:  # noqa: E722
+    except (KeyError, TypeError):
         doi_url = None
 
     return d_id, doi_url

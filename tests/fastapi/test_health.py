@@ -61,8 +61,3 @@ class TestHealthEndpoints:
             assert data["database_status"] == "connected"
         else:
             assert "error" in database
-
-
-if __name__ == "__main__":
-    # Run tests with pytest
-    pytest.main([__file__, "-v"])

@@ -26,7 +26,7 @@ async def post_alert(
     Returns the created GW Alert object
     """
     # Exclude computed fields that are not in the database model
-    alert_dict = alert_data.dict(exclude={'pointing_count'})
+    alert_dict = alert_data.dict(exclude={"pointing_count"})
     alert_instance = GWAlert(**alert_dict)
     db.add(alert_instance)
     db.commit()

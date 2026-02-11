@@ -637,14 +637,6 @@ class TestPointingEndpoints:
             assert response.status_code == status.HTTP_200_OK
             pointing_ids.extend(response.json()["pointing_ids"])
 
-        # Now request DOI
-        doi_data = {
-            "graceid": "S190425z",
-            "ids": pointing_ids,
-            "request_doi": True,
-            "creators": [{"name": "Test Researcher", "affiliation": "Test University"}],
-        }
-
         # Now create new pointing with DOI request for all created pointings
         doi_data = {
             "graceid": "S190425z",

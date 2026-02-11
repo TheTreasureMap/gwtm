@@ -95,8 +95,10 @@ async def get_gw_skymap(
     except Exception as e:
         logger.error(
             "Error retrieving skymap file: %s from %s storage: %s: %s",
-            skymap_path, settings.STORAGE_BUCKET_SOURCE,
-            type(e).__name__, str(e),
+            skymap_path,
+            settings.STORAGE_BUCKET_SOURCE,
+            type(e).__name__,
+            str(e),
         )
         raise HTTPException(
             status_code=500,

@@ -5,7 +5,6 @@ Tests use specific data from test-data.sql.
 
 import os
 import requests
-import json
 from datetime import datetime
 import pytest
 from fastapi import status
@@ -361,7 +360,6 @@ class TestCandidateEndpoints:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        data = response.json()
         missing_fields = [
             field["params"]["field"] for field in response.json()["errors"]
         ]
@@ -553,7 +551,6 @@ class TestCandidateEndpoints:
             candidate_ids.extend(create_response.json()["candidate_ids"])
 
         # Now delete them
-        ids_param = json.dumps(candidate_ids)
         response = requests.delete(
             self.get_url("/candidate"),
             json={"ids": candidate_ids},
@@ -699,7 +696,6 @@ class TestCandidateAPIValidation:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        data = response.json()
         assert "Invalid magnitude unit" in response.json()["errors"][0]["message"]
 
     def test_invalid_date_format(self):
@@ -723,7 +719,6 @@ class TestCandidateAPIValidation:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        data = response.json()
         assert (
             "Invalid discovery_date format" in response.json()["errors"][0]["message"]
         )

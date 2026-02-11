@@ -83,19 +83,22 @@ class RegisterRequest(BaseModel):
     def validate_username(cls, v):
         if not v or not v.strip():
             raise ValueError("Username is required")
-        
+
         # Check length
         username = v.strip()
         if len(username) < 3:
             raise ValueError("Username must be at least 3 characters long")
         if len(username) > 50:
             raise ValueError("Username must be no more than 50 characters long")
-        
+
         # Check allowed characters
         import re
-        if not re.match(r'^[a-zA-Z0-9_-]+$', username):
-            raise ValueError("Username can only contain letters, numbers, underscores, and dashes")
-        
+
+        if not re.match(r"^[a-zA-Z0-9_-]+$", username):
+            raise ValueError(
+                "Username can only contain letters, numbers, underscores, and dashes"
+            )
+
         return username
 
     @field_validator("password")
@@ -103,19 +106,20 @@ class RegisterRequest(BaseModel):
     def validate_password(cls, v):
         if not v:
             raise ValueError("Password is required")
-        
+
         # Password strength requirements
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
-        
+
         import re
-        if not re.search(r'[A-Z]', v):
+
+        if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r'[a-z]', v):
+        if not re.search(r"[a-z]", v):
             raise ValueError("Password must contain at least one lowercase letter")
-        if not re.search(r'\d', v):
+        if not re.search(r"\d", v):
             raise ValueError("Password must contain at least one number")
-        
+
         return v
 
     @field_validator("first_name", "last_name")
@@ -136,13 +140,13 @@ class RegisterResponse(BaseModel):
 
 class EmailVerificationRequest(BaseModel):
     """Request schema for email verification."""
-    
+
     verification_token: str
 
 
 class EmailVerificationResponse(BaseModel):
     """Response schema for email verification."""
-    
+
     message: str
     verified: bool
 

@@ -3,7 +3,6 @@ from ..database import Base
 from datetime import datetime
 
 
-
 class GWAlert(Base):
     __tablename__ = "gw_alert"
     __table_args__ = {"schema": "public"}

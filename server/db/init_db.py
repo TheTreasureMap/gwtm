@@ -38,6 +38,7 @@ def create_database_tables():
         db_url = f"postgresql://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}"
     else:
         from server.config import settings
+
         db_url = settings.SQLALCHEMY_DATABASE_URI
 
     engine_with_postgis = create_engine(

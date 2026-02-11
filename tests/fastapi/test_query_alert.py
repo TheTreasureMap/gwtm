@@ -6,7 +6,6 @@ Tests use specific data from test-data.sql.
 import os
 import requests
 from datetime import datetime
-import pytest
 from fastapi import status
 
 # Test configuration

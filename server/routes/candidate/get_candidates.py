@@ -87,15 +87,15 @@ async def get_candidates(
         try:
             parsed_date_after = date_parse(query_params.submitted_date_after)
             filter_conditions.append(GWCandidate.datecreated >= parsed_date_after)
-        except:
-            pass
+        except (ValueError, TypeError, IndexError):
+            pass  # Skip filter if value cannot be parsed
 
     if query_params.submitted_date_before:
         try:
             parsed_date_before = date_parse(query_params.submitted_date_before)
             filter_conditions.append(GWCandidate.datecreated <= parsed_date_before)
-        except:
-            pass
+        except (ValueError, TypeError, IndexError):
+            pass  # Skip filter if value cannot be parsed
 
     if query_params.discovery_magnitude_gt is not None:
         filter_conditions.append(
@@ -111,15 +111,15 @@ async def get_candidates(
         try:
             parsed_date_after = date_parse(query_params.discovery_date_after)
             filter_conditions.append(GWCandidate.discovery_date >= parsed_date_after)
-        except:
-            pass
+        except (ValueError, TypeError, IndexError):
+            pass  # Skip filter if value cannot be parsed
 
     if query_params.discovery_date_before:
         try:
             parsed_date_before = date_parse(query_params.discovery_date_before)
             filter_conditions.append(GWCandidate.discovery_date <= parsed_date_before)
-        except:
-            pass
+        except (ValueError, TypeError, IndexError):
+            pass  # Skip filter if value cannot be parsed
 
     if query_params.associated_galaxy_name:
         filter_conditions.append(

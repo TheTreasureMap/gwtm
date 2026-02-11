@@ -9,3 +9,26 @@ from .glade import Glade2P3
 from .icecube import IceCubeNotice, IceCubeNoticeCoincEvent
 from .candidate import GWCandidate
 from .doi_author import DOIAuthorGroup, DOIAuthor
+
+__all__ = [
+    "Users",
+    "UserGroups",
+    "Groups",
+    "UserActions",
+    "Instrument",
+    "FootprintCCD",
+    "Pointing",
+    "PointingEvent",
+    "GWAlert",
+    "GWGalaxy",
+    "EventGalaxy",
+    "GWGalaxyScore",
+    "GWGalaxyList",
+    "GWGalaxyEntry",
+    "Glade2P3",
+    "IceCubeNotice",
+    "IceCubeNoticeCoincEvent",
+    "GWCandidate",
+    "DOIAuthorGroup",
+    "DOIAuthor",
+]
