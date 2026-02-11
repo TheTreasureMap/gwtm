@@ -3,6 +3,7 @@ Test candidate endpoints with real requests to the FastAPI application.
 Tests use specific data from test-data.sql.
 """
 
+import json
 import os
 import requests
 from datetime import datetime
