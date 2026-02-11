@@ -4,6 +4,7 @@ beautifulsoup4
 bs4
 email-validator
 ephem
+fastapi>=0.103.0
 Flask==2.1.1
 Flask-Login==0.6.3
 Flask-Mail==0.10.0

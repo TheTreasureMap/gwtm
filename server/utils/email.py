@@ -213,13 +213,41 @@ def send_password_reset_email(user, db: Session) -> None:
     If you did not request a password reset, please ignore this email.
     """
 
-    # In a development environment, we might just log the reset URL
-    print(f"Password reset URL for {user.email}: {reset_url}")
+    # In development environment, log the reset URL
+    print(f"[DEVELOPMENT] Password reset URL for {user.email}: {reset_url}")
 
     # Store the token in the user record
     user.reset_token = token
     user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
     db.commit()
+
+    try:
+        # Create message
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = SENDER_EMAIL
+        message["To"] = user.email
+
+        # Attach parts
+        part1 = MIMEText(text_content, "plain")
+        part2 = MIMEText(html_content, "html")
+        message.attach(part1)
+        message.attach(part2)
+
+        # In development, we don't send actual emails
+        # In production, uncomment the SMTP sending code below
+        """
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, user.email, message.as_string())
+        """
+
+        return True
+
+    except Exception as e:
+        print(f"Error sending password reset email to {user.email}: {e}")
+        return False
 
 
 async def send_verification_email(email: str, username: str, verification_token: str) -> bool:
