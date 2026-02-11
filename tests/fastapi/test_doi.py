@@ -68,14 +68,6 @@ class TestDOIEndpoints:
             "creators": [{"name": "Test Author", "affiliation": "Test Institution"}],
         }
 
-        pointing_data = {
-            "graceid": "S190425z",
-        }
-        # Temporarily get all pointings and print them for debugging
-        ptemp = requests.get(
-            self.get_url("/pointings"), headers={"api_token": self.admin_token}
-        )
-
         response = requests.post(
             self.get_url("/request_doi"),
             json=doi_data,

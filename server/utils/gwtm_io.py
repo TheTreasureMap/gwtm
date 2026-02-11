@@ -29,14 +29,14 @@ def _get_swift_conn(config):
         )
 
     # Detect if using application credentials (32-character hex string)
-    is_app_cred = bool(re.match(r'^[a-f0-9]{32}$', config.OS_USERNAME or ''))
+    is_app_cred = bool(re.match(r"^[a-f0-9]{32}$", config.OS_USERNAME or ""))
 
     if is_app_cred:
         # Use application credential authentication
         auth = v3.ApplicationCredential(
             auth_url=config.OS_AUTH_URL,
             application_credential_id=config.OS_USERNAME,
-            application_credential_secret=config.OS_PASSWORD
+            application_credential_secret=config.OS_PASSWORD,
         )
 
         # Create authenticated session
@@ -44,10 +44,7 @@ def _get_swift_conn(config):
 
         # Create Swift connection with session
         conn = SwiftConnection(
-            session=sess,
-            os_options={
-                'object_storage_url': config.OS_STORAGE_URL
-            }
+            session=sess, os_options={"object_storage_url": config.OS_STORAGE_URL}
         )
     else:
         # Use username/password authentication
@@ -56,11 +53,11 @@ def _get_swift_conn(config):
             user=config.OS_USERNAME,
             key=config.OS_PASSWORD,
             os_options={
-                'user_domain_name': config.OS_USER_DOMAIN_NAME,
-                'project_domain_name': config.OS_PROJECT_DOMAIN_NAME,
-                'project_name': config.OS_PROJECT_NAME,
+                "user_domain_name": config.OS_USER_DOMAIN_NAME,
+                "project_domain_name": config.OS_PROJECT_DOMAIN_NAME,
+                "project_name": config.OS_PROJECT_NAME,
             },
-            auth_version='3'
+            auth_version="3",
         )
 
     return conn
@@ -180,7 +177,7 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
             conn = _get_swift_conn(config)
             # Swift expects bytes, convert if string
             if isinstance(content, str):
-                content = content.encode('utf-8')
+                content = content.encode("utf-8")
             conn.put_object(config.OS_CONTAINER_NAME, filename, content)
             return True
         except Exception as e:
@@ -233,13 +230,12 @@ def list_gwtm_bucket(container, source="s3", config=None):
             conn = _get_swift_conn(config)
             # List objects with the specified prefix
             headers, objects = conn.get_container(
-                config.OS_CONTAINER_NAME,
-                prefix=f"{container}/"
+                config.OS_CONTAINER_NAME, prefix=f"{container}/"
             )
             ret = []
             for obj in objects:
                 # obj is a dict with 'name', 'bytes', 'content_type', etc.
-                name = obj.get('name', '')
+                name = obj.get("name", "")
                 if name != f"{container}/":  # Exclude the directory itself
                     ret.append(name)
             return sorted(ret)

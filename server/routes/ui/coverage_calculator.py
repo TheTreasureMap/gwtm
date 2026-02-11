@@ -187,7 +187,7 @@ async def calculate_healpix_coverage(
             unit_enum = depth_unit_enum[depth_unit]
             pointing_filter.append(Pointing.depth_unit == unit_enum)
         except KeyError:
-            pass
+            pass  # Unknown depth unit, skip filter
 
     if depth and isFloat(depth):
         depth_val = float(depth)

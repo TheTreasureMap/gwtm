@@ -31,15 +31,13 @@ async def get_footprint_unit_options():
     }
 
     footprint_units = ["deg", "arcmin", "arcsec"]
-    
+
     for unit in footprint_units:
         options.append(
             EnumOption(
                 name=unit_display_names.get(unit, unit),
                 value=unit,
-                description=unit_descriptions.get(
-                    unit, f"Footprint unit: {unit}"
-                ),
+                description=unit_descriptions.get(unit, f"Footprint unit: {unit}"),
             )
         )
 

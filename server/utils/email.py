@@ -250,16 +250,18 @@ def send_password_reset_email(user, db: Session) -> None:
         return False
 
 
-async def send_verification_email(email: str, username: str, verification_token: str) -> bool:
+async def send_verification_email(
+    email: str, username: str, verification_token: str
+) -> bool:
     """
     Send a verification email to a newly registered user.
     Uses the verification token directly instead of generating a JWT.
     """
     # Create verification URL using the token
     verification_url = f"{BASE_URL}/verify-email?token={verification_token}"
-    
+
     subject = "Verify your GWTM account"
-    
+
     # Email content - HTML
     html_content = f"""
     <html>
@@ -381,7 +383,7 @@ async def send_verification_email(email: str, username: str, verification_token:
 
     # In development environment, log the verification URL
     print(f"[DEVELOPMENT] Verification URL for {email}: {verification_url}")
-    
+
     try:
         # Create message
         message = MIMEMultipart("alternative")
@@ -403,15 +405,15 @@ async def send_verification_email(email: str, username: str, verification_token:
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, email, message.as_string())
         """
-        
+
         # For development, optionally save email to file
         # from pathlib import Path
         # email_path = Path(f"./emails/verification_{username}_{datetime.now().strftime('%Y%m%d%H%M%S')}.html")
         # email_path.parent.mkdir(exist_ok=True)
         # email_path.write_text(html_content)
-        
+
         return True
-        
+
     except Exception as e:
         print(f"Error sending verification email to {email}: {e}")
         return False

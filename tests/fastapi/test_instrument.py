@@ -568,8 +568,6 @@ class TestInstrumentAPIIntegration:
             headers={"api_token": self.admin_token},
         )
         assert response.status_code == status.HTTP_200_OK
-        created_footprint = response.json()
-
         # Step 4: Verify footprint was created
         response = requests.get(
             self.get_url(f"/footprints?id={instrument_id}"),

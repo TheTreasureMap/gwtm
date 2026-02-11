@@ -148,7 +148,7 @@ def _get_footprint_type_options() -> List[EnumOption]:
     }
 
     footprint_types = ["Rectangular", "Circular", "Polygon"]
-    
+
     for ftype in footprint_types:
         options.append(
             EnumOption(
@@ -176,7 +176,7 @@ def _get_footprint_unit_options() -> List[EnumOption]:
     }
 
     footprint_units = ["deg", "arcmin", "arcsec"]
-    
+
     for unit in footprint_units:
         options.append(
             EnumOption(

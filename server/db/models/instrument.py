@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, DateTime, Enum
 from geoalchemy2 import Geography
 from ..database import Base
 from server.core.enums.instrumenttype import InstrumentType
-import datetime
 
 
 class Instrument(Base):
