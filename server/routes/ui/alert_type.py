@@ -12,6 +12,7 @@ router = APIRouter(tags=["UI"])
 @router.get("/ajax_alerttype")
 async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
     """Get event contour and alert information."""
+    from server.core.enums.alertrole import AlertRole
     from server.utils.function import get_farrate_farunit, polygons2footprints
     from server.utils.gwtm_io import download_gwtm_file
     from server.config import settings
@@ -30,7 +31,7 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Alert not found")
 
     # Determine storage path
-    s3path = "fit" if alert.role == "observation" else "test"
+    s3path = "fit" if alert.role == AlertRole.observation else "test"
 
     # Format FAR (False Alarm Rate) for human readability
     human_far = ""
@@ -80,20 +81,18 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         alert.area_90 = f"{round(alert.area_90, 3)} deg<sup>2</sup>"
 
     # Round probability values
-    if alert.prob_bns is not None:
-        alert.prob_bns = round(alert.prob_bns, 5)
-    if alert.prob_nsbh is not None:
-        alert.prob_nsbh = round(alert.prob_nsbh, 5)
-    if alert.prob_gap is not None:
-        alert.prob_gap = round(alert.prob_gap, 5)
-    if alert.prob_bbh is not None:
-        alert.prob_bbh = round(alert.prob_bbh, 5)
-    if alert.prob_terrestrial is not None:
-        alert.prob_terrestrial = round(alert.prob_terrestrial, 5)
-    if alert.prob_hasns is not None:
-        alert.prob_hasns = round(alert.prob_hasns, 5)
-    if alert.prob_hasremenant is not None:
-        alert.prob_hasremenant = round(alert.prob_hasremenant, 5)
+    for prob_attr in [
+        "prob_bns",
+        "prob_nsbh",
+        "prob_gap",
+        "prob_bbh",
+        "prob_terrestrial",
+        "prob_hasns",
+        "prob_hasremenant",
+    ]:
+        value = getattr(alert, prob_attr, None)
+        if value is not None:
+            setattr(alert, prob_attr, round(value, 5))
 
     # Prepare detection overlays
     detection_overlays = []

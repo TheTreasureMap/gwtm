@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from server.db.database import get_db
 from server.db.models import UserGroups, Groups
 from server.db.models.users import Users
@@ -66,37 +67,49 @@ def decode_token(token: str) -> dict:
 
 
 def get_current_user(
-    api_token: str = Depends(api_key_header), db: Session = Depends(get_db)
+    api_token: Optional[str] = Depends(api_key_header),
+    jwt_token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
 ) -> Optional[Users]:
     """
-    Validate API token and return the associated user
+    Validate JWT token or API token and return the associated user.
+    JWT tokens take precedence over API tokens.
     """
-    if not api_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API token is required",
-        )
+    user = None
 
-    user = db.query(Users).filter(Users.api_token == api_token).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API token",
-        )
+    # Try JWT token first (from Authorization header)
+    if jwt_token:
+        try:
+            payload = decode_token(jwt_token)
+            user_id = payload.get("sub")
+            if user_id:
+                user = db.query(Users).filter(Users.id == int(user_id)).first()
+                if user:
+                    return user
+        except HTTPException:
+            # JWT token is invalid, continue to try API token
+            pass
 
-    # Log user action
-    # Implementation of useractions logging will be added later
+    # Fall back to API token (from api_token header)
+    if api_token:
+        user = db.query(Users).filter(Users.api_token == api_token).first()
+        if user:
+            return user
 
-    return user
+    # Neither token worked
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required. Please provide a valid JWT token or API token.",
+    )
 
 
 def verify_admin(
     user: Users = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> Users:
     """
-    Check if the user belongs to the admin group.
+    Check if the user belongs to the admin group (case-insensitive).
     """
-    admin_group = db.query(Groups).filter(Groups.name == "admin").first()
+    admin_group = db.query(Groups).filter(func.lower(Groups.name) == "admin").first()
     if not admin_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

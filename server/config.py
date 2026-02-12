@@ -1,9 +1,9 @@
 import os
 import json
 from functools import lru_cache
-from typing import List, Optional
+from typing import List
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Application settings
     APP_NAME: str = "GWTM API"
     DEBUG: bool = Field(False, env="DEBUG")
+    BASE_URL: str = Field("http://localhost:8000", env="BASE_URL")
 
     # Database settings
     DB_USER: str = Field("treasuremap", env="DB_USER")
@@ -60,6 +61,16 @@ class Settings(BaseSettings):
     # Azure settings
     AZURE_ACCOUNT_NAME: str = Field("", env="AZURE_ACCOUNT_NAME")
     AZURE_ACCOUNT_KEY: str = Field("", env="AZURE_ACCOUNT_KEY")
+
+    # Swift/OpenStack settings
+    OS_AUTH_URL: str = Field("", env="OS_AUTH_URL")
+    OS_USERNAME: str = Field("", env="OS_USERNAME")
+    OS_PASSWORD: str = Field("", env="OS_PASSWORD")
+    OS_STORAGE_URL: str = Field("", env="OS_STORAGE_URL")
+    OS_CONTAINER_NAME: str = Field("", env="OS_CONTAINER_NAME")
+    OS_USER_DOMAIN_NAME: str = Field("Default", env="OS_USER_DOMAIN_NAME")
+    OS_PROJECT_DOMAIN_NAME: str = Field("Default", env="OS_PROJECT_DOMAIN_NAME")
+    OS_PROJECT_NAME: str = Field("", env="OS_PROJECT_NAME")
 
     # Storage settings
     STORAGE_BUCKET_SOURCE: str = Field("s3", env="STORAGE_BUCKET_SOURCE")

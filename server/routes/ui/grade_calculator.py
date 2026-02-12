@@ -12,6 +12,34 @@ from server.auth.auth import get_current_user
 
 router = APIRouter(tags=["UI"])
 
+# Grading thresholds: list of (upper_bound, grade), first match wins.
+# Sorted ascending by threshold; the final tuple is the fallback.
+TIME_GRADE_THRESHOLDS = [(1, 1.0), (6, 0.9), (24, 0.7), (72, 0.5)]
+TIME_GRADE_DEFAULT = 0.3
+
+POSITION_GRADE_THRESHOLDS = [(5, 1.0), (15, 0.8), (30, 0.6)]
+POSITION_GRADE_DEFAULT = 0.3
+
+# Depth uses >= (higher is better), so thresholds are descending.
+DEPTH_GRADE_THRESHOLDS = [(23, 1.0), (21, 0.8), (19, 0.6)]
+DEPTH_GRADE_DEFAULT = 0.4
+
+
+def _grade_by_upper_bound(value, thresholds, default):
+    """Return the grade for the first threshold the value is <= to."""
+    for bound, grade in thresholds:
+        if value <= bound:
+            return grade
+    return default
+
+
+def _grade_by_lower_bound(value, thresholds, default):
+    """Return the grade for the first threshold the value is >= to."""
+    for bound, grade in thresholds:
+        if value >= bound:
+            return grade
+    return default
+
 
 @router.post("/ajax_grade_calculator")
 async def grade_calculator(
@@ -53,16 +81,9 @@ async def grade_calculator(
                 time_diff_hours = (
                     pointing.time - alert.time_of_signal
                 ).total_seconds() / 3600
-                if time_diff_hours <= 1:
-                    time_grade = 1.0
-                elif time_diff_hours <= 6:
-                    time_grade = 0.9
-                elif time_diff_hours <= 24:
-                    time_grade = 0.7
-                elif time_diff_hours <= 72:
-                    time_grade = 0.5
-                else:
-                    time_grade = 0.3
+                time_grade = _grade_by_upper_bound(
+                    time_diff_hours, TIME_GRADE_THRESHOLDS, TIME_GRADE_DEFAULT
+                )
 
         # Position grade: simplified calculation based on alert coordinates
         if graceid and alert and alert.avgra is not None and alert.avgdec is not None:
@@ -83,28 +104,19 @@ async def grade_calculator(
                     dec_diff = abs(pointing_dec - alert.avgdec)
                     angular_dist = (ra_diff**2 + dec_diff**2) ** 0.5
 
-                    # Grade based on distance from alert center
-                    if angular_dist <= 5:
-                        position_grade = 1.0
-                    elif angular_dist <= 15:
-                        position_grade = 0.8
-                    elif angular_dist <= 30:
-                        position_grade = 0.6
-                    else:
-                        position_grade = 0.3
+                    position_grade = _grade_by_upper_bound(
+                        angular_dist,
+                        POSITION_GRADE_THRESHOLDS,
+                        POSITION_GRADE_DEFAULT,
+                    )
                 except (ValueError, TypeError):
                     position_grade = 0.5
 
         # Depth grade: deeper observations get higher grades
         if pointing.depth is not None:
-            if pointing.depth >= 23:
-                depth_grade = 1.0
-            elif pointing.depth >= 21:
-                depth_grade = 0.8
-            elif pointing.depth >= 19:
-                depth_grade = 0.6
-            else:
-                depth_grade = 0.4
+            depth_grade = _grade_by_lower_bound(
+                pointing.depth, DEPTH_GRADE_THRESHOLDS, DEPTH_GRADE_DEFAULT
+            )
 
         # Calculate weighted overall grade
         overall_grade = time_grade * 0.4 + position_grade * 0.4 + depth_grade * 0.2

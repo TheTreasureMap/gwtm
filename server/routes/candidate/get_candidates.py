@@ -1,5 +1,6 @@
 """Get candidates endpoint."""
 
+import operator
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
@@ -14,6 +15,39 @@ from server.auth.auth import get_current_user
 
 router = APIRouter(tags=["candidates"])
 
+# Data-driven filter definitions: (param_name, model_column, comparison_operator)
+RANGE_FILTERS = [
+    ("discovery_magnitude_gt", GWCandidate.discovery_magnitude, operator.ge),
+    ("discovery_magnitude_lt", GWCandidate.discovery_magnitude, operator.le),
+    (
+        "associated_galaxy_redshift_gt",
+        GWCandidate.associated_galaxy_redshift,
+        operator.ge,
+    ),
+    (
+        "associated_galaxy_redshift_lt",
+        GWCandidate.associated_galaxy_redshift,
+        operator.le,
+    ),
+    (
+        "associated_galaxy_distance_gt",
+        GWCandidate.associated_galaxy_distance,
+        operator.ge,
+    ),
+    (
+        "associated_galaxy_distance_lt",
+        GWCandidate.associated_galaxy_distance,
+        operator.le,
+    ),
+]
+
+DATE_FILTERS = [
+    ("submitted_date_after", GWCandidate.datecreated, operator.ge),
+    ("submitted_date_before", GWCandidate.datecreated, operator.le),
+    ("discovery_date_after", GWCandidate.discovery_date, operator.ge),
+    ("discovery_date_before", GWCandidate.discovery_date, operator.le),
+]
+
 
 @router.get("/candidate", response_model=List[CandidateSchema])
 async def get_candidates(
@@ -26,6 +60,7 @@ async def get_candidates(
     """
     filter_conditions = []
 
+    # Special-case filters with unique logic
     if query_params.id:
         filter_conditions.append(GWCandidate.id == query_params.id)
 
@@ -38,12 +73,8 @@ async def get_candidates(
                 ids_list = query_params.ids
             if ids_list:
                 filter_conditions.append(GWCandidate.id.in_(ids_list))
-        except (
-            ValueError,
-            TypeError,
-            IndexError,
-        ):  # Skip filter if value cannot be parsed
-            pass
+        except (ValueError, TypeError, IndexError):
+            pass  # Skip filter if value cannot be parsed
 
     if query_params.graceid:
         graceid = GWAlert.graceidfromalternate(query_params.graceid)
@@ -52,88 +83,26 @@ async def get_candidates(
     if query_params.userid:
         filter_conditions.append(GWCandidate.submitterid == query_params.userid)
 
-    if query_params.submitted_date_after:
-        try:
-            parsed_date_after = date_parse(query_params.submitted_date_after)
-            filter_conditions.append(GWCandidate.datecreated >= parsed_date_after)
-        except (
-            ValueError,
-            TypeError,
-            IndexError,
-        ):  # Skip filter if value cannot be parsed
-            pass
-
-    if query_params.submitted_date_before:
-        try:
-            parsed_date_before = date_parse(query_params.submitted_date_before)
-            filter_conditions.append(GWCandidate.datecreated <= parsed_date_before)
-        except (
-            ValueError,
-            TypeError,
-            IndexError,
-        ):  # Skip filter if value cannot be parsed
-            pass
-
-    if query_params.discovery_magnitude_gt is not None:
-        filter_conditions.append(
-            GWCandidate.discovery_magnitude >= query_params.discovery_magnitude_gt
-        )
-
-    if query_params.discovery_magnitude_lt is not None:
-        filter_conditions.append(
-            GWCandidate.discovery_magnitude <= query_params.discovery_magnitude_lt
-        )
-
-    if query_params.discovery_date_after:
-        try:
-            parsed_date_after = date_parse(query_params.discovery_date_after)
-            filter_conditions.append(GWCandidate.discovery_date >= parsed_date_after)
-        except (
-            ValueError,
-            TypeError,
-            IndexError,
-        ):  # Skip filter if value cannot be parsed
-            pass
-
-    if query_params.discovery_date_before:
-        try:
-            parsed_date_before = date_parse(query_params.discovery_date_before)
-            filter_conditions.append(GWCandidate.discovery_date <= parsed_date_before)
-        except (
-            ValueError,
-            TypeError,
-            IndexError,
-        ):  # Skip filter if value cannot be parsed
-            pass
-
     if query_params.associated_galaxy_name:
         filter_conditions.append(
             GWCandidate.associated_galaxy.contains(query_params.associated_galaxy_name)
         )
 
-    if query_params.associated_galaxy_redshift_gt is not None:
-        filter_conditions.append(
-            GWCandidate.associated_galaxy_redshift
-            >= query_params.associated_galaxy_redshift_gt
-        )
+    # Date filters — parse string to datetime, skip on parse failure
+    for param_name, column, op in DATE_FILTERS:
+        value = getattr(query_params, param_name, None)
+        if value is not None:
+            try:
+                parsed = date_parse(value) if isinstance(value, str) else value
+                filter_conditions.append(op(column, parsed))
+            except (ValueError, TypeError, IndexError):
+                pass  # Skip filter if value cannot be parsed
 
-    if query_params.associated_galaxy_redshift_lt is not None:
-        filter_conditions.append(
-            GWCandidate.associated_galaxy_redshift
-            <= query_params.associated_galaxy_redshift_lt
-        )
-
-    if query_params.associated_galaxy_distance_gt is not None:
-        filter_conditions.append(
-            GWCandidate.associated_galaxy_distance
-            >= query_params.associated_galaxy_distance_gt
-        )
-
-    if query_params.associated_galaxy_distance_lt is not None:
-        filter_conditions.append(
-            GWCandidate.associated_galaxy_distance
-            <= query_params.associated_galaxy_distance_lt
-        )
+    # Numeric range filters
+    for param_name, column, op in RANGE_FILTERS:
+        value = getattr(query_params, param_name, None)
+        if value is not None:
+            filter_conditions.append(op(column, value))
 
     candidates = db.query(GWCandidate).filter(*filter_conditions).all()
 

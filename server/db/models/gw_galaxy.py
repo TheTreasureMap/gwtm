@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, JSON, Enum
+from sqlalchemy import Column, Integer, Float, String, JSON, Enum
 from geoalchemy2 import Geography
 from ..database import Base
-import datetime
 from server.core.enums.gwgalaxyscoretype import GwGalaxyScoreType
 
 

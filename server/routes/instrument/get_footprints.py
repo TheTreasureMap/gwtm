@@ -10,7 +10,6 @@ from shapely.wkb import loads as wkb_loads
 from server.db.database import get_db
 from server.db.models.instrument import Instrument, FootprintCCD
 from server.schemas.instrument import FootprintCCDSchema
-from server.auth.auth import get_current_user
 
 router = APIRouter(tags=["instruments"])
 
@@ -20,7 +19,6 @@ async def get_footprints(
     id: Optional[int] = None,
     name: Optional[str] = None,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Get instrument footprints with optional filters.

@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 import datetime
 import uvicorn
 import logging
-import redis
 
 from server.config import settings
-from server.db.database import get_db
+from server.db.database import get_db, engine, Base
+from server.db.models import Users, UserGroups, Groups, UserActions  # Import all models
 
 from server.routes.pointing.router import router as pointing_router
 from server.routes.instrument.router import router as instrument_router
@@ -25,6 +25,9 @@ from server.routes.gw_galaxy.router import router as galaxy_router
 from server.routes.icecube.router import router as icecube_router
 from server.routes.event.router import router as event
 from server.routes.ui.router import router as ui_router
+from server.routes.celestial.router import router as celestial_router
+from server.routes.auth.router import router as auth_router
+from server.routes.enums.router import router as enums_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
@@ -33,11 +36,47 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def lifespan_context(app: FastAPI):
+    logger.info("Application is starting up...")
+    # Create database tables with proper "IF NOT EXISTS" behaviour
+    try:
+        logger.info("Initialising database schema...")
+
+        # Use checkfirst=True to avoid errors if tables already exist (production-safe)
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+        logger.info("Database tables created/verified successfully!")
+
+        # Create indexes if they don't exist (production-safe)
+        with engine.connect() as conn:
+            try:
+                # Create performance index for pointing queries (matches Flask version)
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_pointing_status_id 
+                    ON public.pointing(status, id);
+                """
+                )
+                conn.commit()
+                logger.info("Database indexes created/verified successfully!")
+            except Exception as e:
+                logger.warning(f"Index creation warning (may already exist): {e}")
+
+    except Exception as e:
+        logger.error(f"Failed to initialise database: {e}")
+        # Don't raise - allow app to start even if DB setup fails (for debugging)
+
+    yield
+
+    logger.info("Application is shutting down...")
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="Gravitational-Wave Treasure Map API",
     version="1.0.0",
     debug=settings.DEBUG,
+    lifespan=lifespan_context,
 )
 
 # Define API version prefix
@@ -70,17 +109,6 @@ async def lifespan_middleware(request: Request, call_next):
                 content={"detail": "Internal server error"},
             )
         return response
-
-
-@asynccontextmanager
-async def lifespan_context():
-    logger.info("Application is starting up...")
-    try:
-        yield
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-    finally:
-        logger.info("Application is shutting down...")
 
 
 @app.exception_handler(RequestValidationError)
@@ -170,15 +198,14 @@ async def health():
 @app.get("/service-status")
 async def service_status(db: Session = Depends(get_db)):
     """
-    Detailed service status endpoint that checks database and Redis connections.
+    Detailed service status endpoint that checks database connection.
 
     Returns:
-        Dict with status of database and Redis connections, plus detailed info
+        Dict with status of database connection plus detailed info
     """
     status = {
         "database_status": "unknown",
-        "redis_status": "unknown",
-        "details": {"database": {}, "redis": {}},
+        "details": {"database": {}},
     }
 
     # Check database connection with detailed info
@@ -196,7 +223,9 @@ async def service_status(db: Session = Depends(get_db)):
         }
 
         # Test actual connection
-        result = db.execute("SELECT 1").first()
+        from sqlalchemy import text
+
+        result = db.execute(text("SELECT 1")).first()
         if result and result[0] == 1:
             status["database_status"] = "connected"
         else:
@@ -205,44 +234,16 @@ async def service_status(db: Session = Depends(get_db)):
         status["database_status"] = "disconnected"
         status["details"]["database"]["error"] = str(e)
 
-    # Check Redis connection with detailed info
-    try:
-        # Get Redis connection parameters
-        redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
-
-        # Parse the URL for debug info
-        if redis_url.startswith("redis://"):
-            redis_host = redis_url.split("redis://")[1].split(":")[0]
-            redis_port = redis_url.split(":")[-1].split("/")[0]
-        else:
-            redis_host = "unknown"
-            redis_port = "unknown"
-
-        # Store connection info
-        status["details"]["redis"] = {
-            "host": redis_host,
-            "port": redis_port,
-            "url": redis_url,
-        }
-
-        # Test actual connection
-        try:
-            redis_client = redis.from_url(redis_url)
-            if redis_client.ping():
-                status["redis_status"] = "connected"
-            else:
-                status["redis_status"] = "disconnected"
-        except redis.exceptions.ConnectionError:
-            status["redis_status"] = "disconnected"
-            status["details"]["redis"]["error"] = "Connection refused"
-    except Exception as e:
-        status["redis_status"] = "disconnected"
-        status["details"]["redis"]["error"] = str(e)
-
     return status
 
 
+# Include registration route directly (without auth prefix for frontend compatibility)
+from server.routes.auth.register import register
+
+app.add_api_route(f"{API_V1_PREFIX}/register", register, methods=["POST"])
+
 # Include routers with the API prefix
+app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(pointing_router, prefix=API_V1_PREFIX)
 app.include_router(gw_alert_router, prefix=API_V1_PREFIX)
 app.include_router(candidate_router, prefix=API_V1_PREFIX)
@@ -251,6 +252,8 @@ app.include_router(galaxy_router, prefix=API_V1_PREFIX)
 app.include_router(icecube_router, prefix=API_V1_PREFIX)
 app.include_router(doi_router, prefix=API_V1_PREFIX)
 app.include_router(event, prefix=API_V1_PREFIX)
+app.include_router(celestial_router, prefix=API_V1_PREFIX)
+app.include_router(enums_router, prefix=API_V1_PREFIX)
 
 # Include admin router without API prefix (matches original endpoint)
 app.include_router(admin_router)

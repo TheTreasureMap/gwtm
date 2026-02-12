@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Union
 
 
 class ErrorDetail:

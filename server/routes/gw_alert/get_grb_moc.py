@@ -1,7 +1,7 @@
 """Get GRB MOC file endpoint."""
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.openapi.models import Response
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from server.db.database import get_db
@@ -9,7 +9,7 @@ from server.db.models.gw_alert import GWAlert
 from server.auth.auth import get_current_user
 from server.utils.error_handling import not_found_exception, validation_exception
 from server.utils.gwtm_io import download_gwtm_file
-from server.config import Settings as settings
+from server.config import settings
 
 router = APIRouter(tags=["gw_alerts"])
 
@@ -52,6 +52,10 @@ async def get_grbmoc(
         )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        raise not_found_exception(
-            f"MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}' does not exist!"
+        # Include detailed error information for debugging
+        error_msg = (
+            f"Error retrieving MOC file for GW-Alert: '{graceid}' and instrument: '{instrument}'. "
+            f"Path: {moc_filepath}, Storage: {settings.STORAGE_BUCKET_SOURCE}. "
+            f"Error: {type(e).__name__}: {str(e)}"
         )
+        raise not_found_exception(error_msg)

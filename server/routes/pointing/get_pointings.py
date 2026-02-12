@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from datetime import datetime
 from typing import List, Optional
 import json
@@ -14,12 +14,11 @@ from server.db.models.pointing_event import PointingEvent
 from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
 from server.schemas.pointing import PointingSchema
-from server.auth.auth import get_current_user
 from server.utils.error_handling import validation_exception
 from server.core.enums.pointingstatus import PointingStatus as pointing_status_enum
 from server.core.enums.depthunit import DepthUnit as depth_unit_enum
-from server.core.enums.bandpass import Bandpass
-from server.core.enums.wavelengthunits import WavelengthUnits
+from server.core.enums.bandpass import Bandpass as bandpass
+from server.core.enums.wavelengthunits import WavelengthUnits as wavelength_units
 from server.core.enums.frequencyunits import FrequencyUnits as frequency_units
 from server.core.enums.energyunits import EnergyUnits as energy_units
 from server.utils.function import isInt, isFloat
@@ -109,7 +108,6 @@ def get_pointings(
     ),
     # DB access
     db: Session = Depends(get_db),
-    user_auth=Depends(get_current_user),
 ):
     """
     Retrieve pointings from the database with optional filters.
@@ -184,7 +182,7 @@ def get_pointings(
 
         # Handle band filters
         if band:
-            for b in Bandpass:
+            for b in bandpass:
                 if b.name == band:
                     filter_conditions.append(Pointing.band == b)
                     break
@@ -207,7 +205,7 @@ def get_pointings(
                     band_list = bands  # Already a list
 
                 valid_bands = []
-                for b in Bandpass:
+                for b in bandpass:
                     if b.name in band_list:
                         valid_bands.append(b)
 
@@ -442,10 +440,10 @@ def get_pointings(
                 try:
                     unit = [
                         w
-                        for w in WavelengthUnits
+                        for w in wavelength_units
                         if int(w) == unit_value or str(w.name) == unit_value
                     ][0]
-                    scale = WavelengthUnits.get_scale(unit)
+                    scale = wavelength_units.get_scale(unit)
                     specmin = specmin * scale
                     specmax = specmax * scale
 
@@ -607,11 +605,82 @@ def get_pointings(
                     # For flux, lower values are dimmer
                     filter_conditions.append(Pointing.depth <= float(depth_lt))
 
-        # Query the database
-        pointings = db.query(Pointing).filter(*filter_conditions).all()
+        # Query the database with explicit joins and field selection (like Flask version)
+        # Check if we need to join PointingEvent table (when graceid filters are used)
+        has_graceid_filters = graceid or graceids
 
-        # Let Pydantic handle the conversion of SQLAlchemy models to JSON
-        # The field_serializer methods in PointingSchema will take care of enum translations
-        return pointings
+        # Build query with explicit field selection and joins (matches Flask approach)
+        from sqlalchemy import func
+
+        # Select specific fields including joined ones
+        base_query = (
+            db.query(
+                Pointing.id,
+                func.ST_AsText(Pointing.position).label("position"),
+                Pointing.instrumentid,
+                Pointing.band,
+                Pointing.pos_angle,
+                Pointing.depth,
+                Pointing.depth_err,
+                Pointing.depth_unit,
+                Pointing.time,
+                Pointing.status,
+                Pointing.doi_url,
+                Pointing.doi_id,
+                Pointing.submitterid,
+                Pointing.datecreated,
+                Pointing.dateupdated,
+                Pointing.central_wave,
+                Pointing.bandwidth,
+                Instrument.instrument_name,
+                Instrument.nickname.label("instrument_nickname"),
+                Users.username,
+            )
+            .join(Instrument, Pointing.instrumentid == Instrument.id)
+            .outerjoin(Users, Pointing.submitterid == Users.id)
+        )
+
+        if has_graceid_filters:
+            # Join with PointingEvent table when filtering by graceid
+            base_query = base_query.join(
+                PointingEvent, Pointing.id == PointingEvent.pointingid
+            )
+
+        # Apply filters and execute query
+        results = base_query.filter(*filter_conditions).all()
+
+        # Convert to list of dictionaries with proper field handling
+        pointings_data = []
+        for row in results:
+            pointing_dict = {
+                "id": row.id,
+                "position": row.position,
+                "instrumentid": row.instrumentid,
+                "band": row.band.name if row.band else None,
+                "pos_angle": row.pos_angle,
+                "depth": row.depth,
+                "depth_err": row.depth_err,
+                "depth_unit": row.depth_unit.name if row.depth_unit else None,
+                "time": row.time,
+                "status": row.status.name if row.status else None,
+                "doi_url": row.doi_url,
+                "doi_id": row.doi_id,
+                "submitterid": row.submitterid,
+                "datecreated": row.datecreated,
+                "dateupdated": row.dateupdated,
+                "central_wave": row.central_wave,
+                "bandwidth": row.bandwidth,
+                # Use nickname if available, otherwise fall back to instrument_name (like Flask)
+                "instrument_name": (
+                    row.instrument_nickname
+                    if row.instrument_nickname
+                    else row.instrument_name
+                ),
+                "username": row.username,
+            }
+            pointings_data.append(pointing_dict)
+
+        # Convert to PointingSchema objects for proper serialization
+        return [PointingSchema.model_validate(p) for p in pointings_data]
     except Exception as e:
         raise validation_exception(message="Invalid request", errors=[str(e)])
