@@ -8,6 +8,7 @@ from server.db.database import get_db
 from server.auth.auth import verify_admin
 from server.utils.gwtm_io import list_gwtm_bucket, delete_gwtm_files
 from server.config import settings
+from server.core.enums.alertrole import AlertRole
 from server.utils.function import by_chunk
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
@@ -47,7 +48,7 @@ async def del_test_alerts(
     testids.append(alert_to_keep)
 
     # Only delete test alerts
-    filter.append(GWAlert.role == "test")
+    filter.append(GWAlert.role == AlertRole.test)
 
     # Query for all test alerts that aren't like the ones we want to keep
     gwalerts = db.query(GWAlert).filter(*filter).all()

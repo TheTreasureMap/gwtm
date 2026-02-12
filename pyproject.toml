@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gwtm"
+version = "0.1.0"
+description = "Gravitational Wave Treasure Map"
+dependencies = [
+    "fastapi>=0.103.0",
+    "uvicorn[standard]>=0.23.0",
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    # ... other dependencies
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.3.1",
+    "fastapi>=0.103.0",
+    "requests>=2.31.0",
+]
+
+[tool.setuptools]
+packages = ["server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--tb=short -v -s"
+# Load the custom plugin
+python_files = ["test_*.py", "pytest_db_restore.py"]

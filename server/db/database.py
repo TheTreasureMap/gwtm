@@ -18,3 +18,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@contextmanager
+def db_session():
+    """Context manager for non-FastAPI database access (scripts, background tasks)."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
