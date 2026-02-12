@@ -10,6 +10,7 @@ from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
 from server.db.models.pointing_event import PointingEvent
+from server.core.enums.alertrole import AlertRole
 from server.core.enums.pointingstatus import PointingStatus as pointing_status
 from server.schemas.gw_alert import (
     GWAlertSchema,
