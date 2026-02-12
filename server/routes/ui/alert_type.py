@@ -13,11 +13,9 @@ router = APIRouter(tags=["UI"])
 async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
     """Get event contour and alert information."""
     import json
-    from server.core.enums.alertrole import AlertRole
     from server.utils.function import get_farrate_farunit, polygons2footprints
     from server.utils.gwtm_io import download_gwtm_file
     from server.config import settings
-    import pandas as pd
 
     # Parse the URL ID to get alert ID and alert type
     url_parts = urlid.split("_")
@@ -107,10 +105,10 @@ async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
         contours_data = download_gwtm_file(
             contour_path, source=settings.STORAGE_BUCKET_SOURCE, config=settings
         )
-        contours_df = pd.read_json(contours_data)
+        contours_data = json.loads(contours_data)
 
         contour_geometry = []
-        for contour in contours_df["features"]:
+        for contour in contours_data["features"]:
             contour_geometry.extend(contour["geometry"]["coordinates"])
 
         detection_overlays.append(
