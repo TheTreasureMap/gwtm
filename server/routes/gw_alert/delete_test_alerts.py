@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from server.db.database import get_db
 from server.auth.auth import verify_admin
 from server.utils.gwtm_io import list_gwtm_bucket, delete_gwtm_files
-from server.config import Settings as settings
+from server.config import settings
+from server.core.enums.alertrole import AlertRole
 from server.utils.function import by_chunk
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
@@ -36,11 +37,8 @@ async def del_test_alerts(
 
     # Add date-based test IDs to exclusion list
     for td in [-1, 0, 1]:
-        dd = datetime.now() + timedelta(days=td)
-        yy = str(dd.year)[2:4]
-        mm = dd.month if dd.month >= 10 else f"0{dd.month}"
-        dd = dd.day if dd.day >= 10 else f"0{dd.day}"
-        graceidlike = f"MS{yy}{mm}{dd}"
+        dt = datetime.now() + timedelta(days=td)
+        graceidlike = dt.strftime("MS%y%m%d")
 
         testids.append(graceidlike)
         filter.append(~GWAlert.graceid.contains(graceidlike))
@@ -50,7 +48,7 @@ async def del_test_alerts(
     testids.append(alert_to_keep)
 
     # Only delete test alerts
-    filter.append(GWAlert.role == "test")
+    filter.append(GWAlert.role == AlertRole.test)
 
     # Query for all test alerts that aren't like the ones we want to keep
     gwalerts = db.query(GWAlert).filter(*filter).all()

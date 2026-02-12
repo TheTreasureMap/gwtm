@@ -145,6 +145,10 @@ class PointingSchema(PointingBase):
     doi_url: Optional[str] = None
     doi_id: Optional[int] = None
 
+    # Additional fields from joins
+    instrument_name: Optional[str] = None
+    username: Optional[str] = None
+
     model_config = ConfigDict(
         from_attributes=True,
         arbitrary_types_allowed=True,

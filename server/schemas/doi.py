@@ -1,8 +1,7 @@
 # server/schemas/doi.py
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
 
 class DOIAuthorBase(BaseModel):

@@ -1,10 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, func
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from geoalchemy2 import Geography
-import shapely.wkb
-from sqlalchemy.ext.hybrid import hybrid_property
 from ..database import Base
 from server.core.enums.instrumenttype import InstrumentType
-import datetime
 
 
 class Instrument(Base):

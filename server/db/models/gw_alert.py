@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, DateTime
 from ..database import Base
 from datetime import datetime
-from typing import Dict, Any, Optional
 
 
 class GWAlert(Base):

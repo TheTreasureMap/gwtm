@@ -11,7 +11,7 @@ from server.db.models.gw_alert import GWAlert
 from server.auth.auth import get_current_user
 from server.utils.error_handling import not_found_exception
 from server.utils.gwtm_io import download_gwtm_file
-from server.config import Settings as settings
+from server.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ async def get_gw_skymap(
         )
     except Exception as e:
         logger.warning(
-            "Error retrieving skymap file: %s from %s storage: %s: %s",
+            "Could not retrieve skymap file: %s from %s storage: %s: %s",
             skymap_path,
             settings.STORAGE_BUCKET_SOURCE,
             type(e).__name__,

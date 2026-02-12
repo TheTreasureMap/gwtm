@@ -1,0 +1,1 @@
+"""Celestial calculations endpoints."""

@@ -1,7 +1,7 @@
 """Get GW contour endpoint."""
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.openapi.models import Response
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from server.db.database import get_db
@@ -9,7 +9,7 @@ from server.db.models.gw_alert import GWAlert
 from server.auth.auth import get_current_user
 from server.utils.error_handling import not_found_exception
 from server.utils.gwtm_io import download_gwtm_file
-from server.config import Settings as settings
+from server.config import settings
 
 router = APIRouter(tags=["gw_alerts"])
 
@@ -18,7 +18,6 @@ router = APIRouter(tags=["gw_alerts"])
 async def get_gw_contour(
     graceid: str = Query(..., description="Grace ID of the GW event"),
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
 ):
     """
     Get the contour for a GW alert.
@@ -61,4 +60,10 @@ async def get_gw_contour(
         )
         return Response(content=file_content, media_type="application/json")
     except Exception as e:
-        raise not_found_exception(f"Error in retrieving Contour file: {contour_path}")
+        # Include detailed error information for debugging
+        error_msg = (
+            f"Error retrieving contour file: {contour_path} "
+            f"from {settings.STORAGE_BUCKET_SOURCE} storage. "
+            f"Error: {type(e).__name__}: {str(e)}"
+        )
+        raise not_found_exception(error_msg)

@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 from server.db.models.pointing import Pointing
 from server.db.models.instrument import Instrument
-from server.db.models.pointing_event import PointingEvent
 from server.db.models.gw_alert import GWAlert
 from server.db.models.users import Users
 from server.db.models.doi_author import DOIAuthor
