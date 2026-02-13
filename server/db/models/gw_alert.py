@@ -93,9 +93,7 @@ class GWAlert(Base):
             Canonical GraceID
         """
         if db is not None:
-            match = db.query(GWAlert).filter(
-                GWAlert.alternateid == graceid
-            ).first()
+            match = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
             if match:
                 return match.graceid
         return graceid
@@ -116,11 +114,15 @@ class GWAlert(Base):
             Alternate ID if found, otherwise the original graceid
         """
         if db is not None:
-            match = db.query(GWAlert).filter(
-                GWAlert.graceid == graceid,
-                GWAlert.alternateid != "",
-                GWAlert.alternateid.isnot(None),
-            ).first()
+            match = (
+                db.query(GWAlert)
+                .filter(
+                    GWAlert.graceid == graceid,
+                    GWAlert.alternateid != "",
+                    GWAlert.alternateid.isnot(None),
+                )
+                .first()
+            )
             if match:
                 return match.alternateid
         return graceid
