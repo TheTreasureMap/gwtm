@@ -31,7 +31,7 @@ async def get_grbmoc(
     Returns the MOC file
     """
     # Normalize the graceid
-    graceid = GWAlert.graceidfromalternate(graceid)
+    graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Validate instrument
     instrument = instrument.lower()

@@ -17,7 +17,7 @@ async def ajax_candidate_fetch(graceid: str, db: Session = Depends(get_db)):
     import shapely.wkb
 
     # Normalize the graceid - maintain backward compatibility
-    normalized_graceid = GWAlert.graceidfromalternate(graceid)
+    normalized_graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Get candidates for this event
     candidates = (

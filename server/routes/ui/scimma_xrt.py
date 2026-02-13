@@ -17,7 +17,7 @@ async def ajax_scimma_xrt(graceid: str, db: Session = Depends(get_db)):
     from server.utils.function import sanatize_XRT_source_info
 
     # Normalize the graceid - maintain backward compatibility
-    normalized_graceid = GWAlert.graceidfromalternate(graceid)
+    normalized_graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Special case for S190426
     if "S190426" in normalized_graceid:

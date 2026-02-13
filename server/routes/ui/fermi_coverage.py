@@ -92,7 +92,7 @@ async def get_fermi_coverage(
         Dictionary containing coverage overlays in MOC format
     """
     # Normalize graceid
-    normalized_graceid = GWAlert.graceidfromalternate(graceid)
+    normalized_graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Get the GW alert to find trigger time
     alert = (

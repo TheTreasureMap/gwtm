@@ -77,7 +77,7 @@ async def get_candidates(
             pass  # Skip filter if value cannot be parsed
 
     if query_params.graceid:
-        graceid = GWAlert.graceidfromalternate(query_params.graceid)
+        graceid = GWAlert.graceidfromalternate(query_params.graceid, db)
         filter_conditions.append(GWCandidate.graceid == graceid)
 
     if query_params.userid:

@@ -28,7 +28,7 @@ async def ajax_request_doi(
     from server.db.models.pointing_event import PointingEvent
 
     # Normalize the graceid - maintain backward compatibility
-    normalized_graceid = GWAlert.alternatefromgraceid(graceid)
+    normalized_graceid = GWAlert.alternatefromgraceid(graceid, db)
 
     if not ids:
         return ""
