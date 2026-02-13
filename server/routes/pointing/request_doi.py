@@ -35,7 +35,7 @@ async def request_doi(
 
     # Only join with PointingEvent if graceid is specified
     if request.graceid:
-        normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
+        normalized_graceid = GWAlert.graceidfromalternate(request.graceid, db)
         # Query the pointings with explicit join
         points = (
             db.query(Pointing)

@@ -28,7 +28,7 @@ async def get_gw_contour(
     Returns the contour JSON file
     """
     # Normalize the graceid
-    graceid = GWAlert.graceidfromalternate(graceid)
+    graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Get the latest alert for this graceid
     alerts = (

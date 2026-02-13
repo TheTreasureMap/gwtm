@@ -34,7 +34,7 @@ async def get_event_galaxies(
     filter_conditions = [GWGalaxyEntry.listid == GWGalaxyList.id]
 
     # Normalize the graceid
-    graceid = GWAlert.graceidfromalternate(graceid)
+    graceid = GWAlert.graceidfromalternate(graceid, db)
     filter_conditions.append(GWGalaxyList.graceid == graceid)
 
     if timesent_stamp:

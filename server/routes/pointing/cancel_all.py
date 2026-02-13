@@ -29,7 +29,7 @@ async def cancel_all(
     pointing_utils.validate_instrument(request.instrumentid, db)
 
     # Validate graceid exists
-    normalized_graceid = GWAlert.graceidfromalternate(request.graceid)
+    normalized_graceid = GWAlert.graceidfromalternate(request.graceid, db)
 
     # Build the filter
     filter_conditions = [

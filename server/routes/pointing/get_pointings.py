@@ -119,7 +119,7 @@ def get_pointings(
         # Handle graceid
         if graceid:
             # Normalize the graceid
-            graceid = GWAlert.graceidfromalternate(graceid)
+            graceid = GWAlert.graceidfromalternate(graceid, db)
             filter_conditions.append(PointingEvent.graceid == graceid)
             filter_conditions.append(PointingEvent.pointingid == Pointing.id)
 
@@ -137,7 +137,7 @@ def get_pointings(
                 else:
                     gids = graceids  # Already a list
 
-                normalized_gids = [GWAlert.graceidfromalternate(gid) for gid in gids]
+                normalized_gids = [GWAlert.graceidfromalternate(gid, db) for gid in gids]
                 filter_conditions.append(PointingEvent.graceid.in_(normalized_gids))
                 filter_conditions.append(PointingEvent.pointingid == Pointing.id)
             except Exception as e:
