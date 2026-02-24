@@ -47,9 +47,35 @@ jobs:
       - name: Generate coverage report
         run: npm run test:coverage
       
-      - name: Comment PR with coverage
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
+      - name: Write coverage summary
+        if: always()
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          with open('coverage/coverage-summary.json') as f:
+              data = json.load(f)
+          total = data.get('total', {})
+          rows = []
+          for metric in ['lines', 'statements', 'functions', 'branches']:
+              pct = total.get(metric, {}).get('pct', 0)
+              covered = total.get(metric, {}).get('covered', 0)
+              tot = total.get(metric, {}).get('total', 0)
+              icon = '✅' if pct >= 80 else '⚠️' if pct >= 60 else '❌'
+              rows.append(f'| {metric.capitalize()} | {covered}/{tot} | {pct:.1f}% {icon} |')
+          summary = '\n'.join([
+              '## Frontend Coverage Report',
+              '',
+              '| Metric | Covered | Percentage |',
+              '|--------|---------|------------|',
+          ] + rows + [''])
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(summary)
+          EOF
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          recreate: true
-          path: frontend/coverage/coverage-summary.json
+          name: frontend-coverage-report
+          path: frontend/coverage/
+          retention-days: 30

@@ -207,7 +207,7 @@
 	/**
 	 * Calculate coverage for instruments (on-demand)
 	 */
-	export async function calculateCoverage(): Promise<any> {
+	export async function calculateCoverage(formParams: Record<string, unknown> = {}): Promise<any> {
 		if (!graceid) return null;
 
 		dispatch('coverage-calculation-started');
@@ -215,8 +215,26 @@
 		try {
 			console.log('Calculating coverage for graceid:', graceid);
 
+			const params = {
+				graceid,
+				mappathinfo: formParams.mappathinfo as string | undefined,
+				inst_cov: Array.isArray(formParams.instruments)
+					? (formParams.instruments as string[]).filter((v) => v !== 'all').join(',')
+					: undefined,
+				band_cov: Array.isArray(formParams.bands)
+					? (formParams.bands as string[]).filter((v) => v !== '').join(',')
+					: undefined,
+				depth_cov: formParams.depth ? Number(formParams.depth) : undefined,
+				depth_unit: formParams.depthUnit as string | undefined,
+				approx_cov: formParams.approximate !== undefined ? Number(formParams.approximate) : 1,
+				spec_range_type: formParams.spectralRangeType as string | undefined,
+				spec_range_unit: formParams.spectralRangeUnit as string | undefined,
+				spec_range_low: formParams.spectralRangeLow as string | undefined,
+				spec_range_high: formParams.spectralRangeHigh as string | undefined
+			};
+
 			// This calls the coverage calculation endpoint
-			coverageData = await api.ajax.coverageCalculator({ graceid });
+			coverageData = await api.ajax.coverageCalculator(params);
 
 			console.log('Coverage calculation result:', coverageData);
 

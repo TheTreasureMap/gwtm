@@ -117,6 +117,7 @@
 </script>
 
 <!--
+@slot header - Optional card header content (takes priority over title prop)
 @slot default - Main card content
 @slot {string} padding - Current padding size
 @slot {string} shadow - Current shadow intensity
@@ -125,14 +126,22 @@
 -->
 {#if clickable}
 	<div class={cardClass} on:click on:keydown role="button" tabindex="0" aria-pressed="false">
-		{#if title}
+		{#if $$slots.header}
+			<div class="mb-3">
+				<slot name="header" />
+			</div>
+		{:else if title}
 			<h3 class="text-lg font-semibold mb-3">{title}</h3>
 		{/if}
 		<slot {padding} {shadow} {hover} {clickable} />
 	</div>
 {:else}
 	<div class={cardClass}>
-		{#if title}
+		{#if $$slots.header}
+			<div class="mb-3">
+				<slot name="header" />
+			</div>
+		{:else if title}
 			<h3 class="text-lg font-semibold mb-3">{title}</h3>
 		{/if}
 		<slot {padding} {shadow} {hover} {clickable} />

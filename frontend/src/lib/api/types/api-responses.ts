@@ -94,6 +94,8 @@ export interface CoverageCalculatorParams {
 	approx_cov?: number;
 	spec_range_type?: string;
 	spec_range_unit?: string;
+	spec_range_low?: string;
+	spec_range_high?: string;
 }
 
 export interface CoverageCalculatorResult {

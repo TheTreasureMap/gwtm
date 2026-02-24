@@ -20,7 +20,7 @@
 	import { ControlGroup, Button, AlertBanner } from '$lib/components/ui';
 
 	const dispatch = createEventDispatcher<{
-		calculate: void;
+		calculate: typeof formData;
 	}>();
 
 	/**
@@ -79,7 +79,7 @@
 	];
 
 	function handleCalculate() {
-		dispatch('calculate');
+		dispatch('calculate', { ...formData });
 	}
 </script>
 

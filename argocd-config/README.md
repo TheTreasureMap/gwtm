@@ -15,7 +15,7 @@ Apply the ArgoCD Application to the ArgoCD cluster:
 
 ```bash
 kubectl apply -f argocd-config/argocd-config-app.yaml \
-  --kubeconfig=/home/stevefoale/code/gwtm-deploy/argocd/kubeconfig \
+  --kubeconfig=/path/to/argocd/kubeconfig \
   --insecure-skip-tls-verify
 ```
 

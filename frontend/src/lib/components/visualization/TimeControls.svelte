@@ -127,7 +127,7 @@
 
 	<div class="mb-4">
 		<div class="block text-sm font-medium text-gray-700 mb-2">
-			Date range (days since Time of Signal): {timeRange[0]?.toFixed(1) || '0.0'} - {timeRange[1]?.toFixed(
+			Date range (days since Time of Signal): {timeRange[0]?.toFixed(3) || '0.0'} - {timeRange[1]?.toFixed(
 				1
 			) || '0.0'}
 		</div>
@@ -158,7 +158,7 @@
 					on:touchstart={(e) => (isSliderDisabled ? null : startDrag(e, 'min'))}
 					title={isSliderDisabled
 						? 'Time slider disabled'
-						: `Minimum time: ${timeRange[0]?.toFixed(1) || '0.0'} days`}
+						: `Minimum time: ${timeRange[0]?.toFixed(3) || '0.0'} days`}
 					role="slider"
 					tabindex={isSliderDisabled ? -1 : 0}
 					aria-label="Minimum time range"
@@ -178,7 +178,7 @@
 					on:touchstart={(e) => (isSliderDisabled ? null : startDrag(e, 'max'))}
 					title={isSliderDisabled
 						? 'Time slider disabled'
-						: `Maximum time: ${timeRange[1]?.toFixed(1) || '0.0'} days`}
+						: `Maximum time: ${timeRange[1]?.toFixed(3) || '0.0'} days`}
 					role="slider"
 					tabindex={isSliderDisabled ? -1 : 0}
 					aria-label="Maximum time range"
@@ -191,8 +191,8 @@
 
 			<!-- Time labels -->
 			<div class="time-labels mt-2">
-				<span class="text-xs text-gray-500">{minTime?.toFixed(1) || '0.0'} days</span>
-				<span class="text-xs text-gray-500 float-right">{maxTime?.toFixed(1) || '0.0'} days</span>
+				<span class="text-xs text-gray-500">{minTime?.toFixed(3) || '0.0'} days</span>
+				<span class="text-xs text-gray-500 float-right">{maxTime?.toFixed(3) || '0.0'} days</span>
 			</div>
 		</div>
 	</div>

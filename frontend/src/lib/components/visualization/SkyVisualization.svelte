@@ -83,6 +83,9 @@
 	let alertDataProcessingService: AlertDataProcessingService;
 	let plotlyContainer: HTMLDivElement | null = null;
 
+	// Tracks which instrument colors the user has explicitly hidden
+	let hiddenInstrumentColors: Set<string> = new Set();
+
 	onMount(async () => {
 		// Load alert types first (before visualization)
 		if (graceid) {
@@ -608,6 +611,7 @@
 
 	function filterFootprintsByTime() {
 		if (overlayManager) {
+			overlayManager.setHiddenInstruments(hiddenInstrumentColors);
 			overlayManager.filterFootprintsByTime();
 		}
 	}
@@ -646,6 +650,14 @@
 	// FollowUp Controls event handlers
 	function handleToggleInstrument(event: CustomEvent) {
 		const { target, checked } = event.detail;
+		const color = target.dataset?.color;
+		if (color) {
+			if (!checked) {
+				hiddenInstrumentColors = new Set([...hiddenInstrumentColors, color]);
+			} else {
+				hiddenInstrumentColors = new Set([...hiddenInstrumentColors].filter((c) => c !== color));
+			}
+		}
 		const overlayLists = overlayManager?.getOverlayLists();
 		if (overlayLists) {
 			toggleInstrumentOverlay(target, overlayLists.instOverlays as any[]);
@@ -809,12 +821,15 @@
 	}
 
 	// Event Explorer event handlers
-	async function handleCalculateCoverage() {
+	async function handleCalculateCoverage(event: CustomEvent) {
 		if (!graceid || !visualizationDataManager) return;
 
 		try {
 			loading = true;
-			await visualizationDataManager.calculateCoverage();
+			await visualizationDataManager.calculateCoverage({
+				...event.detail,
+				mappathinfo: selectedAlert?.skymap_fits_url
+			});
 			// updateCoveragePlot will be called by the event handler
 		} catch (err) {
 			console.error('Failed to calculate coverage:', err);
@@ -830,11 +845,11 @@
 		try {
 			loading = true;
 
-			const result = await (api as any).renormalizeSkymap({
-				graceid: graceid,
-				alert_id: selectedAlert.id,
-				approx_cov: 1
-			});
+			const response = await fetch(
+				`/ajax_renormalize_skymap?graceid=${graceid}&alert_id=${selectedAlert.id}&approx_cov=1&_ts=${Date.now()}`
+			);
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			const result = await response.json();
 
 			if (result && result.detection_overlays) {
 				// Update visualization with renormalized contours

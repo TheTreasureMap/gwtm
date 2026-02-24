@@ -88,11 +88,10 @@ Displays alert results with badges, pagination, and loading states.
 		<!-- Table Header -->
 		<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
 			<h2 class="text-xl font-semibold">
-				{totalItems} Alert{totalItems !== 1 ? 's' : ''} Found
+				{groupedAlerts.length} Event{groupedAlerts.length !== 1 ? 's' : ''} Found
 				{#if totalItems > 0}
 					<span class="text-sm font-normal text-gray-600">
-						(showing {(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, totalItems)}
-						of {totalItems})
+						({totalItems} alert record{totalItems !== 1 ? 's' : ''}, page {currentPage} of {totalPages})
 					</span>
 				{/if}
 			</h2>
