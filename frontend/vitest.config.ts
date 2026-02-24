@@ -20,7 +20,7 @@ export default defineConfig({
 		// Coverage configuration
 		coverage: {
 			provider: 'v8',
-			reporter: ['text', 'json', 'html', 'json-summary'],
+			reporter: ['text', 'json', 'html', 'json-summary', 'lcov'],
 			exclude: [
 				'node_modules/',
 				'src/__tests__/',

@@ -19,6 +19,13 @@
 
 	const dispatch = createEventDispatcher();
 
+	// Tracks instrument colors the user has explicitly hidden via checkboxes
+	let hiddenInstrumentColors: Set<string> = new Set();
+
+	export function setHiddenInstruments(colors: Set<string>): void {
+		hiddenInstrumentColors = colors;
+	}
+
 	// Overlay management state
 	let overlayLists = {
 		instOverlays: [],
@@ -243,10 +250,15 @@
 						overlay.addFootprints(footprintsToAdd);
 					}
 
+					const instColor = instData.color || '#ff0000';
+					const userHidden = hiddenInstrumentColors.has(instColor);
+					if (userHidden) {
+						overlay.hide();
+					}
 					newOverlays.push({
 						contour: overlay,
-						toshow: true,
-						tocolor: instData.color || '#ff0000',
+						toshow: !userHidden,
+						tocolor: instColor,
 						name: instData.name || `Instrument ${i + 1}`
 					});
 				}

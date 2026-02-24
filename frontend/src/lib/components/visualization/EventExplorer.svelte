@@ -65,7 +65,7 @@
 	export let plotlyContainer: HTMLDivElement | null = null;
 
 	const dispatch = createEventDispatcher<{
-		calculateCoverage: void;
+		calculateCoverage: Record<string, unknown>;
 		visualizeRenormalizedSkymap: void;
 		downloadRenormalizedSkymap: void;
 	}>();
@@ -79,8 +79,8 @@
 		{ id: 'renorm', label: 'Renormalize Skymap' }
 	];
 
-	function handleCalculateCoverage() {
-		dispatch('calculateCoverage');
+	function handleCalculateCoverage(event: CustomEvent) {
+		dispatch('calculateCoverage', event.detail);
 	}
 
 	function handleVisualizeRenormalizedSkymap() {
