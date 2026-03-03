@@ -29,6 +29,7 @@
 	 * @default null
 	 */
 	export let plotlyContainer: HTMLDivElement | null = null;
+	export let instruments: Array<{ id: number; name: string }> = [];
 
 	// Form state
 	let formData = {
@@ -43,10 +44,10 @@
 		spectralRangeUnit: 'nm'
 	};
 
-	// Options for form controls
-	const instrumentOptions = [
-		{ value: 'all', label: 'All Instruments' }
-		// Additional instruments would be populated from API
+	// Options for form controls — 'all' sentinel plus live instruments from footprint data
+	$: instrumentOptions = [
+		{ value: 'all', label: 'All Instruments' },
+		...instruments.map((inst) => ({ value: String(inst.id), label: inst.name }))
 	];
 
 	const approximateOptions = [
@@ -157,7 +158,7 @@
 						type="text"
 						bind:value={formData.depth}
 						placeholder="Optional"
-						class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						id="depth_cov"
 					/>
 				</ControlGroup>
@@ -214,7 +215,7 @@
 							type="text"
 							bind:value={formData.spectralRangeLow}
 							placeholder="Min"
-							class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
 							id="spectral_range_low"
 						/>
 						<span class="text-gray-500">-</span>
@@ -222,7 +223,7 @@
 							type="text"
 							bind:value={formData.spectralRangeHigh}
 							placeholder="Max"
-							class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
 							id="spectral_range_high"
 						/>
 						<select
