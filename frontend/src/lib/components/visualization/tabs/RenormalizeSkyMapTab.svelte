@@ -20,6 +20,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { ControlGroup, Button, AlertBanner } from '$lib/components/ui';
+	import { api } from '$lib/api';
 
 	const dispatch = createEventDispatcher<{
 		download: void;
@@ -74,6 +75,22 @@
 		{ value: 'nm', label: 'nm' },
 		{ value: 'angstrom', label: 'Angstrom' }
 	];
+
+	async function handleBandChange() {
+		const selected = formData.bands.filter((b) => b !== '').join(',');
+		if (!selected) return;
+		try {
+			const result = await api.ajax.spectralRangeFromSelectedBands(
+				selected,
+				formData.spectralRangeType,
+				formData.spectralRangeUnit
+			);
+			if (result.total_min !== '') formData.spectralRangeLow = String(result.total_min);
+			if (result.total_max !== '') formData.spectralRangeHigh = String(result.total_max);
+		} catch {
+			// non-fatal — user can fill in manually
+		}
+	}
 
 	function handleDownload() {
 		dispatch('download');
@@ -195,6 +212,7 @@
 					<select
 						bind:value={formData.bands}
 						multiple
+						on:change={handleBandChange}
 						class="form-select px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						id="r_band_cov"
 					>
@@ -208,6 +226,7 @@
 				<ControlGroup label="Spectral Range Type" inline>
 					<select
 						bind:value={formData.spectralRangeType}
+						on:change={handleBandChange}
 						class="form-select px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						id="r_spectral_range_type"
 					>
@@ -242,6 +261,7 @@
 						/>
 						<select
 							bind:value={formData.spectralRangeUnit}
+							on:change={handleBandChange}
 							class="form-select px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							id="r_spectral_range_unit"
 						>
