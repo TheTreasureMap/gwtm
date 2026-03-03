@@ -17,6 +17,7 @@ from .candidate_fetch import router as candidate_fetch_router
 from .request_doi import router as request_doi_router
 from .alert_type import router as alert_type_router
 from .fermi_coverage import router as fermi_coverage_router
+from .renormalize_skymap import router as renormalize_skymap_router
 
 # Create the main router that includes all UI routes
 router = APIRouter(tags=["UI"])
@@ -36,3 +37,4 @@ router.include_router(candidate_fetch_router)
 router.include_router(request_doi_router)
 router.include_router(alert_type_router)
 router.include_router(fermi_coverage_router)
+router.include_router(renormalize_skymap_router)

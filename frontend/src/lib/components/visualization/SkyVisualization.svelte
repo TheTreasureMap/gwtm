@@ -565,31 +565,19 @@
 	// Overlay management is now handled by OverlayManager component
 
 	function updateCoveragePlot() {
-		if (!coverageData || typeof window === 'undefined') return;
+		if (!coverageData || !plotlyContainer) return;
 
 		try {
-			const Plotly = (window as any).Plotly;
-
-			const data = [
-				{
-					x: (coverageData as any).time || [],
-					y: (coverageData as any).probability || [],
-					type: 'scatter',
-					mode: 'lines+markers',
-					name: 'Probability Coverage',
-					line: { color: 'blue' }
-				}
-			];
-
-			const layout = {
-				title: 'Coverage vs Time',
-				xaxis: { title: 'Time since trigger (hours)' },
-				yaxis: { title: 'Cumulative Probability' },
-				height: 300
-			};
-
-			if (plotlyContainer) {
-				Plotly.newPlot(plotlyContainer, data, layout, { responsive: true });
+			// API returns { plot_html: string } — inject the pre-rendered Plotly div
+			const html = (coverageData as any).plot_html;
+			if (html) {
+				plotlyContainer.innerHTML = html;
+				// Re-execute any inline scripts (Plotly uses them for interactivity)
+				plotlyContainer.querySelectorAll('script').forEach((oldScript) => {
+					const newScript = document.createElement('script');
+					newScript.textContent = oldScript.textContent;
+					oldScript.replaceWith(newScript);
+				});
 			}
 		} catch (err) {
 			console.error('Failed to update coverage plot:', err);
@@ -1066,6 +1054,11 @@
 			{loading}
 			{error}
 			{plotlyContainer}
+			instruments={footprintData
+				? footprintData
+						.filter((inst: any) => inst.id !== undefined)
+						.map((inst: any) => ({ id: inst.id, name: inst.name }))
+				: []}
 			on:calculateCoverage={handleCalculateCoverage}
 			on:visualizeRenormalizedSkymap={handleVisualizeRenormalizedSkymap}
 			on:downloadRenormalizedSkymap={handleDownloadRenormalizedSkymap}

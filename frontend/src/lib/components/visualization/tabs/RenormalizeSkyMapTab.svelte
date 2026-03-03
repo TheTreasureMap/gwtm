@@ -172,7 +172,7 @@
 						type="text"
 						bind:value={formData.depth}
 						placeholder="Optional"
-						class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						id="r_depth_cov"
 					/>
 				</ControlGroup>
@@ -229,7 +229,7 @@
 							type="text"
 							bind:value={formData.spectralRangeLow}
 							placeholder="Min"
-							class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
 							id="r_spectral_range_low"
 						/>
 						<span class="text-gray-500">-</span>
@@ -237,7 +237,7 @@
 							type="text"
 							bind:value={formData.spectralRangeHigh}
 							placeholder="Max"
-							class="form-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-24"
 							id="r_spectral_range_high"
 						/>
 						<select
