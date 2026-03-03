@@ -66,19 +66,23 @@
 	 */
 	export let padding: 'sm' | 'md' | 'lg' = 'md';
 
-	import { classBuilder } from '$lib/design-system';
+	const maxWidthClasses: Record<string, string> = {
+		sm: 'max-w-sm mx-auto',
+		md: 'max-w-md mx-auto',
+		lg: 'max-w-lg mx-auto',
+		xl: 'max-w-xl mx-auto',
+		'2xl': 'max-w-2xl mx-auto',
+		'4xl': 'max-w-4xl mx-auto',
+		'7xl': 'max-w-7xl mx-auto'
+	};
 
-	// Map maxWidth to container size
-	$: containerSize =
-		maxWidth === '7xl'
-			? 'responsive'
-			: maxWidth === '4xl'
-				? 'lg'
-				: maxWidth === '2xl'
-					? 'md'
-					: 'sm';
+	const paddingClasses: Record<string, string> = {
+		sm: 'px-4 py-4',
+		md: 'px-4 py-8',
+		lg: 'px-6 py-12'
+	};
 
-	$: containerClass = classBuilder.container(containerSize, padding);
+	$: containerClass = [maxWidthClasses[maxWidth], paddingClasses[padding]].join(' ');
 </script>
 
 <!--

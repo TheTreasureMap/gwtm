@@ -79,7 +79,6 @@
 	}
 
 	function handleAlertError(event: CustomEvent) {
-		console.error('Alert loading error:', event.detail.error);
 		alert = null;
 		alertExists = false;
 		alertLoading = false;
@@ -94,13 +93,6 @@
 	}
 
 	onMount(() => {
-		console.log('Alerts page onMount:', { graceid });
-		console.log('External scripts availability:', {
-			jQuery: typeof (window as Record<string, unknown>).$ !== 'undefined',
-			Aladin: typeof (window as Record<string, unknown>).A !== 'undefined',
-			Plotly: typeof (window as Record<string, unknown>).Plotly !== 'undefined'
-		});
-
 		// Load alert on mount if we have valid parameters
 		if (urlParameterService?.hasValidParameters()) {
 			loadAlert();

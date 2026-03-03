@@ -68,12 +68,9 @@
 		validateOnChange: true,
 		validateOnBlur: true,
 		submitHandler: async (data) => {
-			console.log('Submit handler called with:', data);
-			console.log('Existing instruments for validation:', existingInstruments.length);
 			try {
 				// Client-side validation (including duplicate check)
 				const validation = validateInstrumentData(data, existingInstruments);
-				console.log('Validation result:', validation);
 				if (!validation.isValid) {
 					return {
 						success: false,
@@ -94,9 +91,7 @@
 					...(data.polygon && { polygon: data.polygon })
 				};
 
-				console.log('Submitting to API:', instrumentData);
 				const result = await submitInstrument(instrumentData);
-				console.log('API result:', result);
 
 				if (result.success) {
 					// Add the new instrument to the existing list immediately
@@ -115,7 +110,6 @@
 						];
 
 						// Redirect immediately upon success
-						console.log('Success! Redirecting to instrument:', result.instrument.id);
 						setTimeout(() => {
 							goto(`/instrument/${result.instrument.id}`);
 						}, 1000); // Brief delay to show success message
@@ -142,11 +136,6 @@
 	$: isSubmitting = $formStore.isSubmitting;
 	$: globalError = $formStore.globalError;
 	$: submitResult = $formStore.submitResult;
-
-	// Debug submitResult changes
-	$: if (submitResult) {
-		console.log('submitResult changed:', submitResult);
-	}
 
 	// Form options
 	let instrumentTypeOptions: SelectOption[] = [];
@@ -195,8 +184,8 @@
 			existingInstruments = options.existingInstruments.sort(
 				(a, b) => new Date(b.datecreated || '').getTime() - new Date(a.datecreated || '').getTime()
 			);
-		} catch (error) {
-			console.error('Failed to load form options:', error);
+		} catch (_error) {
+			// ignore
 		} finally {
 			loadingOptions = false;
 		}
@@ -222,7 +211,6 @@
 			previewData = await previewFootprint(formData);
 		} catch (error) {
 			previewError = error instanceof Error ? error.message : 'Preview failed';
-			console.error('Preview error:', error);
 		} finally {
 			previewLoading = false;
 		}
@@ -240,27 +228,21 @@
 		if (plotDiv && previewData && window.Plotly) {
 			try {
 				window.Plotly.newPlot('preview-plot', previewData.data, previewData.layout);
-			} catch (error) {
-				console.error('Failed to render plot:', error);
+			} catch (_error) {
+				// ignore render errors
 			}
 		}
 	}
 
 	// Handle successful submission
 	$: {
-		console.log('Checking submitResult:', submitResult);
 		if (submitResult?.success && submitResult.result?.instrument?.id) {
-			console.log('Success detected, redirecting...', submitResult);
 			// Refresh the instruments list first
 			loadDropdownOptions().then(() => {
 				// Redirect to the newly created instrument's page
 				const instrumentId = submitResult.result.instrument.id;
 				goto(`/instrument/${instrumentId}`);
 			});
-		} else if (submitResult?.success) {
-			console.log('Success but no instrument ID:', submitResult);
-		} else if (submitResult) {
-			console.log('Submit result received:', submitResult);
 		}
 	}
 
@@ -272,23 +254,13 @@
 		}
 
 		const trimmedName = formData.instrument_name.trim();
-		console.log(
-			'Checking name:',
-			trimmedName,
-			'against',
-			existingInstruments.length,
-			'instruments'
+		const isDuplicate = existingInstruments.some(
+			(instrument) => instrument.instrument_name.toLowerCase() === trimmedName.toLowerCase()
 		);
-		const isDuplicate = existingInstruments.some((instrument) => {
-			const match = instrument.instrument_name.toLowerCase() === trimmedName.toLowerCase();
-			if (match) console.log('Found duplicate:', instrument.instrument_name);
-			return match;
-		});
 
 		nameValidationError = isDuplicate
 			? 'An instrument with this name already exists. Please choose a different name.'
 			: '';
-		console.log('Name validation result:', nameValidationError);
 	}
 
 	// Reactive validation when instrument name or existing instruments change

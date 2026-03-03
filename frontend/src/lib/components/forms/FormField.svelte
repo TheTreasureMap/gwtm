@@ -192,7 +192,7 @@
 	export let rows: number = 3;
 
 	/**
-	 * Custom CSS classes
+	 * Custom CSS classes for the wrapper element
 	 * @type {string}
 	 * @default ''
 	 * @optional
@@ -268,25 +268,23 @@
 	$: helpId = `${fieldId}-help`;
 	$: errorId = `${fieldId}-error`;
 
-	// Input classes
-	$: inputClasses = [
-		'block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset',
-		'placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6',
-		hasError && touched
-			? 'ring-red-500 focus:ring-red-500 text-red-900'
-			: 'ring-gray-300 focus:ring-blue-600',
-		disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white',
-		readonly ? 'bg-gray-50' : '',
-		className
-	]
-		.filter(Boolean)
-		.join(' ');
+	// DaisyUI input classes
+	$: inputBaseClass =
+		type === 'select'
+			? 'select select-bordered w-full'
+			: type === 'textarea'
+				? 'textarea textarea-bordered w-full'
+				: type === 'checkbox' || type === 'radio'
+					? ''
+					: 'input input-bordered w-full';
 
-	// Label classes
-	$: labelClasses = [
-		'block text-sm font-medium leading-6',
-		hasError && touched ? 'text-red-700' : 'text-gray-900'
-	].join(' ');
+	$: inputErrorClass = hasError && touched ? 'input-error select-error textarea-error' : '';
+
+	$: disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : '';
+
+	$: inputClass = [inputBaseClass, inputErrorClass, disabledClass].filter(Boolean).join(' ');
+
+	$: labelTextClass = hasError && touched ? 'label-text text-error' : 'label-text';
 
 	// ================================================================================================
 	// METHODS
@@ -392,97 +390,101 @@
 @slot {boolean} disabled - Whether field is disabled
 -->
 
-<div class="form-field">
-	<!-- Label -->
-	<label for={fieldId} class={labelClasses}>
-		{#if $$slots.label}
-			<slot
-				name="label"
-				fieldName={name}
-				fieldValue={value}
-				fieldHasError={hasError}
-				fieldErrors={allErrors}
-				fieldRequired={required}
-				fieldDisabled={disabled}
-			/>
-		{:else}
-			{label}
-			{#if required}
-				<span class="text-red-500 ml-1" aria-label="required">*</span>
-			{/if}
-		{/if}
-	</label>
+<div class="form-control mb-4 {className}">
+	{#if type !== 'checkbox'}
+		<!-- Label -->
+		<label for={fieldId} class="label">
+			<span class={labelTextClass}>
+				{#if $$slots.label}
+					<slot
+						name="label"
+						fieldName={name}
+						fieldValue={value}
+						fieldHasError={hasError}
+						fieldErrors={allErrors}
+						fieldRequired={required}
+						fieldDisabled={disabled}
+					/>
+				{:else}
+					{label}
+					{#if required}
+						<span class="text-error ml-1" aria-label="required">*</span>
+					{/if}
+				{/if}
+			</span>
+		</label>
+	{/if}
 
 	<!-- Input Field -->
-	<div class="mt-2">
-		{#if type === 'textarea'}
-			<textarea
+	{#if type === 'textarea'}
+		<textarea
+			id={fieldId}
+			{name}
+			{rows}
+			{placeholder}
+			{disabled}
+			{readonly}
+			{required}
+			class={inputClass}
+			bind:value
+			on:input={handleInput}
+			on:focus={handleFocus}
+			on:blur={handleBlur}
+			aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
+			aria-invalid={hasError}
+		></textarea>
+	{:else if type === 'select'}
+		<select
+			id={fieldId}
+			{name}
+			{disabled}
+			{required}
+			class={inputClass}
+			bind:value
+			on:change={handleInput}
+			on:focus={handleFocus}
+			on:blur={handleBlur}
+			aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
+			aria-invalid={hasError}
+		>
+			{#if placeholder}
+				<option value="" disabled selected>{placeholder}</option>
+			{/if}
+			{#each options as option, index (index)}
+				<option value={option.value} disabled={option.disabled}>
+					{option.label}
+				</option>
+			{/each}
+		</select>
+	{:else if type === 'checkbox'}
+		<label for={fieldId} class="label cursor-pointer justify-start gap-3">
+			<input
 				id={fieldId}
 				{name}
-				{rows}
-				{placeholder}
-				{disabled}
-				{readonly}
-				{required}
-				class={inputClasses}
-				bind:value
-				on:input={handleInput}
-				on:focus={handleFocus}
-				on:blur={handleBlur}
-				aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
-				aria-invalid={hasError}
-			></textarea>
-		{:else if type === 'select'}
-			<select
-				id={fieldId}
-				{name}
+				type="checkbox"
 				{disabled}
 				{required}
-				class={inputClasses}
-				bind:value
+				class="checkbox {disabledClass}"
+				bind:checked={value as boolean}
 				on:change={handleInput}
 				on:focus={handleFocus}
 				on:blur={handleBlur}
 				aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
 				aria-invalid={hasError}
-			>
-				{#if placeholder}
-					<option value="" disabled selected>{placeholder}</option>
+			/>
+			<span class="label-text">
+				{label}
+				{#if required}
+					<span class="text-error ml-1" aria-label="required">*</span>
 				{/if}
-				{#each options as option, index (index)}
-					<option value={option.value} disabled={option.disabled}>
-						{option.label}
-					</option>
-				{/each}
-			</select>
-		{:else if type === 'checkbox'}
-			<div class="flex items-center">
-				<input
-					id={fieldId}
-					{name}
-					type="checkbox"
-					{disabled}
-					{required}
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-					bind:checked={value as boolean}
-					on:change={handleInput}
-					on:focus={handleFocus}
-					on:blur={handleBlur}
-					aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
-					aria-invalid={hasError}
-				/>
-				<label for={fieldId} class="ml-3 block text-sm font-medium leading-6 text-gray-900">
-					{label}
-					{#if required}
-						<span class="text-red-500 ml-1" aria-label="required">*</span>
-					{/if}
-				</label>
-			</div>
-		{:else if type === 'radio'}
-			<fieldset class="space-y-2">
-				<legend class="sr-only">{label}</legend>
-				{#each options as option, index (index)}
-					<div class="flex items-center">
+			</span>
+		</label>
+	{:else if type === 'radio'}
+		<fieldset class="space-y-2">
+			<legend class="sr-only">{label}</legend>
+			{#each options as option, index (index)}
+				<div class="form-control">
+					<label for="{fieldId}-{option.value}" class="label cursor-pointer justify-start gap-3">
 						<input
 							id="{fieldId}-{option.value}"
 							{name}
@@ -490,106 +492,77 @@
 							value={option.value}
 							{disabled}
 							{required}
-							class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-600"
+							class="radio {disabledClass}"
 							bind:group={value}
 							on:change={handleInput}
 							on:focus={handleFocus}
 							on:blur={handleBlur}
 							aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
 						/>
-						<label
-							for="{fieldId}-{option.value}"
-							class="ml-3 block text-sm font-medium leading-6 text-gray-900"
-						>
-							{option.label}
-						</label>
-					</div>
-				{/each}
-			</fieldset>
-		{:else}
-			<input
-				id={fieldId}
-				{name}
-				{type}
-				{placeholder}
-				{disabled}
-				{readonly}
-				{required}
-				step={type === 'number' ? step : undefined}
-				min={type === 'number' ? min : undefined}
-				class={inputClasses}
-				bind:value
-				on:input={handleInput}
-				on:focus={handleFocus}
-				on:blur={handleBlur}
-				aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
-				aria-invalid={hasError}
-			/>
-		{/if}
-	</div>
+						<span class="label-text">{option.label}</span>
+					</label>
+				</div>
+			{/each}
+		</fieldset>
+	{:else}
+		<input
+			id={fieldId}
+			{name}
+			{type}
+			{placeholder}
+			{disabled}
+			{readonly}
+			{required}
+			step={type === 'number' ? step : undefined}
+			min={type === 'number' ? min : undefined}
+			class={inputClass}
+			bind:value
+			on:input={handleInput}
+			on:focus={handleFocus}
+			on:blur={handleBlur}
+			aria-describedby={helpText || showErrors ? `${helpId} ${errorId}` : undefined}
+			aria-invalid={hasError}
+		/>
+	{/if}
 
 	<!-- Help Text -->
 	{#if helpText || $$slots.help}
-		<div id={helpId} class="mt-2 text-sm text-gray-600">
-			{#if $$slots.help}
-				<slot
-					name="help"
-					fieldName={name}
-					fieldValue={value}
-					fieldHasError={hasError}
-					fieldErrors={allErrors}
-				/>
-			{:else}
-				{helpText}
-			{/if}
+		<div id={helpId} class="label">
+			<span class="label-text-alt">
+				{#if $$slots.help}
+					<slot
+						name="help"
+						fieldName={name}
+						fieldValue={value}
+						fieldHasError={hasError}
+						fieldErrors={allErrors}
+					/>
+				{:else}
+					{helpText}
+				{/if}
+			</span>
 		</div>
 	{/if}
 
 	<!-- Error Messages -->
 	{#if showErrors}
-		<div id={errorId} class="mt-2 space-y-1" role="alert" aria-live="polite">
-			{#each allErrors as error, index (index)}
-				<p class="text-sm text-red-600">{error}</p>
+		<div id={errorId} role="alert" aria-live="polite">
+			{#each allErrors as errorMsg, index (index)}
+				<div class="label">
+					<span class="label-text-alt text-error">{errorMsg}</span>
+				</div>
 			{/each}
 		</div>
 	{/if}
 
 	<!-- Validation Warnings -->
 	{#if validationResult.warnings && validationResult.warnings.length > 0}
-		<div class="mt-2 space-y-1">
+		<div>
 			{#each validationResult.warnings as warning, index (index)}
-				<p class="text-sm text-yellow-600">{warning}</p>
+				<div class="label">
+					<span class="label-text-alt text-warning">{warning}</span>
+				</div>
 			{/each}
 		</div>
 	{/if}
 </div>
-
-<style>
-	.form-field {
-		margin-bottom: 1rem;
-	}
-
-	/* Focus styles for better accessibility */
-	.form-field input:focus,
-	.form-field textarea:focus,
-	.form-field select:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-	}
-
-	/* High contrast mode support */
-	@media (prefers-contrast: high) {
-		.form-field input,
-		.form-field textarea,
-		.form-field select {
-			border-width: 2px;
-		}
-	}
-
-	/* Reduced motion support */
-	@media (prefers-reduced-motion: reduce) {
-		.form-field * {
-			transition: none;
-		}
-	}
-</style>

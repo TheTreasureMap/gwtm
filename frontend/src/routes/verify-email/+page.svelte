@@ -44,8 +44,7 @@
 			} else {
 				error = data.detail || data.message || 'Email verification failed. Please try again.';
 			}
-		} catch (err) {
-			console.error('Verification error:', err);
+		} catch (_err) {
 			error = 'Network error. Please check your connection and try again.';
 		} finally {
 			loading = false;

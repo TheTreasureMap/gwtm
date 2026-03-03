@@ -19,11 +19,14 @@
 
 			<!-- Main Navigation -->
 			<div class="hidden md:flex items-center space-x-8">
-				<a href="/" class="nav-link">Home</a>
+				<a href="/" class="text-gray-700 hover:text-blue-600 transition-colors duration-200">Home</a
+				>
 
 				<!-- GW Events Dropdown -->
 				<div class="relative group">
-					<button class="nav-link flex items-center">
+					<button
+						class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200"
+					>
 						GW Events
 						<svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -31,15 +34,27 @@
 							/>
 						</svg>
 					</button>
-					<div class="nav-dropdown">
-						<a href="/alerts/select" class="nav-dropdown-item">Events</a>
-						<a href="/alerts/reporting" class="nav-dropdown-item">Reporting Instruments</a>
+					<div
+						class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+					>
+						<a
+							href="/alerts/select"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Events</a
+						>
+						<a
+							href="/alerts/reporting"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Reporting Instruments</a
+						>
 					</div>
 				</div>
 
 				<!-- Query Pages Dropdown -->
 				<div class="relative group">
-					<button class="nav-link flex items-center">
+					<button
+						class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200"
+					>
 						Query Pages
 						<svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -47,15 +62,27 @@
 							/>
 						</svg>
 					</button>
-					<div class="nav-dropdown">
-						<a href="/search/pointings" class="nav-dropdown-item">Pointings</a>
-						<a href="/search/instruments" class="nav-dropdown-item">Instruments</a>
+					<div
+						class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+					>
+						<a
+							href="/search/pointings"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Pointings</a
+						>
+						<a
+							href="/search/instruments"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Instruments</a
+						>
 					</div>
 				</div>
 
 				<!-- Submit Pages Dropdown -->
 				<div class="relative group">
-					<button class="nav-link flex items-center">
+					<button
+						class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200"
+					>
 						Submit Pages
 						<svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -63,15 +90,27 @@
 							/>
 						</svg>
 					</button>
-					<div class="nav-dropdown">
-						<a href="/submit/pointings" class="nav-dropdown-item">Pointings</a>
-						<a href="/submit/instruments" class="nav-dropdown-item">Instruments</a>
+					<div
+						class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+					>
+						<a
+							href="/submit/pointings"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Pointings</a
+						>
+						<a
+							href="/submit/instruments"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Instruments</a
+						>
 					</div>
 				</div>
 
 				<!-- Documentation Dropdown -->
 				<div class="relative group">
-					<button class="nav-link flex items-center">
+					<button
+						class="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200"
+					>
 						Documentation
 						<svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -79,10 +118,24 @@
 							/>
 						</svg>
 					</button>
-					<div class="nav-dropdown">
-						<a href="/documentation" class="nav-dropdown-item">API Documentation</a>
-						<a href="/documentation/tutorial" class="nav-dropdown-item">Jupyter Tutorial</a>
-						<a href="/documentation/blog" class="nav-dropdown-item">What's New</a>
+					<div
+						class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+					>
+						<a
+							href="/documentation"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>API Documentation</a
+						>
+						<a
+							href="/documentation/tutorial"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>Jupyter Tutorial</a
+						>
+						<a
+							href="/documentation/blog"
+							class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+							>What's New</a
+						>
 					</div>
 				</div>
 			</div>
@@ -91,11 +144,18 @@
 			<div class="flex items-center space-x-4">
 				{#if $auth.isAuthenticated}
 					<span class="text-gray-700">Welcome, {$auth.user?.username || $auth.user?.email}</span>
-					<a href="/manage" class="nav-link">Profile</a>
-					<button on:click={handleLogout} class="nav-link">Logout</button>
+					<a href="/manage" class="text-gray-700 hover:text-blue-600 transition-colors duration-200"
+						>Profile</a
+					>
+					<button
+						on:click={handleLogout}
+						class="text-gray-700 hover:text-blue-600 transition-colors duration-200">Logout</button
+					>
 				{:else}
-					<a href="/login" class="nav-link">Login</a>
-					<a href="/register" class="btn-base btn-primary btn-md">Register</a>
+					<a href="/login" class="text-gray-700 hover:text-blue-600 transition-colors duration-200"
+						>Login</a
+					>
+					<a href="/register" class="btn btn-primary btn-sm">Register</a>
 				{/if}
 			</div>
 		</div>

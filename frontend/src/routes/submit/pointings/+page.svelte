@@ -200,8 +200,8 @@
 					label: group.name
 				}))
 			];
-		} catch (error) {
-			console.error('Failed to load form options:', error);
+		} catch (_error) {
+			// ignore option load failures
 		} finally {
 			loadingOptions = false;
 		}
