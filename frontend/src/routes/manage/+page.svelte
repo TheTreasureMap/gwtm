@@ -77,7 +77,6 @@
 				const doiResponse = await api.client.get(API_ENDPOINTS.doiAuthorGroups);
 				doiGroups = doiResponse.data || [];
 			} catch (err) {
-				console.warn('Failed to load DOI groups:', err);
 				doiGroups = [];
 			}
 
@@ -93,7 +92,6 @@
 				isAdmin = false;
 			}
 		} catch (err) {
-			console.error('Failed to load profile data:', err);
 			error = 'Failed to load profile data';
 		} finally {
 			loading = false;
@@ -106,7 +104,6 @@
 			await api.client.post('/api/v1/auth/resend-verification');
 			alert('Verification email sent!');
 		} catch (err) {
-			console.error('Failed to resend verification email:', err);
 			alert('Failed to send verification email');
 		}
 	}

@@ -3,78 +3,18 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
-	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import Form from '$lib/components/forms/Form.svelte';
 	import FormField from '$lib/components/forms/FormField.svelte';
-	import { useFormValidation } from '$lib/hooks/useFormValidation';
-	import { validationSchemas, validators } from '$lib/validation/validators';
+	import { validators } from '$lib/validation/validators';
 
-	// Form data
-	interface RegistrationFormData {
-		email: string;
-		username: string;
-		password: string;
-		confirmPassword: string;
-		firstName: string;
-		lastName: string;
-	}
-
-	// Initialize form validation
-	const formValidation = useFormValidation<RegistrationFormData>({
-		schema: {
-			email: {
-				required: true,
-				validators: [validators.email()]
-			},
-			username: {
-				required: true,
-				validators: [
-					validators.minLength(3, 'Username must be at least 3 characters'),
-					validators.maxLength(50, 'Username must be less than 50 characters'),
-					validators.pattern(
-						/^[a-zA-Z0-9_-]+$/,
-						'Username can only contain letters, numbers, underscores, and dashes'
-					),
-					validators.safe()
-				]
-			},
-			password: {
-				required: true,
-				validators: [validators.password({})]
-			},
-			confirmPassword: {
-				required: true,
-				validators: [validators.confirmPassword('password')],
-				dependsOn: ['password']
-			},
-			firstName: {
-				validators: [
-					validators.maxLength(100, 'First name must be less than 100 characters'),
-					validators.safe()
-				]
-			},
-			lastName: {
-				validators: [
-					validators.maxLength(100, 'Last name must be less than 100 characters'),
-					validators.safe()
-				]
-			}
-		},
-		initialValues: {
-			email: '',
-			username: '',
-			password: '',
-			confirmPassword: '',
-			firstName: '',
-			lastName: ''
-		}
-	});
-
-	// Destructure stores for easier access
-	const { values, errors, isValid, isValidating } = formValidation;
-
-	let error = '';
-	let loading = false;
+	let formData: Record<string, unknown> = {
+		email: '',
+		username: '',
+		password: '',
+		confirmPassword: '',
+		firstName: '',
+		lastName: ''
+	};
 
 	// Redirect if already authenticated
 	onMount(() => {
@@ -87,35 +27,20 @@
 		return unsubscribe;
 	});
 
-	async function handleRegister() {
-		// Validate all fields before submission
-		if (!formValidation.validateAll()) {
-			error = 'Please fix the errors above before submitting.';
-			return;
-		}
-
-		loading = true;
-		error = '';
-
+	async function handleRegister(data: Record<string, unknown>) {
 		const result = await auth.register({
-			email: $values.email,
-			password: $values.password,
-			username: $values.username,
-			first_name: $values.firstName,
-			last_name: $values.lastName
+			email: data.email as string,
+			password: data.password as string,
+			username: data.username as string,
+			first_name: data.firstName as string,
+			last_name: data.lastName as string
 		});
 
 		if (result.success) {
 			goto('/login?message=Registration successful! You can now log in with your credentials.');
+			return { success: true };
 		} else {
-			error = result.error || 'Registration failed';
-			loading = false;
-		}
-	}
-
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			handleRegister();
+			return { success: false, error: result.error || 'Registration failed' };
 		}
 	}
 </script>
@@ -134,7 +59,7 @@
 			size="md"
 		/>
 
-		<form class="mt-8 space-y-6" on:submit|preventDefault={handleRegister} novalidate>
+		<Form onSubmit={handleRegister} submitText="Create Account" bind:data={formData}>
 			<div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
 				<div class="flex">
 					<div class="flex-shrink-0">
@@ -162,12 +87,9 @@
 					type="email"
 					required
 					placeholder="your@email.com"
-					value={$values.email}
-					externalErrors={$errors.email || []}
-					validationContext={$values}
+					bind:value={formData.email}
+					validators={[validators.email()]}
 					helpText="We'll send a verification link to this address"
-					on:change={({ detail }) => formValidation.setFieldValue('email', detail.value)}
-					on:keydown={handleKeydown}
 				/>
 
 				<FormField
@@ -176,11 +98,17 @@
 					type="text"
 					required
 					placeholder="Choose a unique username"
-					value={$values.username}
-					externalErrors={$errors.username || []}
+					bind:value={formData.username}
+					validators={[
+						validators.minLength(3, 'Username must be at least 3 characters'),
+						validators.maxLength(50, 'Username must be less than 50 characters'),
+						validators.pattern(
+							/^[a-zA-Z0-9_-]+$/,
+							'Username can only contain letters, numbers, underscores, and dashes'
+						),
+						validators.safe()
+					]}
 					helpText="3-50 characters, letters, numbers, underscores, and dashes only"
-					on:change={({ detail }) => formValidation.setFieldValue('username', detail.value)}
-					on:keydown={handleKeydown}
 				/>
 
 				<FormField
@@ -189,11 +117,9 @@
 					type="password"
 					required
 					placeholder="Enter a strong password"
-					value={$values.password}
-					externalErrors={$errors.password || []}
+					bind:value={formData.password}
+					validators={[validators.password({})]}
 					helpText="At least 8 characters with uppercase, lowercase, and numbers"
-					on:change={({ detail }) => formValidation.setFieldValue('password', detail.value)}
-					on:keydown={handleKeydown}
 				/>
 
 				<FormField
@@ -202,12 +128,10 @@
 					type="password"
 					required
 					placeholder="Confirm your password"
-					value={$values.confirmPassword}
-					externalErrors={$errors.confirmPassword || []}
-					validationContext={$values}
+					bind:value={formData.confirmPassword}
+					validators={[validators.confirmPassword('password')]}
+					validationContext={formData}
 					helpText="Must match the password above"
-					on:change={({ detail }) => formValidation.setFieldValue('confirmPassword', detail.value)}
-					on:keydown={handleKeydown}
 				/>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -216,10 +140,11 @@
 						label="First Name"
 						type="text"
 						placeholder="Optional"
-						value={$values.firstName}
-						externalErrors={$errors.firstName || []}
-						on:change={({ detail }) => formValidation.setFieldValue('firstName', detail.value)}
-						on:keydown={handleKeydown}
+						bind:value={formData.firstName}
+						validators={[
+							validators.maxLength(100, 'First name must be less than 100 characters'),
+							validators.safe()
+						]}
 					/>
 
 					<FormField
@@ -227,45 +152,27 @@
 						label="Last Name"
 						type="text"
 						placeholder="Optional"
-						value={$values.lastName}
-						externalErrors={$errors.lastName || []}
-						on:change={({ detail }) => formValidation.setFieldValue('lastName', detail.value)}
-						on:keydown={handleKeydown}
+						bind:value={formData.lastName}
+						validators={[
+							validators.maxLength(100, 'Last name must be less than 100 characters'),
+							validators.safe()
+						]}
 					/>
 				</div>
 			</div>
+		</Form>
 
-			{#if error}
-				<ErrorMessage message={error} />
-			{/if}
-
-			<Button
-				type="submit"
-				disabled={loading || $isValidating || !$isValid}
-				{loading}
-				fullWidth={true}
-			>
-				{loading ? 'Creating Account...' : 'Create Account'}
-			</Button>
-
-			{#if !$isValid && Object.keys($errors).length > 0}
-				<div class="text-center text-sm text-gray-600">
-					Please complete all required fields to continue
-				</div>
-			{/if}
-
-			<div class="text-center space-y-4">
-				<div class="text-xs text-gray-500">
-					By creating an account, you agree to participate in the GWTM collaborative observation
-					network. Your contact information will be used solely for coordination purposes.
-				</div>
-
-				<div>
-					<a href="/login" class="text-blue-600 hover:text-blue-500 font-medium">
-						Already have an account? Sign in
-					</a>
-				</div>
+		<div class="text-center space-y-4">
+			<div class="text-xs text-gray-500">
+				By creating an account, you agree to participate in the GWTM collaborative observation
+				network. Your contact information will be used solely for coordination purposes.
 			</div>
-		</form>
+
+			<div>
+				<a href="/login" class="text-blue-600 hover:text-blue-500 font-medium">
+					Already have an account? Sign in
+				</a>
+			</div>
+		</div>
 	</div>
 </div>

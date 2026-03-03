@@ -10,6 +10,8 @@
 // Core UI Components
 export { default as Button } from './Button.svelte';
 export { default as Card } from './Card.svelte';
+export { default as QuickActionCard } from './QuickActionCard.svelte';
+export { default as BackLink } from './BackLink.svelte';
 
 // Form Components
 export { default as Form } from '../forms/Form.svelte';
@@ -22,7 +24,6 @@ export { default as AlertBanner } from './AlertBanner.svelte';
 export { default as Table } from './Table.svelte';
 export { default as ControlGroup } from './ControlGroup.svelte';
 export { default as ToggleGroup } from './ToggleGroup.svelte';
-export { default as TabNavigation } from './TabNavigation.svelte';
 
 // Error Boundaries
 export { default as ErrorBoundary } from './ErrorBoundary.svelte';
@@ -38,7 +39,7 @@ export { default as ErrorToast } from './ErrorToast.svelte';
  */
 export interface ButtonProps {
 	variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-	size?: 'small' | 'medium' | 'large';
+	size?: 'sm' | 'md' | 'lg';
 	disabled?: boolean;
 	loading?: boolean;
 	type?: 'button' | 'submit' | 'reset';

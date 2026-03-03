@@ -34,7 +34,6 @@
 
 			// Get the pointing results (now includes instrument_name and username from API)
 			const results = await api.search.searchPointings(searchParams);
-			console.log('Search results with joined data:', results);
 
 			// Process results to extract RA/DEC if needed
 			if (results && results.length > 0) {
@@ -54,7 +53,6 @@
 			selectedPointings.clear();
 			selectedPointings = selectedPointings; // Trigger reactivity
 		} catch (err) {
-			console.error('Search failed:', err);
 			searchError = err instanceof Error ? err.message : 'Search failed. Please try again.';
 			searchResults = [];
 		} finally {
@@ -71,8 +69,8 @@
 				if (!isNaN(ra) && !isNaN(dec)) {
 					return { ra, dec };
 				}
-			} catch (err) {
-				console.warn('Failed to parse position:', position, err);
+			} catch (_err) {
+				// ignore malformed position strings
 			}
 		}
 		return {};
@@ -105,7 +103,6 @@
 			// Show success message (you could add a toast notification here)
 			alert('DOI request completed successfully');
 		} catch (err) {
-			console.error('DOI request failed:', err);
 			const errorMessage =
 				err instanceof Error ? err.message : 'DOI request failed. Please try again.';
 			alert(errorMessage);

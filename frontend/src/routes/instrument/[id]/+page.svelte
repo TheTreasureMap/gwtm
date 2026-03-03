@@ -43,7 +43,6 @@
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load instrument';
-			console.error('Error loading instrument:', err);
 		} finally {
 			loading = false;
 		}
@@ -58,7 +57,6 @@
 			eventsContributed = await api.alerts.getInstrumentEventsContributed(instrumentId);
 		} catch (err) {
 			eventsError = err instanceof Error ? err.message : 'Failed to load events contributed';
-			console.error('Error loading events contributed:', err);
 		} finally {
 			eventsLoading = false;
 		}
