@@ -17,8 +17,8 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
 
     event_galaxies = []
 
-    # Get galaxy lists for this alert
-    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.alertid == alertid).all()
+    # Get galaxy lists for this alert (alertid param is actually the graceid string)
+    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid == alertid).all()
 
     if not gal_lists:
         return event_galaxies
@@ -51,7 +51,7 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
                     "name": e.name,
                     "ra": ra,
                     "dec": dec,
-                    "info": sanatize_gal_info(e, glist),
+                    "info": sanatize_gal_info(e, glist, ra, dec),
                 }
             )
 

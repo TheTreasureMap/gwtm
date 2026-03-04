@@ -755,14 +755,13 @@
 
 	// Data loading functions
 	async function loadGalaxies() {
-		if (!selectedAlert?.id) return;
+		if (!graceid) return;
 
 		if (dataLoaderService) {
 			await dataLoaderService.loadGalaxyData();
-			if (showGalaxies) {
-				if (overlayManager) {
-					overlayManager.addGalaxyLayer();
-				}
+			showGalaxies = true;
+			if (overlayManager) {
+				overlayManager.addGalaxyLayer();
 			}
 		}
 	}
@@ -772,10 +771,9 @@
 
 		if (dataLoaderService) {
 			await dataLoaderService.loadCandidateData();
-			if (showCandidates) {
-				if (overlayManager) {
-					overlayManager.addCandidateLayer();
-				}
+			showCandidates = true;
+			if (overlayManager) {
+				overlayManager.addCandidateLayer();
 			}
 		}
 	}
@@ -785,10 +783,9 @@
 
 		if (dataLoaderService) {
 			await dataLoaderService.loadIceCubeData();
-			if (showIceCube) {
-				if (overlayManager) {
-					overlayManager.addIceCubeLayer();
-				}
+			showIceCube = true;
+			if (overlayManager) {
+				overlayManager.addIceCubeLayer();
 			}
 		}
 	}
