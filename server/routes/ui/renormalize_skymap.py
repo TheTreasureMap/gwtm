@@ -1,5 +1,7 @@
 """Renormalize skymap endpoint."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -13,7 +15,7 @@ router = APIRouter(tags=["UI"])
 @router.get("/ajax_renormalize_skymap")
 async def renormalize_skymap(
     graceid: str = Query(...),
-    alert_id: int = Query(...),
+    alert_id: Optional[int] = Query(default=None),
     approx_cov: int = Query(default=1),
     inst_cov: str = Query(default=""),
     inst_plan: str = Query(default=""),
@@ -149,9 +151,12 @@ async def renormalize_skymap(
         # No pointings selected — return empty payload
         return {"detection_overlays": []}
 
-    # Get skymap URL from the specific alert version
-    specific_alert = db.query(GWAlert).filter(GWAlert.id == alert_id).first()
-    mappathinfo = specific_alert.skymap_fits_url if specific_alert else alert.skymap_fits_url
+    # Get skymap URL from the specific alert version (fall back to most-recent if not provided)
+    if alert_id is not None:
+        specific_alert = db.query(GWAlert).filter(GWAlert.id == alert_id).first()
+        mappathinfo = specific_alert.skymap_fits_url if specific_alert else alert.skymap_fits_url
+    else:
+        mappathinfo = alert.skymap_fits_url
     if not mappathinfo:
         raise HTTPException(status_code=400, detail="No skymap URL found for this alert")
 
@@ -248,7 +253,7 @@ async def renormalize_skymap(
 
     # Visualize: calculate 50% and 90% contours from renormalized map
     # Try cache first
-    cache_key_path = f"cache/{cache_key}_contours"
+    cache_key_path = f"cache/{cache_key}_contours_v2"
     cached = get_cached_file(cache_key_path, settings)
     if cached:
         contour_data = json.loads(cached) if isinstance(cached, str) else cached
@@ -275,46 +280,55 @@ async def renormalize_skymap(
 
 
 def _calculate_contours(prob_map: "np.ndarray", nside: int) -> list:
-    """Calculate 50% and 90% credible-interval contours from a probability map."""
+    """Calculate 50% and 90% credible-interval contours from a probability map.
+
+    For each credible level, find the *boundary* pixels (pixels inside the
+    credible region that have at least one neighbour outside it) and return
+    their four-corner polygons.  This traces the outline of the region rather
+    than filling it, producing a visible contour on the Aladin sky map.
+    """
     import numpy as np
     import healpy as hp
 
-    # Sort pixels by probability descending
+    # Downsample once for the whole function to keep things fast
+    target_nside = min(nside, 64)
+    if nside > target_nside:
+        prob_map = hp.ud_grade(prob_map, target_nside)
+    work_nside = target_nside
+
+    # Sort pixels by probability descending, build cumulative sum
     sort_idx = np.argsort(prob_map)[::-1]
     cumsum = np.cumsum(prob_map[sort_idx])
 
     contours = []
     for level in (0.5, 0.9):
-        # Pixels inside this credible level
-        inside = sort_idx[cumsum <= level]
-        if len(inside) == 0:
+        inside_pixels = sort_idx[cumsum <= level]
+        if len(inside_pixels) == 0:
             continue
 
-        # Convert pixel centres to (ra, dec) pairs and group into rough polygons
-        # Use healpy boundaries for each pixel (expensive for many pixels — downsample if needed)
-        target_nside = min(nside, 64)  # Limit resolution for speed
-        if nside > target_nside:
-            # Downgrade map
-            downgraded = hp.ud_grade(prob_map, target_nside)
-            sort_idx_d = np.argsort(downgraded)[::-1]
-            cumsum_d = np.cumsum(downgraded[sort_idx_d])
-            inside = sort_idx_d[cumsum_d <= level]
-            work_nside = target_nside
-        else:
-            work_nside = nside
+        # Vectorised boundary detection:
+        # get_all_neighbours returns (8, N); -1 means no such neighbour (poles).
+        all_neighbors = hp.get_all_neighbours(work_nside, inside_pixels)  # (8, N)
+        # Treat missing-neighbour sentinel (-1) as "outside"
+        sentinel = hp.nside2npix(work_nside)
+        all_neighbors_safe = np.where(all_neighbors >= 0, all_neighbors, sentinel)
+        neighbor_inside = np.isin(all_neighbors_safe, inside_pixels)  # (8, N)
+        is_boundary = ~np.all(neighbor_inside, axis=0)
+        boundary_pixels = inside_pixels[is_boundary]
 
-        # Get pixel boundaries and build polygon list
-        polygon_points = []
-        step = max(1, len(inside) // 500)  # Sample at most 500 pixels per level
-        for pix in inside[::step]:
+        if len(boundary_pixels) == 0:
+            continue
+
+        # Sample at most 500 boundary pixels per level to limit Aladin payload size
+        step = max(1, len(boundary_pixels) // 500)
+        for pix in boundary_pixels[::step]:
             corners = hp.boundaries(work_nside, int(pix), step=1)  # shape (3, 4)
-            # Convert unit-sphere Cartesian to RA/Dec
             theta, phi = hp.vec2ang(corners.T)
             ra = np.degrees(phi)
             dec = 90.0 - np.degrees(theta)
-            polygon_points.append([[float(r), float(d)] for r, d in zip(ra, dec)])
-
-        if polygon_points:
-            contours.append({"polygon": polygon_points[0], "time": 0})
+            contours.append({
+                "polygon": [[float(r), float(d)] for r, d in zip(ra, dec)],
+                "time": 0,
+            })
 
     return contours

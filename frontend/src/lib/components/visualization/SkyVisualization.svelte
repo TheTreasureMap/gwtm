@@ -39,6 +39,8 @@
 
 	// Component state
 	let loading = true;
+	let coverageLoading = false;
+	let renormLoading = false;
 	let error = '';
 	let contourData: any = null;
 	let footprintData: any = null;
@@ -813,17 +815,17 @@
 		if (!graceid || !visualizationDataManager) return;
 
 		try {
-			loading = true;
+			coverageLoading = true;
 			await visualizationDataManager.calculateCoverage({
 				...event.detail,
 				mappathinfo: selectedAlert?.skymap_fits_url
 			});
-			// updateCoveragePlot will be called by the event handler
+			// updateCoveragePlot will be called by the coverage-calculated event handler
 		} catch (err) {
 			console.error('Failed to calculate coverage:', err);
 			error = 'Failed to calculate coverage. Please try again.';
 		} finally {
-			loading = false;
+			coverageLoading = false;
 		}
 	}
 
@@ -831,39 +833,47 @@
 		if (!graceid || !selectedAlert) return;
 
 		try {
-			loading = true;
+			renormLoading = true;
 
+			// Show progress immediately — computation can take minutes
+			const resultDiv = document.getElementById('renorm-result');
+			if (resultDiv) {
+				resultDiv.innerHTML =
+					'<span class="text-blue-600">Computing renormalized contours, please wait...</span>';
+			}
+
+			const alertId = (selectedAlert as any)?.original_alert?.id ?? selectedAlert?.id;
 			const response = await fetch(
-				`/ajax_renormalize_skymap?graceid=${graceid}&alert_id=${selectedAlert.id}&approx_cov=1&_ts=${Date.now()}`
+				`/ajax_renormalize_skymap?graceid=${graceid}${alertId !== undefined ? `&alert_id=${alertId}` : ''}&approx_cov=1&_ts=${Date.now()}`
 			);
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 			const result = await response.json();
 
 			if (result && result.detection_overlays) {
-				// Update visualization with renormalized contours
+				// Update visualization with renormalized contours.
+				// await tick() ensures Svelte flushes the prop to OverlayManager
+				// before addContourLayer() reads detectionContours.
 				detectionContours = result.detection_overlays;
+				await tick();
 				updateVisualization();
 
-				// Update result display
-				const resultDiv = document.getElementById('renorm-result');
 				if (resultDiv) {
 					resultDiv.innerHTML =
 						'<span class="text-green-600 font-medium">The Skymap has been Renormalized (~ look up! ~)</span>';
 				}
 			} else {
-				const resultDiv = document.getElementById('renorm-result');
 				if (resultDiv) {
 					resultDiv.innerHTML = '<span class="text-red-600">Done! No pointings selected.</span>';
 				}
 			}
 		} catch (err) {
 			console.error('Failed to visualize renormalized skymap:', err);
-			const resultDiv = document.getElementById('renorm-result');
-			if (resultDiv) {
-				resultDiv.innerHTML = '<span class="text-red-600">Error in Renormalize Skymap</span>';
+			const errDiv = document.getElementById('renorm-result');
+			if (errDiv) {
+				errDiv.innerHTML = '<span class="text-red-600">Error in Renormalize Skymap</span>';
 			}
 		} finally {
-			loading = false;
+			renormLoading = false;
 		}
 	}
 
@@ -871,7 +881,7 @@
 		if (!graceid || !selectedAlert) return;
 
 		try {
-			loading = true;
+			renormLoading = true;
 
 			// Update progress
 			const resultDiv = document.getElementById('renorm-result');
@@ -880,9 +890,10 @@
 					'<span class="text-blue-600">Generating fits file...</span><div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-blue-600 h-2 rounded-full" style="width: 45%"></div></div>';
 			}
 
+			const alertId = (selectedAlert as any)?.original_alert?.id ?? selectedAlert?.id;
 			// Call API with download flag
 			const response = await fetch(
-				`/ajax_renormalize_skymap?graceid=${graceid}&alert_id=${selectedAlert.id}&approx_cov=1&download=true&_ts=${Date.now()}`
+				`/ajax_renormalize_skymap?graceid=${graceid}${alertId !== undefined ? `&alert_id=${alertId}` : ''}&approx_cov=1&download=true&_ts=${Date.now()}`
 			);
 
 			if (response.ok) {
@@ -928,7 +939,7 @@
 					'<span class="text-red-600">Error Downloading Renormalized Skymap</span>';
 			}
 		} finally {
-			loading = false;
+			renormLoading = false;
 		}
 	}
 
@@ -1052,8 +1063,9 @@
 		<EventExplorer
 			selectedAlert={processedSelectedAlert || selectedAlert}
 			{loading}
+			{coverageLoading}
 			{error}
-			{plotlyContainer}
+			bind:plotlyContainer
 			instruments={footprintData
 				? footprintData
 						.filter((inst: any) => inst.id !== undefined)

@@ -8,6 +8,7 @@
 
 	export let selectedAlert: GWAlertSchema | null = null;
 	export let loading: boolean = false;
+	export let coverageLoading: boolean = false;
 	export let error: string = '';
 	export let plotlyContainer: HTMLDivElement | null = null;
 	export let instruments: Array<{ id: number; name: string }> = [];
@@ -70,8 +71,9 @@
 			<SummaryTab {selectedAlert} />
 		{:else if activeTab === 'coverage'}
 			<CoverageCalculatorTab
-				{plotlyContainer}
+				bind:plotlyContainer
 				{instruments}
+				loading={coverageLoading}
 				on:calculate={handleCalculateCoverage}
 			/>
 		{:else if activeTab === 'renorm'}
