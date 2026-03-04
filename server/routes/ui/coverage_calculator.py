@@ -1,11 +1,15 @@
 """Coverage calculator endpoint."""
 
+import logging
+
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from server.db.database import get_db
 from server.auth.auth import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["UI"])
 
@@ -45,6 +49,23 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
 
     # Get equivalent params from request data
     mappathinfo = data.get("mappathinfo")
+
+    # If mappathinfo not supplied by the frontend, look it up from the DB
+    if not mappathinfo:
+        from server.db.models.gw_alert import GWAlert
+        alert_row = (
+            db.query(GWAlert.skymap_fits_url)
+            .filter(GWAlert.graceid == graceid, GWAlert.skymap_fits_url.isnot(None))
+            .order_by(GWAlert.datecreated.desc())
+            .first()
+        )
+        if alert_row:
+            mappathinfo = alert_row.skymap_fits_url
+            logger.info("coverage_calculator: resolved mappathinfo from DB: %s", mappathinfo)
+        else:
+            logger.warning("coverage_calculator: no skymap_fits_url found in DB for graceid=%s", graceid)
+            raise HTTPException(status_code=400, detail="No skymap URL found for this alert")
+
     inst_cov = data.get("inst_cov", "")
     band_cov = data.get("band_cov", "")
     depth = data.get("depth_cov")
@@ -165,6 +186,7 @@ async def calculate_healpix_coverage(
             GWmap = hp.read_map(f.name)
             nside = hp.npix2nside(len(GWmap))
     except Exception as e:
+        logger.error("coverage_calculator: failed to download skymap mappathinfo=%s: %s", mappathinfo, e)
         raise HTTPException(
             status_code=400, detail=f"Calculator ERROR: Map not found. {str(e)}"
         )
@@ -296,8 +318,9 @@ async def calculate_healpix_coverage(
     )
 
     if not time_of_signal or not time_of_signal[0]:
+        logger.error("coverage_calculator: no time_of_signal found for graceid=%s", graceid)
         raise HTTPException(
-            status_code=400, detail="ERROR: Please contact administrator"
+            status_code=400, detail="ERROR: No time_of_signal for this alert — please contact administrator"
         )
 
     time_of_signal = time_of_signal[0]

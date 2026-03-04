@@ -31,6 +31,7 @@
 	 */
 	export let plotlyContainer: HTMLDivElement | null = null;
 	export let instruments: Array<{ id: number; name: string }> = [];
+	export let loading: boolean = false;
 
 	// Form state
 	let formData = {
@@ -261,7 +262,9 @@
 
 			<!-- Calculate Button -->
 			<div class="mt-8 flex justify-center">
-				<Button variant="primary" size="lg" on:click={handleCalculate}>Calculate Coverage</Button>
+				<Button variant="primary" size="lg" {loading} disabled={loading} on:click={handleCalculate}>
+					{loading ? 'Calculating...' : 'Calculate Coverage'}
+				</Button>
 			</div>
 		</div>
 	</div>
