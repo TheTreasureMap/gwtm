@@ -10,6 +10,9 @@
 		xl: 'h-32 w-32'
 	};
 
+	let spinnerClass: string = '';
+	let containerClass: string = '';
+
 	$: spinnerClass = `animate-spin rounded-full border-b-2 border-blue-600 ${sizeClasses[size]}`;
 	$: containerClass = centered ? 'flex justify-center items-center py-12' : '';
 </script>

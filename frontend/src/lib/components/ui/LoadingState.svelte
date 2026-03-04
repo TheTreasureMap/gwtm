@@ -9,6 +9,10 @@
 
 	export let spinnerClass: string = '';
 
+	let containerClass: string = '';
+	let spinnerSize: string = '';
+	let textSize: string = '';
+
 	$: containerClass = [
 		inline ? 'inline-flex' : 'flex',
 		'items-center justify-center gap-3',

@@ -21,7 +21,7 @@ export type ValidatorFunction<T = unknown> = (
 // More flexible validator type that accepts any validator function
 export type AnyValidatorFunction = ValidatorFunction<unknown>;
 
-export type FieldValidator<T = unknown> = {
+export type FieldValidator<_T = unknown> = {
 	required?: boolean;
 	validators?: AnyValidatorFunction[];
 	customMessage?: string;

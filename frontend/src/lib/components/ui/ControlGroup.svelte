@@ -19,6 +19,9 @@
 	});
 	$: controlId = id || controlId;
 
+	let containerClass: string = '';
+	let labelClass: string = '';
+
 	$: containerClass = [inline ? 'inline-flex items-center gap-2' : 'space-y-1', className]
 		.filter(Boolean)
 		.join(' ');
