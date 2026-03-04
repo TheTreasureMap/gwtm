@@ -1,44 +1,50 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	interface TestWindow extends Window {
+		$?: { fn: { jquery: string } };
+		A?: { aladin: (selector: string, config: unknown) => unknown };
+		Plotly?: { version: string };
+	}
+
 	let aladinStatus = 'Checking...';
 	let plotlyStatus = 'Checking...';
 	let jqueryStatus = 'Checking...';
 
 	onMount(() => {
 		console.log('Testing external scripts...');
+		const win = window as TestWindow;
 
 		// Check jQuery
-		if (typeof (window as any).$ !== 'undefined') {
+		if (win.$ !== undefined) {
 			jqueryStatus = 'Available';
-			console.log('jQuery version:', (window as any).$.fn.jquery);
+			console.log('jQuery version:', win.$.fn.jquery);
 		} else {
 			jqueryStatus = 'Missing';
 		}
 
 		// Check Aladin
-		if (typeof (window as any).A !== 'undefined') {
+		if (win.A !== undefined) {
 			aladinStatus = 'Available';
-			console.log('Aladin object:', (window as any).A);
+			console.log('Aladin object:', win.A);
 		} else {
 			aladinStatus = 'Missing';
 		}
 
 		// Check Plotly
-		if (typeof (window as any).Plotly !== 'undefined') {
+		if (win.Plotly !== undefined) {
 			plotlyStatus = 'Available';
-			console.log('Plotly version:', (window as any).Plotly.version);
+			console.log('Plotly version:', win.Plotly.version);
 		} else {
 			plotlyStatus = 'Missing';
 		}
 
 		// Try to create a simple Aladin instance if available
-		if (typeof (window as any).A !== 'undefined') {
+		if (win.A !== undefined) {
 			try {
 				const container = document.getElementById('test-aladin');
 				if (container) {
-					const A = (window as { A: { aladin: (selector: string, config: unknown) => unknown } }).A;
-					const aladin = A.aladin('#test-aladin', {
+					const aladin = win.A.aladin('#test-aladin', {
 						fov: 60,
 						target: '0 0',
 						showReticle: false

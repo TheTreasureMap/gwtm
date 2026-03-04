@@ -44,9 +44,16 @@ export default ts.config(
 		rules: {
 			'no-undef': 'off',
 			'@typescript-eslint/no-explicit-any': 'warn',
-			'@typescript-eslint/no-unused-vars': 'warn',
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{
+					argsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_',
+					varsIgnorePattern: '^_'
+				}
+			],
 			'svelte/require-each-key': 'warn',
-			'svelte/no-reactive-reassign': 'warn',
+			'svelte/no-reactive-reassign': ['warn', { props: false }],
 			'no-useless-escape': 'warn'
 		}
 	},
