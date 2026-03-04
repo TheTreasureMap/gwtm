@@ -46,40 +46,46 @@ def get_farrate_farunit(far: float) -> Tuple[float, str]:
     return far_rate_dict["millennium"], "millennia"
 
 
-def sanatize_gal_info(galaxy_entry, galaxy_list) -> Dict[str, Any]:
+def sanatize_gal_info(galaxy_entry, galaxy_list, ra: float = 0.0, dec: float = 0.0) -> str:
     """
-    Format galaxy information for display.
+    Format galaxy information as an HTML string for display in Aladin popups.
 
     Args:
         galaxy_entry: A galaxy entry object
         galaxy_list: The parent galaxy list object
+        ra: Right ascension (degrees)
+        dec: Declination (degrees)
 
     Returns:
-        Formatted galaxy information as a dictionary
+        Formatted galaxy information as an HTML string
     """
-    info_dict = {}
+    ret = f"<b>RA DEC:</b> {round(ra, 4)} {round(dec, 4)}<br>"
+    ret += f"<b>Score:</b> {galaxy_entry.score}<br>"
+    ret += f"<b>Rank:</b> {galaxy_entry.rank}<br>"
 
+    reference = getattr(galaxy_list, "reference", None)
+    doi_url = getattr(galaxy_list, "doi_url", None)
+    if reference:
+        ret += f'<a href="{reference}">Reference</a><br>'
+    if doi_url:
+        ret += f'<a href="{doi_url}">DOI</a><br>'
+
+    info_dict = {}
     if hasattr(galaxy_entry, "info") and galaxy_entry.info:
-        # Check if info is already a dict (SQLAlchemy JSON column) or a string
         if isinstance(galaxy_entry.info, dict):
-            info_dict = galaxy_entry.info.copy()
+            info_dict = galaxy_entry.info
         elif isinstance(galaxy_entry.info, str):
             try:
                 info_dict = json.loads(galaxy_entry.info)
             except json.JSONDecodeError:
-                info_dict = {}
-        else:
-            # Handle other types by converting to empty dict
-            info_dict = {}
+                pass
 
-    # Add galaxy list information
-    info_dict["Group"] = (
-        galaxy_list.groupname if hasattr(galaxy_list, "groupname") else ""
-    )
-    info_dict["Score"] = galaxy_entry.score if hasattr(galaxy_entry, "score") else ""
-    info_dict["Rank"] = galaxy_entry.rank if hasattr(galaxy_entry, "rank") else ""
+    if info_dict:
+        ret += "<b>Other Information:</b><br>"
+        for key, val in info_dict.items():
+            ret += f"<b>{key}:</b> {str(val).split(chr(10))[0]}<br>"
 
-    return info_dict
+    return ret
 
 
 def sanatize_icecube_event(event, notice) -> Dict[str, Any]:

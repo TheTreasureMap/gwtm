@@ -24,6 +24,9 @@ def sanatize_pointing(position: str) -> Tuple[float, float]:
         coords = position.split("POINT(")[1].split(")")[0].split(" ")
         ra = float(coords[0])
         dec = float(coords[1])
+        # PostGIS returns longitude in -180..+180; normalize to 0..360 for astronomy
+        if ra < 0:
+            ra += 360.0
         return ra, dec
     except (IndexError, ValueError):
         return 0.0, 0.0
