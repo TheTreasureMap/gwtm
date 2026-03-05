@@ -374,6 +374,26 @@
 		}
 	}
 
+	// Show or hide a marker layer by data type
+	export function toggleMarkers(dataType: string, show: boolean) {
+		const layerMap: Record<string, any[]> = {
+			galaxies: overlayLists.galaxyMarkers,
+			candidates: overlayLists.candidateMarkers,
+			icecube: overlayLists.icecubeMarkers
+		};
+		const layers = layerMap[dataType];
+		if (!layers) return;
+		layers.forEach((layer: any) => {
+			if (show) {
+				layer.markerlayer?.show();
+				if (layer.has_overlay) layer.overlaylayer?.show();
+			} else {
+				layer.markerlayer?.hide();
+				if (layer.has_overlay) layer.overlaylayer?.hide();
+			}
+		});
+	}
+
 	// Add MOC layer
 	export function addMOCLayer(mocData: any[]) {
 		if (!aladin || !mocData || mocData.length === 0) return [];

@@ -53,6 +53,7 @@
 
 	export let footprintData: any = null;
 	export let galaxyData: any[] = [];
+	export let galaxiesLoading: boolean = false;
 	export let candidateData: any[] = [];
 	export let icecubeData: any[] = [];
 	export let hasIceCubeData: boolean = false;
@@ -166,7 +167,7 @@
 		title="Galaxies"
 		data={galaxyData}
 		expanded={showGalaxies}
-		loading={false}
+		loading={galaxiesLoading}
 		hasData={galaxyData.length > 0}
 		dataType="galaxies"
 		on:toggle={handleToggleGalaxies}

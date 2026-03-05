@@ -50,6 +50,7 @@
 	let selectedAlert: ProcessedGWAlert | null = null;
 	let processedSelectedAlert: GWAlertSchema | null = null; // For SummaryTab with Flask-compatible processing
 	let galaxyData: any[] = [];
+	let galaxiesLoading = false;
 	let candidateData: any[] = [];
 	let icecubeData: any[] = [];
 
@@ -447,6 +448,8 @@
 			// Clear existing data overlays only (preserve base sky survey)
 			if (overlayManager) {
 				overlayManager.clearDataOverlays();
+				// Sync current hidden instrument state so footprints are re-added correctly
+				overlayManager.setHiddenInstruments(hiddenInstrumentColors);
 			}
 
 			// Add sun and moon overlays (always shown like in Flask)
@@ -660,8 +663,10 @@
 	}
 
 	function handleToggleMarkerGroup(event: CustomEvent) {
-		const { groupName, checked, dataType } = event.detail;
-		// Implementation for toggling marker groups
+		const { checked, dataType } = event.detail;
+		if (overlayManager) {
+			overlayManager.toggleMarkers(dataType, checked);
+		}
 	}
 
 	function handleAnimateToMarker(event: CustomEvent) {
@@ -758,10 +763,15 @@
 		if (!graceid) return;
 
 		if (dataLoaderService) {
-			await dataLoaderService.loadGalaxyData();
-			showGalaxies = true;
-			if (overlayManager) {
-				overlayManager.addGalaxyLayer();
+			galaxiesLoading = true;
+			try {
+				await dataLoaderService.loadGalaxyData();
+				showGalaxies = true;
+				if (overlayManager) {
+					overlayManager.addGalaxyLayer();
+				}
+			} finally {
+				galaxiesLoading = false;
 			}
 		}
 	}
@@ -1027,6 +1037,7 @@
 			<FollowUpControls
 				{footprintData}
 				{galaxyData}
+				{galaxiesLoading}
 				{candidateData}
 				{icecubeData}
 				{hasIceCubeData}
