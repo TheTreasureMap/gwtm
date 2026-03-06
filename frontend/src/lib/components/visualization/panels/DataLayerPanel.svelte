@@ -34,7 +34,7 @@
 -->
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { ToggleGroup, LoadingState } from '$lib/components/ui';
+	import { LoadingState } from '$lib/components/ui';
 
 	const dispatch = createEventDispatcher<{
 		toggle: { expanded: boolean };
@@ -85,30 +85,12 @@
 	 */
 	export let dataType: string = '';
 
-	// Organize data into groups for display
-	$: groupedData = organizeDataIntoGroups(data);
+	// Per-group collapse state (all collapsed by default, matching Flask behaviour)
+	let expandedGroups: Record<string, boolean> = {};
 
-	function organizeDataIntoGroups(items: any[]): Record<string, any> {
-		if (!items || !Array.isArray(items)) return {};
-
-		// Group by a property if it exists, otherwise put everything in 'default'
-		const groups: Record<string, any> = {};
-
-		items.forEach((item, index) => {
-			const groupKey = item.group || item.category || 'default';
-			if (!groups[groupKey]) {
-				groups[groupKey] = {
-					name: groupKey,
-					markers: []
-				};
-			}
-			groups[groupKey].markers.push({
-				...item,
-				name: item.name || item.label || `Item ${index + 1}`
-			});
-		});
-
-		return groups;
+	function toggleGroupExpand(groupName: string) {
+		expandedGroups[groupName] = !expandedGroups[groupName];
+		expandedGroups = expandedGroups; // trigger reactivity
 	}
 
 	function handleToggle() {
@@ -180,30 +162,38 @@
 		<div class="panel-content bg-gray-50 rounded border p-3 max-h-64 overflow-y-auto">
 			{#if loading}
 				<LoadingState message="Loading {title.toLowerCase()}..." size="small" />
-			{:else if Object.keys(groupedData).length === 0}
+			{:else if !data || data.length === 0}
 				<p class="text-sm text-gray-600">No {title.toLowerCase()} data available</p>
 			{:else}
-				{#each Object.entries(groupedData) as [groupName, group]}
-					<div class="marker-group mb-3">
-						{#if Object.keys(groupedData).length > 1}
-							<div class="flex items-center gap-2 mb-2">
-								<input
-									type="checkbox"
-									checked={true}
-									on:change={(e) => handleMarkerGroupToggle(groupName, e.target?.checked)}
-									class="w-3 h-3"
-								/>
-								<span class="text-xs font-medium text-gray-700 uppercase tracking-wide">
-									{groupName}
-								</span>
-							</div>
-						{/if}
+				{#each data as group}
+					<div class="marker-group mb-2">
+						<!-- Group header: collapse arrow + checkbox + group name -->
+						<div class="flex items-center gap-1 mb-1">
+							<button
+								class="text-gray-500 hover:text-gray-700 w-4 text-xs"
+								on:click={() => toggleGroupExpand(group.name)}
+								aria-label="Toggle {group.name}"
+							>
+								{expandedGroups[group.name] ? '▼' : '▶'}
+							</button>
+							<input
+								type="checkbox"
+								checked={true}
+								on:change={(e) => handleMarkerGroupToggle(group.name, e.target?.checked)}
+								class="w-3 h-3"
+							/>
+							{#if group.color}
+								<span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background-color: {group.color}"></span>
+							{/if}
+							<span class="text-xs font-medium text-gray-700">{group.name}</span>
+						</div>
 
-						{#if group.markers}
-							<div class="marker-list space-y-1 ml-4">
+						<!-- Individual markers (collapsible) -->
+						{#if expandedGroups[group.name] && group.markers}
+							<div class="marker-list space-y-0.5 ml-5">
 								{#each group.markers as marker}
 									<button
-										class="block w-full text-left p-1 text-xs hover:bg-blue-100 rounded transition-colors"
+										class="block w-full text-left px-1 py-0.5 text-xs text-blue-700 hover:bg-blue-100 rounded transition-colors"
 										on:click={() => handleMarkerClick(marker.name)}
 									>
 										{marker.name}

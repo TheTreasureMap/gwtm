@@ -663,9 +663,9 @@
 	}
 
 	function handleToggleMarkerGroup(event: CustomEvent) {
-		const { checked, dataType } = event.detail;
+		const { checked, dataType, groupName } = event.detail;
 		if (overlayManager) {
-			overlayManager.toggleMarkers(dataType, checked);
+			overlayManager.toggleMarkers(dataType, checked, groupName);
 		}
 	}
 
