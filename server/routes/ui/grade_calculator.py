@@ -1,0 +1,131 @@
+"""Grade calculator endpoint."""
+
+from fastapi import APIRouter, Depends, Request, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+from server.db.database import get_db
+from server.db.models.pointing import Pointing
+from server.db.models.pointing_event import PointingEvent
+from server.db.models.gw_alert import GWAlert
+from server.auth.auth import get_current_user
+
+router = APIRouter(tags=["UI"])
+
+# Grading thresholds: list of (upper_bound, grade), first match wins.
+# Sorted ascending by threshold; the final tuple is the fallback.
+TIME_GRADE_THRESHOLDS = [(1, 1.0), (6, 0.9), (24, 0.7), (72, 0.5)]
+TIME_GRADE_DEFAULT = 0.3
+
+POSITION_GRADE_THRESHOLDS = [(5, 1.0), (15, 0.8), (30, 0.6)]
+POSITION_GRADE_DEFAULT = 0.3
+
+# Depth uses >= (higher is better), so thresholds are descending.
+DEPTH_GRADE_THRESHOLDS = [(23, 1.0), (21, 0.8), (19, 0.6)]
+DEPTH_GRADE_DEFAULT = 0.4
+
+
+def _grade_by_upper_bound(value, thresholds, default):
+    """Return the grade for the first threshold the value is <= to."""
+    for bound, grade in thresholds:
+        if value <= bound:
+            return grade
+    return default
+
+
+def _grade_by_lower_bound(value, thresholds, default):
+    """Return the grade for the first threshold the value is >= to."""
+    for bound, grade in thresholds:
+        if value >= bound:
+            return grade
+    return default
+
+
+@router.post("/ajax_grade_calculator")
+async def grade_calculator(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Calculate grades for pointings based on various metrics."""
+    data = await request.json()
+
+    pointing_ids = data.get("pointing_ids", [])
+    if not pointing_ids:
+        raise HTTPException(status_code=400, detail="No pointings specified")
+
+    # Get the pointings
+    pointings = db.query(Pointing).filter(Pointing.id.in_(pointing_ids)).all()
+
+    # Calculate grades for each pointing based on actual metrics
+    results = {}
+
+    # Get associated GW alerts for time grading
+    pointing_events = (
+        db.query(PointingEvent).filter(PointingEvent.pointingid.in_(pointing_ids)).all()
+    )
+
+    event_map = {pe.pointingid: pe.graceid for pe in pointing_events}
+
+    for pointing in pointings:
+        # Get the associated GW alert
+        graceid = event_map.get(pointing.id)
+        time_grade = 0.5  # Default
+        position_grade = 0.5  # Default
+        depth_grade = 0.5  # Default
+
+        if graceid:
+            alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
+            if alert and alert.time_of_signal and pointing.time:
+                # Time grade: earlier observations get higher grades
+                time_diff_hours = (
+                    pointing.time - alert.time_of_signal
+                ).total_seconds() / 3600
+                time_grade = _grade_by_upper_bound(
+                    time_diff_hours, TIME_GRADE_THRESHOLDS, TIME_GRADE_DEFAULT
+                )
+
+        # Position grade: simplified calculation based on alert coordinates
+        if graceid and alert and alert.avgra is not None and alert.avgdec is not None:
+            # Get pointing coordinates
+            position_result = (
+                db.query(func.ST_AsText(Pointing.position))
+                .filter(Pointing.id == pointing.id)
+                .first()
+            )
+            if position_result and position_result[0]:
+                try:
+                    pos_str = position_result[0]
+                    pointing_ra = float(pos_str.split("POINT(")[1].split(" ")[0])
+                    pointing_dec = float(pos_str.split(" ")[1].split(")")[0])
+
+                    # Simple angular distance calculation (rough approximation)
+                    ra_diff = abs(pointing_ra - alert.avgra)
+                    dec_diff = abs(pointing_dec - alert.avgdec)
+                    angular_dist = (ra_diff**2 + dec_diff**2) ** 0.5
+
+                    position_grade = _grade_by_upper_bound(
+                        angular_dist,
+                        POSITION_GRADE_THRESHOLDS,
+                        POSITION_GRADE_DEFAULT,
+                    )
+                except (ValueError, TypeError):
+                    position_grade = 0.5
+
+        # Depth grade: deeper observations get higher grades
+        if pointing.depth is not None:
+            depth_grade = _grade_by_lower_bound(
+                pointing.depth, DEPTH_GRADE_THRESHOLDS, DEPTH_GRADE_DEFAULT
+            )
+
+        # Calculate weighted overall grade
+        overall_grade = time_grade * 0.4 + position_grade * 0.4 + depth_grade * 0.2
+
+        results[pointing.id] = {
+            "time_grade": round(time_grade, 2),
+            "position_grade": round(position_grade, 2),
+            "depth_grade": round(depth_grade, 2),
+            "overall_grade": round(overall_grade, 2),
+        }
+
+    return results

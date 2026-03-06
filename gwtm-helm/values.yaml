@@ -32,6 +32,35 @@ backend:
       cpu: 200m
       memory: 256Mi    
 
+fastapi:
+  name: fastapi-backend
+  replicas: 2
+  image:
+    repository: gwtm-fastapi
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+    targetPort: 8000
+  readinessProbe:
+    enabled: false
+    path: /docs
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  livenessProbe:
+    enabled: false
+    path: /docs
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  workers: 4
+
 frontend:
   name: frontend
   replicas: 2
