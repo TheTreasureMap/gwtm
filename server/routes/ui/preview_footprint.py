@@ -18,14 +18,12 @@ async def preview_footprint(
     shape: str = "Circular",
     polygon: str = None,
     db: Session = Depends(get_db),
-    db: Session = Depends(get_db),
 ):
     """Generate a preview of an instrument footprint."""
     import math
     import json
     import plotly
     import plotly.graph_objects as go
-
 
     # This is a UI helper endpoint to visualize a footprint before saving
     # It generates the appropriate visualization for the given parameters
@@ -48,7 +46,6 @@ async def preview_footprint(
             point_dec = dec + y
             circle_points.append([point_ra, point_dec])
 
-
         # Close the polygon
         circle_points.append(circle_points[0])
         vertices.append(circle_points)
@@ -60,17 +57,10 @@ async def preview_footprint(
         half_width = width / 2
         half_height = height / 2
 
-
         # No cos(dec) correction needed for simple rectangular footprints
         ra_offset = half_width
 
-
         rect_points = [
-            [ra - ra_offset, dec - half_height],  # bottom left
-            [ra - ra_offset, dec + half_height],  # top left
-            [ra + ra_offset, dec + half_height],  # top right
-            [ra + ra_offset, dec - half_height],  # bottom right
-            [ra - ra_offset, dec - half_height],  # close the polygon
             [ra - ra_offset, dec - half_height],  # bottom left
             [ra - ra_offset, dec + half_height],  # top left
             [ra + ra_offset, dec + half_height],  # top right
@@ -90,7 +80,6 @@ async def preview_footprint(
     else:
         return {"error": "Invalid shape type or missing required parameters"}
 
-
     # Create a plotly figure
     traces = []
     for vert in vertices:
@@ -98,10 +87,8 @@ async def preview_footprint(
         ys = [v[1] for v in vert]
         trace = go.Scatter(
             x=xs, y=ys, line_color="blue", fill="tozeroy", fillcolor="violet"
-            x=xs, y=ys, line_color="blue", fill="tozeroy", fillcolor="violet"
         )
         traces.append(trace)
-
 
     fig = go.Figure(data=traces)
     fig.update_layout(
@@ -110,11 +97,8 @@ async def preview_footprint(
         yaxis_title="degrees",
         yaxis=dict(
             matches="x",
-            matches="x",
             scaleanchor="x",
             scaleratio=1,
-            constrain="domain",
-        ),
             constrain="domain",
         ),
     )
