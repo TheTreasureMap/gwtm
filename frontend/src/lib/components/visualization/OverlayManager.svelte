@@ -374,8 +374,8 @@
 		}
 	}
 
-	// Show or hide a marker layer by data type
-	export function toggleMarkers(dataType: string, show: boolean) {
+	// Show or hide marker layers by data type, optionally scoped to a specific group name
+	export function toggleMarkers(dataType: string, show: boolean, groupName: string = 'all') {
 		const layerMap: Record<string, any[]> = {
 			galaxies: overlayLists.galaxyMarkers,
 			candidates: overlayLists.candidateMarkers,
@@ -383,7 +383,8 @@
 		};
 		const layers = layerMap[dataType];
 		if (!layers) return;
-		layers.forEach((layer: any) => {
+		const targets = groupName === 'all' ? layers : layers.filter((l: any) => l.name === groupName);
+		targets.forEach((layer: any) => {
 			if (show) {
 				layer.markerlayer?.show();
 				if (layer.has_overlay) layer.overlaylayer?.show();
