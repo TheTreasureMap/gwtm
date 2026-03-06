@@ -1,6 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List
-from typing import Optional, List
 from datetime import datetime
 
 
@@ -80,10 +79,7 @@ class GWAlertSchema(BaseModel):
     @classmethod
     def validate_distance(cls, v):
         """Validate distance is positive or convert negative sentinel values to None."""
-        """Validate distance is positive or convert negative sentinel values to None."""
         if v is not None and v < 0:
-            # Convert negative sentinel values (like -999.9) to None
-            return None
             # Convert negative sentinel values (like -999.9) to None
             return None
         return v
@@ -92,10 +88,7 @@ class GWAlertSchema(BaseModel):
     @classmethod
     def validate_distance_error(cls, v):
         """Validate distance error is positive or convert negative sentinel values to None."""
-        """Validate distance error is positive or convert negative sentinel values to None."""
         if v is not None and v < 0:
-            # Convert negative sentinel values (like -999.9) to None
-            return None
             # Convert negative sentinel values (like -999.9) to None
             return None
         return v

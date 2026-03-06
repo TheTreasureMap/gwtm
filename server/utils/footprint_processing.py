@@ -180,4 +180,5 @@ def validate_footprint_data(footprint_type: str, **kwargs) -> Tuple[bool, List[s
         polygon = kwargs.get("polygon")
         if not polygon:
             errors.append("Polygon coordinates are required for Polygon shape")
+
     return len(errors) == 0, errors

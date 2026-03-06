@@ -16,22 +16,18 @@ api_key_header = APIKeyHeader(name="api_token", auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
-
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT access token
-
 
     Args:
         data: Data to encode in the token
         expires_delta: Optional expiration time
 
-
     Returns:
         JWT token as a string
     """
     to_encode = data.copy()
-
 
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -40,31 +36,21 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
             minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-
     to_encode.update({"exp": expire})
-
 
     encoded_jwt = jwt.encode(
         to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
 
-
     return encoded_jwt
-
 
 
 def decode_token(token: str) -> dict:
     """
     Decode a JWT token
 
-
     Args:
         token: JWT token
-
 
     Returns:
         Decoded payload
@@ -72,12 +58,10 @@ def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         return payload
     except jwt.PyJWTError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
 
@@ -137,11 +121,6 @@ def verify_admin(
         .filter(UserGroups.userid == user.id, UserGroups.groupid == admin_group.id)
         .first()
     )
-    user_group = (
-        db.query(UserGroups)
-        .filter(UserGroups.userid == user.id, UserGroups.groupid == admin_group.id)
-        .first()
-    )
 
     if not user_group:
         raise HTTPException(
@@ -152,14 +131,6 @@ def verify_admin(
     return user
 
 
-def log_user_action(
-    user: Users,
-    request_path: str,
-    method: str,
-    ip_address: str,
-    json_data=None,
-    db: Session = Depends(get_db),
-):
 def log_user_action(
     user: Users,
     request_path: str,

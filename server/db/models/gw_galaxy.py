@@ -13,9 +13,6 @@ class GWGalaxy(Base):
     __tablename__ = "gw_galaxy"
     __table_args__ = {"schema": "public"}
 
-    __tablename__ = "gw_galaxy"
-    __table_args__ = {"schema": "public"}
-
     id = Column(Integer, primary_key=True)
     graceid = Column(String)
     galaxy_catalog = Column(Integer)
@@ -28,9 +25,6 @@ class EventGalaxy(Base):
     Event to Galaxy mapping.
     Maps event IDs to galaxies in catalogs.
     """
-
-    __tablename__ = "event_galaxy"
-    __table_args__ = {"schema": "public"}
 
     __tablename__ = "event_galaxy"
     __table_args__ = {"schema": "public"}
@@ -50,12 +44,8 @@ class GWGalaxyScore(Base):
     __tablename__ = "gw_galaxy_score"
     __table_args__ = {"schema": "public"}
 
-    __tablename__ = "gw_galaxy_score"
-    __table_args__ = {"schema": "public"}
-
     id = Column(Integer, primary_key=True)
     gw_galaxyid = Column(Integer)
-    score_type = Column(Enum(GwGalaxyScoreType, name="gwgalaxyscoretype"))
     score_type = Column(Enum(GwGalaxyScoreType, name="gwgalaxyscoretype"))
     score = Column(Float)
 
@@ -65,9 +55,6 @@ class GWGalaxyList(Base):
     Gravitational Wave Galaxy List.
     Represents a list of galaxies associated with a GW event.
     """
-
-    __tablename__ = "gw_galaxy_list"
-    __table_args__ = {"schema": "public"}
 
     __tablename__ = "gw_galaxy_list"
     __table_args__ = {"schema": "public"}
@@ -91,14 +78,10 @@ class GWGalaxyEntry(Base):
     __tablename__ = "gw_galaxy_entry"
     __table_args__ = {"schema": "public"}
 
-    __tablename__ = "gw_galaxy_entry"
-    __table_args__ = {"schema": "public"}
-
     id = Column(Integer, primary_key=True)
     listid = Column(Integer)
     name = Column(String)
     score = Column(Float)
-    position = Column(Geography("POINT", srid=4326))
     position = Column(Geography("POINT", srid=4326))
     rank = Column(Integer)
     info = Column(JSON)

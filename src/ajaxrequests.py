@@ -879,7 +879,7 @@ def plot_renormalized_skymap():
 			'dec': dec,
 			'time':p.time,
 			'depth':p.depth,
-			'depth_unit':p.DepthUnit,
+			'depth_unit':p.depth_unit,
 			'band':p.band,
 			'status':p.status
 		}))

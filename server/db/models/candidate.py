@@ -11,17 +11,13 @@ from typing import Optional
 class ValidationResult:
     """Helper class for validation results"""
 
-
     def __init__(self):
         self.valid = True
         self.errors = []
         self.warnings = []
 
 
-
 class GWCandidate(Base):
-    __tablename__ = "gw_candidate"
-    __table_args__ = {"schema": "public"}
     __tablename__ = "gw_candidate"
     __table_args__ = {"schema": "public"}
 
@@ -33,12 +29,10 @@ class GWCandidate(Base):
     tns_name = Column(String(100))
     tns_url = Column(String(500))
     position = Column(Geography("POINT", srid=4326), nullable=False)
-    position = Column(Geography("POINT", srid=4326), nullable=False)
     discovery_date = Column(DateTime)
     discovery_magnitude = Column(Float)
     magnitude_central_wave = Column(Float)
     magnitude_bandwidth = Column(Float)
-    magnitude_unit = Column(Enum(depth_unit_enum, name="depthunit"), nullable=False)
     magnitude_unit = Column(Enum(depth_unit_enum, name="depthunit"), nullable=False)
     magnitude_bandpass = Column(String(50))
     associated_galaxy = Column(String(100))
@@ -51,11 +45,9 @@ class GWCandidate(Base):
         try:
             position_geom = shapely.wkb.loads(bytes(self.position.data))
             coords = str(position_geom).replace("POINT (", "").replace(")", "").split()
-            coords = str(position_geom).replace("POINT (", "").replace(")", "").split()
             return float(coords[0])
         except (AttributeError, Exception):
             return None
-
 
     @hybrid_property
     def dec(self) -> Optional[float]:
@@ -63,11 +55,9 @@ class GWCandidate(Base):
         try:
             position_geom = shapely.wkb.loads(bytes(self.position.data))
             coords = str(position_geom).replace("POINT (", "").replace(")", "").split()
-            coords = str(position_geom).replace("POINT (", "").replace(")", "").split()
             return float(coords[1])
         except (AttributeError, Exception):
             return None
-
 
     @hybrid_property
     def position_wkt(self) -> Optional[str]:

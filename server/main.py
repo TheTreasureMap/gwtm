@@ -107,7 +107,6 @@ async def lifespan_middleware(request: Request, call_next):
             response = JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"detail": "Internal server error"},
-                content={"detail": "Internal server error"},
             )
         return response
 
@@ -127,17 +126,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     ),
                     "type": error["type"],
                 },
-                    "field": (
-                        ".".join(str(x) for x in error["loc"]) if error["loc"] else None
-                    ),
-                    "type": error["type"],
-                },
             ).to_dict()
         )
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content={"message": "Request validation error", "errors": errors},
         content={"message": "Request validation error", "errors": errors},
     )
 
@@ -152,7 +145,6 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"message": "A database error occurred"},
-        content={"message": "A database error occurred"},
     )
 
 
@@ -163,7 +155,6 @@ async def integrity_exception_handler(request: Request, exc: IntegrityError):
 
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
-        content={"message": "The request conflicts with database constraints"},
         content={"message": "The request conflicts with database constraints"},
     )
 
@@ -179,7 +170,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
     return JSONResponse(
         status_code=exc.status_code, headers=exc.headers, content=content
-        status_code=exc.status_code, headers=exc.headers, content=content
     )
 
 
@@ -193,9 +183,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"message": "An unexpected error occurred"},
-        content={"message": "An unexpected error occurred"},
     )
-
 
 
 # API health check
@@ -232,7 +220,6 @@ async def service_status(db: Session = Depends(get_db)):
             "host": db_host,
             "port": db_port,
             "name": db_name,
-            "name": db_name,
         }
 
         # Test actual connection
@@ -259,7 +246,6 @@ app.add_api_route(f"{API_V1_PREFIX}/register", register, methods=["POST"])
 app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(pointing_router, prefix=API_V1_PREFIX)
 app.include_router(gw_alert_router, prefix=API_V1_PREFIX)
-app.include_router(candidate_router, prefix=API_V1_PREFIX)
 app.include_router(candidate_router, prefix=API_V1_PREFIX)
 app.include_router(instrument_router, prefix=API_V1_PREFIX)
 app.include_router(galaxy_router, prefix=API_V1_PREFIX)
