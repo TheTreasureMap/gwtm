@@ -151,16 +151,21 @@ def sanatize_XRT_source_info(info):
 def sanatize_gal_info(entry, glist):
     ra, dec = sanatize_pointing(entry.position)
     ret = "<p>"
-    ret = "<b> RA DEC: </b>"+str(round(ra,4))+" "+str(round(dec,4))+"<br>"
-    ret += "<b>Score: </b>"+str(entry.score)+"<br>"
+    ret += "<b> RA: </b>" +f"{ra:.4f}"  + "<br>"
+    ret += "<b> DEC: </b>" +  f"{dec:.4f}" + "<br>"
+    ret += "<b>Score: </b>"+ f"{entry.score:.4E}"+"<br>"
     ret += "<b>Rank: </b>"+str(entry.rank)+"<br>" 
     if glist.reference:
-        ret+= f"<a href={glist.reference}>Reference</a> <br>"
+        ret += f"<a href={glist.reference}>Reference</a> <br>"
     if glist.doi_url:
-        ret+= f"<a href={glist.doi_url}>DOI</a> <br>"
+        ret += f"<a href={glist.doi_url}>DOI</a> <br>"
+    ret += f"<a href=https://ned.ipac.caltech.edu/byname?objname={entry.name.replace(' ', '')}&hconst=67.8&omegam=0.308&omegav=0.692&wmap=4&corr_z=1>NED</a> <br>"
     ret+="</p><b>Other Information:</b><br><p>"
     for key in entry.info.keys():
-        ret += "<b>"+str(key)+":</b> "+str(entry.info[key]).split('\n')[0]+"<br>"
+        if 'Dist' in str(key):
+            ret += "<b>"+str(key)+":</b> "+ "{:.2f}".format(float(str(entry.info[key]).split('\n')[0])) +"<br>"
+        else:
+            ret += "<b>"+str(key)+":</b> "+ "{:.2E}".format(float(str(entry.info[key]).split('\n')[0])) +"<br>"
     ret += "</p>"
     return ret
 
