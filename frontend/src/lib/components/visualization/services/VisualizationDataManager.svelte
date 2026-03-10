@@ -125,7 +125,7 @@
 				dispatch('contour-data-loaded', { data: contourData });
 			} catch (err) {
 				console.warn('GW contour loading failed (may require auth):', err);
-				contourData = null;
+				// Don't reset contourData to null - preserve any previously loaded data
 			}
 		}
 	}
