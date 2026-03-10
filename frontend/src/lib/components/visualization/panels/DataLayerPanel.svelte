@@ -183,7 +183,10 @@
 								class="w-3 h-3"
 							/>
 							{#if group.color}
-								<span class="w-3 h-3 rounded-full inline-block flex-shrink-0" style="background-color: {group.color}"></span>
+								<span
+									class="w-3 h-3 rounded-full inline-block flex-shrink-0"
+									style="background-color: {group.color}"
+								></span>
 							{/if}
 							<span class="text-xs font-medium text-gray-700">{group.name}</span>
 						</div>

@@ -375,9 +375,10 @@
 		} = event.detail;
 
 		// Update local state for components that need direct access
-		contourData = newContourData;
-		footprintData = newFootprintData;
-		detectionContours = newDetectionContours;
+		// Only overwrite with non-null values to preserve previously loaded data
+		if (newContourData !== null) contourData = newContourData;
+		if (newFootprintData !== null) footprintData = newFootprintData;
+		if (newDetectionContours !== null) detectionContours = newDetectionContours;
 
 		console.log('Visualization data loaded via service');
 

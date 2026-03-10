@@ -62,7 +62,8 @@ def ajax_alertinstruments_footprints():
 	graceid = args.get('graceid')
 	graceid = models.gw_alert.graceidfromalternate(graceid)
 	pointing_status = args.get('pointing_status')
-	tos_mjd= float(args.get('tos_mjd'))
+	tos_mjd_str = args.get('tos_mjd')
+	tos_mjd = float(tos_mjd_str) if tos_mjd_str is not None else 0.0
 	if pointing_status is None:
 		pointing_status = enums.pointing_status.completed
 
