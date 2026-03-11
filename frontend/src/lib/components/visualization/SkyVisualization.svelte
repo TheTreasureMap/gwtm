@@ -252,8 +252,18 @@
 
 	// Data loader service event handlers
 	function handleGalaxyDataLoaded(event: CustomEvent<{ data: any[] }>) {
-		galaxyData = event.detail.data;
-		console.log('Galaxy data loaded:', galaxyData.length, 'galaxies');
+		const raw = event.detail.data;
+		console.log('[Galaxy debug] handleGalaxyDataLoaded raw event.detail.data:', {
+			type: typeof raw,
+			isArray: Array.isArray(raw),
+			length: Array.isArray(raw) ? raw.length : 'n/a',
+			firstItem:
+				Array.isArray(raw) && raw.length > 0
+					? { name: raw[0].name, markersLength: raw[0].markers?.length }
+					: null
+		});
+		galaxyData = raw;
+		console.log('[Galaxy debug] galaxyData assigned, length:', galaxyData?.length);
 	}
 
 	function handleCandidateDataLoaded(event: CustomEvent<{ data: any[] }>) {
@@ -763,11 +773,19 @@
 	async function loadGalaxies() {
 		if (!graceid) return;
 
+		console.log('[Galaxy debug] loadGalaxies called, graceid:', graceid, 'dataLoaderService:', !!dataLoaderService);
+
 		if (dataLoaderService) {
 			galaxiesLoading = true;
 			try {
 				await dataLoaderService.loadGalaxyData();
+				console.log('[Galaxy debug] after loadGalaxyData, galaxyData:', {
+					length: galaxyData?.length,
+					isArray: Array.isArray(galaxyData)
+				});
 				showGalaxies = true;
+				await tick(); // flush galaxyData prop to OverlayManager before reading it
+				console.log('[Galaxy debug] showGalaxies set to true, overlayManager:', !!overlayManager);
 				if (overlayManager) {
 					overlayManager.addGalaxyLayer();
 				}
@@ -783,6 +801,7 @@
 		if (dataLoaderService) {
 			await dataLoaderService.loadCandidateData();
 			showCandidates = true;
+			await tick(); // flush candidateData prop to OverlayManager before reading it
 			if (overlayManager) {
 				overlayManager.addCandidateLayer();
 			}
@@ -795,6 +814,7 @@
 		if (dataLoaderService) {
 			await dataLoaderService.loadIceCubeData();
 			showIceCube = true;
+			await tick(); // flush icecubeData prop to OverlayManager before reading it
 			if (overlayManager) {
 				overlayManager.addIceCubeLayer();
 			}

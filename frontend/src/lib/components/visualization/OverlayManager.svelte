@@ -282,15 +282,25 @@
 
 	// Generic function to add markers to Aladin (matching Flask pattern)
 	export function addMarkersToAladin(markerData: any[], catalogName: string, color: string) {
-		if (!aladin || !markerData.length) return [];
+		const A = (window as any).A;
+		console.log(`[Galaxy debug] addMarkersToAladin called for '${catalogName}':`, {
+			aladinReady: !!aladin,
+			windowAReady: typeof A !== 'undefined',
+			markerDataLength: markerData?.length,
+			firstGroupMarkersLength: markerData?.[0]?.markers?.length
+		});
+		if (!aladin || !markerData.length) {
+			console.warn(`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`);
+			return [];
+		}
 
 		try {
-			const A = (window as any).A;
 			const markerLayers: any[] = [];
 
 			markerData.forEach((group: any, i: number) => {
 				const groupName = group.name || `${catalogName} ${i + 1}`;
 				const markers = group.markers || [];
+				console.log(`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`, markers[0]);
 
 				const markerlayer = A.catalog({
 					name: groupName,
@@ -340,10 +350,18 @@
 
 	// Add galaxy layer
 	export function addGalaxyLayer() {
-		if (!galaxyData || galaxyData.length === 0) return;
+		console.log('[Galaxy debug] addGalaxyLayer called:', {
+			galaxyDataLength: galaxyData?.length,
+			aladinReady: !!aladin
+		});
+		if (!galaxyData || galaxyData.length === 0) {
+			console.warn('[Galaxy debug] addGalaxyLayer early return — galaxyData empty or null');
+			return;
+		}
 
 		try {
 			const markers = addMarkersToAladin(galaxyData, 'Galaxies', '#FF6B35');
+			console.log('[Galaxy debug] addMarkersToAladin returned', markers?.length, 'marker layers');
 			overlayLists.galaxyMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add galaxy layer:', err);
