@@ -368,14 +368,10 @@ def get_cached_file(key, config):
                 return f.read()
         return None
 
-    # Normal cloud storage cache access
+    # Normal cloud storage cache access - attempt direct download rather than
+    # listing the bucket first (listing is slow on high-latency connections)
     try:
-        cached_files = list_gwtm_bucket("cache", source, config)
-
-        if key in cached_files:
-            return download_gwtm_file(key, source, config)
-        else:
-            return None
+        return download_gwtm_file(key, source, config)
     except Exception:
         return None
 
