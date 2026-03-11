@@ -24,11 +24,14 @@
 				type: typeof galaxyData,
 				isArray: Array.isArray(galaxyData),
 				length: Array.isArray(galaxyData) ? galaxyData.length : 'n/a',
-				firstItem: Array.isArray(galaxyData) && galaxyData.length > 0 ? {
-					name: galaxyData[0].name,
-					markersLength: galaxyData[0].markers?.length,
-					firstMarker: galaxyData[0].markers?.[0]
-				} : null,
+				firstItem:
+					Array.isArray(galaxyData) && galaxyData.length > 0
+						? {
+								name: galaxyData[0].name,
+								markersLength: galaxyData[0].markers?.length,
+								firstMarker: galaxyData[0].markers?.[0]
+							}
+						: null,
 				raw: galaxyData
 			});
 			dispatch('galaxy-data-loaded', { data: galaxyData });

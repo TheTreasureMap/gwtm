@@ -773,7 +773,12 @@
 	async function loadGalaxies() {
 		if (!graceid) return;
 
-		console.log('[Galaxy debug] loadGalaxies called, graceid:', graceid, 'dataLoaderService:', !!dataLoaderService);
+		console.log(
+			'[Galaxy debug] loadGalaxies called, graceid:',
+			graceid,
+			'dataLoaderService:',
+			!!dataLoaderService
+		);
 
 		if (dataLoaderService) {
 			galaxiesLoading = true;
