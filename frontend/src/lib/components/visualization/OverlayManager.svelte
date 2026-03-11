@@ -290,7 +290,9 @@
 			firstGroupMarkersLength: markerData?.[0]?.markers?.length
 		});
 		if (!aladin || !markerData.length) {
-			console.warn(`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`);
+			console.warn(
+				`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`
+			);
 			return [];
 		}
 
@@ -300,7 +302,10 @@
 			markerData.forEach((group: any, i: number) => {
 				const groupName = group.name || `${catalogName} ${i + 1}`;
 				const markers = group.markers || [];
-				console.log(`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`, markers[0]);
+				console.log(
+					`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
+					markers[0]
+				);
 
 				const markerlayer = A.catalog({
 					name: groupName,
