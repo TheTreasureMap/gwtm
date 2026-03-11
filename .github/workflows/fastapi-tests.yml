@@ -10,6 +10,8 @@ env:
   DB_USER: treasuremap
   DB_PWD: treasuremap
   DB_NAME: treasuremap
+  DB_HOST: db
+  DB_PORT: 5432
 
 jobs:
   test:
@@ -52,8 +54,8 @@ jobs:
           -e DB_USER \
           -e DB_PWD \
           -e DB_NAME \
-          -e DB_HOST=db \
-          -e DB_PORT=5432 \
+          -e DB_HOST \
+          -e DB_PORT \
           gwtm_fastapi:latest \
           python -c "from server.db.init_db import create_database_tables; create_database_tables()"
 
@@ -64,8 +66,8 @@ jobs:
           -e DB_USER \
           -e DB_PWD \
           -e DB_NAME \
-          -e DB_HOST=db \
-          -e DB_PORT=5432 \
+          -e DB_HOST \
+          -e DB_PORT \
           -p 8000:8000 \
           gwtm_fastapi:latest
 
