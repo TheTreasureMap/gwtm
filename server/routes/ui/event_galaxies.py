@@ -22,10 +22,16 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
 
     logger.info("[Galaxy debug] ajax_event_galaxies called with alertid=%s", alertid)
 
-    # Get galaxy lists for this alert (alertid param is actually the graceid string)
-    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid == alertid).all()
+    # Resolve alternate IDs to canonical graceid
+    from server.db.models.gw_alert import GWAlert
+    graceid = GWAlert.graceidfromalternate(alertid, db)
+    if graceid != alertid:
+        logger.info("[Galaxy debug] resolved alternateid %s -> graceid %s", alertid, graceid)
 
-    logger.info("[Galaxy debug] found %d galaxy lists for alertid=%s", len(gal_lists), alertid)
+    # Get galaxy lists for this alert
+    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid == graceid).all()
+
+    logger.info("[Galaxy debug] found %d galaxy lists for graceid=%s", len(gal_lists), graceid)
 
     if not gal_lists:
         return event_galaxies

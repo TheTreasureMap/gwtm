@@ -17,7 +17,9 @@ Displays alert title, status badges, and special download links.
 	// Computed values using status service
 	$: statusBadge = alert ? statusService?.getStatusBadge(alert, graceid) : null;
 	$: specialDownloads = statusService?.getSpecialDownloads(graceid) || [];
-	$: graceDbUrl = statusService?.getGraceDbUrl(graceid) || '';
+	// Use canonical graceid from alert object for GraceDB link (graceid prop may be an alternateid)
+	$: canonicalGraceid = alert?.graceid || graceid;
+	$: graceDbUrl = statusService?.getGraceDbUrl(canonicalGraceid) || '';
 </script>
 
 <!-- Service component -->
