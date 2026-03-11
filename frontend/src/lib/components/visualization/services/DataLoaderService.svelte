@@ -17,12 +17,24 @@
 	 * Load galaxy data for visualization
 	 */
 	export async function loadGalaxyData() {
+		console.log('[Galaxy debug] loadGalaxyData called with graceid:', graceid);
 		try {
 			const galaxyData = await api.ajax.getEventGalaxiesAjax?.(graceid);
+			console.log('[Galaxy debug] API response:', {
+				type: typeof galaxyData,
+				isArray: Array.isArray(galaxyData),
+				length: Array.isArray(galaxyData) ? galaxyData.length : 'n/a',
+				firstItem: Array.isArray(galaxyData) && galaxyData.length > 0 ? {
+					name: galaxyData[0].name,
+					markersLength: galaxyData[0].markers?.length,
+					firstMarker: galaxyData[0].markers?.[0]
+				} : null,
+				raw: galaxyData
+			});
 			dispatch('galaxy-data-loaded', { data: galaxyData });
 			return galaxyData || [];
 		} catch (err) {
-			console.error('Failed to load galaxy data:', err);
+			console.error('[Galaxy debug] Failed to load galaxy data:', err);
 			dispatch('galaxy-data-error', { error: err });
 			return [];
 		}
