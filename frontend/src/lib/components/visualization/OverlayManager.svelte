@@ -349,18 +349,18 @@
 	}
 
 	// Add galaxy layer
-	export function addGalaxyLayer() {
+	export function addGalaxyLayer(data: any[] = galaxyData) {
 		console.log('[Galaxy debug] addGalaxyLayer called:', {
-			galaxyDataLength: galaxyData?.length,
+			galaxyDataLength: data?.length,
 			aladinReady: !!aladin
 		});
-		if (!galaxyData || galaxyData.length === 0) {
-			console.warn('[Galaxy debug] addGalaxyLayer early return — galaxyData empty or null');
+		if (!data || data.length === 0) {
+			console.warn('[Galaxy debug] addGalaxyLayer early return — data empty or null');
 			return;
 		}
 
 		try {
-			const markers = addMarkersToAladin(galaxyData, 'Galaxies', '#FF6B35');
+			const markers = addMarkersToAladin(data, 'Galaxies', '#FF6B35');
 			console.log('[Galaxy debug] addMarkersToAladin returned', markers?.length, 'marker layers');
 			overlayLists.galaxyMarkers = markers as any[];
 		} catch (err) {
@@ -369,11 +369,11 @@
 	}
 
 	// Add candidate layer
-	export function addCandidateLayer() {
-		if (!candidateData || candidateData.length === 0) return;
+	export function addCandidateLayer(data: any[] = candidateData) {
+		if (!data || data.length === 0) return;
 
 		try {
-			const markers = addMarkersToAladin(candidateData, 'Candidates', '#8E44AD');
+			const markers = addMarkersToAladin(data, 'Candidates', '#8E44AD');
 			overlayLists.candidateMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add candidate layer:', err);
@@ -381,11 +381,11 @@
 	}
 
 	// Add IceCube layer
-	export function addIceCubeLayer() {
-		if (!icecubeData || icecubeData.length === 0) return;
+	export function addIceCubeLayer(data: any[] = icecubeData) {
+		if (!data || data.length === 0) return;
 
 		try {
-			const markers = addMarkersToAladin(icecubeData, 'IceCube Events', '#0080FF');
+			const markers = addMarkersToAladin(data, 'IceCube Events', '#0080FF');
 			overlayLists.icecubeMarkers = markers as any[];
 		} catch (err) {
 			console.error('Failed to add IceCube layer:', err);
