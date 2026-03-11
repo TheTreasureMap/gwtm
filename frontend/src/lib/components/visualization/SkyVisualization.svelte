@@ -778,16 +778,15 @@
 		if (dataLoaderService) {
 			galaxiesLoading = true;
 			try {
-				await dataLoaderService.loadGalaxyData();
-				console.log('[Galaxy debug] after loadGalaxyData, galaxyData:', {
-					length: galaxyData?.length,
-					isArray: Array.isArray(galaxyData)
+				const galaxies = await dataLoaderService.loadGalaxyData();
+				console.log('[Galaxy debug] after loadGalaxyData, galaxies:', {
+					length: galaxies?.length,
+					isArray: Array.isArray(galaxies)
 				});
 				showGalaxies = true;
-				await tick(); // flush galaxyData prop to OverlayManager before reading it
 				console.log('[Galaxy debug] showGalaxies set to true, overlayManager:', !!overlayManager);
 				if (overlayManager) {
-					overlayManager.addGalaxyLayer();
+					overlayManager.addGalaxyLayer(galaxies);
 				}
 			} finally {
 				galaxiesLoading = false;
@@ -799,11 +798,10 @@
 		if (!graceid) return;
 
 		if (dataLoaderService) {
-			await dataLoaderService.loadCandidateData();
+			const candidates = await dataLoaderService.loadCandidateData();
 			showCandidates = true;
-			await tick(); // flush candidateData prop to OverlayManager before reading it
 			if (overlayManager) {
-				overlayManager.addCandidateLayer();
+				overlayManager.addCandidateLayer(candidates);
 			}
 		}
 	}
@@ -812,11 +810,10 @@
 		if (!graceid) return;
 
 		if (dataLoaderService) {
-			await dataLoaderService.loadIceCubeData();
+			const icecube = await dataLoaderService.loadIceCubeData();
 			showIceCube = true;
-			await tick(); // flush icecubeData prop to OverlayManager before reading it
 			if (overlayManager) {
-				overlayManager.addIceCubeLayer();
+				overlayManager.addIceCubeLayer(icecube);
 			}
 		}
 	}
