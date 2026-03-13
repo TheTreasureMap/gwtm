@@ -31,30 +31,7 @@ spec:
                  done;
                  echo "Database is ready!"']
         env:
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-user
-        - name: DB_PWD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-password
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-name
-        - name: DB_HOST
-          value: {{ .Values.database.name }}
-        - name: DB_PORT
-          value: "{{ .Values.database.service.port }}"
-        - name: PGPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-password
+        {{- include "gwtm.dbInitEnv" . | nindent 8 }}
       containers:
       - name: fastapi-app
         image: "{{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}"
@@ -69,140 +46,29 @@ spec:
         ports:
         - containerPort: {{ .Values.fastapi.service.targetPort }}
         env:
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-user
-        - name: DB_PWD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-password
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: db-name
-        - name: DB_HOST
-          value: {{ .Values.database.name }}
-        - name: DB_PORT
-          value: "{{ .Values.database.service.port }}"
-        - name: MAIL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: mail-password
+        {{- include "gwtm.dbEnv" . | nindent 8 }}
+        {{- include "gwtm.appSecretEnv" . | nindent 8 }}
         - name: MAIL_USERNAME
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              name: {{ include "gwtm.secretName" . }}
               key: MAIL_USERNAME
         - name: MAIL_DEFAULT_SENDER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              name: {{ include "gwtm.secretName" . }}
               key: MAIL_DEFAULT_SENDER
         - name: MAIL_SERVER
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              name: {{ include "gwtm.secretName" . }}
               key: MAIL_SERVER
         - name: MAIL_PORT
           valueFrom:
             secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+              name: {{ include "gwtm.secretName" . }}
               key: MAIL_PORT
-        - name: RECAPTCHA_PUBLIC_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: recaptcha-public-key
-        - name: RECAPTCHA_PRIVATE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: recaptcha-private-key
-        - name: ZENODO_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: zenodo-access-key
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: aws-access-key-id
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: aws-secret-access-key
-        - name: AWS_DEFAULT_REGION
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: AWS_DEFAULT_REGION
-        - name: AWS_BUCKET
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: AWS_BUCKET
-        - name: AZURE_ACCOUNT_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: AZURE_ACCOUNT_NAME
-        - name: AZURE_ACCOUNT_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: AZURE_ACCOUNT_KEY
-        - name: STORAGE_BUCKET_SOURCE
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: STORAGE_BUCKET_SOURCE
-        - name: OS_AUTH_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_AUTH_URL
-        - name: OS_STORAGE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_STORAGE_URL
-        - name: OS_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_USERNAME
-        - name: OS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_PASSWORD
-        - name: OS_CONTAINER_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_CONTAINER_NAME
-        - name: OS_PROJECT_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_PROJECT_NAME
-        - name: OS_USER_DOMAIN_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_USER_DOMAIN_NAME
-        - name: OS_PROJECT_DOMAIN_NAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
-              key: OS_PROJECT_DOMAIN_NAME
+        {{- include "gwtm.storageEnv" . | nindent 8 }}
         - name: DEBUG
           value: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"
         - name: BASE_URL
@@ -237,7 +103,8 @@ spec:
       volumes:
       - name: db-user
         secret:
-          secretName: {{ if .Values.global.useGeneratedSecrets }}{{ .Release.Name }}-secrets{{ else }}{{ .Values.global.existingSecret }}{{ end }}
+          secretName: {{ include "gwtm.secretName" . }}
           items:
           - key: db-user
-            path: db-user{{- end }}
+            path: db-user
+{{- end }}
