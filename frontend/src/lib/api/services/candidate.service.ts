@@ -17,7 +17,7 @@ export const candidateService = {
 		const response = await client.get<CandidateSchema[]>('/api/v1/candidate', {
 			params: {
 				...filters,
-				...(ids && { body: JSON.stringify(ids) })
+				...(ids && { ids: ids.join(',') })
 			}
 		});
 		return response.data;

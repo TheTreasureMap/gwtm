@@ -15,8 +15,11 @@ function getApiBaseUrl(): string {
 		const protocol = window.location.protocol;
 		const port = window.location.port;
 
-		// Production/staging environment (domain name or non-localhost)
-		if (hostname === 'gwtm.local' || hostname.includes('.') || !hostname.includes('localhost')) {
+		// Treat loopback addresses as development regardless of dot presence
+		const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+
+		// Production/staging environment (domain name, not loopback)
+		if (!isLoopback) {
 			return `${protocol}//${hostname}${port && port !== '80' && port !== '443' ? ':' + port : ''}`;
 		}
 
