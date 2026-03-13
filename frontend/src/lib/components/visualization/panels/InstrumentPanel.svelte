@@ -50,6 +50,15 @@
 
 	$: loading = !footprintData || footprintData.length === 0;
 
+	// Per-instrument visibility state, initialised to true when data loads
+	let visibleInstruments: Record<string, boolean> = {};
+	$: {
+		(footprintData || []).forEach((inst, i) => {
+			const key = inst.name || `inst-${i}`;
+			if (!(key in visibleInstruments)) visibleInstruments[key] = true;
+		});
+	}
+
 	function handleToggle() {
 		expanded = !expanded;
 		dispatch('toggle', { expanded });
@@ -59,8 +68,10 @@
 		dispatch('toggleAllInstruments', { show: !expanded });
 	}
 
-	function handleInstrumentToggle(e: Event) {
+	function handleInstrumentToggle(e: Event, key: string) {
 		const target = e.target as HTMLInputElement;
+		visibleInstruments[key] = target.checked;
+		visibleInstruments = visibleInstruments; // trigger reactivity
 		dispatch('toggleInstrument', { target, checked: target.checked });
 	}
 </script>
@@ -99,14 +110,15 @@
 			{:else if footprintData && Array.isArray(footprintData)}
 				<div class="instrument-list space-y-2">
 					{#each footprintData as inst, i}
+						{@const key = inst.name || `inst-${i}`}
 						<label
 							class="flex items-center gap-2 p-1 hover:bg-white rounded transition-colors cursor-pointer"
 						>
 							<input
 								type="checkbox"
-								checked={true}
+								checked={visibleInstruments[key] ?? true}
 								data-color={inst.color || '#ff0000'}
-								on:change={handleInstrumentToggle}
+								on:change={(e) => handleInstrumentToggle(e, key)}
 								class="w-3 h-3"
 							/>
 							<span

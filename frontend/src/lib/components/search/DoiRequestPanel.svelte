@@ -83,7 +83,7 @@
 			<div class="text-center">
 				<Button
 					variant="primary"
-					size="large"
+					size="lg"
 					fullWidth
 					loading={isRequestingDoi}
 					disabled={selectedPointings.size === 0 || isLoadingGroups}
