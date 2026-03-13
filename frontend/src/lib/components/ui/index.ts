@@ -96,6 +96,6 @@ export interface ToggleGroupProps {
 	label?: string;
 	expanded?: boolean;
 	variant?: 'primary' | 'secondary' | 'outline';
-	size?: 'small' | 'medium' | 'large';
+	size?: 'sm' | 'md' | 'lg';
 	disabled?: boolean;
 }

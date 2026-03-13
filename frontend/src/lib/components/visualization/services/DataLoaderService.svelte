@@ -6,12 +6,10 @@
 	 */
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
-	import type { GWAlertSchema } from '$lib/api';
 
 	const dispatch = createEventDispatcher();
 
 	export let graceid: string;
-	export const selectedAlert: GWAlertSchema | null = null;
 
 	/**
 	 * Load galaxy data for visualization

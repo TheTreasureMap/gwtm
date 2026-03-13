@@ -88,6 +88,14 @@
 	// Per-group collapse state (all collapsed by default, matching Flask behaviour)
 	let expandedGroups: Record<string, boolean> = {};
 
+	// Per-group visibility (checked) state, initialised to true when data loads
+	let checkedGroups: Record<string, boolean> = {};
+	$: {
+		(data || []).forEach((group) => {
+			if (group.name && !(group.name in checkedGroups)) checkedGroups[group.name] = true;
+		});
+	}
+
 	function toggleGroupExpand(groupName: string) {
 		expandedGroups[groupName] = !expandedGroups[groupName];
 		expandedGroups = expandedGroups; // trigger reactivity
@@ -117,8 +125,11 @@
 		handleToggle();
 	}
 
-	function handleMarkerGroupToggle(groupName: string, checked: boolean) {
-		dispatch('toggleMarkerGroup', { groupName, checked, dataType });
+	function handleMarkerGroupToggle(groupName: string, e: Event) {
+		const target = e.target as HTMLInputElement;
+		checkedGroups[groupName] = target.checked;
+		checkedGroups = checkedGroups; // trigger reactivity
+		dispatch('toggleMarkerGroup', { groupName, checked: target.checked, dataType });
 	}
 
 	function handleMarkerClick(markerName: string) {
@@ -178,8 +189,8 @@
 							</button>
 							<input
 								type="checkbox"
-								checked={true}
-								on:change={(e) => handleMarkerGroupToggle(group.name, e.target?.checked)}
+								checked={checkedGroups[group.name] ?? true}
+								on:change={(e) => handleMarkerGroupToggle(group.name, e)}
 								class="w-3 h-3"
 							/>
 							{#if group.color}
