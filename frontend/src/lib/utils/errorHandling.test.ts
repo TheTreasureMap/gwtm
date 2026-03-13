@@ -7,8 +7,8 @@ import {
 	validateForm,
 	globalErrors,
 	type ErrorToastOptions
-} from '../errorHandling';
-import { testErrors } from '../../../test-utils/helpers';
+} from './errorHandling';
+import { testErrors } from '../../test-utils/helpers';
 
 // Tests for error handling utilities including validation, logging, and global error management
 describe('Error Handling Utilities', () => {
