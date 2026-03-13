@@ -9,7 +9,7 @@ export default defineConfig({
 		environment: 'jsdom',
 
 		// Setup files
-		setupFiles: ['./src/__tests__/setup.ts'],
+		setupFiles: ['./src/lib/setup.ts'],
 
 		// Include patterns
 		include: ['src/**/*.{test,spec}.{js,ts}'],
@@ -23,8 +23,7 @@ export default defineConfig({
 			reporter: ['text', 'json', 'html', 'json-summary', 'lcov'],
 			exclude: [
 				'node_modules/',
-				'src/__tests__/',
-				'**/*.d.ts',
+		'**/*.d.ts',
 				'**/*.config.*',
 				'src/app.html',
 				'src/routes/**', // Exclude route components for now (focus on business logic)

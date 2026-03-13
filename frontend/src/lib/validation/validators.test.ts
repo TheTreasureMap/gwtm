@@ -6,8 +6,8 @@ import {
 	validateField,
 	validateSchema,
 	type FieldValidator
-} from '../validators';
-import { testData, createMockContext, expectValidationResult } from '../../../test-utils/helpers';
+} from './validators';
+import { testData, createMockContext, expectValidationResult } from '../../test-utils/helpers';
 
 // Tests for form validation utilities and field validators
 describe('ValidationUtils', () => {

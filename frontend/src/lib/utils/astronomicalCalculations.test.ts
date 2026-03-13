@@ -4,12 +4,12 @@ import {
 	convertToMJD,
 	getDefaultSunMoonPositions,
 	type SunMoonData
-} from '../astronomicalCalculations';
+} from './astronomicalCalculations';
 import {
 	mockDate,
 	createMockFetchResponse,
 	expectApproximatelyEqual
-} from '../../../test-utils/helpers';
+} from '../../test-utils/helpers';
 
 // Tests for astronomical calculation utilities including MJD conversion and sun/moon positioning
 describe('Astronomical Calculations', () => {
