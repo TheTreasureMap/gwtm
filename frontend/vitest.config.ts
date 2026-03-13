@@ -23,7 +23,7 @@ export default defineConfig({
 			reporter: ['text', 'json', 'html', 'json-summary', 'lcov'],
 			exclude: [
 				'node_modules/',
-		'**/*.d.ts',
+				'**/*.d.ts',
 				'**/*.config.*',
 				'src/app.html',
 				'src/routes/**', // Exclude route components for now (focus on business logic)
