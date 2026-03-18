@@ -25,7 +25,7 @@ async def post_event_galaxies(
     Post galaxies associated with a GW event.
     """
     # Normalize the graceid
-    graceid = GWAlert.graceidfromalternate(request.graceid)
+    graceid = GWAlert.graceidfromalternate(request.graceid, db)
 
     # Parse timesent_stamp
     try:

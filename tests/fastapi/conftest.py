@@ -83,7 +83,7 @@ def wait_for_api():
                 print(f"API is ready at {api_url}")
                 return
         except requests.exceptions.RequestException:
-            pass
+            pass  # Server not ready yet, will retry
 
         if attempt < max_attempts - 1:
             print(f"Waiting for API to be ready... ({attempt + 1}/{max_attempts})")

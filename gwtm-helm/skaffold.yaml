@@ -31,6 +31,21 @@ build:
             dest: "/app/server/"
           - src: "server/config.py"
             dest: "/app/server/"
+    - image: gwtm-frontend
+      context: ../frontend
+      docker:
+        dockerfile: Dockerfile
+        target: development
+      sync:
+        manual:
+          - src: "src/**/*"
+            dest: "/app/src/"
+          - src: "*.js"
+            dest: "/app/"
+          - src: "*.ts"
+            dest: "/app/"
+          - src: "*.json"
+            dest: "/app/"
   local:
     push: false
 manifests:
@@ -38,22 +53,34 @@ manifests:
     releases:
       - name: gwtm
         chartPath: .
+        # Note: If your local cluster uses nginx ingress instead of traefik,
+        # add to setValues: ingress.className: "nginx"
         valuesFiles:
           - values-dev.yaml
+          - values-secrets.yaml
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.image.pullPolicy: IfNotPresent
+          backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
-          cache.livenessProbe.enabled: "true"
-          cache.persistence.enabled: "false"
-          cache.readinessProbe.enabled: "true"
+          database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          fastapi.image.repository: gwtm-fastapi
+          fastapi.image.tag: latest
+          fastapi.image.pullPolicy: IfNotPresent
+          fastapi.service.type: ClusterIP
+          frontend.image.repository: gwtm-frontend
+          frontend.image.tag: latest
+          frontend.image.pullPolicy: IfNotPresent
+          frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
+          global.useGeneratedSecrets: "true"
         createNamespace: true
         wait: true
         upgradeOnChange: true
@@ -64,20 +91,30 @@ deploy:
         chartPath: .
         valuesFiles:
           - values-dev.yaml
+          - values-secrets.yaml
         setValues:
           backend.image.repository: gwtm
           backend.image.tag: latest
+          backend.image.pullPolicy: IfNotPresent
+          backend.service.type: ClusterIP
           backend.livenessProbe.enabled: "true"
           backend.readinessProbe.enabled: "true"
-          cache.livenessProbe.enabled: "true"
-          cache.persistence.enabled: "false"
-          cache.readinessProbe.enabled: "true"
+          database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
           database.persistence.enabled: "false"
           database.readinessProbe.enabled: "true"
+          fastapi.image.repository: gwtm-fastapi
+          fastapi.image.tag: latest
+          fastapi.image.pullPolicy: IfNotPresent
+          fastapi.service.type: ClusterIP
+          frontend.image.repository: gwtm-frontend
+          frontend.image.tag: latest
+          frontend.image.pullPolicy: IfNotPresent
+          frontend.service.type: ClusterIP
           global.createNamespace: "true"
           global.namespace: gwtm
+          global.useGeneratedSecrets: "true"
         createNamespace: true
         wait: true
         upgradeOnChange: true
@@ -91,9 +128,9 @@ portForward:
   - resourceType: service
     resourceName: frontend
     namespace: gwtm
-    port: 80
+    port: 3000
     address: 0.0.0.0
-    localPort: 8081
+    localPort: 3000
   - resourceType: service
     resourceName: fastapi-backend
     namespace: gwtm

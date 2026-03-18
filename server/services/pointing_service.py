@@ -195,7 +195,7 @@ class PointingService:
         inst_set = list(set([i.instrument_name for i in insts]))
 
         # Get normalized graceid
-        normalized_gid = GWAlert.alternatefromgraceid(graceid)
+        normalized_gid = GWAlert.alternatefromgraceid(graceid, db)
 
         # Create the DOI
         result = create_pointing_doi(pointings, normalized_gid, creators, inst_set)

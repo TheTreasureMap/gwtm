@@ -1,0 +1,41 @@
+{
+	"extends": "./.svelte-kit/tsconfig.json",
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": false,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"strict": false,
+		"noImplicitAny": false,
+		"moduleResolution": "bundler"
+	},
+	"exclude": [
+		"docs/**/*",
+		"src/lib/components/alerts/**/*",
+		"src/routes/submit/instruments/**/*",
+		"src/routes/alerts/**/*",
+		"src/routes/register/**/*",
+		"src/lib/components/forms/FootprintTypeSelector.svelte",
+		"src/lib/components/forms/LoadPointingField.svelte",
+		"src/lib/components/forms/TimeField.svelte",
+		"src/lib/components/forms/examples/**/*",
+		"src/lib/components/instruments/**/*",
+		"src/lib/components/search/**/*",
+		"src/lib/components/visualization/**/*",
+		"src/lib/components/ui/FootprintVisualization.svelte",
+		"src/lib/components/ui/PageContainer.svelte",
+		"src/lib/components/search/PointingsSearchForm.svelte",
+		"src/lib/components/search/DoiRequestPanel.svelte",
+		"src/lib/components/search/PointingsTable.svelte",
+		"src/routes/documentation/**/*",
+		"src/routes/manage/**/*"
+	]
+	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
+	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
+	//
+	// If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
+	// from the referenced tsconfig.json - TypeScript does not merge them in
+}

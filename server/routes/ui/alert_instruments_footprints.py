@@ -200,6 +200,7 @@ async def get_alert_instruments_footprints(
         inst_overlays.append(
             {
                 "display": True,
+                "id": inst.id,
                 "name": name,
                 "color": color,
                 "contours": pointing_geometries,

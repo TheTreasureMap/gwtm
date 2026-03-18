@@ -1,5 +1,7 @@
 """Event galaxies endpoint."""
 
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,6 +9,7 @@ from sqlalchemy import func
 from server.db.database import get_db
 from server.db.models.gw_galaxy import GWGalaxyList, GWGalaxyEntry
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["UI"])
 
 
@@ -17,8 +20,18 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
 
     event_galaxies = []
 
+    logger.info("[Galaxy debug] ajax_event_galaxies called with alertid=%s", alertid)
+
+    # Resolve alternate IDs to canonical graceid
+    from server.db.models.gw_alert import GWAlert
+    graceid = GWAlert.graceidfromalternate(alertid, db)
+    if graceid != alertid:
+        logger.info("[Galaxy debug] resolved alternateid %s -> graceid %s", alertid, graceid)
+
     # Get galaxy lists for this alert
-    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.alertid == alertid).all()
+    gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid == graceid).all()
+
+    logger.info("[Galaxy debug] found %d galaxy lists for graceid=%s", len(gal_lists), graceid)
 
     if not gal_lists:
         return event_galaxies
@@ -51,7 +64,7 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
                     "name": e.name,
                     "ra": ra,
                     "dec": dec,
-                    "info": sanatize_gal_info(e, glist),
+                    "info": sanatize_gal_info(e, glist, ra, dec),
                 }
             )
 
@@ -59,4 +72,9 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
             {"name": glist.groupname, "color": "", "markers": markers}
         )
 
+    logger.info(
+        "[Galaxy debug] returning %d galaxy groups, total markers: %d",
+        len(event_galaxies),
+        sum(len(g["markers"]) for g in event_galaxies),
+    )
     return event_galaxies

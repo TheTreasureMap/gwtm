@@ -1,0 +1,12 @@
+{{- if .Values.database.enabled }}
+{{- if .Values.database.persistence.enabled }}
+# Custom StorageClass with Retain policy to prevent data loss
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.database.name }}-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain  # Keep data even if PVC is deleted
+volumeBindingMode: WaitForFirstConsumer
+{{- end }}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if .Values.frontend.enabled }}
 # templates/frontend/service.yaml
 apiVersion: v1
 kind: Service
@@ -8,8 +9,10 @@ metadata:
     {{- include "gwtm.labels" . | nindent 4 }}
     app: {{ .Values.frontend.name }}
 spec:
+  type: {{ .Values.frontend.service.type | default "ClusterIP" }}
   selector:
     app: {{ .Values.frontend.name }}
   ports:
   - port: {{ .Values.frontend.service.port }}
     targetPort: {{ .Values.frontend.service.targetPort }}
+{{- end }}

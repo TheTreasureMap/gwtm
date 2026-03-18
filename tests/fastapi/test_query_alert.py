@@ -6,7 +6,6 @@ Tests use specific data from test-data.sql.
 import os
 import requests
 from datetime import datetime
-import pytest
 from fastapi import status
 
 # Test configuration
@@ -155,7 +154,7 @@ class TestEventEndpoints:
         if response.status_code == status.HTTP_200_OK:
             assert response.headers["Content-Type"] == "application/fits"
         else:
-            assert "Error in retrieving skymap file" in response.json()["message"]
+            assert "Error retrieving skymap file" in response.json()["message"]
 
     def test_get_gw_contour(self):
         """Test getting alert contour data."""
@@ -170,7 +169,7 @@ class TestEventEndpoints:
         if response.status_code == status.HTTP_200_OK:
             assert response.headers["Content-Type"] == "application/json"
         else:
-            assert "Error in retrieving Contour file" in response.json()["message"]
+            assert "Error retrieving contour file" in response.json()["message"]
 
     def test_get_grb_moc_file(self):
         """Test getting GRB MOC file."""
@@ -233,17 +232,17 @@ class TestEventEndpoints:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert "admin" in response.json()["message"].lower()
 
-    def test_event_api_unauthorized_access(self):
-        """Test that unauthorized requests are rejected."""
-        # Request without API token
+    def test_event_api_public_access(self):
+        """Test that query endpoints are publicly accessible."""
+        # Request without API token - should work for public query endpoints
         response = requests.get(self.get_url("/query_alerts"))
-        assert response.status_code == 401
+        assert response.status_code == status.HTTP_200_OK
 
-        # Request with invalid API token
+        # Request with invalid API token - should still work for public query endpoints
         response = requests.get(
             self.get_url("/query_alerts"), headers={"api_token": self.invalid_token}
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
 
     def test_event_api_with_different_tokens(self):
         """Test access with different valid API tokens."""

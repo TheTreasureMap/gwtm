@@ -119,6 +119,15 @@ def download_gwtm_file(filename, source="s3", config=None, decode=True):
     Returns:
         File content (string if decode=True, bytes if decode=False)
     """
+    # If filename is a full HTTP/HTTPS URL (e.g. a GraceDB skymap URL),
+    # download it directly rather than routing through the storage backend.
+    if filename and filename.startswith(("http://", "https://")):
+        import requests
+        response = requests.get(filename, timeout=60)
+        response.raise_for_status()
+        content = response.content
+        return content.decode("utf-8") if decode else content
+
     # Local filesystem storage
     if source == "local":
         local_dir = _get_local_dir(config)
@@ -359,14 +368,10 @@ def get_cached_file(key, config):
                 return f.read()
         return None
 
-    # Normal cloud storage cache access
+    # Normal cloud storage cache access - attempt direct download rather than
+    # listing the bucket first (listing is slow on high-latency connections)
     try:
-        cached_files = list_gwtm_bucket("cache", source, config)
-
-        if key in cached_files:
-            return download_gwtm_file(key, source, config)
-        else:
-            return None
+        return download_gwtm_file(key, source, config)
     except Exception:
         return None
 

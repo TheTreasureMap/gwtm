@@ -92,7 +92,7 @@ async def get_fermi_coverage(
         Dictionary containing coverage overlays in MOC format
     """
     # Normalize graceid
-    normalized_graceid = GWAlert.graceidfromalternate(graceid)
+    normalized_graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Get the GW alert to find trigger time
     alert = (
@@ -411,5 +411,4 @@ async def get_grb_overlays(
 
     # TODO: Add Swift/BAT coverage when implemented
     # bat_coverage = await get_swift_bat_coverage(graceid, db)
-
     return overlays

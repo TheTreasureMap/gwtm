@@ -354,13 +354,15 @@ class TestGWGalaxyEndpoints:
                         break
                 assert has_name_match
 
-    def test_authentication_required(self):
-        """Test that authentication is required for all endpoints."""
-        endpoints = ["/event_galaxies?graceid=S190425z", "/glade"]
-
-        for endpoint in endpoints:
-            response = requests.get(self.get_url(endpoint))
-            assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    def test_public_read_access(self):
+        """Test authentication requirements for GW galaxy endpoints."""
+        # GLADE endpoint requires authentication (returns user-specific catalog access)
+        response = requests.get(self.get_url("/glade"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+            
+        # Test event_galaxies endpoint - also requires authentication
+        response = requests.get(self.get_url("/event_galaxies?graceid=S190425z"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def post_test_galaxy_data(self, graceid):
         """Helper method to post test galaxy data."""

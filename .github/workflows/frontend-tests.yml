@@ -1,0 +1,81 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: [ master, main, svelte, fastapi ]
+    paths: 
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+  pull_request:
+    branches: [ master, main, svelte, fastapi ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+
+jobs:
+  test:
+    name: Run Frontend Tests
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run type checking
+        run: npm run check
+      
+      - name: Run linting
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm run test:run
+      
+      - name: Generate coverage report
+        run: npm run test:coverage
+      
+      - name: Write coverage summary
+        if: always()
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          with open('coverage/coverage-summary.json') as f:
+              data = json.load(f)
+          total = data.get('total', {})
+          rows = []
+          for metric in ['lines', 'statements', 'functions', 'branches']:
+              pct = total.get(metric, {}).get('pct', 0)
+              covered = total.get(metric, {}).get('covered', 0)
+              tot = total.get(metric, {}).get('total', 0)
+              icon = '✅' if pct >= 80 else '⚠️' if pct >= 60 else '❌'
+              rows.append(f'| {metric.capitalize()} | {covered}/{tot} | {pct:.1f}% {icon} |')
+          summary = '\n'.join([
+              '## Frontend Coverage Report',
+              '',
+              '| Metric | Covered | Percentage |',
+              '|--------|---------|------------|',
+          ] + rows + [''])
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(summary)
+          EOF
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: frontend/coverage/
+          retention-days: 30

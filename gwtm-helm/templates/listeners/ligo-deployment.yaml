@@ -1,0 +1,54 @@
+{{- if .Values.listeners.enabled }}
+# templates/listeners/ligo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gwtm.fullname" . }}-ligo-listener
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: ligo-listener
+    app.kubernetes.io/component: ligo-listener
+spec:
+  replicas: 1  # Only one replica per listener to avoid duplicate processing
+  strategy:
+    type: Recreate  # Important: don't run multiple simultaneously
+  selector:
+    matchLabels:
+      app: ligo-listener
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/listeners/listener-secrets.yaml") . | sha256sum }}
+      labels:
+        app: ligo-listener
+        app.kubernetes.io/component: ligo-listener
+    spec:
+      containers:
+      - name: ligo-listener
+        image: "{{ .Values.listeners.image.repository }}:{{ .Values.listeners.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.listeners.image.pullPolicy }}
+        command: ["python", "docker/run_ligo_listener.py"]
+
+        env:
+        {{- include "gwtm.listenerEnv" . | nindent 8 }}
+
+        resources:
+          {{- toYaml .Values.listeners.ligo.resources | nindent 10 }}
+
+        # Note: Liveness probe removed - container lacks ps/pgrep utilities
+        # Kubernetes will still restart the pod if the process exits with error
+
+      # Pod termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 30
+
+      {{- with .Values.listeners.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.listeners.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

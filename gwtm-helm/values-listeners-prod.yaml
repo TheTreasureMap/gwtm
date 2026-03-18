@@ -1,0 +1,40 @@
+# Production values for listeners deployment
+# This file overrides values-listeners.yaml with production-specific settings
+
+global:
+  useGeneratedSecrets: false
+  existingSecret: gwtm-listener-secrets
+
+listeners:
+  image:
+    tag: dockerise  # Use dockerise branch tag
+
+  # GWTM API configuration
+  # Currently points to dev cluster external IP via ingress
+  # TODO: Replace with DNS name when available (e.g., gwtm-dev.jetstream-cloud.org)
+  api:
+    host: "149.165.172.5"  # Dev cluster floating IP
+    port: 80  # Access via ingress (not direct service port)
+    path: "/api/v1/"  # FastAPI v1 endpoint
+
+  # Storage configuration
+  storage:
+    type: "swift"
+    swift:
+      authUrl: "https://js2.jetstream-cloud.org:5000/v3"
+      storageUrl: "https://js2.jetstream-cloud.org:8001/swift/v1"
+      projectName: "PHY250291"
+      containerName: "gwtreasuremap"
+      userDomainName: "Default"
+      projectDomainName: "Default"
+
+  # Production settings
+  dryRun: false
+  writeToStorage: true
+  verbose: false
+
+  logging:
+    format: "json"
+    level: "INFO"
+
+  observingRun: "O4"

@@ -78,51 +78,51 @@ class GWAlert(Base):
         return classification
 
     @staticmethod
-    def graceidfromalternate(graceid: str) -> str:
+    def graceidfromalternate(graceid: str, db=None) -> str:
         """
-        Convert alternate GraceIDs to standard format.
-        Some GraceIDs might be provided in alternative formats like 'S190425z' instead of 'S190425z'.
-        This method normalizes them.
+        Look up the canonical graceid for a given alternate ID.
+
+        If the input matches an alternateid in the database, returns the
+        corresponding graceid. Otherwise returns the input unchanged.
 
         Args:
-            graceid: The GraceID to normalize
+            graceid: The GraceID or alternate ID to normalize
+            db: SQLAlchemy Session (required for DB lookup)
 
         Returns:
-            Normalized GraceID
+            Canonical GraceID
         """
-        # Map of known aliases (to be expanded as needed)
-        alias_map = {
-            # Add specific mappings as discovered
-        }
-
-        # Check if the graceid is in the alias map
-        if graceid in alias_map:
-            return alias_map[graceid]
-
-        # Remove any common prefixes/suffixes
-        # Here we're just returning the original ID as there's no specific
-        # transformation logic implemented yet
+        if db is not None:
+            match = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
+            if match:
+                return match.graceid
         return graceid
 
     @staticmethod
-    def alternatefromgraceid(graceid: str) -> str:
+    def alternatefromgraceid(graceid: str, db=None) -> str:
         """
-        Convert standard GraceIDs to alternate format for specific uses.
+        Look up the alternate ID for a given canonical graceid.
+
+        If the graceid has a non-empty alternateid in the database, returns it.
+        Otherwise returns the input unchanged.
 
         Args:
-            graceid: The standard GraceID
+            graceid: The canonical GraceID
+            db: SQLAlchemy Session (required for DB lookup)
 
         Returns:
-            Alternate format GraceID
+            Alternate ID if found, otherwise the original graceid
         """
-        # Map of standard to alternate formats (to be expanded as needed)
-        reverse_alias_map = {
-            # Add specific mappings as discovered
-        }
-
-        # Check if the graceid is in the reverse alias map
-        if graceid in reverse_alias_map:
-            return reverse_alias_map[graceid]
-
-        # By default, return the original graceid
+        if db is not None:
+            match = (
+                db.query(GWAlert)
+                .filter(
+                    GWAlert.graceid == graceid,
+                    GWAlert.alternateid != "",
+                    GWAlert.alternateid.isnot(None),
+                )
+                .first()
+            )
+            if match:
+                return match.alternateid
         return graceid

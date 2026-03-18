@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+@plugin "daisyui" {
+	themes: light;
+}
+
+/* Design System CSS Variables */
+:root {
+	/* Spacing */
+	--spacing-container-sm: 1rem;
+	--spacing-container-md: 2rem;
+	--spacing-container-lg: 3rem;
+
+	/* Transitions */
+	--transition-fast: 150ms ease-in-out;
+	--transition-normal: 200ms ease-in-out;
+	--transition-slow: 300ms ease-in-out;
+
+	/* Z-index layers */
+	--z-dropdown: 50;
+	--z-modal: 100;
+	--z-toast: 200;
+}

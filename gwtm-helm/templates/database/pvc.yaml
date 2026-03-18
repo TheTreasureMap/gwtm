@@ -1,4 +1,5 @@
 # templates/database/pvc.yaml
+{{- if .Values.database.enabled }}
 {{- if .Values.database.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -20,5 +21,9 @@ spec:
   {{- else }}
   storageClassName: {{ .Values.database.persistence.storageClass }}
   {{- end }}
+  {{- else }}
+  # Use custom StorageClass with Retain policy to prevent accidental data loss
+  storageClassName: {{ .Values.database.name }}-retain
   {{- end }}
+{{- end }}
 {{- end }}

@@ -23,10 +23,21 @@ secrets:
   awsDefaultRegion: "us-east-2"
   awsBucket: "gwtreasuremap"
 
-  # Azure storage
-  azureAccountName: "your-azure-account-name"
-  azureAccountKey: "your-azure-account-key"
-  storageBucketSource: "s3"
+  # Azure storage (used by Flask backend)
+  azureAccountName: ""  # Set your Azure account name here or in sealed secrets
+  azureAccountKey: ""  # Set your Azure account key here or in sealed secrets
+
+  # OpenStack Swift storage - actual credentials in values-secrets.yaml (gitignored)
+  osAuthUrl: ""
+  osStorageUrl: ""
+  osUsername: ""
+  osPassword: ""
+  osContainerName: "gwtreasuremap"
+  osProjectName: ""
+  osUserDomainName: "Default"
+  osProjectDomainName: "Default"
+
+  storageBucketSource: "swift"
 
   # reCAPTCHA keys
   recaptchaPublicKey: "your-recaptcha-public-key"
@@ -37,23 +48,29 @@ secrets:
 
   # Additional configuration
   extraSecrets:
-    REDIS_URL: "redis://redis:6379/0"
     DEBUG: "True"
 
 backend:
   replicas: 1
+  service:
+    type: LoadBalancer
   resources:
     limits:
-      cpu: 300m
-      memory: 300Mi
+      cpu: 500m
+      memory: 500Mi
     requests:
-      cpu: 100m
-      memory: 150Mi
+      cpu: 200m
+      memory: 300Mi
   readinessProbe:
     enabled: false
 
 fastapi:
+  env:
+    PUBLIC_API_BASE_URL: "/"
+    BASE_URL: "http://gwtm.local:8081"
   replicas: 1
+  service:
+    type: LoadBalancer
   resources:
     limits:
       cpu: 500m
@@ -66,11 +83,66 @@ fastapi:
   workers: 1
 
 frontend:
+  env:
+    PUBLIC_API_BASE_URL: "/"
   replicas: 1
+  service:
+    type: LoadBalancer
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
 
 database:
   persistence:
-    enabled: false
+    enabled: true
     size: 1Gi
   initScripts:
     enabled: true
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi  # Increased for large database restore
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+ingress:
+  enabled: true
+  host: ""  # Empty host = catch-all, works with IP address
+
+# Listener configuration for development
+# Disabled for local dev - can be enabled once listener issues are resolved
+listeners:
+  enabled: false
+  image:
+    tag: "sha-03353dc"
+
+  api:
+    base: "http://flask-backend:8080/api/v0/"
+    token: ""  # Set this for dev testing
+
+  kafka:
+    clientId: ""  # Set this for dev testing
+    clientSecret: ""  # Set this for dev testing
+    offsetReset: "earliest"  # Replay buffered messages for testing
+    groupId: "gwtm-dev-listeners"  # Dev consumer group
+
+  storage:
+    type: "s3"  # Use S3 for dev, or set to "swift" if available
+    s3:
+      accessKeyId: ""  # Set this for dev testing
+      secretAccessKey: ""  # Set this for dev testing
+
+  # Dev environment - use dry run for initial testing
+  dryRun: true  # Override to false once validated
+  writeToStorage: false  # Override to true once storage is configured
+  verbose: true
+
+  # Dev logging
+  logging:
+    format: "json"
+    level: "DEBUG"  # More verbose for debugging

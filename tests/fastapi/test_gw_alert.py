@@ -102,16 +102,18 @@ class TestGWAlertEndpoints:
                 assert alert["alert_type"] == "Initial"
 
     def test_query_alerts_without_auth(self):
-        """Test that authentication is required."""
+        """Test that query alerts works without authentication (public access)."""
         response = requests.get(self.get_url("/query_alerts"))
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
 
     def test_query_alerts_with_invalid_token(self):
-        """Test with invalid API token."""
+        """Test that invalid API token is ignored for GET endpoints (optional auth)."""
         response = requests.get(
             self.get_url("/query_alerts"), headers={"api_token": self.invalid_token}
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
 
     def test_post_alert_as_admin(self):
         """Test posting a new GW alert as admin."""
@@ -190,7 +192,7 @@ class TestGWAlertEndpoints:
             else:
                 # Graceid might not have a skymap in test data
                 assert response.status_code == status.HTTP_404_NOT_FOUND
-                assert "Error in retrieving skymap file" in response.json()["message"]
+                assert "Error retrieving skymap file" in response.json()["message"]
 
     def test_get_gw_contour(self):
         """Test getting GW contour data."""
@@ -216,7 +218,7 @@ class TestGWAlertEndpoints:
             else:
                 # Graceid might not have a contour in test data
                 assert response.status_code == status.HTTP_404_NOT_FOUND
-                assert "Error in retrieving Contour file" in response.json()["message"]
+                assert "Error retrieving contour file" in response.json()["message"]
 
     def test_get_grb_moc_file(self):
         """Test getting a GRB MOC file."""

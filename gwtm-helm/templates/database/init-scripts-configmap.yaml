@@ -1,4 +1,5 @@
 # templates/database/init-scripts-configmap.yaml
+{{- if .Values.database.enabled }}
 {{- if .Values.database.initScripts.enabled }}
 apiVersion: v1
 kind: ConfigMap
@@ -39,4 +40,5 @@ data:
     {{- if .Values.database.initScripts.additionalScripts }}
     {{- .Values.database.initScripts.additionalScripts | nindent 4 }}
     {{- end }}
+{{- end }}
 {{- end }}

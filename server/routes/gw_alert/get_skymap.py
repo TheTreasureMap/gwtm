@@ -44,7 +44,7 @@ async def get_gw_skymap(
     - A binary response containing the FITS file with the skymap data
     """
     # Normalize the graceid
-    graceid = GWAlert.graceidfromalternate(graceid)
+    graceid = GWAlert.graceidfromalternate(graceid, db)
 
     # Get the latest alert for this graceid
     alerts = (
