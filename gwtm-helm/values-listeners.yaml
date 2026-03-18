@@ -11,9 +11,6 @@
 frontend:
   enabled: false
 
-backend:
-  enabled: false
-
 fastapi:
   enabled: false
 
@@ -33,8 +30,8 @@ listeners:
   # TODO: Use DNS names instead of IPs (e.g., gwtm-dev.yourdomain.org)
   api:
     host: ""  # Must be set at deployment time (IP or DNS of GWTM cluster)
-    port: 8000  # 8000 for FastAPI (v1), 8080 for Flask (v0)
-    path: "/api/v1/"  # "/api/v1/" for FastAPI, "/api/v0/" for Flask
+    port: 8000
+    path: "/api/v1/"
     token: ""  # Set via sealed secrets
 
   # Storage backend configuration

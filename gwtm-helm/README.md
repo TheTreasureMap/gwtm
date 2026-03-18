@@ -6,8 +6,7 @@ This repository contains Helm charts for deploying the Gravitational Wave Treasu
 
 The GWTM Helm chart manages the following components:
 
-- **Flask Backend** (`flask-backend`): Legacy Python [Flask](https://flask.palletsprojects.com/) application (Python 3.9+, Flask 2.1.1) on port 8080
-- **FastAPI Backend** (`fastapi-backend`): Modern high-performance API service with auto-documentation on port 8000 ([FastAPI docs](https://fastapi.tiangolo.com/))
+- **FastAPI Backend** (`fastapi-backend`): High-performance API service with auto-documentation on port 8000 ([FastAPI docs](https://fastapi.tiangolo.com/))
 - **Svelte Frontend** (`frontend`): TypeScript/[SvelteKit](https://kit.svelte.dev/) dashboard with modern reactive UI on port 3000 ([Svelte docs](https://svelte.dev/))
 - **PostgreSQL Database** (`postgres`): [PostgreSQL](https://www.postgresql.org/docs/) 14+ with [PostGIS](https://postgis.net/) 3.x extension for geospatial data on port 5432
 - **Event Listeners** (optional): LIGO and IceCube gravitational wave event listeners
@@ -17,7 +16,6 @@ The GWTM Helm chart manages the following components:
 When you run `skaffold dev`, the following Kubernetes resources are created in the `gwtm` namespace:
 
 ### Deployments
-- `flask-backend` - 1 replica (configurable)
 - `fastapi-backend` - 1 replica (configurable)
 - `frontend` - 1 replica (configurable)
 - `postgres` - 1 replica (stateful)
@@ -25,7 +23,6 @@ When you run `skaffold dev`, the following Kubernetes resources are created in t
 - `icecube-listener` - 1 replica (if enabled)
 
 ### Services
-- `flask-backend` - ClusterIP on port 8080
 - `fastapi-backend` - ClusterIP on port 8000
 - `frontend` - ClusterIP on port 3000
 - `postgres` - ClusterIP on port 5432
@@ -38,7 +35,6 @@ When you run `skaffold dev`, the following Kubernetes resources are created in t
 - `postgres-data` - Database storage (if persistence enabled)
 
 ### Port Forwards (automatic with `skaffold dev`)
-- `localhost:8080` → `flask-backend:8080`
 - `localhost:8000` → `fastapi-backend:8000`
 - `localhost:3000` → `frontend:3000`
 
@@ -46,14 +42,12 @@ When you run `skaffold dev`, the following Kubernetes resources are created in t
 
 Skaffold builds the following Docker images:
 
-1. **gwtm** - Flask backend from main Dockerfile
-2. **gwtm-fastapi** - FastAPI backend from `server/Dockerfile`
-3. **gwtm-frontend** - Svelte frontend from `frontend/Dockerfile`
+1. **gwtm-fastapi** - FastAPI backend from `server/Dockerfile`
+2. **gwtm-frontend** - Svelte frontend from `frontend/Dockerfile`
 
 File sync is configured for hot-reloading without rebuilds:
 - FastAPI: Python files sync to container, uvicorn auto-reloads
 - Frontend: Source files sync to container, Vite HMR handles updates
-- Flask: No sync configured (requires rebuild)
 
 ## Quick Reference
 
@@ -71,13 +65,11 @@ kubectl get pods -n gwtm --watch
 ```bash
 kubectl logs -n gwtm deployment/frontend -f          # Frontend
 kubectl logs -n gwtm deployment/fastapi-backend -f   # FastAPI
-kubectl logs -n gwtm deployment/flask-backend -f     # Flask
 ```
 
 **Access services:**
 - Frontend: http://localhost:3000
 - FastAPI Docs: http://localhost:8000/docs
-- Flask API: http://localhost:8080/api/v0/
 
 **Database operations:**
 ```bash
@@ -155,7 +147,7 @@ secrets:
   storageBucketSource: "s3"
 ```
 
-**For Azure Blob storage** (used by Flask backend):
+**For Azure Blob storage**:
 ```yaml
 secrets:
   azureAccountName: "your-azure-account-name"
@@ -185,8 +177,7 @@ This command will:
 Once deployed, you can access:
 
 - **Svelte Frontend**: http://localhost:3000 - Modern reactive UI dashboard
-- **Flask Backend API**: http://localhost:8080 - Legacy REST API
-- **FastAPI Backend**: http://localhost:8000 - Modern API with docs at http://localhost:8000/docs
+- **FastAPI Backend**: http://localhost:8000 - API with docs at http://localhost:8000/docs
 
 ### Database Operations
 
@@ -201,20 +192,17 @@ The restore script automatically strips out `\restrict` commands that are added 
 To dump a copy of the production database:
 
 ```bash
-# Exclude all Flask profiler tables (large and irrelevant for testing)
 # --no-owner: Don't set ownership (avoids privilege issues)
 # --no-privileges: Don't dump access privileges (avoids ACL issues)
 # --clean: Add DROP commands before CREATE
 # --if-exists: Use IF EXISTS with DROP commands
 # Note: \restrict commands from pg_dump v16+ are automatically stripped during restore
 pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap \
-  --exclude-table='public.flask*' \
   --no-owner --no-privileges --clean --if-exists \
   -f ./dump_latest.sql
 
 # For data-only dumps (requires tables to already exist)
 pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap \
-  --exclude-table-data='public.flask*' \
   --no-owner --no-privileges \
   -a -f ./dump_latest.sql
 ```
@@ -264,9 +252,6 @@ kubectl logs -n gwtm deployment/frontend -f
 
 # FastAPI backend logs (recommended for new development)
 kubectl logs -n gwtm deployment/fastapi-backend -f
-
-# Flask backend logs (legacy)
-kubectl logs -n gwtm deployment/flask-backend -f
 
 # PostgreSQL logs
 kubectl logs -n gwtm deployment/postgres -f
@@ -386,7 +371,6 @@ skaffold deploy
 # Restart a specific deployment (triggers rolling restart)
 kubectl rollout restart deployment/frontend -n gwtm
 kubectl rollout restart deployment/fastapi-backend -n gwtm
-kubectl rollout restart deployment/flask-backend -n gwtm
 
 # Check rollout status
 kubectl rollout status deployment/frontend -n gwtm
@@ -546,8 +530,8 @@ The listeners need to connect to the GWTM API running in a different cluster. Co
 listeners:
   api:
     host: "gwtm.yourdomain.com"  # DNS name (preferred) or IP address
-    port: 8000  # 8000 for FastAPI (v1 API), 8080 for Flask (v0 API)
-    path: "/api/v1/"  # "/api/v1/" for FastAPI, "/api/v0/" for Flask
+    port: 8000
+    path: "/api/v1/"
 ```
 
 The URL is automatically constructed as: `http://{host}:{port}{path}`
@@ -586,15 +570,6 @@ The following tables list the configurable parameters of the GWTM chart and thei
 | `global.environment` | Environment name (development/production) | `development` |
 | `global.createNamespace` | Whether to create the namespace | `true` |
 | `global.useGeneratedSecrets` | Whether to generate secrets | `true` |
-
-### Backend Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `backend.replicas` | Number of backend replicas | `2` |
-| `backend.image.repository` | Backend image repository | `gwtm` |
-| `backend.image.tag` | Backend image tag | `latest` |
-| `backend.resources` | Backend resource requests/limits | See values.yaml |
 
 ### Additional Components
 
@@ -635,24 +610,14 @@ kubectl exec -n gwtm deployment/fastapi-backend -- env | grep -E 'DB_'
 kubectl describe pod -n gwtm -l app=fastapi-backend
 ```
 
-**Flask Backend:**
-```bash
-# Check Flask logs
-kubectl logs -n gwtm deployment/flask-backend --tail=100
-
-# Verify migrations ran successfully
-kubectl logs -n gwtm deployment/flask-backend | grep -i migration
-```
-
 #### 3. Frontend Issues
 
 ```bash
 # Check Svelte frontend logs
 kubectl logs -n gwtm deployment/frontend --tail=100
 
-# Verify frontend can reach backends
+# Verify frontend can reach backend
 kubectl exec -it -n gwtm deployment/frontend -- wget -O- http://fastapi-backend:8000/health
-kubectl exec -it -n gwtm deployment/frontend -- wget -O- http://flask-backend:8080/api/v0/
 
 # Check environment variables
 kubectl exec -n gwtm deployment/frontend -- env | grep PUBLIC_API
@@ -671,7 +636,6 @@ skaffold dev
 # Manually set up port forwards
 kubectl port-forward -n gwtm service/frontend 3000:3000 &
 kubectl port-forward -n gwtm service/fastapi-backend 8000:8000 &
-kubectl port-forward -n gwtm service/flask-backend 8080:8080 &
 ```
 
 #### 5. Image Pull/Build Issues
@@ -772,6 +736,5 @@ kubectl get all,configmaps,secrets,pvc,pv -n gwtm -o wide > gwtm-cluster-state.t
 # Export pod logs for all components
 kubectl logs -n gwtm deployment/frontend > frontend-logs.txt
 kubectl logs -n gwtm deployment/fastapi-backend > fastapi-logs.txt
-kubectl logs -n gwtm deployment/flask-backend > flask-logs.txt
 kubectl logs -n gwtm deployment/postgres > postgres-logs.txt
 ```

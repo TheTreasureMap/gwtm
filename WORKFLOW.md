@@ -67,12 +67,8 @@ This repository has GitHub Actions configured to automatically build and push Do
 **What Gets Built:**
 ```bash
 # When you push tag v1.234, GitHub Actions builds and pushes:
-ghcr.io/thetreasuremap/gwtm/flask-app:1.234
 ghcr.io/thetreasuremap/gwtm/fastapi-backend:1.234
 ghcr.io/thetreasuremap/gwtm/svelte-frontend:1.234
-
-# Also tagged as:
-ghcr.io/thetreasuremap/gwtm/flask-app:latest  (if from master)
 ```
 
 **Location:** `.github/workflows/build-all.yml`
@@ -86,7 +82,7 @@ ghcr.io/thetreasuremap/gwtm/flask-app:latest  (if from master)
 git checkout -b feature/my-new-feature
 
 # 2. Make your changes
-# Edit code in server/, frontend/, or src/
+# Edit code in server/ or frontend/
 
 # 3. Test locally with Skaffold
 cd gwtm-helm
@@ -158,7 +154,7 @@ git tag -a v1.234 -m "Release v1.234: Add new feature X"
 git push origin v1.234
 
 # 11. GitHub Actions automatically triggered
-# - Builds images for all three components (Flask, FastAPI, Frontend)
+# - Builds images for FastAPI and Frontend
 # - Tags images as: 1.234 (strips the 'v' prefix)
 # - Pushes to: ghcr.io/thetreasuremap/gwtm/*:1.234
 # - Takes ~5-10 minutes to complete
@@ -216,7 +212,6 @@ kubectl get pods -n gwtm-prod -w
 # Watch for all pods to become Running:
 # NAME                              READY   STATUS    RESTARTS   AGE
 # fastapi-backend-xxx              1/1     Running   0          30s
-# flask-backend-xxx                1/1     Running   0          30s
 # frontend-xxx                     1/1     Running   0          30s
 
 # Check application health:

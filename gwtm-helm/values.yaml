@@ -11,33 +11,6 @@ global:
   useGeneratedSecrets: false
   existingSecret: "gwtm-secrets"
 
-backend:
-  enabled: true  # Set to false to disable backend deployment
-  name: flask-backend
-  replicas: 2
-  image:
-    repository: ghcr.io/thetreasuremap/gwtm/flask-app
-    tag: latest
-    pullPolicy: Always
-  service:
-    port: 8080
-    targetPort: 8080
-  readinessProbe:
-    path: /
-    initialDelaySeconds: 10
-    periodSeconds: 5
-  livenessProbe:
-    path: /
-    initialDelaySeconds: 30
-    periodSeconds: 15
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 1Gi
-    requests:
-      cpu: 300m
-      memory: 512Mi
-
 fastapi:
   enabled: true  # Set to false to disable fastapi deployment
   name: fastapi-backend
@@ -185,9 +158,9 @@ listeners:
   # For external deployments (listeners in separate cluster), use external IP or DNS
   # TODO: Replace hardcoded IPs with DNS names (e.g., gwtm-dev.yourdomain.org)
   api:
-    host: "flask-backend"  # Internal service name, or external IP/DNS for remote clusters
-    port: 8080  # 8080 for Flask (v0), 8000 for FastAPI (v1)
-    path: "/api/v0/"  # "/api/v0/" for Flask, "/api/v1/" for FastAPI
+    host: "fastapi-backend"  # Internal service name, or external IP/DNS for remote clusters
+    port: 8000
+    path: "/api/v1/"
     token: ""  # Set in values-dev.yaml / values-prod.yaml or use external secret
 
   # Kafka configuration
