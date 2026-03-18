@@ -4,9 +4,6 @@ metadata:
   name: gwtm
 build:
   artifacts:
-    - image: gwtm
-      context: ..
-      docker: {}
     - image: gwtm-fastapi
       context: ..
       docker:
@@ -59,12 +56,6 @@ manifests:
           - values-dev.yaml
           - values-secrets.yaml
         setValues:
-          backend.image.repository: gwtm
-          backend.image.tag: latest
-          backend.image.pullPolicy: IfNotPresent
-          backend.service.type: ClusterIP
-          backend.livenessProbe.enabled: "true"
-          backend.readinessProbe.enabled: "true"
           database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
@@ -93,12 +84,6 @@ deploy:
           - values-dev.yaml
           - values-secrets.yaml
         setValues:
-          backend.image.repository: gwtm
-          backend.image.tag: latest
-          backend.image.pullPolicy: IfNotPresent
-          backend.service.type: ClusterIP
-          backend.livenessProbe.enabled: "true"
-          backend.readinessProbe.enabled: "true"
           database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
@@ -119,12 +104,6 @@ deploy:
         wait: true
         upgradeOnChange: true
 portForward:
-  - resourceType: service
-    resourceName: flask-backend
-    namespace: gwtm
-    port: 8080
-    address: 0.0.0.0
-    localPort: 8080
   - resourceType: service
     resourceName: frontend
     namespace: gwtm
