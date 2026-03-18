@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { env } from '$env/dynamic/public';
 
 // Environment-aware API URL configuration
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
 	// Check environment variable first
 	if (env.PUBLIC_API_BASE_URL) {
 		return env.PUBLIC_API_BASE_URL;
