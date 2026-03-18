@@ -38,15 +38,15 @@ jobs:
 
     - name: Start database with Docker Compose
       run: |
-        docker compose -p gwtm up -d db
+        docker compose -f server/docker-compose.yml -p gwtm up -d db
 
     - name: Wait for database to be ready
       run: |
-        timeout 120 bash -c 'until docker compose -p gwtm exec -T db pg_isready -U $DB_USER -d $DB_NAME; do sleep 5; done'
+        timeout 120 bash -c 'until docker compose -f server/docker-compose.yml -p gwtm exec -T db pg_isready -U $DB_USER -d $DB_NAME; do sleep 5; done'
 
     - name: Enable PostGIS extension
       run: |
-        docker compose -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        docker compose -f server/docker-compose.yml -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
     - name: Initialize database schema with FastAPI models
       run: |
@@ -77,14 +77,14 @@ jobs:
 
     - name: Load test data
       run: |
-        docker compose -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME < tests/test-data.sql
+        docker compose -f server/docker-compose.yml -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME < tests/test-data.sql
 
     - name: Verify test data loaded
       run: |
         echo "Checking if test users exist in database..."
-        docker compose -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "SELECT COUNT(*) FROM users;" || echo "Users table query failed"
+        docker compose -f server/docker-compose.yml -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "SELECT COUNT(*) FROM users;" || echo "Users table query failed"
         echo "Checking if test tokens exist..."
-        docker compose -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "SELECT username, api_token FROM users LIMIT 3;" || echo "API token query failed"
+        docker compose -f server/docker-compose.yml -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "SELECT username, api_token FROM users LIMIT 3;" || echo "API token query failed"
 
     - name: Test API authentication
       run: |
@@ -104,4 +104,4 @@ jobs:
       run: |
         docker stop fastapi-server || true
         docker rm fastapi-server || true
-        docker compose -p gwtm down -v
+        docker compose -f server/docker-compose.yml -p gwtm down -v
