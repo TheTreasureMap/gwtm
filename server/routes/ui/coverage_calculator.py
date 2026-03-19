@@ -53,6 +53,15 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
     # If mappathinfo not supplied by the frontend, look it up from the DB
     if not mappathinfo:
         from server.db.models.gw_alert import GWAlert
+        alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
+        if not alert:
+            alert = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
+            if alert:
+                graceid = alert.graceid
+            else:
+                raise HTTPException(status_code=404, detail="Alert not found")
+
+        logger.info(f'alert test url, {alert.skymap_fits_url} and graceid: {graceid}')
         alert_row = (
             db.query(GWAlert.skymap_fits_url)
             .filter(GWAlert.graceid == graceid, GWAlert.skymap_fits_url.isnot(None))
@@ -85,10 +94,11 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
     # Try to get from cache first
     cached_result = get_cached_file(cache_key, settings)
     if cached_result:
+        result_data = json.loads(cached_result) if isinstance(cached_result, str) else cached_result
         times, probs, areas = (
-            cached_result["times"],
-            cached_result["probs"],
-            cached_result["areas"],
+            result_data["times"],
+            result_data["probs"],
+            result_data["areas"],
         )
     else:
         # Calculate coverage using real HEALPix implementation
