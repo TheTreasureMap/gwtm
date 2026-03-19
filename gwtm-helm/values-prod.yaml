@@ -3,16 +3,6 @@ global:
   environment: production
   useGeneratedSecrets: false
 
-backend:
-  replicas: 3
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 1Gi
-    requests:
-      cpu: 500m
-      memory: 512Mi
-
 frontend:
   replicas: 2
 
@@ -26,7 +16,7 @@ listeners:
     tag: "0.1.0"  # Specific version for prod
 
   api:
-    base: "http://flask-backend:8080/api/v0/"
+    base: "http://fastapi-backend:8000/api/v1/"
     token: ""  # Will be set via ArgoCD/sealed-secrets
 
   kafka:
