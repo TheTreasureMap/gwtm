@@ -61,7 +61,6 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
             else:
                 raise HTTPException(status_code=404, detail="Alert not found")
 
-        logger.info(f'alert test url, {alert.skymap_fits_url} and graceid: {graceid}')
         alert_row = (
             db.query(GWAlert.skymap_fits_url)
             .filter(GWAlert.graceid == graceid, GWAlert.skymap_fits_url.isnot(None))
