@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*'
     branches:
-      - svelte  # Temporary for testing
+      - master
   workflow_dispatch:
     inputs:
       version:
