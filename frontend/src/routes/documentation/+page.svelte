@@ -225,7 +225,7 @@
 				</div>
 				<h3 class="font-semibold mb-2">Submit Instrument</h3>
 				<p class="text-sm text-gray-600">Add your telescope to the database</p>
-				<a href="/submit/instrument" class="text-blue-600 hover:text-blue-800 text-sm underline"
+				<a href="/submit/instruments" class="text-blue-600 hover:text-blue-800 text-sm underline"
 					>Submit instrument →</a
 				>
 			</div>

@@ -245,7 +245,7 @@
 		<QuickActionCard
 			title="Submit New Instrument"
 			description="Register your telescope or instrument for GW follow-up coordination."
-			href="/submit/instrument"
+			href="/submit/instruments"
 			linkText="Submit Instrument"
 			btnClass="btn btn-success"
 		>

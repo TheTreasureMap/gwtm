@@ -169,7 +169,7 @@
 			</div>
 			<div class="p-6">
 				<h3 class="text-xl font-semibold mb-3">
-					<a href="/submit/instrument" class="text-blue-600 hover:text-blue-800">Submit</a> your follow-up
+					<a href="/submit/instruments" class="text-blue-600 hover:text-blue-800">Submit</a> your follow-up
 					instruments
 				</h3>
 				<p class="text-gray-600">
