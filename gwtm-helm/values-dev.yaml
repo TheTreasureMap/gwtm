@@ -23,7 +23,7 @@ secrets:
   awsDefaultRegion: "us-east-2"
   awsBucket: "gwtreasuremap"
 
-  # Azure storage (used by Flask backend)
+  # Azure storage
   azureAccountName: ""  # Set your Azure account name here or in sealed secrets
   azureAccountKey: ""  # Set your Azure account key here or in sealed secrets
 
@@ -49,20 +49,6 @@ secrets:
   # Additional configuration
   extraSecrets:
     DEBUG: "True"
-
-backend:
-  replicas: 1
-  service:
-    type: LoadBalancer
-  resources:
-    limits:
-      cpu: 500m
-      memory: 500Mi
-    requests:
-      cpu: 200m
-      memory: 300Mi
-  readinessProbe:
-    enabled: false
 
 fastapi:
   env:
@@ -122,7 +108,7 @@ listeners:
     tag: "sha-03353dc"
 
   api:
-    base: "http://flask-backend:8080/api/v0/"
+    base: "http://fastapi-backend:8000/api/v1/"
     token: ""  # Set this for dev testing
 
   kafka:
