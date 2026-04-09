@@ -10,11 +10,11 @@ listeners:
     tag: dockerise  # Use dockerise branch tag
 
   # GWTM API configuration
-  # Uses internal Kubernetes service DNS to bypass ingress host-header routing.
+  # Points to prod cluster ingress. No host filter on ingress so IP-based requests work.
   api:
-    host: "fastapi-backend"  # Internal K8s service name (same namespace)
-    port: 8000  # Direct service port (not ingress)
-    path: "/api/v1/"  # FastAPI v1 endpoint
+    host: "149.165.151.27"  # Prod cluster floating IP
+    port: 80
+    path: "/api/v1/"
 
   # Storage configuration
   storage:

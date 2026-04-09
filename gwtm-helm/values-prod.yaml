@@ -3,6 +3,9 @@ global:
   environment: production
   useGeneratedSecrets: false
 
+ingress:
+  host: ""  # No host filter — allow requests by IP (listeners are on a separate cluster)
+
 frontend:
   replicas: 2
 
