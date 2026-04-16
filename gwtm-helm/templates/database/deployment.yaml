@@ -83,6 +83,10 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 5
         {{- end }}
+      {{- with .Values.database.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         fsGroup: 999  # postgres group id
       volumes:
