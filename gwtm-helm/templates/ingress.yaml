@@ -81,3 +81,17 @@ spec:
                 port:
                   number: {{ .Values.frontend.service.port }}
 {{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.tls }}
+---
+# Redirect HTTP → HTTPS. Referenced via annotation:
+# traefik.ingress.kubernetes.io/router.middlewares: <namespace>-https-redirect@kubernetescrd
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: https-redirect
+  namespace: {{ .Values.global.namespace }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}
