@@ -56,7 +56,7 @@ fastapi:
     BASE_URL: "http://gwtm.local:8081"
   replicas: 1
   service:
-    type: LoadBalancer
+    type: ClusterIP
   resources:
     limits:
       cpu: 500m
@@ -73,7 +73,7 @@ frontend:
     PUBLIC_API_BASE_URL: "/"
   replicas: 1
   service:
-    type: LoadBalancer
+    type: ClusterIP
   resources:
     limits:
       cpu: 1000m
@@ -98,7 +98,13 @@ database:
 
 ingress:
   enabled: true
-  host: ""  # Empty host = catch-all, works with IP address
+  host: "dev.treasuremap.space"
+  className: traefik
+  tls: true
+  tlsSecretName: gwtm-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: gwtm-https-redirect@kubernetescrd
 
 # Listener configuration for development
 # Disabled for local dev - can be enabled once listener issues are resolved
