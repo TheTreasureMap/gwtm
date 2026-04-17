@@ -26,6 +26,21 @@
 	let aladin: any = null;
 	let initializationAttempted = false;
 
+	const SURVEYS = [
+		{ id: 'P/DSS2/color', label: 'DSS2 Color' },
+		{ id: 'P/PanSTARRS/DR1/color', label: 'PanSTARRS DR1 Color' },
+		{ id: 'P/2MASS/color', label: '2MASS Color' }
+	];
+	let selectedSurvey = 'P/DSS2/color';
+
+	$: if (aladin && selectedSurvey) {
+		try {
+			aladin.setBaseImageLayer(selectedSurvey);
+		} catch (err) {
+			console.warn('Failed to set survey:', err);
+		}
+	}
+
 	onMount(async () => {
 		// Don't initialize immediately - wait for graceid and selectedAlert to be ready
 		console.log('AladinVisualization onMount:', { graceid, selectedAlert: !!selectedAlert });
@@ -241,6 +256,19 @@
 <!-- Left column: Aladin visualization (70% width) -->
 <div style="width: 70%;">
 	<div class="bg-white border rounded-lg overflow-hidden">
+		<!-- Base image layer selector -->
+		<div class="flex items-center gap-2 px-3 py-2 border-b bg-gray-50">
+			<label for="base-survey-select" class="text-sm font-medium text-gray-700 whitespace-nowrap">Base image layer:</label>
+			<select
+				id="base-survey-select"
+				bind:value={selectedSurvey}
+				class="text-sm border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+			>
+				{#each SURVEYS as s}
+					<option value={s.id}>{s.label}</option>
+				{/each}
+			</select>
+		</div>
 		<!-- Always render the container -->
 		<div class="relative aladin-container-wrapper" style="height: 640px;">
 			<div

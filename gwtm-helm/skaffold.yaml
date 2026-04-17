@@ -72,6 +72,7 @@ manifests:
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"
+          ingress.tls: "false"
         createNamespace: true
         wait: true
         upgradeOnChange: true
@@ -100,6 +101,7 @@ deploy:
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"
+          ingress.tls: "false"
         createNamespace: true
         wait: true
         upgradeOnChange: true
