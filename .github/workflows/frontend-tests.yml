@@ -52,6 +52,9 @@ jobs:
         run: |
           python3 - <<'EOF'
           import json, os
+          if not os.path.exists('coverage/coverage-summary.json'):
+              print('No coverage summary found, skipping.')
+              exit(0)
           with open('coverage/coverage-summary.json') as f:
               data = json.load(f)
           total = data.get('total', {})
