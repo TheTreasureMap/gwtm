@@ -1,0 +1,153 @@
+{{- if or .Values.backup.enabled .Values.restore.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gwtm.fullname" . }}-backup-scripts
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+data:
+  backup.py: |
+    import os
+    import re
+    import gzip
+    import subprocess
+    from datetime import datetime, timezone
+
+    from keystoneauth1.identity import v3
+    from keystoneauth1 import session
+    from swiftclient import Connection
+
+    def get_swift_conn():
+        is_app_cred = bool(re.match(r'^[a-f0-9]{32}$', os.environ.get('OS_USERNAME', '')))
+        if is_app_cred:
+            auth = v3.ApplicationCredential(
+                auth_url=os.environ['OS_AUTH_URL'],
+                application_credential_id=os.environ['OS_USERNAME'],
+                application_credential_secret=os.environ['OS_PASSWORD'],
+            )
+            sess = session.Session(auth=auth)
+            return Connection(session=sess, os_options={'object_storage_url': os.environ['OS_STORAGE_URL']})
+        return Connection(
+            authurl=os.environ['OS_AUTH_URL'],
+            user=os.environ['OS_USERNAME'],
+            key=os.environ['OS_PASSWORD'],
+            os_options={
+                'user_domain_name': os.environ.get('OS_USER_DOMAIN_NAME', 'Default'),
+                'project_domain_name': os.environ.get('OS_PROJECT_DOMAIN_NAME', 'Default'),
+                'project_name': os.environ.get('OS_PROJECT_NAME', ''),
+            },
+            auth_version='3',
+        )
+
+    env = os.environ.copy()
+    env['PGPASSWORD'] = os.environ['DB_PWD']
+    backup_path = os.environ.get('BACKUP_PATH', 'backups/weekly')
+    container = os.environ['OS_CONTAINER_NAME']
+
+    print("Running pg_dump...")
+    result = subprocess.run(
+        ['pg_dump', '-h', os.environ['DB_HOST'], '-p', os.environ.get('DB_PORT', '5432'),
+         '-U', os.environ['DB_USER'], '-d', os.environ['DB_NAME'],
+         '--data-only', '--disable-triggers',
+         '--exclude-table=spatial_ref_sys'],
+        capture_output=True, env=env,
+    )
+    if result.returncode != 0:
+        print(f"pg_dump failed:\n{result.stderr.decode()}")
+        raise SystemExit(1)
+
+    compressed = gzip.compress(result.stdout)
+    print(f"Dump: {len(result.stdout):,} bytes -> compressed: {len(compressed):,} bytes")
+
+    conn = get_swift_conn()
+    date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    for key in [f"{backup_path}/prod-data-{date_str}.sql.gz",
+                f"{backup_path}/prod-data-latest.sql.gz"]:
+        print(f"Uploading to Swift: {key}")
+        conn.put_object(container, key, contents=compressed, content_type='application/gzip')
+
+    # Prune old dated backups, keeping only the 2 most recent
+    keep = int(os.environ.get('BACKUP_RETAIN', '2'))
+    _headers, objects = conn.get_container(container, prefix=f"{backup_path}/prod-data-", full_listing=True)
+    dated = sorted(
+        [o['name'] for o in objects if re.search(r'prod-data-\d{4}-\d{2}-\d{2}\.sql\.gz$', o['name'])],
+        reverse=True,
+    )
+    for old_key in dated[keep:]:
+        print(f"Deleting old backup: {old_key}")
+        conn.delete_object(container, old_key)
+
+    print(f"Backup complete. Retained {min(keep, len(dated))} dated backup(s).")
+
+  restore.py: |
+    import os
+    import re
+    import gzip
+    import subprocess
+
+    from keystoneauth1.identity import v3
+    from keystoneauth1 import session
+    from swiftclient import Connection
+
+    def get_swift_conn():
+        is_app_cred = bool(re.match(r'^[a-f0-9]{32}$', os.environ.get('OS_USERNAME', '')))
+        if is_app_cred:
+            auth = v3.ApplicationCredential(
+                auth_url=os.environ['OS_AUTH_URL'],
+                application_credential_id=os.environ['OS_USERNAME'],
+                application_credential_secret=os.environ['OS_PASSWORD'],
+            )
+            sess = session.Session(auth=auth)
+            return Connection(session=sess, os_options={'object_storage_url': os.environ['OS_STORAGE_URL']})
+        return Connection(
+            authurl=os.environ['OS_AUTH_URL'],
+            user=os.environ['OS_USERNAME'],
+            key=os.environ['OS_PASSWORD'],
+            os_options={
+                'user_domain_name': os.environ.get('OS_USER_DOMAIN_NAME', 'Default'),
+                'project_domain_name': os.environ.get('OS_PROJECT_DOMAIN_NAME', 'Default'),
+                'project_name': os.environ.get('OS_PROJECT_NAME', ''),
+            },
+            auth_version='3',
+        )
+
+    env = os.environ.copy()
+    env['PGPASSWORD'] = os.environ['DB_PWD']
+    psql = ['psql', '-h', os.environ['DB_HOST'], '-p', os.environ.get('DB_PORT', '5432'),
+            '-U', os.environ['DB_USER'], '-d', os.environ['DB_NAME']]
+    backup_path = os.environ.get('BACKUP_PATH', 'backups/weekly')
+    container = os.environ['OS_CONTAINER_NAME']
+
+    print(f"Downloading {backup_path}/prod-data-latest.sql.gz from Swift...")
+    conn = get_swift_conn()
+    _headers, data = conn.get_object(container, f"{backup_path}/prod-data-latest.sql.gz")
+    sql = gzip.decompress(data)
+    print(f"Downloaded and decompressed: {len(sql):,} bytes")
+
+    # Get all user tables (excluding PostGIS system tables)
+    get_tables = subprocess.run(
+        psql + ['-t', '-c',
+            "SELECT string_agg(quote_ident(tablename), ', ' ORDER BY tablename) "
+            "FROM pg_tables WHERE schemaname = 'public' "
+            "AND tablename NOT IN ('spatial_ref_sys')"],
+        capture_output=True, env=env,
+    )
+    tables = get_tables.stdout.decode().strip()
+
+    if tables:
+        print(f"Truncating tables: {tables}")
+        truncate_sql = f"TRUNCATE {tables} CASCADE;".encode()
+        subprocess.run(psql, input=truncate_sql, env=env, check=True)
+
+    print("Restoring data...")
+    result = subprocess.run(psql, input=sql, capture_output=True, env=env)
+    if result.stderr:
+        # Log stderr but don't fail — sequence resets produce harmless warnings
+        print(f"psql stderr (last 1000 chars):\n{result.stderr.decode()[-1000:]}")
+    if result.returncode != 0:
+        print(f"psql restore failed with code {result.returncode}")
+        raise SystemExit(1)
+
+    print("Restore complete.")
+{{- end }}

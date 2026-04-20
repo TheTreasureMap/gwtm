@@ -138,3 +138,7 @@ listeners:
   logging:
     format: "json"
     level: "DEBUG"  # More verbose for debugging
+
+
+restore:
+  enabled: true

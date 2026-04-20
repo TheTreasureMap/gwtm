@@ -1,0 +1,43 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "gwtm.fullname" . }}-db-backup
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: db-backup
+            image: python:3.11-slim
+            command: ["/bin/bash", "-c"]
+            args:
+              - |
+                set -e
+                apt-get update -qq && apt-get install -y -qq postgresql-client
+                pip install --quiet python-swiftclient keystoneauth1
+                python3 /scripts/backup.py
+            env:
+            {{- include "gwtm.dbEnv" . | nindent 12 }}
+            {{- include "gwtm.storageEnv" . | nindent 12 }}
+            - name: BACKUP_PATH
+              value: {{ .Values.backup.swiftPath | quote }}
+            - name: BACKUP_RETAIN
+              value: {{ .Values.backup.retainCount | default 2 | quote }}
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          volumes:
+          - name: scripts
+            configMap:
+              name: {{ include "gwtm.fullname" . }}-backup-scripts
+{{- end }}

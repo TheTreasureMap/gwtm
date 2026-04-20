@@ -49,3 +49,7 @@ listeners:
   logging:
     format: "json"
     level: "INFO"
+
+
+backup:
+  enabled: true

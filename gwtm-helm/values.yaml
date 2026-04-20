@@ -231,3 +231,16 @@ listeners:
 
   # Tolerations (optional)
   tolerations: []
+
+# Weekly database backup (prod → Swift)
+backup:
+  enabled: false
+  schedule: "0 2 * * 0"   # 2am UTC Sunday
+  swiftPath: "backups/weekly"
+  retainCount: 2           # Number of dated backups to keep alongside prod-data-latest.sql.gz
+
+# Weekly database restore (Swift → dev postgres)
+restore:
+  enabled: false
+  schedule: "0 4 * * 0"   # 4am UTC Sunday (2 hours after backup)
+  swiftPath: "backups/weekly"

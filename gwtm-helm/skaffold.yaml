@@ -56,6 +56,8 @@ manifests:
           - values-dev.yaml
           - values-secrets.yaml
         setValues:
+          backup.enabled: "false"
+          restore.enabled: "false"
           database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
@@ -85,6 +87,8 @@ deploy:
           - values-dev.yaml
           - values-secrets.yaml
         setValues:
+          backup.enabled: "false"
+          restore.enabled: "false"
           database.image.pullPolicy: IfNotPresent
           database.initScripts.enabled: "true"
           database.livenessProbe.enabled: "true"
