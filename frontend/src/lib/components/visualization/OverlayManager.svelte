@@ -46,23 +46,14 @@
 		if (!aladin) return;
 
 		try {
-			// Clear tracked overlay lists
+			// removeOverlays() removes all data layers from Aladin's stack but preserves the base survey
+			aladin.removeOverlays();
+
+			// Clear our local tracking arrays
 			Object.keys(overlayLists).forEach((key) => {
 				const overlays = (overlayLists as any)[key as keyof typeof overlayLists];
 				if (Array.isArray(overlays)) {
-					overlays.forEach((overlay: any) => {
-						try {
-							if (overlay.markerlayer) overlay.markerlayer.removeAll();
-							if (overlay.overlaylayer && overlay.overlaylayer.removeAll)
-								overlay.overlaylayer.removeAll();
-							if (overlay.contour && overlay.contour.removeAll) overlay.contour.removeAll();
-							if (overlay.remove) overlay.remove();
-						} catch (e) {
-							console.warn('Error removing overlay:', e);
-						}
-					});
-					// Clear the array
-					((overlayLists as any)[key as keyof typeof overlayLists] as any[]).length = 0;
+					overlays.length = 0;
 				}
 			});
 		} catch (err) {
