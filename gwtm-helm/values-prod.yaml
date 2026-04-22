@@ -6,8 +6,14 @@ global:
 ingress:
   host: ""  # No host filter — allow requests by IP (listeners are on a separate cluster)
 
+fastapi:
+  image:
+    tag: "1.0.3"
+
 frontend:
   replicas: 2
+  image:
+    tag: "1.0.3"
 
 database:
   persistence:
