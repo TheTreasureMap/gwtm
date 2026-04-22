@@ -12,8 +12,6 @@ frontend:
 database:
   persistence:
     size: 20Gi
-  nodeSelector:
-    kubernetes.io/hostname: gwtm-prod-server  # Pin to server node — PVC uses local-path storage
 
 # Listener configuration for production
 listeners:
