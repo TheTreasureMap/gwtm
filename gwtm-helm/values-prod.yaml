@@ -8,12 +8,12 @@ ingress:
 
 fastapi:
   image:
-    tag: "1.0.3"
+    tag: "1.0.4"
 
 frontend:
   replicas: 2
   image:
-    tag: "1.0.3"
+    tag: "1.0.4"
 
 database:
   persistence:
