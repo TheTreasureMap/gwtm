@@ -28,7 +28,7 @@ spec:
       - name: ligo-listener
         image: "{{ .Values.listeners.image.repository }}:{{ .Values.listeners.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.listeners.image.pullPolicy }}
-        command: ["python", "docker/run_ligo_listener.py"]
+        command: ["bash", "docker/start_ligo_listener.sh"]
 
         env:
         {{- include "gwtm.listenerEnv" . | nindent 8 }}
