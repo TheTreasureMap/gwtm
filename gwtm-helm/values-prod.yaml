@@ -4,16 +4,18 @@ global:
   useGeneratedSecrets: false
 
 ingress:
-  host: ""  # No host filter — allow requests by IP (listeners are on a separate cluster)
-
-fastapi:
-  image:
-    tag: "1.0.4"
+  enabled: true
+  host: "treasuremap.space"
+  wwwHost: "www.treasuremap.space"
+  className: traefik
+  tls: true
+  tlsSecretName: gwtm-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: gwtm-https-redirect@kubernetescrd
 
 frontend:
   replicas: 2
-  image:
-    tag: "1.0.4"
 
 database:
   persistence:
