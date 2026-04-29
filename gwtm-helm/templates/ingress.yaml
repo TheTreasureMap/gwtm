@@ -83,19 +83,6 @@ spec:
                 name: {{ .Values.frontend.name }}
                 port:
                   number: {{ .Values.frontend.service.port }}
-    {{- if .Values.ingress.host }}
-    # No-host rule so IP-based clients (e.g. listeners on a separate cluster) can
-    # reach the API without a matching Host header, both before and after DNS cutover.
-    - http:
-        paths:
-          - path: /api/v1
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.fastapi.name }}
-                port:
-                  number: {{ .Values.fastapi.service.port }}
-    {{- end }}
     {{- if .Values.ingress.wwwHost }}
     - host: {{ .Values.ingress.wwwHost | quote }}
       http:
@@ -164,4 +151,31 @@ spec:
   redirectScheme:
     scheme: https
     permanent: true
+{{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.host }}
+---
+# Separate ingress with no annotations so Traefik does NOT apply the HTTP→HTTPS
+# redirect middleware. This allows listeners on a separate cluster to reach the
+# API over plain HTTP by IP, both before and after the DNS cutover to treasuremap.space.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-api-internal-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - http:
+        paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.fastapi.name }}
+                port:
+                  number: {{ .Values.fastapi.service.port }}
 {{- end }}
