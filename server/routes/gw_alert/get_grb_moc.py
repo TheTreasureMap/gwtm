@@ -33,6 +33,14 @@ async def get_grbmoc(
     # Normalize the graceid
     graceid = GWAlert.graceidfromalternate(graceid, db)
 
+    # Fetch the latest alert to determine role (test vs observation)
+    alert = (
+        db.query(GWAlert)
+        .filter(GWAlert.graceid == graceid)
+        .order_by(GWAlert.datecreated.desc())
+        .first()
+    )
+
     # Validate instrument
     instrument = instrument.lower()
     if instrument not in ["gbm", "lat", "bat"]:
@@ -42,7 +50,10 @@ async def get_grbmoc(
     instrument_dictionary = {"gbm": "Fermi", "lat": "LAT", "bat": "BAT"}
 
     # Build path
-    moc_filepath = f"fit/{graceid}-{instrument_dictionary[instrument]}.json"
+    if alert is None or alert.role != "test":
+        moc_filepath = f"fit/{graceid}-{instrument_dictionary[instrument]}.json"
+    else:
+        moc_filepath = f"test/{graceid}-{instrument_dictionary[instrument]}.json"
 
     try:
         file_content = download_gwtm_file(
