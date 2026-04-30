@@ -1,0 +1,8 @@
+helm:
+  parameters:
+  - name: fastapi.image.tag
+    value: "1.0.4"
+    forceString: true
+  - name: frontend.image.tag
+    value: "1.0.4"
+    forceString: true
