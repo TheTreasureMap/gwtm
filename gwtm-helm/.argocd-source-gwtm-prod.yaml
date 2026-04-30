@@ -1,8 +1,20 @@
 helm:
   parameters:
   - name: fastapi.image.tag
-    value: "1.0.4"
-    forceString: true
+    value: 1.0.5
+    forcestring: true
   - name: frontend.image.tag
-    value: "1.0.4"
-    forceString: true
+    value: 1.0.5
+    forcestring: true
+  - name: listeners.enabled
+    value: "false"
+    forcestring: false
+  - name: backend.replicas
+    value: "1"
+    forcestring: false
+  - name: fastapi.replicas
+    value: "1"
+    forcestring: false
+  - name: image.name
+    value: ghcr.io/thetreasuremap/gwtm/fastapi-backend
+    forcestring: true
