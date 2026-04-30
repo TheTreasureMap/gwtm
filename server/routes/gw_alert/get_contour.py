@@ -50,7 +50,10 @@ async def get_gw_contour(
 
     # Build path info
     path_info = f"{graceid}-{alert_type}"
-    contour_path = f"fit/{path_info}-contours-smooth.json"
+    if alert.role != "test":
+        contour_path = f"fit/{path_info}-contours-smooth.json"
+    else:
+        contour_path = f"test/{path_info}-contours-smooth.json"
 
     try:
         file_content = download_gwtm_file(

@@ -66,7 +66,10 @@ async def get_gw_skymap(
 
     # Build path info
     path_info = f"{graceid}-{alert_type}"
-    skymap_path = f"fit/{path_info}.fits.gz"
+    if alert.role != "test":
+        skymap_path = f"fit/{path_info}.fits.gz"
+    else:
+        skymap_path = f"test/{path_info}.fits.gz"
 
     # Download and return the file
     try:
