@@ -17,6 +17,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.fastapi.name }}
+        app.kubernetes.io/version: {{ .Values.fastapi.image.tag | quote }}
     spec:
       initContainers:
       - name: wait-for-db

@@ -17,6 +17,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.frontend.name }}
+        app.kubernetes.io/version: {{ .Values.frontend.image.tag | quote }}
     spec:
       containers:
       - name: {{ .Values.frontend.name }}
