@@ -117,6 +117,11 @@
 
 {{/* App secret env vars: mail, recaptcha, zenodo */}}
 {{- define "gwtm.appSecretEnv" -}}
+- name: JWT_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "gwtm.secretName" . }}
+      key: jwt-secret-key
 - name: MAIL_PASSWORD
   valueFrom:
     secretKeyRef:
