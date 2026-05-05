@@ -96,6 +96,12 @@ def get_current_user(
         if user:
             return user
 
+    # Also accept API token passed as a Bearer token (jwt_token that failed JWT decode)
+    if jwt_token:
+        user = db.query(Users).filter(Users.api_token == jwt_token).first()
+        if user:
+            return user
+
     # Neither token worked
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
