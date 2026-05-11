@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/component: ligo-listener
 spec:
   replicas: 1  # Only one replica per listener to avoid duplicate processing
+  revisionHistoryLimit: 2
   strategy:
     type: Recreate  # Important: don't run multiple simultaneously
   selector:
