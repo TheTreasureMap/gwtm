@@ -47,3 +47,5 @@ frontend/.env
 
 # Helm secrets - contains sensitive credentials
 gwtm-helm/values-secrets.yaml
+
+deneme 
