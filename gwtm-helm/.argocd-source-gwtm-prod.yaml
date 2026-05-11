@@ -1,7 +1,7 @@
 helm:
   parameters:
   - name: fastapi.image.tag
-    value: 1.0.5
+    value: 1.0.6
     forcestring: true
   - name: frontend.image.tag
     value: 1.0.6
