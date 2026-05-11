@@ -317,7 +317,10 @@
 							label="Depth"
 							type="number"
 							bind:value={formData.depth}
-							validators={[validators.number(), validators.min(0)]}
+							required={showCompletedSection}
+							validators={showCompletedSection
+								? [validators.required('Depth is required for completed observations'), validators.number(), validators.min(0)]
+								: [validators.number(), validators.min(0)]}
 						/>
 
 						<FormField
@@ -334,8 +337,10 @@
 							type="select"
 							bind:value={formData.depth_unit}
 							options={depthUnitOptions}
-							required
-							validators={[validators.required('Please select depth unit')]}
+							required={showCompletedSection}
+							validators={showCompletedSection
+								? [validators.required('Please select depth unit')]
+								: []}
 						/>
 					</div>
 				</div>
@@ -350,6 +355,7 @@
 						name="planned_obs_time"
 						label="Planned Observation Time"
 						bind:value={formData.planned_obs_time}
+						required={showPlannedSection}
 						helpText="YYYY-mm-ddTHH:MM:SS.ss e.g: 2001-01-01T12:30:15.50"
 					/>
 				</ConditionalSection>
@@ -364,6 +370,7 @@
 							name="completed_obs_time"
 							label="Completed Observation Time"
 							bind:value={formData.completed_obs_time}
+							required={showCompletedSection}
 							helpText="YYYY-mm-ddTHH:MM:SS.ss e.g: 2001-01-01T12:30:15.50"
 						/>
 

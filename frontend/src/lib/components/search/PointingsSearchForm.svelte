@@ -36,31 +36,18 @@
 
 	async function loadFormOptions() {
 		try {
-			// Load ALL Grace IDs from alerts - fetch all pages like Flask does with .all()
+			// Load grace IDs for datalist suggestions — fetch enough for autocomplete
 			let allAlerts: any[] = [];
 			let page = 1;
-			let totalFetched = 0;
 
-			// First request to get total count
 			const firstResponse = await api.alerts.queryAlerts({ page: 1 });
 			allAlerts = firstResponse.alerts || [];
-			const totalCount = firstResponse.total || 0;
-			totalFetched = allAlerts.length;
 
-			console.log(`Initial fetch: ${totalFetched}/${totalCount} alerts`);
-
-			// Fetch remaining pages if needed
-			while (totalFetched < totalCount && firstResponse.has_next) {
+			while (firstResponse.has_next && page < 10) {
 				page++;
 				const response = await api.alerts.queryAlerts({ page });
-				const pageAlerts = response.alerts || [];
-				allAlerts = [...allAlerts, ...pageAlerts];
-				totalFetched += pageAlerts.length;
-
-				console.log(`Fetched page ${page}: ${totalFetched}/${totalCount} alerts`);
-
+				allAlerts = [...allAlerts, ...(response.alerts || [])];
 				if (!response.has_next) break;
-				if (page > 50) break; // Safety limit
 			}
 
 			const uniqueGraceIds = [...new Set(allAlerts.map((a: any) => a.graceid))]
@@ -68,14 +55,7 @@
 				.sort()
 				.reverse();
 
-			console.log(
-				`Final result: ${uniqueGraceIds.length} unique Grace IDs from ${allAlerts.length} total alerts`
-			);
-
-			graceIdOptions = [
-				{ value: '', label: '--Select--' },
-				...uniqueGraceIds.map((gid: string) => ({ value: gid, label: gid }))
-			];
+			graceIdOptions = uniqueGraceIds.map((gid: string) => ({ value: gid, label: gid }));
 
 			// Load band options from API
 			const bandpassData = await getBandpassOptions();
@@ -135,16 +115,27 @@
 	>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			<!-- Grace ID -->
-			<FormField
-				name="graceid"
-				label="Grace ID"
-				type="select"
-				bind:value={formData.graceid}
-				options={graceIdOptions}
-				required
-				disabled={isLoadingOptions}
-				helpText="*required"
-			/>
+			<div class="space-y-1">
+				<label for="graceid" class="block text-sm font-medium text-gray-700">
+					Grace ID <span class="text-red-500">*</span>
+				</label>
+				<input
+					id="graceid"
+					name="graceid"
+					type="text"
+					list="graceid-options"
+					bind:value={formData.graceid}
+					placeholder={isLoadingOptions ? 'Loading suggestions...' : 'e.g. S250206dm'}
+					class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2"
+					autocomplete="off"
+				/>
+				<datalist id="graceid-options">
+					{#each graceIdOptions.filter(o => o.value) as option (option.value)}
+						<option value={option.value} />
+					{/each}
+				</datalist>
+				<p class="text-xs text-gray-500">Type to search, or select from suggestions</p>
+			</div>
 
 			<!-- Bandpasses -->
 			<div class="space-y-2">
