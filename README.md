@@ -101,6 +101,34 @@ This Kubernetes setup includes:
 - FastAPI backend
 - Svelte frontend dashboard
 
+## Deployment
+
+### Environments
+
+| Environment | URL | Deployment |
+|-------------|-----|------------|
+| Dev | https://dev.treasuremap.space | Auto-deploys on every push to `master` via ArgoCD Image Updater |
+| Prod | https://treasuremap.space | Deploys on deliberate version tag — see release process below |
+
+### Release process (prod)
+
+1. **Tag the release** in this repo:
+   ```bash
+   git tag v1.0.x && git push origin v1.0.x
+   ```
+   CI will build and push images tagged `1.0.x` to GHCR.
+
+2. **Update `gwtm-deploy`** — in `argocd-config/app-gwtm-prod.yaml`, update these three values to the new version:
+   ```yaml
+   targetRevision: v1.0.x
+   # under parameters:
+   - name: fastapi.image.tag
+     value: "1.0.x"
+   - name: frontend.image.tag
+     value: "1.0.x"
+   ```
+   Commit and push. ArgoCD auto-syncs and deploys prod with immutable image tags.
+
 ### Running tests
 
 Tests can be run from the root directory using pytest. First create a virtual environment and install the requirements:
