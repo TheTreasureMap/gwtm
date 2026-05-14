@@ -211,10 +211,12 @@ listeners:
     resources:
       requests:
         cpu: "500m"
-        memory: "1Gi"
+        memory: "2Gi"
+        ephemeral-storage: "512Mi"
       limits:
         cpu: "2000m"
-        memory: "4Gi"
+        memory: "8Gi"
+        ephemeral-storage: "2Gi"
 
   # Resource requests/limits for IceCube listener
   icecube:
@@ -222,9 +224,11 @@ listeners:
       requests:
         cpu: "250m"
         memory: "512Mi"
+        ephemeral-storage: "256Mi"
       limits:
         cpu: "1000m"
         memory: "2Gi"
+        ephemeral-storage: "1Gi"
 
   # Node selector (optional)
   nodeSelector: {}
