@@ -1,0 +1,57 @@
+{{- if .Values.listeners.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: evicted-pod-cleanup
+  namespace: {{ .Values.global.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: evicted-pod-cleanup
+  namespace: {{ .Values.global.namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: evicted-pod-cleanup
+  namespace: {{ .Values.global.namespace }}
+subjects:
+- kind: ServiceAccount
+  name: evicted-pod-cleanup
+  namespace: {{ .Values.global.namespace }}
+roleRef:
+  kind: Role
+  name: evicted-pod-cleanup
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: evicted-pod-cleanup
+  namespace: {{ .Values.global.namespace }}
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: evicted-pod-cleanup
+          restartPolicy: OnFailure
+          containers:
+          - name: cleanup
+            image: bitnami/kubectl:latest
+            command:
+            - kubectl
+            - delete
+            - pods
+            - -n
+            - {{ .Values.global.namespace }}
+            - --field-selector=status.phase=Failed
+{{- end }}
