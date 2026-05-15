@@ -39,7 +39,7 @@
 	 * @type {any[]}
 	 * @default []
 	 */
-	export let footprintData: any[] = [];
+	export let footprintData: any[] | null = null;
 
 	/**
 	 * Whether panel is expanded
@@ -48,7 +48,8 @@
 	 */
 	export let expanded: boolean = true;
 
-	$: loading = !footprintData || footprintData.length === 0;
+	// null = still fetching; [] = fetched but empty; [...] = has data
+	$: loading = footprintData === null;
 
 	// Per-instrument visibility state, initialised to true when data loads
 	let visibleInstruments: Record<string, boolean> = {};
