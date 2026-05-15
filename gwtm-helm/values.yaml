@@ -151,7 +151,7 @@ listeners:
   image:
     repository: ghcr.io/thetreasuremap/gwtm_cron
     tag: "latest"  # Override in values-prod.yaml with specific version
-    pullPolicy: Always  # Always pull to get latest images for mutable tags
+    pullPolicy: IfNotPresent
 
   # GWTM API configuration
   # For co-located deployments (listeners in same cluster as GWTM), use internal service name
