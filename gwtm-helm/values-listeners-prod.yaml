@@ -7,7 +7,7 @@ global:
 
 listeners:
   image:
-    tag: dockerise  # Use dockerise branch tag
+    tag: "1.0.0"
 
   # GWTM API configuration
   # Points to prod cluster ingress. No host filter on ingress so IP-based requests work.

@@ -48,10 +48,9 @@ spec:
           - name: cleanup
             image: bitnami/kubectl:latest
             command:
-            - kubectl
-            - delete
-            - pods
-            - -n
-            - {{ .Values.global.namespace }}
-            - --field-selector=status.phase=Failed
+            - /bin/sh
+            - -c
+            - |
+              kubectl delete pods -n {{ .Values.global.namespace }} --field-selector=status.phase=Failed --ignore-not-found=true
+              kubectl delete pods -n {{ .Values.global.namespace }} --field-selector=status.phase=Succeeded --ignore-not-found=true
 {{- end }}
