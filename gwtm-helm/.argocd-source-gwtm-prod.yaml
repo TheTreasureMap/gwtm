@@ -4,7 +4,7 @@ helm:
     value: 1.0.7
     forcestring: true
   - name: frontend.image.tag
-    value: 1.0.6
+    value: 1.0.7
     forcestring: true
   - name: listeners.enabled
     value: "false"
