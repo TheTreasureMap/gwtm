@@ -4,5 +4,5 @@ helm:
     value: ghcr.io/thetreasuremap/gwtm_cron
     forcestring: true
   - name: listeners.image.tag
-    value: 1.0.1
+    value: 1.0.2
     forcestring: true
