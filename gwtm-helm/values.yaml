@@ -215,7 +215,7 @@ listeners:
         ephemeral-storage: "512Mi"
       limits:
         cpu: "2000m"
-        memory: "8Gi"
+        memory: "5Gi"
         ephemeral-storage: "2Gi"
 
   # Resource requests/limits for IceCube listener
