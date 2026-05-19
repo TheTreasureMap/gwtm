@@ -39,3 +39,6 @@ listeners:
   observingRun: "O4"
 
   galaxyCatalogConfig: "/app/gal_catalog_config.ini"
+
+  nodeSelector:
+    kubernetes.io/hostname: gwtm-listeners-worker-1
