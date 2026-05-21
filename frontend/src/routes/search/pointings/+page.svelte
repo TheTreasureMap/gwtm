@@ -183,15 +183,13 @@
 		<!-- Delete Selected -->
 		{#if hasSearched && lastSearchParams?.my_points_only && selectedPointings.size > 0}
 			<div class="flex items-center gap-4">
-				<button
-					class="delete-btn"
-					disabled={isDeleting}
-					on:click={handleDeleteSelected}
-				>
+				<button class="delete-btn" disabled={isDeleting} on:click={handleDeleteSelected}>
 					{#if isDeleting}
 						Deleting...
 					{:else}
-						Delete {selectedPointings.size} selected pointing{selectedPointings.size === 1 ? '' : 's'}
+						Delete {selectedPointings.size} selected pointing{selectedPointings.size === 1
+							? ''
+							: 's'}
 					{/if}
 				</button>
 				{#if deleteError}

@@ -38,7 +38,9 @@ export const pointingService = {
 	},
 
 	deletePointings: async (request: PointingDeleteRequest): Promise<{ message: string }> => {
-		const response = await client.delete<{ message: string }>('/api/v1/pointings', { data: request });
+		const response = await client.delete<{ message: string }>('/api/v1/pointings', {
+			data: request
+		});
 		return response.data;
 	},
 

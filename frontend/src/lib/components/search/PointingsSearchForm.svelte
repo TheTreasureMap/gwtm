@@ -130,7 +130,7 @@
 					autocomplete="off"
 				/>
 				<datalist id="graceid-options">
-					{#each graceIdOptions.filter(o => o.value) as option (option.value)}
+					{#each graceIdOptions.filter((o) => o.value) as option (option.value)}
 						<option value={option.value} />
 					{/each}
 				</datalist>
