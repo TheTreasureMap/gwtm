@@ -114,6 +114,14 @@
 		selectedPointings = event.detail.selectedPointings;
 	}
 
+	// DOI requests are only valid for completed pointings without an existing DOI.
+	// Compute this subset so DoiRequestPanel never receives ineligible IDs.
+	$: doiEligibleSelected = new Set(
+		searchResults
+			.filter((p) => selectedPointings.has(p.id) && p.status === 'completed' && !p.doi_url)
+			.map((p) => p.id)
+	);
+
 	// Handle delete selected pointings
 	let isDeleting = false;
 	let deleteError = '';
@@ -165,7 +173,7 @@
 		<!-- DOI Request Panel -->
 		{#if hasSearched && lastSearchParams?.my_points_only}
 			<DoiRequestPanel
-				{selectedPointings}
+				selectedPointings={doiEligibleSelected}
 				graceid={lastSearchParams.graceid}
 				visible={true}
 				on:doi-request={handleDoiRequest}

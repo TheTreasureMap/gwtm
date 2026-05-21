@@ -14,7 +14,7 @@ router = APIRouter(tags=["pointings"])
 
 # Fields from PointingBase that are allowed to be updated on an existing pointing.
 # instrumentid is intentionally excluded — it is fixed at submission time.
-# position is handled separately via ra/dec.
+# position/ra/dec are handled separately below.
 _UPDATABLE_FIELDS = frozenset({
     "status", "time", "depth", "depth_err", "depth_unit",
     "band", "pos_angle", "central_wave", "bandwidth",
@@ -47,11 +47,19 @@ async def put_pointing(
                 f"Pointing {pointing_id} not found or not owned by user."
             )
 
-        for field in update.model_dump(exclude_unset=True).keys() & _UPDATABLE_FIELDS:
+        fields_to_update = update.model_dump(exclude_unset=True).keys() & _UPDATABLE_FIELDS
+        has_position = (update.ra is not None and update.dec is not None) or update.position is not None
+
+        if not fields_to_update and not has_position:
+            raise validation_exception("No updatable fields provided.")
+
+        for field in fields_to_update:
             setattr(pointing, field, getattr(update, field))
 
         if update.ra is not None and update.dec is not None:
             pointing.position = f"POINT({update.ra} {update.dec})"
+        elif update.position is not None:
+            pointing.position = update.position
 
         pointing.dateupdated = datetime.now()
         db.commit()

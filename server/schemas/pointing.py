@@ -74,8 +74,8 @@ class PointingBase(BaseModel):
             try:
                 return pointing_status_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [s.name for s in pointing_status_enum]
+                raise ValueError(f"Invalid status '{value}'. Valid values: {valid}")
         return value
 
     @field_validator("depth_unit", mode="before")
@@ -85,14 +85,13 @@ class PointingBase(BaseModel):
             try:
                 return depth_unit_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [d.name for d in depth_unit_enum]
+                raise ValueError(f"Invalid depth_unit '{value}'. Valid values: {valid}")
         elif isinstance(value, int):
             try:
                 return depth_unit_enum(value)
             except ValueError:
-                # Return the int value if it's not a valid enum
-                return value
+                raise ValueError(f"Invalid depth_unit value: {value}")
         return value
 
     @field_validator("band", mode="before")
@@ -102,14 +101,13 @@ class PointingBase(BaseModel):
             try:
                 return bandpass_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [b.name for b in bandpass_enum]
+                raise ValueError(f"Invalid band '{value}'. Valid values: {valid}")
         elif isinstance(value, int):
             try:
                 return bandpass_enum(value)
             except ValueError:
-                # Return the int value if it's not a valid enum
-                return value
+                raise ValueError(f"Invalid band value: {value}")
         return value
 
     model_config = ConfigDict(
