@@ -47,6 +47,9 @@ async def put_pointing(
                 f"Pointing {pointing_id} not found or not owned by user."
             )
 
+        if (update.ra is None) != (update.dec is None):
+            raise validation_exception("ra and dec must be provided together.")
+
         fields_to_update = update.model_dump(exclude_unset=True).keys() & _UPDATABLE_FIELDS
         has_position = (update.ra is not None and update.dec is not None) or update.position is not None
 

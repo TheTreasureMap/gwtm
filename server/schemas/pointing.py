@@ -115,6 +115,21 @@ class PointingBase(BaseModel):
                 raise ValueError(f"Invalid band value: {value}")
         return value
 
+    @field_validator("position", mode="before")
+    @classmethod
+    def validate_position(cls, value):
+        # Pass through None and non-strings (e.g. WKBElement from the DB).
+        if value is None or not isinstance(value, str):
+            return value
+        if not (
+            all(token in value for token in ("POINT", "(", ")", " "))
+            and "," not in value
+        ):
+            raise ValueError(
+                f"Invalid position '{value}'. Must be WKT format like 'POINT(ra dec)'."
+            )
+        return value
+
     model_config = ConfigDict(
         from_attributes=True,
         arbitrary_types_allowed=True,
@@ -338,7 +353,6 @@ class PointingDeleteRequest(BaseModel):
         if not self.ids:
             raise ValueError("At least one pointing ID must be provided")
         return self
-
 
 
 class DOIRequest(BaseModel):

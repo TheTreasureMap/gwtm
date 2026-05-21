@@ -959,3 +959,86 @@ class TestPointingDeleteAndPut:
         )
 
         assert response.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    def test_put_pointing_integer_status(self):
+        """PUT accepts a numeric status value and converts it to the enum."""
+        pid = self._create_pointing(self.admin_token, ra=59.0, dec=-14.0)
+
+        response = requests.put(
+            self.get_url(f"/pointings/{pid}"),
+            json={"status": 3},  # cancelled
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        get_resp = requests.get(self.get_url("/pointings"), params={"id": pid})
+        assert get_resp.json()[0]["status"] == "cancelled"
+
+    def test_put_pointing_empty_body_rejected(self):
+        """PUT with no updatable fields returns 400."""
+        pid = self._create_pointing(self.admin_token, ra=60.0, dec=-15.0)
+
+        response = requests.put(
+            self.get_url(f"/pointings/{pid}"),
+            json={},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "No updatable fields" in str(response.json())
+
+    def test_put_pointing_position_string(self):
+        """PUT accepts a WKT POINT(...) string for position."""
+        pid = self._create_pointing(self.admin_token, ra=61.0, dec=-16.0)
+
+        response = requests.put(
+            self.get_url(f"/pointings/{pid}"),
+            json={"position": "POINT(70.5 -25.5)"},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        get_resp = requests.get(self.get_url("/pointings"), params={"id": pid})
+        assert "70.5" in get_resp.json()[0]["position"]
+        assert "-25.5" in get_resp.json()[0]["position"]
+
+    def test_put_pointing_invalid_position_string(self):
+        """PUT with a malformed position string is rejected."""
+        pid = self._create_pointing(self.admin_token, ra=62.0, dec=-17.0)
+
+        response = requests.put(
+            self.get_url(f"/pointings/{pid}"),
+            json={"position": "garbage"},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    def test_put_pointing_partial_ra_dec_rejected(self):
+        """PUT with only ra (or only dec) is rejected."""
+        pid = self._create_pointing(self.admin_token, ra=63.0, dec=-18.0)
+
+        response = requests.put(
+            self.get_url(f"/pointings/{pid}"),
+            json={"ra": 75.0},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "ra and dec" in str(response.json())
+
+    def test_delete_partial_success_returns_failed_ids(self):
+        """Mixed valid/invalid IDs return 200 with deleted_ids and failed_ids."""
+        pid = self._create_pointing(self.admin_token, ra=64.0, dec=-19.0)
+
+        response = requests.delete(
+            self.get_url("/pointings"),
+            json={"ids": [pid, 999999]},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["deleted_ids"] == [pid]
+        assert body["failed_ids"] == [999999]
+        assert "Deleted 1 of 2" in body["message"]

@@ -32,20 +32,26 @@ async def delete_pointings(
         if not admin:
             query = query.filter(Pointing.submitterid == user.id)
 
-        pointing_ids = [row.id for row in query.all()]
-        if not pointing_ids:
+        deleted_ids = sorted(row.id for row in query.all())
+        if not deleted_ids:
             raise not_found_exception("No matching pointings found for the given IDs.")
 
         db.query(PointingEvent).filter(
-            PointingEvent.pointingid.in_(pointing_ids)
+            PointingEvent.pointingid.in_(deleted_ids)
         ).delete(synchronize_session=False)
 
         db.query(Pointing).filter(
-            Pointing.id.in_(pointing_ids)
+            Pointing.id.in_(deleted_ids)
         ).delete(synchronize_session=False)
 
         db.commit()
-        return {"message": f"Deleted {len(pointing_ids)} pointing(s) successfully."}
+
+        failed_ids = sorted(set(request.ids) - set(deleted_ids))
+        return {
+            "message": f"Deleted {len(deleted_ids)} of {len(request.ids)} pointing(s).",
+            "deleted_ids": deleted_ids,
+            "failed_ids": failed_ids,
+        }
     except HTTPException:
         raise
     except Exception as e:

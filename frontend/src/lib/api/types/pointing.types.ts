@@ -68,6 +68,21 @@ export interface PointingDeleteRequest {
 	ids: number[];
 }
 
+export interface PointingUpdateBody {
+	status?: string | number;
+	time?: string;
+	depth?: number;
+	depth_err?: number;
+	depth_unit?: string | number;
+	band?: string | number;
+	pos_angle?: number;
+	central_wave?: number;
+	bandwidth?: number;
+	ra?: number;
+	dec?: number;
+	position?: string;
+}
+
 export interface PointingFilters {
 	graceid?: string;
 	graceids?: string;
