@@ -1,4 +1,4 @@
-"""PUT pointing endpoint — update any field on an existing pointing."""
+"""PUT pointing endpoint — update mutable fields on an existing pointing."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session

@@ -76,6 +76,11 @@ class PointingBase(BaseModel):
             except KeyError:
                 valid = [s.name for s in pointing_status_enum]
                 raise ValueError(f"Invalid status '{value}'. Valid values: {valid}")
+        elif isinstance(value, int):
+            try:
+                return pointing_status_enum(value)
+            except ValueError:
+                raise ValueError(f"Invalid status value: {value}")
         return value
 
     @field_validator("depth_unit", mode="before")
@@ -296,6 +301,11 @@ class PointingUpdate(BaseModel):
                 raise ValueError(
                     f"Invalid status: {value}. Valid values are: {[s.name for s in pointing_status_enum]}"
                 )
+        elif isinstance(value, int):
+            try:
+                return pointing_status_enum(value)
+            except ValueError:
+                raise ValueError(f"Invalid status value: {value}")
         return value
 
     @model_validator(mode="after")
