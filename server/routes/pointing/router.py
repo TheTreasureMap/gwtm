@@ -8,6 +8,8 @@ from .get_pointings import router as get_pointings_router
 from .update_pointings import router as update_pointings_router
 from .cancel_all import router as cancel_all_router
 from .request_doi import router as request_doi_router
+from .delete_pointings import router as delete_pointings_router
+from .put_pointing import router as put_pointing_router
 
 # Create the main router that includes all pointing routes
 router = APIRouter(tags=["pointings"])
@@ -18,3 +20,5 @@ router.include_router(get_pointings_router)
 router.include_router(update_pointings_router)
 router.include_router(cancel_all_router)
 router.include_router(request_doi_router)
+router.include_router(delete_pointings_router)
+router.include_router(put_pointing_router)

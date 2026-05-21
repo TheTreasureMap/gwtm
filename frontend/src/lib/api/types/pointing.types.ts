@@ -64,6 +64,10 @@ export interface CancelAllRequest {
 	instrumentid: number;
 }
 
+export interface PointingDeleteRequest {
+	ids: number[];
+}
+
 export interface PointingFilters {
 	graceid?: string;
 	graceids?: string;

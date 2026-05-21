@@ -1,11 +1,13 @@
 import client from '../client';
 import type {
 	PointingSchema,
+	PointingCreate,
 	PointingCreateRequest,
 	PointingResponse,
 	PointingUpdate,
 	CancelAllRequest,
-	PointingFilters
+	PointingFilters,
+	PointingDeleteRequest
 } from '../types/pointing.types';
 import type { DOIRequest, DOIRequestResponse } from '../types/doi.types';
 
@@ -27,6 +29,16 @@ export const pointingService = {
 
 	cancelAllPointings: async (request: CancelAllRequest): Promise<{ message: string }> => {
 		const response = await client.post<{ message: string }>('/api/v1/cancel_all', request);
+		return response.data;
+	},
+
+	updatePointing: async (id: number, update: PointingCreate): Promise<{ message: string }> => {
+		const response = await client.put<{ message: string }>(`/api/v1/pointings/${id}`, update);
+		return response.data;
+	},
+
+	deletePointings: async (request: PointingDeleteRequest): Promise<{ message: string }> => {
+		const response = await client.delete<{ message: string }>('/api/v1/pointings', { data: request });
 		return response.data;
 	},
 

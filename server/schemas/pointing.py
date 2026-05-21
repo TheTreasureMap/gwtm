@@ -320,6 +320,19 @@ class CancelAllRequest(BaseModel):
     instrumentid: int = Field(..., description="Instrument ID to cancel pointings for")
 
 
+class PointingDeleteRequest(BaseModel):
+    """Schema for deleting pointings by ID."""
+
+    ids: List[int] = Field(..., description="List of pointing IDs to delete")
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        if not self.ids:
+            raise ValueError("At least one pointing ID must be provided")
+        return self
+
+
+
 class DOIRequest(BaseModel):
     """Schema for requesting a DOI."""
 

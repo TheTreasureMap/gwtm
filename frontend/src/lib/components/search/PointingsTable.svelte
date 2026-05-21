@@ -30,11 +30,9 @@
 	];
 
 	function canSelectPointing(pointing: any): boolean {
-		// Only allow selection if:
-		// 1. Selection is allowed (allowSelection is true, which means myPointsOnly is true)
-		// 2. Status is 'completed'
-		// 3. No DOI URL already exists
-		return allowSelection && pointing.status === 'completed' && !pointing.doi_url;
+		// Allow selection of any pointing when myPointsOnly is active,
+		// except completed pointings that already have a DOI (DOI panel handles those).
+		return allowSelection && !(pointing.status === 'completed' && pointing.doi_url);
 	}
 
 	function togglePointingSelection(pointingId: number) {
