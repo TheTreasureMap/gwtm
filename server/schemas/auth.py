@@ -44,8 +44,7 @@ class UserInfo(BaseModel):
     email: str
     firstname: str
     lastname: str
-    # TODO: Re-enable when database is migrated
-    # verified: bool
+    verified: bool
     api_token: Optional[str] = None
 
 

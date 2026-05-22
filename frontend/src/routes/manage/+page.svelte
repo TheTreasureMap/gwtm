@@ -101,7 +101,7 @@
 	// Resend verification email
 	async function resendVerificationEmail() {
 		try {
-			await api.client.post('/api/v1/auth/resend-verification');
+			await api.client.post('/ajax_resend_verification_email');
 			alert('Verification email sent!');
 		} catch (err) {
 			alert('Failed to send verification email');
