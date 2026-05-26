@@ -203,10 +203,6 @@ async def resend_verification_email(email: str, db: Session = Depends(get_db)):
             )
         except Exception:
             logger.exception("Failed to send verification email to %s", user.email)
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Unable to send verification email. Please try again later.",
-            )
 
         return generic_response
 

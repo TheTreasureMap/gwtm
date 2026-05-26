@@ -35,10 +35,16 @@ TRUNCATE TABLE public.glade_2p3 CASCADE;
 -- Insert test users with working passwords
 -- Password hashes generated with PBKDF2-SHA256
 INSERT INTO public.users (id, username, firstname, lastname, password_hash, datecreated, email, verified, api_token)
-VALUES 
+VALUES
     (1, 'admin', 'Admin', 'User', 'pbkdf2:sha256:100000$39a855b4095fbe6511426f8075bb12ea$30fb8a9603e081d7ea73f3886bda84f7b6b0a01e365e27e809976325d0b4e6b4', NOW(), 'admin@test.com', true, 'test_token_admin_001'),
     (2, 'testuser', 'Test', 'User', 'pbkdf2:sha256:100000$9023eca0628e0d47c2a3fc84299725f4$ee4c6d17f211a7c314bc26cb72c2417a2adc2841fc648f6dec6de545fc85615f', NOW(), 'test@test.com', true, 'test_token_user_002'),
     (3, 'scientist', 'Science', 'User', 'pbkdf2:sha256:100000$f3cd94c185e376ef3ccdb4336da4bba7$314583fd6b4f2d7da6d5f46d7dc07985ce455a1cbdebdec56fbf2de941c2cc51', NOW(), 'science@test.com', true, 'test_token_sci_003');
+
+-- Unverified users for email verification flow tests (password: Unverified1!)
+INSERT INTO public.users (id, username, firstname, lastname, password_hash, datecreated, email, verified, api_token, verification_key)
+VALUES
+    (4, 'unverified_user', 'Unverified', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'unverified@test.com', false, null, 'test_verification_token_seeded_001'),
+    (5, 'resend_test_user', 'Resend', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'resend@test.com', false, null, 'test_verification_token_seeded_002');
 
 -- Insert test groups
 INSERT INTO public.groups (id, name, datecreated)

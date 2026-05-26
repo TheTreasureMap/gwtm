@@ -98,7 +98,6 @@ jobs:
         python -m pytest tests/fastapi/ -v --disable-warnings
       env:
         API_BASE_URL: http://localhost:8000
-        DB_HOST: localhost
 
     - name: Cleanup
       if: always()
