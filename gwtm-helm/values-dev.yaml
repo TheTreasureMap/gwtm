@@ -57,6 +57,8 @@ fastapi:
   extraEnv:
     - name: SECRET_KEY
       value: "gwtm-test-secret-key-do-not-use-in-production"
+    - name: JWT_SECRET_KEY
+      value: "gwtm-test-secret-key-do-not-use-in-production"
   replicas: 1
   service:
     type: ClusterIP

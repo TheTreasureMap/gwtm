@@ -173,7 +173,7 @@ async def send_verification_email(
     message.attach(MIMEText(text_content, "plain"))
     message.attach(MIMEText(html_content, "html"))
 
-    if not SMTP_SERVER or not SMTP_PASSWORD:
+    if not SMTP_SERVER:
         if settings.DEVELOPMENT_MODE:
             # Dev fallback only: log the full URL so developers can verify manually.
             logger.warning(

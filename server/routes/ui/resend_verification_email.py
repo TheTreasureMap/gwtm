@@ -52,7 +52,6 @@ async def resend_verification_email(
 
     token = generate_verification_token(user.id)
     user.verification_key = token
-    db.commit()
 
     try:
         await send_verification_email(
@@ -60,7 +59,9 @@ async def resend_verification_email(
             username=user.username,
             verification_token=token,
         )
+        db.commit()
     except Exception:
+        db.rollback()
         logger.exception("Failed to send verification email to %s", user.email)
         raise HTTPException(
             status_code=503,

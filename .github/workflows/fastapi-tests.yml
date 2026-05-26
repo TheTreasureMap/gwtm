@@ -12,9 +12,10 @@ env:
   DB_NAME: treasuremap
   DB_HOST: db
   DB_PORT: 5432
-  # Intentional test-only key — also committed to values-dev.yaml.
-  # Not a real secret; must be stable across restarts so pre-computed JWT test tokens remain valid.
+  # Intentional test-only keys — also committed to values-dev.yaml.
+  # Not real secrets; must be stable across restarts so pre-computed JWT test tokens remain valid.
   SECRET_KEY: gwtm-test-secret-key-do-not-use-in-production
+  JWT_SECRET_KEY: gwtm-test-secret-key-do-not-use-in-production
 
 jobs:
   test:
@@ -72,6 +73,7 @@ jobs:
           -e DB_HOST \
           -e DB_PORT \
           -e SECRET_KEY \
+          -e JWT_SECRET_KEY \
           -p 8000:8000 \
           gwtm_fastapi:latest
 
