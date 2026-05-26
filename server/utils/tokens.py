@@ -1,9 +1,8 @@
 """Signed verification token generation and decoding."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError  # noqa: F401 (re-exported)
 
 from server.config import settings
 
@@ -14,7 +13,7 @@ def generate_verification_token(user_id: int) -> str:
     """Return a signed JWT that expires in 24 hours, encoding the user's ID."""
     payload = {
         "uid": user_id,
-        "exp": datetime.utcnow() + timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 

@@ -1,6 +1,8 @@
 """Resend verification email endpoint."""
 
 import logging
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,7 +19,7 @@ router = APIRouter(tags=["UI"])
 
 @router.post("/ajax_resend_verification_email")
 async def resend_verification_email(
-    email: str = None,
+    email: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

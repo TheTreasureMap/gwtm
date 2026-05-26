@@ -136,6 +136,21 @@ class TestVerifyEmail:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "invalid" in response.json()["message"].lower()
 
+    def test_expired_token_returns_400_with_expired_message(self):
+        import time
+
+        import jwt as pyjwt
+
+        expired_token = pyjwt.encode(
+            {"uid": 999, "exp": int(time.time()) - 3600},
+            "gwtm-test-secret-key-do-not-use-in-production",
+            algorithm="HS256",
+        )
+        response = requests.post(VERIFY_URL, json={"verification_token": expired_token})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "expired" in response.json()["message"].lower()
+
 
 class TestPublicResend:
     """
