@@ -21,6 +21,8 @@ test = [
     "requests>=2.31.0",
     "pydantic-settings>=2.0.0",
     "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "werkzeug>=2.0.0",
 ]
 
 [tool.setuptools]
