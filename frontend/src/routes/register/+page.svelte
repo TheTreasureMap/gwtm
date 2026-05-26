@@ -37,7 +37,9 @@
 		});
 
 		if (result.success) {
-			goto('/login?message=Registration successful! Please check your email to verify your account before logging in.');
+			goto(
+				'/login?message=Registration successful! Please check your email to verify your account before logging in.'
+			);
 			return { success: true };
 		} else {
 			return { success: false, error: result.error || 'Registration failed' };
