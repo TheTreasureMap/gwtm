@@ -1,11 +1,11 @@
 """User registration endpoints."""
 
 import logging
-import secrets
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from server.db.database import get_db
 from server.db.models.users import Users
@@ -17,7 +17,7 @@ from server.schemas.auth import (
     AuthErrorResponse,
 )
 from server.utils.email import send_verification_email
-from server.config import settings
+from server.utils.tokens import generate_verification_token, decode_verification_token
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
     The user will receive a verification email to activate their account.
     """
     try:
-        # Check if username already exists
         existing_user = (
             db.query(Users)
             .filter(
@@ -55,10 +54,6 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
                     detail="This username is already taken",
                 )
 
-        # Generate verification token
-        verification_token = secrets.token_urlsafe(32)
-
-        # Create new user with account unverified until email is confirmed
         new_user = Users(
             username=register_data.username,
             email=register_data.email,
@@ -66,14 +61,13 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
             lastname=register_data.last_name or "",
             verified=False,
             datecreated=datetime.utcnow(),
-            verification_key=verification_token,
         )
-
-        # Set password (this will hash it automatically via the model)
         new_user.set_password(register_data.password)
-
-        # Save to database
         db.add(new_user)
+        db.flush()  # assigns new_user.id so we can embed it in the JWT
+
+        verification_token = generate_verification_token(new_user.id)
+        new_user.verification_key = verification_token
         db.commit()
         db.refresh(new_user)
 
@@ -85,8 +79,6 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
                 verification_token=verification_token,
             )
         except Exception:
-            # Account creation succeeded; surface a degraded message so the user
-            # knows to retry rather than waiting for an email that never sent.
             email_sent = False
             logger.exception("Failed to send verification email to %s", new_user.email)
 
@@ -109,9 +101,8 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
             detail="Username or email already exists",
         )
     except HTTPException:
-        # Re-raise HTTP exceptions
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,46 +114,47 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
 async def verify_email(
     verification_data: EmailVerificationRequest, db: Session = Depends(get_db)
 ):
-    """
-    Verify user email address using verification token.
-    """
+    """Verify user email address using the signed verification token."""
     try:
-        # Find user by verification token
-        user = (
-            db.query(Users)
-            .filter(Users.verification_key == verification_data.verification_token)
-            .first()
-        )
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid verification token",
-            )
-
-        # Check if already verified
-        if user.verified:
-            return EmailVerificationResponse(
-                message="Email address is already verified", verified=True
-            )
-
-        # Verify the account
-        user.verified = True
-        user.verification_key = None
-
-        db.commit()
-
-        return EmailVerificationResponse(
-            message="Email verified successfully! You can now log in.", verified=True
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
+        user_id = decode_verification_token(verification_data.verification_token)
+    except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Email verification failed. Please try again.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification link has expired. Please request a new one.",
         )
+    except (InvalidTokenError, Exception):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification token",
+        )
+
+    user = (
+        db.query(Users)
+        .filter(
+            Users.id == user_id,
+            Users.verification_key == verification_data.verification_token,
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification token",
+        )
+
+    if user.verified:
+        return EmailVerificationResponse(
+            message="Email address is already verified", verified=True
+        )
+
+    user.verified = True
+    user.verification_key = None
+    db.commit()
+
+    return EmailVerificationResponse(
+        message="Email verified successfully! You can now log in.", verified=True
+    )
 
 
 @router.post("/resend-verification", response_model=RegisterResponse)
@@ -170,12 +162,8 @@ async def resend_verification_email(email: str, db: Session = Depends(get_db)):
     """
     Public, unauthenticated resend endpoint.
 
-    Intended for users who registered but never received (or lost) their
-    verification email and therefore cannot log in. Returns the same generic
-    response regardless of whether the email exists or whether the account is
-    already verified, to avoid leaking account state to unauthenticated
-    callers. For admin-driven resends on behalf of another user, use the
-    authenticated /ajax_resend_verification_email endpoint instead.
+    Returns the same generic response regardless of whether the email exists
+    or whether the account is already verified, to avoid leaking account state.
     """
     generic_response = RegisterResponse(
         message="If an account with this email exists and is unverified, a verification email has been sent.",
@@ -186,12 +174,10 @@ async def resend_verification_email(email: str, db: Session = Depends(get_db)):
     try:
         user = db.query(Users).filter(Users.email == email).first()
 
-        # Don't reveal whether the email exists, or whether the account is
-        # already verified — both leak account state to anonymous callers.
         if not user or user.verified:
             return generic_response
 
-        verification_token = secrets.token_urlsafe(32)
+        verification_token = generate_verification_token(user.id)
         user.verification_key = verification_token
         db.commit()
 

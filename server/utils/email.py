@@ -8,7 +8,6 @@ from server.config import settings
 
 logger = logging.getLogger(__name__)
 
-EMAIL_TOKEN_EXPIRE_HOURS = 24
 SMTP_SERVER = settings.MAIL_SERVER
 SMTP_PORT = settings.MAIL_PORT
 SMTP_USERNAME = settings.MAIL_USERNAME
@@ -22,12 +21,15 @@ def _send_smtp(recipient: str, message_str: str) -> None:
     """Blocking SMTP send. Caller is responsible for offloading to a worker thread."""
     if settings.MAIL_USE_SSL:
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS) as server:
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            if SMTP_USERNAME and SMTP_PASSWORD:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient, message_str)
     else:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS) as server:
-            server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            if settings.MAIL_USE_TLS:
+                server.starttls()
+            if SMTP_USERNAME and SMTP_PASSWORD:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient, message_str)
 
 
@@ -172,11 +174,13 @@ async def send_verification_email(
     message.attach(MIMEText(html_content, "html"))
 
     if not SMTP_SERVER or not SMTP_PASSWORD:
-        # Dev fallback: SMTP not configured. Log the URL so a developer can
-        # manually verify; safe because no real users exist in this environment.
-        logger.warning(
-            "SMTP not configured — verification URL for %s: %s", email, verification_url
-        )
+        if settings.DEVELOPMENT_MODE:
+            # Dev fallback only: log the full URL so developers can verify manually.
+            logger.warning(
+                "SMTP not configured — verification URL for %s: %s", email, verification_url
+            )
+        else:
+            logger.warning("SMTP not configured — skipping verification email to %s", email)
         return True
 
     # smtplib is blocking; run the send in a worker thread so we don't stall

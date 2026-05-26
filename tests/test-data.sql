@@ -43,8 +43,8 @@ VALUES
 -- Unverified users for email verification flow tests (password: Unverified1!)
 INSERT INTO public.users (id, username, firstname, lastname, password_hash, datecreated, email, verified, api_token, verification_key)
 VALUES
-    (4, 'unverified_user', 'Unverified', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'unverified@test.com', false, null, 'test_verification_token_seeded_001'),
-    (5, 'resend_test_user', 'Resend', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'resend@test.com', false, null, 'test_verification_token_seeded_002');
+    (4, 'unverified_user', 'Unverified', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'unverified@test.com', false, null, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQsImV4cCI6NDA3MDkwODgwMH0.G0cLJCEAgEiBz1m__o-SUHhAEjqEIf4ioaKwFysaOP0'),
+    (5, 'resend_test_user', 'Resend', 'User', 'pbkdf2:sha256:260000$6M3AyZcU7SAHrgin$1ace569b354506e3647927687d898e2121f292b098b9f94a069362d8d3baf649', NOW(), 'resend@test.com', false, null, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjUsImV4cCI6NDA3MDkwODgwMH0.UGlHGbNJu793bS_Izhz0qDNgtseurr6vPVV8oYt-22Y');
 
 -- Insert test groups
 INSERT INTO public.groups (id, name, datecreated)

@@ -25,11 +25,11 @@ PUBLIC_RESEND_URL = f"{API_BASE_URL}/api/v1/auth/resend-verification"
 SEEDED_UNVERIFIED_USERNAME = "unverified_user"
 SEEDED_UNVERIFIED_EMAIL = "unverified@test.com"
 SEEDED_UNVERIFIED_PASSWORD = "Unverified1!"
-SEEDED_UNVERIFIED_TOKEN = "test_verification_token_seeded_001"
+SEEDED_UNVERIFIED_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQsImV4cCI6NDA3MDkwODgwMH0.G0cLJCEAgEiBz1m__o-SUHhAEjqEIf4ioaKwFysaOP0"
 
 # Separate pre-seeded user kept unverified for resend tests.
 SEEDED_RESEND_EMAIL = "resend@test.com"
-SEEDED_RESEND_TOKEN = "test_verification_token_seeded_002"
+SEEDED_RESEND_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjUsImV4cCI6NDA3MDkwODgwMH0.UGlHGbNJu793bS_Izhz0qDNgtseurr6vPVV8oYt-22Y"
 
 # Already-verified seeded user — used wherever a verified account is needed.
 SEEDED_VERIFIED_USERNAME = "testuser"
