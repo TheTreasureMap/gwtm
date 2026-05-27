@@ -148,18 +148,18 @@
 				<p><strong>Email:</strong> {currentUser.email}</p>
 				<p><strong>Name:</strong> {currentUser.firstname} {currentUser.lastname}</p>
 
-				{#if currentUser.api_token}
-					<div class="api-token-section">
-						<p><strong>Your API Token:</strong></p>
-						<code class="api-token">{currentUser.api_token}</code>
-						<p class="api-token-help">Use this token for API authentication. Keep it secure!</p>
-					</div>
-				{:else}
+				{#if !currentUser.verified}
 					<div class="verification-needed">
 						<p class="error-text">Your account has not been verified</p>
 						<Button on:click={resendVerificationEmail} variant="primary">
 							Resend Verification Email
 						</Button>
+					</div>
+				{:else if currentUser.api_token}
+					<div class="api-token-section">
+						<p><strong>Your API Token:</strong></p>
+						<code class="api-token">{currentUser.api_token}</code>
+						<p class="api-token-help">Use this token for API authentication. Keep it secure!</p>
 					</div>
 				{/if}
 			</Card>
@@ -347,7 +347,7 @@
 	/* DOI Groups Card */
 	.section-header {
 		display: flex;
-		justify-content: between;
+		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 1.5rem;
 	}

@@ -1,6 +1,7 @@
 """User registration endpoints."""
 
 import logging
+import secrets
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -150,6 +151,8 @@ async def verify_email(
 
     user.verified = True
     user.verification_key = None
+    if not user.api_token:
+        user.api_token = secrets.token_hex(32)
     db.commit()
 
     return EmailVerificationResponse(

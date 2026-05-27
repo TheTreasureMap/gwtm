@@ -128,7 +128,7 @@ async def send_verification_email(
                 <p>Thank you for registering with the Gravitational-Wave Treasure Map. To complete your registration and start coordinating telescope observations, please verify your email address.</p>
 
                 <div style="text-align: center;">
-                    <a href="{verification_url}" class="button">Verify Email Address</a>
+                    <a href="{verification_url}" class="button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
                 </div>
 
                 <p class="info-text">This verification link will expire in 24 hours for security reasons.</p>
