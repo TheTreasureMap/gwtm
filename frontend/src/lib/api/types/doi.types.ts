@@ -25,6 +25,19 @@ export interface DOIAuthorGroupSchema {
 	id: number;
 }
 
+export interface DOIAuthorInput {
+	id?: number;
+	name: string;
+	affiliation: string;
+	orcid?: string;
+	gnd?: string;
+}
+
+export interface DOIAuthorGroupSaveRequest {
+	name: string;
+	authors: DOIAuthorInput[];
+}
+
 export interface DOIAuthorSchema {
 	name: string;
 	affiliation: string;
