@@ -14,7 +14,7 @@ import client from '../client';
 import { doiService } from './doi.service';
 import type { DOIAuthorGroupSchema, DOIAuthorGroupSaveRequest } from '../types/doi.types';
 
-const mockClient = client as {
+const mockClient = client as unknown as {
 	get: ReturnType<typeof vi.fn>;
 	post: ReturnType<typeof vi.fn>;
 	put: ReturnType<typeof vi.fn>;
