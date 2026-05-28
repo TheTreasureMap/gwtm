@@ -63,10 +63,31 @@
 	export let showGalaxies: boolean = false;
 	export let showCandidates: boolean = false;
 	export let showIceCube: boolean = false;
-	export const overlayLists: any = {};
+	export let limitedGalaxyData: any[] = [];
+
+	let galaxyLimit = 20;
+
+	$: totalGalaxyCount = galaxyData?.reduce(
+		(count, group) => count + (group?.markers?.length ?? 0),
+		0
+	) ?? 0;
+
+	$: limitedGalaxyCount = limitedGalaxyData?.reduce(
+		(count, group) => count + (group?.markers?.length ?? 0),
+		0
+	) ?? 0;
 
 	const dispatch = createEventDispatcher();
 
+	function handleGalaxyLimitChange(event: Event) {
+		const value = (event.target as HTMLInputElement).value;
+		const limit = Math.max(0, Number(value) || 0);
+		console.log('[DEBUG] FollowUpControls handleGalaxyLimitChange:', { value, limit });
+		galaxyLimit = limit;
+		dispatch('setGalaxyLimit', { limit: galaxyLimit });
+		console.log('[DEBUG] FollowUpControls dispatched setGalaxyLimit:', galaxyLimit);
+	}
+	
 	// Instrument panel event handlers
 	function handleToggleFootprints(event: CustomEvent) {
 		showFootprints = event.detail.expanded;
@@ -162,13 +183,34 @@
 		<h3 class="text-lg font-semibold text-gray-900">Sources</h3>
 	</div>
 
+	<!-- Galaxy Limit Filter -->
+	<div class="galaxy-search-panel mb-4">
+		<label class="block text-sm font-medium text-gray-700 mb-2" for="galaxy-limit-input">
+			Top galaxies to display
+		</label>
+		<input
+			type="number"
+			id="galaxy-limit-input"
+			min="0"
+			max={totalGalaxyCount}
+			value={galaxyLimit}
+			on:input={handleGalaxyLimitChange}
+			placeholder="Number of galaxies"
+			class="w-full rounded border px-3 py-2 text-sm"
+			aria-label="Number of galaxies to display"
+		/>
+		<p class="text-xs text-gray-500 mt-2">
+			Showing {limitedGalaxyCount} of {totalGalaxyCount} galaxy markers
+		</p>
+	</div>
+
 	<!-- Galaxy Data Layer -->
 	<DataLayerPanel
 		title="Galaxies"
-		data={galaxyData}
+		data={limitedGalaxyData}
 		expanded={showGalaxies}
 		loading={galaxiesLoading}
-		hasData={galaxyData.length > 0}
+		hasData={limitedGalaxyData.length > 0}
 		dataType="galaxies"
 		on:toggle={handleToggleGalaxies}
 		on:loadData={handleLoadData}

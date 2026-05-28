@@ -51,6 +51,8 @@
 	let processedSelectedAlert: GWAlertSchema | null = null; // For SummaryTab with Flask-compatible processing
 	let galaxyData: any[] = [];
 	let galaxiesLoading = false;
+	let limitedGalaxyData: any[] = [];
+	let galaxyLimit = 20;
 	let candidateData: any[] = [];
 	let icecubeData: any[] = [];
 
@@ -533,7 +535,7 @@
 			// Add galaxy markers
 			if (showGalaxies) {
 				if (overlayManager) {
-					overlayManager.addGalaxyLayer();
+					overlayManager.addGalaxyLayer(limitedGalaxyData);
 				}
 			}
 
@@ -701,7 +703,7 @@
 	function getMarkerData(dataType: string) {
 		switch (dataType) {
 			case 'galaxies':
-				return galaxyData;
+				return limitedGalaxyData;
 			case 'candidates':
 				return candidateData;
 			case 'icecube':
@@ -710,6 +712,42 @@
 				return [];
 		}
 	}
+
+	function handleSetGalaxyLimit(event: CustomEvent<{ limit: number }>) {
+		galaxyLimit = event.detail.limit;
+	}
+
+	$: limitedGalaxyData = takeTopNGalaxies(galaxyData, galaxyLimit);
+
+	$: if (overlayManager && showGalaxies && limitedGalaxyData) {
+		tick().then(() => {
+			console.log('[DEBUG] reactive block – refreshing galaxy layer, count:', limitedGalaxyData.length);
+			refreshGalaxyLayer();
+		});
+	}
+
+	function takeTopNGalaxies(data: any[], limit: number) {
+		if (!Array.isArray(data) || limit <= 0) return [];
+		let remaining = limit;
+		const groups: any[] = [];
+		for (const group of data) {
+			if (remaining <= 0) break;
+			const markers = group.markers || [];
+			const slice = markers.slice(0, remaining);
+			if (slice.length > 0) {
+				groups.push({ ...group, markers: slice });
+				remaining -= slice.length;
+			}
+		}
+		return groups;
+	}
+
+	function refreshGalaxyLayer() {
+		if (!overlayManager) return;
+		overlayManager.clearGalaxyLayer?.();
+		overlayManager.addGalaxyLayer(limitedGalaxyData);
+	}
+
 
 	// Helper functions
 	function toggleInstrumentOverlay(target: any, overlayList: any[]) {
@@ -788,11 +826,9 @@
 					length: galaxies?.length,
 					isArray: Array.isArray(galaxies)
 				});
+				galaxyData = galaxies;
 				showGalaxies = true;
 				console.log('[Galaxy debug] showGalaxies set to true, overlayManager:', !!overlayManager);
-				if (overlayManager) {
-					overlayManager.addGalaxyLayer(galaxies);
-				}
 			} finally {
 				galaxiesLoading = false;
 			}
@@ -1047,7 +1083,7 @@
 				{footprintData}
 				{contourData}
 				{detectionContours}
-				{galaxyData}
+				galaxyData={limitedGalaxyData}
 				{candidateData}
 				{icecubeData}
 				{sunMoonData}
@@ -1076,6 +1112,8 @@
 				on:toggleMarkerGroup={handleToggleMarkerGroup}
 				on:animateToMarker={handleAnimateToMarker}
 				on:loadData={handleLoadData}
+				on:setGalaxyLimit={handleSetGalaxyLimit}
+				limitedGalaxyData={limitedGalaxyData}
 			/>
 		</div>
 
