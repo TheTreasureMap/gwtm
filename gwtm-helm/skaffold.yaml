@@ -109,7 +109,7 @@ portForward:
   - resourceType: service
     resourceName: frontend
     namespace: gwtm
-    port: 3000
+    port: 80
     address: 0.0.0.0
     localPort: 3000
   - resourceType: service
