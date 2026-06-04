@@ -67,15 +67,11 @@
 
 	let galaxyLimit = 20;
 
-	$: totalGalaxyCount = galaxyData?.reduce(
-		(count, group) => count + (group?.markers?.length ?? 0),
-		0
-	) ?? 0;
+	$: totalGalaxyCount =
+		galaxyData?.reduce((count, group) => count + (group?.markers?.length ?? 0), 0) ?? 0;
 
-	$: limitedGalaxyCount = limitedGalaxyData?.reduce(
-		(count, group) => count + (group?.markers?.length ?? 0),
-		0
-	) ?? 0;
+	$: limitedGalaxyCount =
+		limitedGalaxyData?.reduce((count, group) => count + (group?.markers?.length ?? 0), 0) ?? 0;
 
 	const dispatch = createEventDispatcher();
 
@@ -87,7 +83,7 @@
 		dispatch('setGalaxyLimit', { limit: galaxyLimit });
 		console.log('[Galaxy debug] FollowUpControls dispatched setGalaxyLimit:', galaxyLimit);
 	}
-	
+
 	// Instrument panel event handlers
 	function handleToggleFootprints(event: CustomEvent) {
 		showFootprints = event.detail.expanded;

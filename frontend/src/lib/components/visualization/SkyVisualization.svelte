@@ -721,7 +721,10 @@
 
 	$: if (overlayManager && showGalaxies && limitedGalaxyData) {
 		tick().then(() => {
-			console.log('[Galaxy debug] reactive block – refreshing galaxy layer, count:', limitedGalaxyData.length);
+			console.log(
+				'[Galaxy debug] reactive block – refreshing galaxy layer, count:',
+				limitedGalaxyData.length
+			);
 			refreshGalaxyLayer();
 		});
 	}
@@ -747,7 +750,6 @@
 		overlayManager.clearGalaxyLayer?.();
 		overlayManager.addGalaxyLayer(limitedGalaxyData);
 	}
-
 
 	// Helper functions
 	function toggleInstrumentOverlay(target: any, overlayList: any[]) {
@@ -1113,7 +1115,7 @@
 				on:animateToMarker={handleAnimateToMarker}
 				on:loadData={handleLoadData}
 				on:setGalaxyLimit={handleSetGalaxyLimit}
-				limitedGalaxyData={limitedGalaxyData}
+				{limitedGalaxyData}
 			/>
 		</div>
 

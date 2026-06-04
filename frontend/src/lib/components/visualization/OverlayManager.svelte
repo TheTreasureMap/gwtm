@@ -68,7 +68,7 @@
 			overlayLists.galaxyMarkers.forEach((layer: any, i: number) => {
 				if (layer.markerlayer) {
 					console.log(`[Galaxy debug] [${i}] removing layer:`, layer.name);
-					
+
 					// Hide immediately so it stops rendering
 					layer.markerlayer.hide?.();
 
@@ -85,7 +85,9 @@
 						console.warn(`[Galaxy debug] [${i}] splice failed:`, e);
 					}
 
-					try { aladin.removeLayer?.(layer.markerlayer); } catch {}
+					try {
+						aladin.removeLayer?.(layer.markerlayer);
+					} catch {}
 				}
 			});
 
@@ -310,7 +312,10 @@
 	// Generic function to add markers to Aladin (matching Flask pattern)
 	export function addMarkersToAladin(markerData: any[], catalogName: string, color: string) {
 		const A = (window as any).A;
-		console.log('[Galaxy debug] addMarkersToAladin called - markerData.length:', markerData?.length);
+		console.log(
+			'[Galaxy debug] addMarkersToAladin called - markerData.length:',
+			markerData?.length
+		);
 		if (!aladin || !markerData.length) {
 			console.warn(
 				`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`
