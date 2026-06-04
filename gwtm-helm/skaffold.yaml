@@ -69,6 +69,8 @@ manifests:
           frontend.image.tag: latest
           frontend.image.pullPolicy: IfNotPresent
           frontend.service.type: ClusterIP
+          frontend.service.port: "3000"
+          frontend.service.targetPort: "3000"
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"
@@ -98,6 +100,8 @@ deploy:
           frontend.image.tag: latest
           frontend.image.pullPolicy: IfNotPresent
           frontend.service.type: ClusterIP
+          frontend.service.port: "3000"
+          frontend.service.targetPort: "3000"
           global.createNamespace: "true"
           global.namespace: gwtm
           global.useGeneratedSecrets: "true"

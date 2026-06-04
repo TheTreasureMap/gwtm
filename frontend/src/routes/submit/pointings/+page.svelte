@@ -319,7 +319,11 @@
 							bind:value={formData.depth}
 							required={showCompletedSection}
 							validators={showCompletedSection
-								? [validators.required('Depth is required for completed observations'), validators.number(), validators.min(0)]
+								? [
+										validators.required('Depth is required for completed observations'),
+										validators.number(),
+										validators.min(0)
+									]
 								: [validators.number(), validators.min(0)]}
 						/>
 

@@ -52,8 +52,8 @@ frontend:
     tag: latest
     pullPolicy: Always
   service:
-    port: 3000
-    targetPort: 3000
+    port: 80
+    targetPort: 80
   env:
     PUBLIC_API_BASE_URL: "http://localhost:8000"
   resources:
