@@ -314,7 +314,9 @@
 		const A = (window as any).A;
 		console.log('[DEBUG] addMarkersToAladin called - markerData.length:', markerData?.length);
 		if (!aladin || !markerData.length) {
-			console.log('[DEBUG] addMarkersToAladin - early return, aladin:', !!aladin, 'markerData.length:', markerData?.length);
+				console.warn(
+					`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`
+				);
 			return [];
 		}
 
@@ -324,7 +326,10 @@
 			markerData.forEach((group: any, i: number) => {
 				const groupName = group.name || `${catalogName} ${i + 1}`;
 				const markers = group.markers || [];
-				console.log('[DEBUG] addMarkersToAladin - group', i, '(' + groupName + '): ', markers.length, 'markers');
+				console.log(
+					`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
+					markers[0]
+				);
 
 				const markerlayer = A.catalog({
 					name: groupName,
@@ -378,16 +383,19 @@
 
 	// Add galaxy layer
 	export function addGalaxyLayer(data: any[] = galaxyData) {
-		console.log('[DEBUG] addGalaxyLayer called with', data?.length, 'groups');
+		console.log('[Galaxy debug] addGalaxyLayer called:', {
+			galaxyDataLength: data?.length,
+			aladinReady: !!aladin
+		});
 		if (!data || data.length === 0) {
-			console.log('[DEBUG] addGalaxyLayer - no data, returning');
+			console.warn('[Galaxy debug] addGalaxyLayer early return — data empty or null');
 			return;
 		}
 
 		try {
-			console.log('[DEBUG] addGalaxyLayer - calling addMarkersToAladin');
+			console.log('[Galaxy debug] addGalaxyLayer - calling addMarkersToAladin');
 			const markers = addMarkersToAladin(data, 'Galaxies', '#FF6B35');
-			console.log('[DEBUG] addGalaxyLayer - got', markers?.length, 'marker layers back');
+			console.log('[Galaxy debug] addMarkersToAladin returned', markers?.length, 'marker layers');
 			overlayLists.galaxyMarkers = markers as any[];
 			console.log('[DEBUG] addGalaxyLayer - set overlayLists.galaxyMarkers');
 			if (aladin?.view?.requestRedraw) {
