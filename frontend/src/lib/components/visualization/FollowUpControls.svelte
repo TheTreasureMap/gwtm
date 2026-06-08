@@ -78,7 +78,6 @@
 	function handleGalaxyLimitChange(event: Event) {
 		const value = (event.target as HTMLInputElement).value;
 		const limit = Math.max(0, Number(value) || 0);
-		console.log('[Galaxy debug] FollowUpControls handleGalaxyLimitChange:', { value, limit });
 		galaxyLimit = limit;
 		dispatch('setGalaxyLimit', { limit: galaxyLimit });
 		console.log('[Galaxy debug] FollowUpControls dispatched setGalaxyLimit:', galaxyLimit);

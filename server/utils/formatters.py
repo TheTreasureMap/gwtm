@@ -74,7 +74,7 @@ def sanatize_gal_info(galaxy_entry, galaxy_list, ra: float = 0.0, dec: float = 0
     if doi_url:
         ret += f'<a href="{doi_url}">DOI</a><br>'
     
-    ret += f'<a href={ned_url}>NED</a> <br>'
+    ret += f'<a href="{ned_url}">NED</a> <br>'
 
     info_dict = {}
     if hasattr(galaxy_entry, "info") and galaxy_entry.info:
@@ -93,8 +93,8 @@ def sanatize_gal_info(galaxy_entry, galaxy_list, ra: float = 0.0, dec: float = 0
                 ret += f"<b>Dist (Mpc):</b> {float(str(val).split(chr(10))[0]):.1f}<br>"
             else:
                 ret += f"<b>{str(key)}:</b> {float(str(val).split(chr(10))[0]):.4f}<br>"
-            #ret += f"<b>{key}:</b> {str(val).split(chr(10))[0]}<br>"
-            ret += "</p>"
+    
+    ret += "</p>"
     return ret
 
 

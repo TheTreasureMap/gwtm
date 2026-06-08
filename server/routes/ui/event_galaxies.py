@@ -79,7 +79,7 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
         
         df.sort_values(by=['rank'], inplace=True, ignore_index=True)
         
-        df.drop(columns = 'rank')
+        df.drop(columns = 'rank', inplace = True)
 
         markers = df.to_dict('records')
 

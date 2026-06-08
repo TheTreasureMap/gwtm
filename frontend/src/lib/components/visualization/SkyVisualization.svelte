@@ -721,10 +721,6 @@
 
 	$: if (overlayManager && showGalaxies && limitedGalaxyData) {
 		tick().then(() => {
-			console.log(
-				'[Galaxy debug] reactive block – refreshing galaxy layer, count:',
-				limitedGalaxyData.length
-			);
 			refreshGalaxyLayer();
 		});
 	}

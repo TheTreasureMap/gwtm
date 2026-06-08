@@ -92,7 +92,6 @@
 			});
 
 			overlayLists.galaxyMarkers = [];
-			console.log('[Galaxy debug] galaxyMarkers array cleared');
 			aladin?.view?.requestRedraw?.();
 		} catch (err) {
 			console.warn('Error clearing galaxy layer:', err);
@@ -397,11 +396,8 @@
 
 		try {
 			const markers = addMarkersToAladin(data, 'Galaxies', '#FF6B35');
-			console.log('[Galaxy debug] addMarkersToAladin returned', markers?.length, 'marker layers');
 			overlayLists.galaxyMarkers = markers as any[];
-			console.log('[Galaxy debug] addGalaxyLayer - set overlayLists.galaxyMarkers');
 			if (aladin?.view?.requestRedraw) {
-				console.log('[Galaxy debug] addGalaxyLayer - calling requestRedraw');
 				aladin.view.requestRedraw();
 			}
 		} catch (err) {
