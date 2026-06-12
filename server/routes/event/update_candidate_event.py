@@ -7,8 +7,7 @@ from server.db.database import get_db
 from server.db.models.candidate import GWCandidate
 from server.schemas.candidate import GWCandidateSchema
 from server.utils.error_handling import not_found_exception, permission_exception
-from server.auth.auth import get_current_user
-from .utils import is_admin
+from server.auth.auth import get_current_user, is_admin_user
 
 router = APIRouter(tags=["Events"])
 
@@ -27,7 +26,7 @@ async def update_candidate_event(
         raise not_found_exception("Candidate not found")
 
     # Check if user is the owner or an admin
-    if db_candidate.submitterid != current_user.id and not is_admin(current_user, db):
+    if db_candidate.submitterid != current_user.id and not is_admin_user(current_user, db):
         raise permission_exception("Not authorized to update this candidate")
 
     # Update fields
