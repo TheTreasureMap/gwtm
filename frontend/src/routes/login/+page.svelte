@@ -113,7 +113,7 @@
 			</div>
 
 			{#if successMessage}
-				<ErrorMessage message={successMessage} type="info" />
+				<ErrorMessage message={successMessage} type="info" title="Success" />
 			{/if}
 
 			{#if error}
