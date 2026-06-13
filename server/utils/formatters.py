@@ -2,6 +2,7 @@
 
 import json
 from typing import List, Dict, Any, Tuple
+from urllib.parse import quote_plus
 
 
 def get_farrate_farunit(far: float) -> Tuple[float, str]:
@@ -62,13 +63,14 @@ def sanatize_gal_info(galaxy_entry, galaxy_list, ra: float = 0.0, dec: float = 0
     ret = "<p>"
     ret += "<b> RA: </b>" +f"{ra:.4f}"  + "<br>"
     ret += "<b> DEC: </b>" +  f"{dec:.4f}" + "<br>"
-    ret += "<b>Score: </b>"+ f"{galaxy_entry.score:.4E}"+"<br>"
+    score = getattr(galaxy_entry, "score", None)
+    ret += "<b>Score: </b>"+ (f"{score:.4E}" if score is not None else "") +"<br>"
     ret += "<b>Rank: </b>"+str(galaxy_entry.rank)+"<br>" 
 
     reference = getattr(galaxy_list, "reference", None)
     doi_url = getattr(galaxy_list, "doi_url", None)
     
-    ned_url = f"https://ned.ipac.caltech.edu/byname?objname={galaxy_entry.name.replace(' ', '')}"
+    ned_url = f"https://ned.ipac.caltech.edu/byname?objname={quote_plus(galaxy_entry.name or '')}"
     if reference:
         ret += f'<a href="{reference}">Reference</a><br>'
     if doi_url:
@@ -92,9 +94,15 @@ def sanatize_gal_info(galaxy_entry, galaxy_list, ra: float = 0.0, dec: float = 0
             if 'dist' in str(key):
                 ret += f"<b>Dist (Mpc):</b> {float(str(val).split(chr(10))[0]):.1f}<br>"
             else:
-                ret += f"<b>{str(key)}:</b> {float(str(val).split(chr(10))[0]):.4f}<br>"
-    
-    ret += "</p>"
+                if type(val) != str:
+                    try:
+                        ret += f"<b>{str(key)}:</b> {float(str(val).split(chr(10))[0]):.4f}<br>"
+                    except (ValueError, TypeError):
+                        ret += f"<b>{str(key)}:</b> {str(val).split(chr(10))[0]}<br>"
+                else:
+                    ret += f"<b>{str(key)}:</b> {str(val).split(chr(10))[0]}<br>"
+                    
+        ret += "</p>"
     return ret
 
 

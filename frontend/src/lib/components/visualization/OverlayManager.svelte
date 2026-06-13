@@ -67,7 +67,7 @@
 		try {
 			overlayLists.galaxyMarkers.forEach((layer: any, i: number) => {
 				if (layer.markerlayer) {
-					console.log(`[Galaxy debug] [${i}] removing layer:`, layer.name);
+					//console.log(`[Galaxy debug] [${i}] removing layer:`, layer.name);
 
 					// Hide immediately so it stops rendering
 					layer.markerlayer.hide?.();
@@ -311,10 +311,10 @@
 	// Generic function to add markers to Aladin (matching Flask pattern)
 	export function addMarkersToAladin(markerData: any[], catalogName: string, color: string) {
 		const A = (window as any).A;
-		console.log(
-			'[Galaxy debug] addMarkersToAladin called - markerData.length:',
-			markerData?.length
-		);
+		//console.log(
+		//	'[Galaxy debug] addMarkersToAladin called - markerData.length:',
+		//	markerData?.length
+		//);
 		if (!aladin || !markerData.length) {
 			console.warn(
 				`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`
@@ -328,10 +328,10 @@
 			markerData.forEach((group: any, i: number) => {
 				const groupName = group.name || `${catalogName} ${i + 1}`;
 				const markers = group.markers || [];
-				console.log(
-					`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
-					markers[0]
-				);
+				//console.log(
+				//	`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
+				//	markers[0]
+				//);
 
 				const markerlayer = A.catalog({
 					name: groupName,

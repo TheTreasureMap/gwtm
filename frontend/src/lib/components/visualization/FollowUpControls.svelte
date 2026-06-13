@@ -66,6 +66,8 @@
 	export let limitedGalaxyData: any[] = [];
 
 	let galaxyLimit = 20;
+	let totalGalaxyCount = 0;
+ 	let limitedGalaxyCount = 0;
 
 	$: totalGalaxyCount =
 		galaxyData?.reduce((count, group) => count + (group?.markers?.length ?? 0), 0) ?? 0;
@@ -80,7 +82,7 @@
 		const limit = Math.max(0, Number(value) || 0);
 		galaxyLimit = limit;
 		dispatch('setGalaxyLimit', { limit: galaxyLimit });
-		console.log('[Galaxy debug] FollowUpControls dispatched setGalaxyLimit:', galaxyLimit);
+		// console.log('[Galaxy debug] FollowUpControls dispatched setGalaxyLimit:', galaxyLimit);
 	}
 
 	// Instrument panel event handlers

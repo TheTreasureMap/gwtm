@@ -201,7 +201,6 @@
 	// Aladin event handlers
 	function handleAladinReady(event: CustomEvent) {
 		aladin = event.detail.aladin;
-		console.log('Aladin ready:', !!aladin);
 
 		// Now that Aladin is ready, load and update visualization
 		loadVisualizationData().then(() => {
@@ -820,13 +819,13 @@
 			galaxiesLoading = true;
 			try {
 				const galaxies = await dataLoaderService.loadGalaxyData();
-				console.log('[Galaxy debug] after loadGalaxyData, galaxies:', {
-					length: galaxies?.length,
-					isArray: Array.isArray(galaxies)
-				});
+				//console.log('[Galaxy debug] after loadGalaxyData, galaxies:', {
+				//	length: galaxies?.length,
+				//	isArray: Array.isArray(galaxies)
+				//});
 				galaxyData = galaxies;
 				showGalaxies = true;
-				console.log('[Galaxy debug] showGalaxies set to true, overlayManager:', !!overlayManager);
+				//console.log('[Galaxy debug] showGalaxies set to true, overlayManager:', !!overlayManager);
 			} finally {
 				galaxiesLoading = false;
 			}

@@ -71,7 +71,7 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
             name_list.append(e.name)
             ra_list.append(ra)
             dec_list.append(dec)
-            rank_list.append(int(e.rank))
+            rank_list.append(e.rank)
             info_list.append(sanatize_gal_info(e, glist, ra, dec))
 
         df = pd.DataFrame({'name': name_list, 
