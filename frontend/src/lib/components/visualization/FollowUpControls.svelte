@@ -67,7 +67,7 @@
 
 	let galaxyLimit = 20;
 	let totalGalaxyCount = 0;
- 	let limitedGalaxyCount = 0;
+	let limitedGalaxyCount = 0;
 
 	$: totalGalaxyCount =
 		galaxyData?.reduce((count, group) => count + (group?.markers?.length ?? 0), 0) ?? 0;
