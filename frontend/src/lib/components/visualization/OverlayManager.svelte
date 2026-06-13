@@ -61,6 +61,43 @@
 		}
 	}
 
+	export function clearGalaxyLayer() {
+		if (!aladin) return;
+
+		try {
+			overlayLists.galaxyMarkers.forEach((layer: any, i: number) => {
+				if (layer.markerlayer) {
+					//console.log(`[Galaxy debug] [${i}] removing layer:`, layer.name);
+
+					// Hide immediately so it stops rendering
+					layer.markerlayer.hide?.();
+
+					// Splice from Aladin's internal catalog array
+					try {
+						const cats = aladin.view?.catalogs;
+						if (Array.isArray(cats)) {
+							const idx = cats.indexOf(layer.markerlayer);
+							if (idx > -1) {
+								cats.splice(idx, 1);
+							}
+						}
+					} catch (e) {
+						console.warn(`[Galaxy debug] [${i}] splice failed:`, e);
+					}
+
+					try {
+						aladin.removeLayer?.(layer.markerlayer);
+					} catch {}
+				}
+			});
+
+			overlayLists.galaxyMarkers = [];
+			aladin?.view?.requestRedraw?.();
+		} catch (err) {
+			console.warn('Error clearing galaxy layer:', err);
+		}
+	}
+
 	// Add sun and moon overlays
 	export function addSunMoonOverlays() {
 		console.log('addSunMoonOverlays called with:', { aladin: !!aladin, sunMoonData });
@@ -274,12 +311,10 @@
 	// Generic function to add markers to Aladin (matching Flask pattern)
 	export function addMarkersToAladin(markerData: any[], catalogName: string, color: string) {
 		const A = (window as any).A;
-		console.log(`[Galaxy debug] addMarkersToAladin called for '${catalogName}':`, {
-			aladinReady: !!aladin,
-			windowAReady: typeof A !== 'undefined',
-			markerDataLength: markerData?.length,
-			firstGroupMarkersLength: markerData?.[0]?.markers?.length
-		});
+		//console.log(
+		//	'[Galaxy debug] addMarkersToAladin called - markerData.length:',
+		//	markerData?.length
+		//);
 		if (!aladin || !markerData.length) {
 			console.warn(
 				`[Galaxy debug] addMarkersToAladin early return — aladin: ${!!aladin}, markerData.length: ${markerData?.length}`
@@ -293,10 +328,10 @@
 			markerData.forEach((group: any, i: number) => {
 				const groupName = group.name || `${catalogName} ${i + 1}`;
 				const markers = group.markers || [];
-				console.log(
-					`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
-					markers[0]
-				);
+				//console.log(
+				//	`[Galaxy debug] group ${i} '${groupName}': ${markers.length} markers, sample:`,
+				//	markers[0]
+				//);
 
 				const markerlayer = A.catalog({
 					name: groupName,
@@ -313,11 +348,14 @@
 					hasOverlay = true;
 				}
 
+				const markerRefs: any[] = [];
+
 				markers.forEach((marker: any) => {
 					const aladinMarker = A.marker(marker.ra, marker.dec, {
 						popupTitle: marker.name,
 						popupDesc: marker.info || ''
 					});
+					markerRefs.push(aladinMarker);
 					markerlayer.addSources([aladinMarker]);
 
 					if (hasOverlay && marker.radius) {
@@ -333,7 +371,8 @@
 					tocolor: color,
 					markerlayer: markerlayer,
 					overlaylayer: overlay,
-					has_overlay: hasOverlay
+					has_overlay: hasOverlay,
+					sources: markerRefs
 				});
 			});
 
@@ -357,8 +396,10 @@
 
 		try {
 			const markers = addMarkersToAladin(data, 'Galaxies', '#FF6B35');
-			console.log('[Galaxy debug] addMarkersToAladin returned', markers?.length, 'marker layers');
 			overlayLists.galaxyMarkers = markers as any[];
+			if (aladin?.view?.requestRedraw) {
+				aladin.view.requestRedraw();
+			}
 		} catch (err) {
 			console.error('Failed to add galaxy layer:', err);
 		}
