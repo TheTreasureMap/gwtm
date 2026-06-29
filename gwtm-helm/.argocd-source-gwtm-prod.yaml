@@ -1,10 +1,10 @@
 helm:
   parameters:
   - name: fastapi.image.tag
-    value: 1.0.8
+    value: 1.0.9
     forcestring: true
   - name: frontend.image.tag
-    value: 1.0.8
+    value: 1.0.9
     forcestring: true
   - name: listeners.enabled
     value: "false"
