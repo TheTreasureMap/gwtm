@@ -132,6 +132,9 @@
     secretKeyRef:
       name: {{ include "gwtm.secretName" . }}
       key: resend-api-key
+      # Optional: existing secrets may not have this key yet. When absent the
+      # env var is simply unset and the app falls back to SMTP.
+      optional: true
 - name: RECAPTCHA_PUBLIC_KEY
   valueFrom:
     secretKeyRef:
