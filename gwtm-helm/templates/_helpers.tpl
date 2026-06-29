@@ -127,6 +127,11 @@
     secretKeyRef:
       name: {{ include "gwtm.secretName" . }}
       key: mail-password
+- name: RESEND_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "gwtm.secretName" . }}
+      key: resend-api-key
 - name: RECAPTCHA_PUBLIC_KEY
   valueFrom:
     secretKeyRef:

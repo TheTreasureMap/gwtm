@@ -116,6 +116,7 @@ secrets:
   
   # Mail configuration
   mailPassword: ""
+  resendApiKey: ""
   mailUsername: ""
   mailDefaultSender: ""
   mailServer: "smtp.gmail.com"

@@ -58,6 +58,7 @@ secrets:
 
   # Configure these for production:
   mailPassword: ""
+  resendApiKey: ""  # Resend API key; when set, Resend is used instead of SMTP
   mailUsername: ""
   mailDefaultSender: ""
   mailServer: "smtp.gmail.com"
