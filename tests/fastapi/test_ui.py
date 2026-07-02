@@ -56,27 +56,22 @@ class TestUIEndpoints:
 
     def test_ajax_preview_footprint_circle(self):
         """Test previewing a circular footprint."""
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 123.456, "dec": -12.345, "radius": 0.5, "shape": "Circular"},
+            json={"ra": 123.456, "dec": -12.345, "radius": 0.5, "shape": "Circular"},
             headers={"api_token": self.admin_token},
         )
 
         assert response.status_code == status.HTTP_200_OK
-        # The response should be a JSON string containing plotly figure data
-        assert isinstance(response.text, str)
-        # Try parsing as JSON to confirm it's valid
-        try:
-            json_data = json.loads(response.text)
-            assert "data" in json_data
-        except json.JSONDecodeError:
-            assert False, "Response is not valid JSON"
+        data = response.json()
+        assert "error" not in data
+        assert "data" in data
 
     def test_ajax_preview_footprint_rectangle(self):
         """Test previewing a rectangular footprint."""
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={
+            json={
                 "ra": 123.456,
                 "dec": -12.345,
                 "height": 0.5,
@@ -87,21 +82,16 @@ class TestUIEndpoints:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        # The response should be a JSON string containing plotly figure data
-        assert isinstance(response.text, str)
-        # Try parsing as JSON to confirm it's valid
-        try:
-            json_data = json.loads(response.text)
-            assert "data" in json_data
-        except json.JSONDecodeError:
-            assert False, "Response is not valid JSON"
+        data = response.json()
+        assert "error" not in data
+        assert "data" in data
 
     def test_ajax_preview_footprint_polygon_single(self):
         """Test previewing a single-polygon footprint in the UI text format."""
         polygon = "(-1, 1)\n(1, 1)\n(1, -1)\n(-1, -1)\n(-1, 1)"
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
+            json={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
             headers={"api_token": self.admin_token},
         )
 
@@ -118,9 +108,9 @@ class TestUIEndpoints:
             "#\n"
             "[(0.3, 1)\n(1, 1)\n(1, -1)\n(0.3, -1)\n(0.3, 1)]"
         )
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
+            json={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
             headers={"api_token": self.admin_token},
         )
 
@@ -131,11 +121,36 @@ class TestUIEndpoints:
         # One plotly trace per polygon
         assert len(data["data"]) == 2
 
+    def test_ajax_preview_footprint_unit_scaling(self):
+        """Preview axes should reflect the selected unit, matching stored size.
+
+        A 60 arcmin width equals 1 degree, so the arcmin preview should span
+        the same coordinate range as a 1 degree preview.
+        """
+        deg = requests.post(
+            self.get_url("/ajax_preview_footprint"),
+            json={"height": 1.0, "width": 1.0, "shape": "Rectangular", "unit": "deg"},
+            headers={"api_token": self.admin_token},
+        ).json()
+        arcmin = requests.post(
+            self.get_url("/ajax_preview_footprint"),
+            json={
+                "height": 60.0,
+                "width": 60.0,
+                "shape": "Rectangular",
+                "unit": "arcmin",
+            },
+            headers={"api_token": self.admin_token},
+        ).json()
+
+        assert deg["data"][0]["x"] == arcmin["data"][0]["x"]
+        assert deg["data"][0]["y"] == arcmin["data"][0]["y"]
+
     def test_ajax_preview_footprint_polygon_invalid(self):
         """Test previewing a malformed polygon returns a descriptive error."""
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": "not a polygon"},
+            json={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": "not a polygon"},
             headers={"api_token": self.admin_token},
         )
 
@@ -145,9 +160,9 @@ class TestUIEndpoints:
 
     def test_ajax_preview_footprint_invalid_shape(self):
         """Test previewing a footprint with invalid shape."""
-        response = requests.get(
+        response = requests.post(
             self.get_url("/ajax_preview_footprint"),
-            params={"ra": 123.456, "dec": -12.345, "shape": "invalid"},
+            json={"ra": 123.456, "dec": -12.345, "shape": "invalid"},
             headers={"api_token": self.admin_token},
         )
 
@@ -321,7 +336,6 @@ class TestUIEndpoints:
         # Most UI GET endpoints should be publicly accessible for viewing data
         public_get_endpoints = [
             "/ajax_alertinstruments_footprints?graceid=S190425z",
-            "/ajax_preview_footprint?ra=123.456&dec=-12.345&radius=0.5&shape=Circular",
             "/ajax_icecube_notice?graceid=S190425z",
             "/ajax_event_galaxies?alertid=1",
             "/ajax_candidate?graceid=S190425z",
