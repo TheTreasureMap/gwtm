@@ -96,6 +96,53 @@ class TestUIEndpoints:
         except json.JSONDecodeError:
             assert False, "Response is not valid JSON"
 
+    def test_ajax_preview_footprint_polygon_single(self):
+        """Test previewing a single-polygon footprint in the UI text format."""
+        polygon = "(-1, 1)\n(1, 1)\n(1, -1)\n(-1, -1)\n(-1, 1)"
+        response = requests.get(
+            self.get_url("/ajax_preview_footprint"),
+            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "error" not in data
+        assert "data" in data
+        assert len(data["data"]) == 1
+
+    def test_ajax_preview_footprint_polygon_multi(self):
+        """Test previewing a multi-polygon footprint (# delimited, [] bracketed)."""
+        polygon = (
+            "[(-1, 1)\n(-0.3, 1)\n(-0.3, -1)\n(-1, -1)\n(-1, 1)]\n"
+            "#\n"
+            "[(0.3, 1)\n(1, 1)\n(1, -1)\n(0.3, -1)\n(0.3, 1)]"
+        )
+        response = requests.get(
+            self.get_url("/ajax_preview_footprint"),
+            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": polygon},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "error" not in data
+        assert "data" in data
+        # One plotly trace per polygon
+        assert len(data["data"]) == 2
+
+    def test_ajax_preview_footprint_polygon_invalid(self):
+        """Test previewing a malformed polygon returns a descriptive error."""
+        response = requests.get(
+            self.get_url("/ajax_preview_footprint"),
+            params={"ra": 0, "dec": 0, "shape": "Polygon", "polygon": "not a polygon"},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "error" in data
+
     def test_ajax_preview_footprint_invalid_shape(self):
         """Test previewing a footprint with invalid shape."""
         response = requests.get(

@@ -21,9 +21,10 @@ async def preview_footprint(
 ):
     """Generate a preview of an instrument footprint."""
     import math
-    import json
     import plotly
     import plotly.graph_objects as go
+
+    from server.utils.footprint_processing import parse_multi_polygon
 
     # This is a UI helper endpoint to visualize a footprint before saving
     # It generates the appropriate visualization for the given parameters
@@ -70,13 +71,20 @@ async def preview_footprint(
         vertices.append(rect_points)
 
     elif shape == "Polygon" and polygon:
-        # For custom polygon, parse the points
-        try:
-            poly_points = json.loads(polygon)
-            poly_points.append(poly_points[0])  # Close the polygon
-            vertices.append(poly_points)
-        except json.JSONDecodeError:
+        # For custom polygon, parse the UI text format:
+        #   [(x, y) ... ] # [(x, y) ... ]   (multi-polygon, "#"-delimited)
+        # or a single newline-separated list of "(x, y)" coordinate pairs.
+        # This is the same parser used by the instrument-submit path, so the
+        # preview matches what will actually be stored.
+        polygons, errors = parse_multi_polygon(polygon, scale=1.0)
+        if errors:
+            return {"error": "; ".join(errors)}
+        if not polygons:
             return {"error": "Invalid polygon format"}
+
+        for poly_points in polygons:
+            # parse_multi_polygon already closes each ring; offset to ra/dec.
+            vertices.append([[ra + v[0], dec + v[1]] for v in poly_points])
     else:
         return {"error": "Invalid shape type or missing required parameters"}
 
@@ -86,7 +94,7 @@ async def preview_footprint(
         xs = [v[0] for v in vert]
         ys = [v[1] for v in vert]
         trace = go.Scatter(
-            x=xs, y=ys, line_color="blue", fill="tozeroy", fillcolor="violet"
+            x=xs, y=ys, mode="lines", line_color="blue", fill="toself", fillcolor="violet"
         )
         traces.append(trace)
 

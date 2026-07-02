@@ -90,6 +90,18 @@ export async function submitInstrument(
 			};
 		}
 
+		// Handle authentication/authorization errors. The backend returns a
+		// token-centric message ("provide a valid JWT token or API token"),
+		// which is confusing on the website where users log in via a session.
+		if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+			const message = 'You must be logged in to submit an instrument. Please log in and try again.';
+			return {
+				success: false,
+				message,
+				errors: [message]
+			};
+		}
+
 		// Handle 400 Bad Request errors
 		if (axiosError.response?.status === 400) {
 			const detail =
@@ -197,6 +209,14 @@ export async function previewFootprint(
 		}
 
 		const response = await api.client.get(`/ajax_preview_footprint?${params.toString()}`);
+
+		// The endpoint returns { error } when the footprint params can't be
+		// parsed (e.g. malformed polygon text). Surface it instead of returning
+		// an object with no data/layout, which would silently fail to render.
+		if (response.data?.error) {
+			throw new Error(response.data.error);
+		}
+
 		return response.data;
 	} catch (error) {
 		console.error('Failed to preview footprint:', error);
