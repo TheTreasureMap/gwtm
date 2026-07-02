@@ -131,6 +131,16 @@ class InstrumentCreateResponse(BaseModel):
     )
 
 
+class DeleteInstrumentResponse(BaseModel):
+    """Response schema for instrument deletion."""
+
+    message: str = Field(..., description="Result message")
+    deleted_id: int = Field(..., description="ID of the deleted instrument")
+    deleted_footprints: int = Field(
+        ..., description="Number of footprint CCD rows removed with the instrument"
+    )
+
+
 class InstrumentUpdate(BaseModel):
     """Schema for updating an instrument."""
 
