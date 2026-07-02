@@ -389,7 +389,9 @@ class TestInstrumentDelete:
             headers={"api_token": token},
         )
         assert response.status_code == status.HTTP_200_OK
-        return response.json()["instrument"]["id"]
+        result = response.json()
+        assert result["success"] is True, f"Instrument creation failed: {result}"
+        return result["instrument"]["id"]
 
     def test_delete_instrument_success(self):
         """Owner can delete their instrument and its footprints are removed."""
