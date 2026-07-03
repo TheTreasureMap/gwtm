@@ -43,18 +43,19 @@ export const ajaxService = {
 		height?: number,
 		width?: number,
 		shape?: string,
-		polygon?: string
+		polygon?: string,
+		unit?: string
 	): Promise<PlotlyFigure> => {
-		const response = await client.get<PlotlyFigure>('/ajax_preview_footprint', {
-			params: {
-				ra,
-				dec,
-				radius,
-				height,
-				width,
-				shape,
-				polygon
-			}
+		// POST a JSON body: large multi-polygon footprints can exceed URL limits.
+		const response = await client.post<PlotlyFigure>('/ajax_preview_footprint', {
+			ra,
+			dec,
+			radius,
+			height,
+			width,
+			shape,
+			unit,
+			polygon
 		});
 		return response.data;
 	},

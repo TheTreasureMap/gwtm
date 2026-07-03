@@ -90,6 +90,18 @@ export async function submitInstrument(
 			};
 		}
 
+		// Handle authentication/authorization errors. The backend returns a
+		// token-centric message ("provide a valid JWT token or API token"),
+		// which is confusing on the website where users log in via a session.
+		if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+			const message = 'You must be logged in to submit an instrument. Please log in and try again.';
+			return {
+				success: false,
+				message,
+				errors: [message]
+			};
+		}
+
 		// Handle 400 Bad Request errors
 		if (axiosError.response?.status === 400) {
 			const detail =
@@ -180,23 +192,35 @@ export async function previewFootprint(
 	instrumentData: Partial<InstrumentData>
 ): Promise<{ data: unknown; layout: unknown }> {
 	try {
-		const params = new URLSearchParams();
-
-		// Set default coordinates for preview (centered at 0,0)
-		params.append('ra', '0');
-		params.append('dec', '0');
-		params.append('shape', instrumentData.footprint_type || 'Circular');
+		// POST the params as a JSON body: multi-polygon footprints (e.g. LSST's
+		// ~170 CCDs) can exceed URL length limits, causing intermittent 414s.
+		const body: Record<string, string | number> = {
+			// Preview centered at 0,0; unit drives the same degree scaling as
+			// instrument creation so the preview axes are faithful to reality.
+			ra: 0,
+			dec: 0,
+			shape: instrumentData.footprint_type || 'Circular',
+			unit: instrumentData.unit || 'deg'
+		};
 
 		if (instrumentData.footprint_type === 'Rectangular') {
-			if (instrumentData.height) params.append('height', instrumentData.height.toString());
-			if (instrumentData.width) params.append('width', instrumentData.width.toString());
+			if (instrumentData.height) body.height = instrumentData.height;
+			if (instrumentData.width) body.width = instrumentData.width;
 		} else if (instrumentData.footprint_type === 'Circular') {
-			if (instrumentData.radius) params.append('radius', instrumentData.radius.toString());
+			if (instrumentData.radius) body.radius = instrumentData.radius;
 		} else if (instrumentData.footprint_type === 'Polygon') {
-			if (instrumentData.polygon) params.append('polygon', instrumentData.polygon);
+			if (instrumentData.polygon) body.polygon = instrumentData.polygon;
 		}
 
-		const response = await api.client.get(`/ajax_preview_footprint?${params.toString()}`);
+		const response = await api.client.post('/ajax_preview_footprint', body);
+
+		// The endpoint returns { error } when the footprint params can't be
+		// parsed (e.g. malformed polygon text). Surface it instead of returning
+		// an object with no data/layout, which would silently fail to render.
+		if (response.data?.error) {
+			throw new Error(response.data.error);
+		}
+
 		return response.data;
 	} catch (error) {
 		console.error('Failed to preview footprint:', error);
