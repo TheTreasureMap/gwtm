@@ -39,7 +39,7 @@
 		"globals": "^16.0.0",
 		"happy-dom": "^18.0.1",
 		"jsdom": "^26.1.0",
-		"postcss": "^8.5.5",
+		"postcss": "^8.5.15",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"svelte": "^5.0.0",
