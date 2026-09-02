@@ -42,12 +42,11 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # TODO: Re-enable when database is migrated
-    # if not user.verified:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Account not verified. Please check your email for verification instructions.",
-    #     )
+    if not user.verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account not verified. Please check your email for a verification link.",
+        )
 
     # Create access token
     access_token_expires = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -64,7 +63,7 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         email=user.email,
         firstname=user.firstname,
         lastname=user.lastname,
-        # verified=user.verified,  # TODO: Re-enable when database is migrated
+        verified=user.verified,
         api_token=user.api_token,
     )
 

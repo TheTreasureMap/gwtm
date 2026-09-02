@@ -46,6 +46,9 @@ secrets:
   # Zenodo access
   zenodoAccessKey: "your-zenodo-access-key"
 
+  # JWT signing key - fixed for local dev so tokens survive helm upgrades/redeploys
+  jwtSecretKey: "gwtm-test-secret-key-do-not-use-in-production"
+
   # Additional configuration
   extraSecrets:
     DEBUG: "True"
@@ -54,6 +57,9 @@ fastapi:
   env:
     PUBLIC_API_BASE_URL: "/"
     BASE_URL: "http://gwtm.local:8081"
+  extraEnv:
+    - name: SECRET_KEY
+      value: "gwtm-test-secret-key-do-not-use-in-production"
   replicas: 1
   service:
     type: ClusterIP

@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     # Application settings
     APP_NAME: str = "GWTM API"
     DEBUG: bool = Field(False, env="DEBUG")
-    BASE_URL: str = Field("http://localhost:8000", env="BASE_URL")
+    # Public-facing URL of the **frontend** (used to build links in outgoing
+    # emails: /verify-email, /verify-account, /reset-password are SvelteKit
+    # routes, not API routes). Override per-environment via helm; this default
+    # targets a local `npm run dev` on the SvelteKit default port.
+    BASE_URL: str = Field("http://localhost:5173", env="BASE_URL")
 
     # Database settings
     DB_USER: str = Field("treasuremap", env="DB_USER")

@@ -455,3 +455,241 @@ class TestDOIEndpoints:
         # POST endpoints require authentication
         response = requests.post(self.get_url("/request_doi"), json={"id": 1})
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestDOIAuthorGroupCRUD:
+    """Test create / read / update / delete for DOI author groups."""
+
+    admin_token = "test_token_admin_001"
+    user_token = "test_token_user_002"
+
+    def get_url(self, endpoint):
+        return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
+
+    def _auth(self, token):
+        return {"api_token": token}
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _create_group(self, name="Test Group", authors=None, token=None):
+        """Create a group and return the response."""
+        if authors is None:
+            authors = [{"name": "Alice Smith", "affiliation": "MIT"}]
+        token = token or self.admin_token
+        return requests.post(
+            self.get_url("/doi_author_groups"),
+            json={"name": name, "authors": authors},
+            headers=self._auth(token),
+        )
+
+    def _delete_group(self, group_id, token=None):
+        token = token or self.admin_token
+        requests.delete(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            headers=self._auth(token),
+        )
+
+    # ------------------------------------------------------------------
+    # CREATE
+    # ------------------------------------------------------------------
+
+    def test_create_group_returns_201_with_correct_fields(self):
+        response = self._create_group("Create Test Group")
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["name"] == "Create Test Group"
+        assert "id" in data
+        self._delete_group(data["id"])
+
+    def test_create_group_with_full_author_fields(self):
+        authors = [{"name": "Bob Jones", "affiliation": "Caltech",
+                    "orcid": "0000-0001-2345-6789", "gnd": "gnd123"}]
+        response = self._create_group("Full Fields Group", authors=authors)
+        assert response.status_code == status.HTTP_201_CREATED
+        group_id = response.json()["id"]
+
+        authors_resp = requests.get(
+            self.get_url(f"/doi_authors/{group_id}"),
+            headers=self._auth(self.admin_token),
+        )
+        assert authors_resp.status_code == status.HTTP_200_OK
+        author = authors_resp.json()[0]
+        assert author["orcid"] == "0000-0001-2345-6789"
+        assert author["gnd"] == "gnd123"
+        self._delete_group(group_id)
+
+    def test_create_group_multiple_authors(self):
+        authors = [
+            {"name": "Author One", "affiliation": "Uni A"},
+            {"name": "Author Two", "affiliation": "Uni B"},
+            {"name": "Author Three", "affiliation": "Uni C"},
+        ]
+        response = self._create_group("Multi-Author Group", authors=authors)
+        assert response.status_code == status.HTTP_201_CREATED
+        group_id = response.json()["id"]
+
+        authors_resp = requests.get(
+            self.get_url(f"/doi_authors/{group_id}"),
+            headers=self._auth(self.admin_token),
+        )
+        assert len(authors_resp.json()) == 3
+        self._delete_group(group_id)
+
+    def test_create_group_unauthenticated_returns_401(self):
+        response = requests.post(
+            self.get_url("/doi_author_groups"),
+            json={"name": "Should Fail", "authors": []},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # ------------------------------------------------------------------
+    # READ
+    # ------------------------------------------------------------------
+
+    def test_created_group_appears_in_list(self):
+        response = self._create_group("List Test Group")
+        group_id = response.json()["id"]
+
+        list_resp = requests.get(
+            self.get_url("/doi_author_groups"),
+            headers=self._auth(self.admin_token),
+        )
+        assert list_resp.status_code == status.HTTP_200_OK
+        ids = [g["id"] for g in list_resp.json()]
+        assert group_id in ids
+        self._delete_group(group_id)
+
+    def test_groups_not_visible_to_other_users(self):
+        """A group created by admin should not appear in another user's list."""
+        response = self._create_group("Admin Private Group")
+        group_id = response.json()["id"]
+
+        list_resp = requests.get(
+            self.get_url("/doi_author_groups"),
+            headers=self._auth(self.user_token),
+        )
+        assert list_resp.status_code == status.HTTP_200_OK
+        ids = [g["id"] for g in list_resp.json()]
+        assert group_id not in ids
+        self._delete_group(group_id)
+
+    # ------------------------------------------------------------------
+    # UPDATE
+    # ------------------------------------------------------------------
+
+    def test_update_group_name(self):
+        group_id = self._create_group("Original Name").json()["id"]
+
+        update_resp = requests.put(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            json={"name": "Updated Name", "authors": [
+                {"name": "Alice Smith", "affiliation": "MIT"}
+            ]},
+            headers=self._auth(self.admin_token),
+        )
+        assert update_resp.status_code == status.HTTP_200_OK
+        assert update_resp.json()["name"] == "Updated Name"
+        self._delete_group(group_id)
+
+    def test_update_adds_and_removes_authors(self):
+        """Update should sync authors: add new ones, delete removed ones."""
+        group_id = self._create_group(
+            "Sync Test",
+            authors=[{"name": "Keep Me", "affiliation": "Uni A"},
+                     {"name": "Remove Me", "affiliation": "Uni B"}],
+        ).json()["id"]
+
+        # Fetch existing author ids
+        existing = requests.get(
+            self.get_url(f"/doi_authors/{group_id}"),
+            headers=self._auth(self.admin_token),
+        ).json()
+        keep_id = next(a["id"] for a in existing if a["name"] == "Keep Me")
+
+        # Update: keep one, drop the other, add a new one
+        update_resp = requests.put(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            json={"name": "Sync Test", "authors": [
+                {"id": keep_id, "name": "Keep Me", "affiliation": "Uni A"},
+                {"name": "New Author", "affiliation": "Uni C"},
+            ]},
+            headers=self._auth(self.admin_token),
+        )
+        assert update_resp.status_code == status.HTTP_200_OK
+
+        final = requests.get(
+            self.get_url(f"/doi_authors/{group_id}"),
+            headers=self._auth(self.admin_token),
+        ).json()
+        names = {a["name"] for a in final}
+        assert "Keep Me" in names
+        assert "New Author" in names
+        assert "Remove Me" not in names
+        self._delete_group(group_id)
+
+    def test_update_another_users_group_returns_404(self):
+        """user_token should not be able to update admin's group."""
+        group_id = self._create_group("Admin Group").json()["id"]
+
+        resp = requests.put(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            json={"name": "Hijacked", "authors": []},
+            headers=self._auth(self.user_token),
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        self._delete_group(group_id)
+
+    # ------------------------------------------------------------------
+    # DELETE
+    # ------------------------------------------------------------------
+
+    def test_delete_group_removes_it_from_list(self):
+        group_id = self._create_group("Delete Me").json()["id"]
+
+        del_resp = requests.delete(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            headers=self._auth(self.admin_token),
+        )
+        assert del_resp.status_code == status.HTTP_204_NO_CONTENT
+
+        list_resp = requests.get(
+            self.get_url("/doi_author_groups"),
+            headers=self._auth(self.admin_token),
+        )
+        ids = [g["id"] for g in list_resp.json()]
+        assert group_id not in ids
+
+    def test_delete_cascades_to_authors(self):
+        """After group deletion, its authors should be inaccessible."""
+        group_id = self._create_group("Cascade Delete").json()["id"]
+
+        requests.delete(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            headers=self._auth(self.admin_token),
+        )
+
+        # Fetching authors for a deleted (non-existent) group returns 403
+        resp = requests.get(
+            self.get_url(f"/doi_authors/{group_id}"),
+            headers=self._auth(self.admin_token),
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_delete_another_users_group_returns_404(self):
+        group_id = self._create_group("Protected Group").json()["id"]
+
+        resp = requests.delete(
+            self.get_url(f"/doi_author_groups/{group_id}"),
+            headers=self._auth(self.user_token),
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        self._delete_group(group_id)  # cleanup
+
+    def test_delete_unauthenticated_returns_401(self):
+        group_id = self._create_group("Auth Delete Test").json()["id"]
+
+        resp = requests.delete(self.get_url(f"/doi_author_groups/{group_id}"))
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+        self._delete_group(group_id)  # cleanup

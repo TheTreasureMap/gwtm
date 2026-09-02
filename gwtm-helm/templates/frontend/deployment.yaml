@@ -17,7 +17,13 @@ spec:
     metadata:
       labels:
         app: {{ .Values.frontend.name }}
-        app.kubernetes.io/version: {{ .Values.frontend.image.tag | quote }}
+        {{- $tag := .Values.frontend.image.tag }}
+        {{- $version := $tag }}
+        {{- if contains "@sha256:" $tag }}
+        {{- $parts := splitList "@sha256:" $tag }}
+        {{- $version = printf "%s-%s" (index $parts 0) (trunc 12 (index $parts 1)) }}
+        {{- end }}
+        app.kubernetes.io/version: {{ $version | quote }}
     spec:
       containers:
       - name: {{ .Values.frontend.name }}

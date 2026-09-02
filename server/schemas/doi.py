@@ -20,6 +20,23 @@ class DOIAuthorCreate(DOIAuthorBase):
     author_groupid: int
 
 
+class DOIAuthorInput(BaseModel):
+    """Author row inside a create/update group request. id=None means new."""
+
+    id: Optional[int] = None
+    name: str
+    affiliation: str
+    orcid: Optional[str] = None
+    gnd: Optional[str] = None
+
+
+class DOIAuthorGroupSave(BaseModel):
+    """Request body for creating or updating a DOI author group."""
+
+    name: str
+    authors: List[DOIAuthorInput] = []
+
+
 class DOIAuthorSchema(DOIAuthorBase):
     """Schema for returning a DOI author."""
 

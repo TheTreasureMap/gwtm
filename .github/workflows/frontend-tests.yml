@@ -3,14 +3,11 @@ name: Frontend Tests
 on:
   push:
     branches: [ master, main, svelte, fastapi ]
-    paths: 
+    paths:
       - 'frontend/**'
       - '.github/workflows/frontend-tests.yml'
   pull_request:
     branches: [ master, main, svelte, fastapi ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend-tests.yml'
 
 jobs:
   test:
