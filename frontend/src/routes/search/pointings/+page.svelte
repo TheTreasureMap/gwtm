@@ -113,6 +113,42 @@
 	function handleSelectionChange(event: CustomEvent) {
 		selectedPointings = event.detail.selectedPointings;
 	}
+
+	// DOI requests are only valid for completed pointings without an existing DOI.
+	// Compute this subset so DoiRequestPanel never receives ineligible IDs.
+	$: doiEligibleSelected = new Set(
+		searchResults
+			.filter((p) => selectedPointings.has(p.id) && p.status === 'completed' && !p.doi_url)
+			.map((p) => p.id)
+	);
+
+	// Handle delete selected pointings
+	let isDeleting = false;
+	let deleteError = '';
+
+	async function handleDeleteSelected() {
+		if (selectedPointings.size === 0) return;
+
+		const count = selectedPointings.size;
+		const confirmed = confirm(
+			`Delete ${count} pointing${count === 1 ? '' : 's'}? This cannot be undone.`
+		);
+		if (!confirmed) return;
+
+		isDeleting = true;
+		deleteError = '';
+
+		try {
+			await api.pointings.deletePointings({ ids: [...selectedPointings] });
+			searchResults = searchResults.filter((p) => !selectedPointings.has(p.id));
+			selectedPointings.clear();
+			selectedPointings = selectedPointings;
+		} catch (err) {
+			deleteError = err instanceof Error ? err.message : 'Delete failed. Please try again.';
+		} finally {
+			isDeleting = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -137,11 +173,29 @@
 		<!-- DOI Request Panel -->
 		{#if hasSearched && lastSearchParams?.my_points_only}
 			<DoiRequestPanel
-				{selectedPointings}
+				selectedPointings={doiEligibleSelected}
 				graceid={lastSearchParams.graceid}
 				visible={true}
 				on:doi-request={handleDoiRequest}
 			/>
+		{/if}
+
+		<!-- Delete Selected -->
+		{#if hasSearched && lastSearchParams?.my_points_only && selectedPointings.size > 0}
+			<div class="flex items-center gap-4">
+				<button class="delete-btn" disabled={isDeleting} on:click={handleDeleteSelected}>
+					{#if isDeleting}
+						Deleting...
+					{:else}
+						Delete {selectedPointings.size} selected pointing{selectedPointings.size === 1
+							? ''
+							: 's'}
+					{/if}
+				</button>
+				{#if deleteError}
+					<span class="text-sm text-red-600">{deleteError}</span>
+				{/if}
+			</div>
 		{/if}
 
 		<!-- Loading State -->
@@ -215,3 +269,26 @@
 		{/if}
 	</div>
 </PageContainer>
+
+<style>
+	.delete-btn {
+		padding: 0.5rem 1rem;
+		background-color: #dc2626;
+		color: white;
+		border: none;
+		border-radius: 0.375rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.15s ease-in-out;
+	}
+
+	.delete-btn:hover:not(:disabled) {
+		background-color: #b91c1c;
+	}
+
+	.delete-btn:disabled {
+		background-color: #fca5a5;
+		cursor: not-allowed;
+	}
+</style>

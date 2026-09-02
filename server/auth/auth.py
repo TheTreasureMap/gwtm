@@ -109,31 +109,30 @@ def get_current_user(
     )
 
 
+def is_admin_user(user: Users, db: Session) -> bool:
+    """Return True if the user belongs to the admin group."""
+    return (
+        db.query(UserGroups)
+        .join(Groups, UserGroups.groupid == Groups.id)
+        .filter(
+            UserGroups.userid == user.id,
+            func.lower(Groups.name) == "admin",
+        )
+        .first()
+    ) is not None
+
+
 def verify_admin(
     user: Users = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> Users:
     """
     Check if the user belongs to the admin group (case-insensitive).
     """
-    admin_group = db.query(Groups).filter(func.lower(Groups.name) == "admin").first()
-    if not admin_group:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin group does not exist",
-        )
-
-    user_group = (
-        db.query(UserGroups)
-        .filter(UserGroups.userid == user.id, UserGroups.groupid == admin_group.id)
-        .first()
-    )
-
-    if not user_group:
+    if not is_admin_user(user, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can access this endpoint",
         )
-
     return user
 
 
