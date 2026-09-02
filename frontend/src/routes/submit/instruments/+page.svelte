@@ -594,8 +594,10 @@
 	}
 
 	.preview-plot {
+		/* Square container so the 1:1-constrained plot fills it without wide
+		   empty margins. */
 		width: 100%;
-		height: 400px;
+		aspect-ratio: 1 / 1;
 	}
 
 	.preview-error {
