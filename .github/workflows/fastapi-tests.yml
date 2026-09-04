@@ -46,7 +46,10 @@ jobs:
 
     - name: Wait for database to be ready
       run: |
-        timeout 120 bash -c 'until docker compose -f server/docker-compose.yml -p gwtm exec -T db pg_isready -U $DB_USER -d $DB_NAME; do sleep 5; done'
+        # -h forces TCP. Without it pg_isready uses the unix socket, which the
+        # entrypoint's temporary init server also answers, so the gate can pass
+        # before postgres has restarted with TCP listening.
+        timeout 180 bash -c 'until docker compose -f server/docker-compose.yml -p gwtm exec -T db pg_isready -h 127.0.0.1 -p 5432 -U $DB_USER -d $DB_NAME; do sleep 3; done'
 
     - name: Enable PostGIS extension
       run: |
