@@ -9,6 +9,7 @@ from server.db.models.pointing import Pointing
 from server.schemas.instrument import DeleteInstrumentResponse
 from server.auth.auth import get_current_user
 from server.routes.event.utils import is_admin
+from server.utils.audit import log_admin_action
 from server.utils.error_handling import (
     not_found_exception,
     permission_exception,
@@ -34,7 +35,8 @@ async def delete_instrument(
     if not instrument:
         raise not_found_exception(f"No instrument found with 'id': {instrument_id}")
 
-    if instrument.submitterid != user.id and not is_admin(user, db):
+    is_owner = instrument.submitterid == user.id
+    if not is_owner and not is_admin(user, db):
         raise permission_exception(
             "Error: Unauthorized. Unable to alter other user's records"
         )
@@ -48,6 +50,10 @@ async def delete_instrument(
             "pointing(s) and cannot be deleted."
         )
 
+    # Read off the name while the instance is still live; it is expired once
+    # the delete is committed.
+    instrument_name = instrument.instrument_name
+
     deleted_footprints = (
         db.query(FootprintCCD)
         .filter(FootprintCCD.instrumentid == instrument_id)
@@ -55,6 +61,15 @@ async def delete_instrument(
     )
     db.delete(instrument)
     db.commit()
+
+    log_admin_action(
+        user,
+        "instrument.delete",
+        f"instrument:{instrument_id}",
+        admin_override=not is_owner,
+        instrument_name=instrument_name,
+        deleted_footprints=deleted_footprints,
+    )
 
     return DeleteInstrumentResponse(
         message=f"Successfully deleted instrument {instrument_id}",
