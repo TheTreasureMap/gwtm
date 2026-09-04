@@ -16,6 +16,25 @@ SENDER_EMAIL = settings.MAIL_DEFAULT_SENDER
 BASE_URL = settings.BASE_URL
 SMTP_TIMEOUT_SECONDS = 10
 
+RESEND_API_KEY = settings.RESEND_API_KEY
+RESEND_FROM = settings.RESEND_FROM
+
+
+def _send_resend(recipient: str, subject: str, html: str, text: str) -> None:
+    """Blocking Resend send. Caller is responsible for offloading to a worker thread."""
+    import resend
+
+    resend.api_key = RESEND_API_KEY
+    resend.Emails.send(
+        {
+            "from": RESEND_FROM,
+            "to": [recipient],
+            "subject": subject,
+            "html": html,
+            "text": text,
+        }
+    )
+
 
 def _send_smtp(recipient: str, message_str: str) -> None:
     """Blocking SMTP send. Caller is responsible for offloading to a worker thread."""
@@ -166,25 +185,33 @@ async def send_verification_email(
 
     logger.info("Sending verification email to %s", email)
 
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = SENDER_EMAIL
-    message["To"] = email
-    message.attach(MIMEText(text_content, "plain"))
-    message.attach(MIMEText(html_content, "html"))
-
-    if not SMTP_SERVER:
-        if settings.DEVELOPMENT_MODE:
-            # Dev fallback only: log the full URL so developers can verify manually.
-            logger.warning(
-                "SMTP not configured — verification URL for %s: %s", email, verification_url
-            )
-        else:
-            logger.warning("SMTP not configured — skipping verification email to %s", email)
+    # Preferred transport: Resend. The SDK is blocking, so run it in a worker
+    # thread to avoid stalling the event loop. Exceptions propagate to the caller.
+    if RESEND_API_KEY:
+        await asyncio.to_thread(
+            _send_resend, email, subject, html_content, text_content
+        )
         return True
 
-    # smtplib is blocking; run the send in a worker thread so we don't stall
-    # the event loop while we wait on the network.
-    await asyncio.to_thread(_send_smtp, email, message.as_string())
+    if SMTP_SERVER:
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = SENDER_EMAIL
+        message["To"] = email
+        message.attach(MIMEText(text_content, "plain"))
+        message.attach(MIMEText(html_content, "html"))
 
+        # smtplib is blocking; run the send in a worker thread so we don't stall
+        # the event loop while we wait on the network.
+        await asyncio.to_thread(_send_smtp, email, message.as_string())
+        return True
+
+    # No transport configured.
+    if settings.DEVELOPMENT_MODE:
+        # Dev fallback only: log the full URL so developers can verify manually.
+        logger.warning(
+            "Email not configured — verification URL for %s: %s", email, verification_url
+        )
+    else:
+        logger.warning("Email not configured — skipping verification email to %s", email)
     return True
