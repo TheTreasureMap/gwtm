@@ -56,7 +56,7 @@ class InstrumentCreate(BaseModel):
     """Schema for creating a new instrument with footprint."""
 
     instrument_name: str = Field(
-        ..., max_length=100, description="Name of the instrument"
+        ..., max_length=64, description="Name of the instrument"
     )
     nickname: Optional[str] = Field(
         None, max_length=25, description="Nickname or short name for the instrument"
@@ -147,7 +147,7 @@ class InstrumentUpdate(BaseModel):
     """Schema for updating an instrument."""
 
     instrument_name: Optional[str] = Field(
-        None, max_length=100, description="Updated name of the instrument"
+        None, max_length=64, description="Updated name of the instrument"
     )
     nickname: Optional[str] = Field(
         None,

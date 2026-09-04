@@ -77,7 +77,7 @@ async def resend_verification_email(
             current_user,
             "verification_email.resend",
             f"user:{user.id}",
-            admin_override=True,
+            admin_override=user.id != current_user.id,
             target_username=user.username,
         )
 
