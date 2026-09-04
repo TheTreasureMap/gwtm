@@ -4,11 +4,13 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from server.db.database import get_db
 from server.db.models.users import Users, UserGroups, Groups
 from server.auth.auth import get_current_user
+from server.utils.audit import log_admin_action
 from server.utils.email import send_verification_email
 from server.utils.tokens import generate_verification_token
 
@@ -33,7 +35,9 @@ async def resend_verification_email(
     if email:
         # Authorise first — before touching the DB for the target user — so
         # non-admins always get 403 regardless of whether the email exists.
-        admin_group = db.query(Groups).filter(Groups.name == "admin").first()
+        admin_group = (
+            db.query(Groups).filter(func.lower(Groups.name) == "admin").first()
+        )
         is_admin = admin_group and db.query(UserGroups).filter(
             UserGroups.userid == current_user.id,
             UserGroups.groupid == admin_group.id,
@@ -66,6 +70,15 @@ async def resend_verification_email(
         raise HTTPException(
             status_code=503,
             detail="Unable to send verification email. Please try again later.",
+        )
+
+    if email:
+        log_admin_action(
+            current_user,
+            "verification_email.resend",
+            f"user:{user.id}",
+            admin_override=user.id != current_user.id,
+            target_username=user.username,
         )
 
     return {"message": "Verification email has been resent"}

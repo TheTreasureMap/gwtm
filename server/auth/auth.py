@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import jwt
 
 from server.config import settings
+from server.utils.audit import record_user_action
 
 # Define the API key header
 api_key_header = APIKeyHeader(name="api_token", auto_error=False)
@@ -67,6 +68,7 @@ def decode_token(token: str) -> dict:
 
 
 def get_current_user(
+    request: Request,
     api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -84,29 +86,27 @@ def get_current_user(
             user_id = payload.get("sub")
             if user_id:
                 user = db.query(Users).filter(Users.id == int(user_id)).first()
-                if user:
-                    return user
         except HTTPException:
             # JWT token is invalid, continue to try API token
-            pass
+            user = None
 
     # Fall back to API token (from api_token header)
-    if api_token:
+    if not user and api_token:
         user = db.query(Users).filter(Users.api_token == api_token).first()
-        if user:
-            return user
 
     # Also accept API token passed as a Bearer token (jwt_token that failed JWT decode)
-    if jwt_token:
+    if not user and jwt_token:
         user = db.query(Users).filter(Users.api_token == jwt_token).first()
-        if user:
-            return user
 
     # Neither token worked
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required. Please provide a valid JWT token or API token.",
-    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid JWT token or API token.",
+        )
+
+    record_user_action(user, request)
+    return user
 
 
 def verify_admin(
@@ -135,19 +135,3 @@ def verify_admin(
         )
 
     return user
-
-
-def log_user_action(
-    user: Users,
-    request_path: str,
-    method: str,
-    ip_address: str,
-    json_data=None,
-    db: Session = Depends(get_db),
-):
-    """
-    Log user actions for auditing
-    Will be implemented with full UserAction model
-    """
-    # This will be implemented when the UserAction model is fully ported
-    pass
