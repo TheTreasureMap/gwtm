@@ -19,7 +19,10 @@ class Users(Base):
     verification_key = Column(String(128))
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # The method is pinned rather than left to the library default: werkzeug
+        # 3 defaults to scrypt, whose 162-character output does not fit
+        # password_hash. Existing pbkdf2 hashes stay verifiable either way.
+        self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
