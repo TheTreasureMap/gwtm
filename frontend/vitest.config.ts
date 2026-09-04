@@ -4,6 +4,12 @@ import { sveltekit } from '@sveltejs/kit/vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 
+	// Without this Svelte resolves to its server build and every component
+	// render fails with lifecycle_function_unavailable.
+	resolve: {
+		conditions: ['browser']
+	},
+
 	test: {
 		// Test environment
 		environment: 'jsdom',
