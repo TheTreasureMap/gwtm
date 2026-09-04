@@ -33,7 +33,12 @@ export default defineConfig({
 				'**/*.config.*',
 				'src/app.html',
 				'src/routes/**', // Exclude route components for now (focus on business logic)
-				'src/lib/components/**/*.svelte', // Exclude Svelte components for now
+				// Components are tested but deliberately left out of the coverage
+				// figures. Only a handful of the 57 are covered so far, and
+				// including them puts global statement coverage at ~20%, well under
+				// the 80% gate below. Fold them in, with their own low starting
+				// threshold, once the component suite is broad enough to carry it.
+				'src/lib/components/**/*.svelte',
 				'src/lib/api/services/**' // Exclude API service calls (require mocking)
 			],
 			include: ['src/lib/utils/**', 'src/lib/validation/**', 'src/lib/stores/**'],

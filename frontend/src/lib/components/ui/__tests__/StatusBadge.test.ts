@@ -43,8 +43,15 @@ describe('StatusBadge', () => {
 		expect(screen.getByRole('status')).toHaveTextContent('✓');
 	});
 
-	it('renders no icon element for an unknown icon name', () => {
+	it('renders no icon element when no icon is given', () => {
 		render(StatusBadge, { label: 'Plain' });
 		expect(screen.getByRole('status').querySelector('[aria-hidden="true"]')).toBeNull();
+	});
+
+	it('renders an empty icon element for an unrecognised icon name', () => {
+		render(StatusBadge, { label: 'Odd', icon: 'not-a-real-icon' });
+		const icon = screen.getByRole('status').querySelector('[aria-hidden="true"]');
+		expect(icon).not.toBeNull();
+		expect(icon).toHaveTextContent('');
 	});
 });
