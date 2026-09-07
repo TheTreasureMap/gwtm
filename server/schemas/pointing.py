@@ -118,9 +118,14 @@ class PointingBase(BaseModel):
     @field_validator("position", mode="before")
     @classmethod
     def validate_position(cls, value):
-        # Pass through None and non-strings (e.g. WKBElement from the DB).
-        if value is None or not isinstance(value, str):
+        # Pass through None and DB-native geometry objects (e.g. WKBElement),
+        # which arrive here when building a response from an ORM instance.
+        if value is None or hasattr(value, "data"):
             return value
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Invalid position type '{type(value).__name__}'. Must be a WKT string like 'POINT(ra dec)'."
+            )
         if not (
             all(token in value for token in ("POINT", "(", ")", " "))
             and "," not in value
