@@ -55,9 +55,11 @@ class InstrumentSchema(BaseModel):
 class InstrumentCreate(BaseModel):
     """Schema for creating a new instrument with footprint."""
 
-    instrument_name: str = Field(..., description="Name of the instrument")
+    instrument_name: str = Field(
+        ..., max_length=64, description="Name of the instrument"
+    )
     nickname: Optional[str] = Field(
-        None, description="Nickname or short name for the instrument"
+        None, max_length=25, description="Nickname or short name for the instrument"
     )
     instrument_type: instrument_type_enum = Field(
         ..., description="Type of the instrument"
@@ -131,14 +133,26 @@ class InstrumentCreateResponse(BaseModel):
     )
 
 
+class DeleteInstrumentResponse(BaseModel):
+    """Response schema for instrument deletion."""
+
+    message: str = Field(..., description="Result message")
+    deleted_id: int = Field(..., description="ID of the deleted instrument")
+    deleted_footprints: int = Field(
+        ..., description="Number of footprint CCD rows removed with the instrument"
+    )
+
+
 class InstrumentUpdate(BaseModel):
     """Schema for updating an instrument."""
 
     instrument_name: Optional[str] = Field(
-        None, description="Updated name of the instrument"
+        None, max_length=64, description="Updated name of the instrument"
     )
     nickname: Optional[str] = Field(
-        None, description="Updated nickname or short name for the instrument"
+        None,
+        max_length=25,
+        description="Updated nickname or short name for the instrument",
     )
     instrument_type: Optional[instrument_type_enum] = Field(
         None, description="Updated type of the instrument"
