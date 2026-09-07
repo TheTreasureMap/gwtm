@@ -363,6 +363,104 @@ class TestInstrumentAPI:
         assert footprint["footprint"].startswith("POLYGON")
 
 
+class TestInstrumentDelete:
+    """Test suite for deleting instruments."""
+
+    admin_token = "test_token_admin_001"
+    user_token = "test_token_user_002"
+    scientist_token = "test_token_sci_003"
+
+    def get_url(self, endpoint):
+        """Get full URL for an endpoint."""
+        return f"{API_BASE_URL}{API_V1_PREFIX}{endpoint}"
+
+    def _create_instrument(self, token, name):
+        """Create a Circular instrument and return its id."""
+        response = requests.post(
+            self.get_url("/instruments"),
+            json={
+                "instrument_name": name,
+                "nickname": name[:20],
+                "instrument_type": InstrumentType.photometric.value,
+                "footprint_type": "Circular",
+                "unit": "deg",
+                "radius": 1.0,
+            },
+            headers={"api_token": token},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert result["success"] is True, f"Instrument creation failed: {result}"
+        return result["instrument"]["id"]
+
+    def test_delete_instrument_success(self):
+        """Owner can delete their instrument and its footprints are removed."""
+        instrument_id = self._create_instrument(
+            self.admin_token, "Deletable Telescope"
+        )
+
+        response = requests.delete(
+            self.get_url(f"/instruments/{instrument_id}"),
+            headers={"api_token": self.admin_token},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["deleted_id"] == instrument_id
+        assert body["deleted_footprints"] >= 1
+
+        # It should no longer exist.
+        check = requests.get(
+            self.get_url(f"/instruments?id={instrument_id}"),
+            headers={"api_token": self.admin_token},
+        )
+        assert check.status_code == status.HTTP_200_OK
+        assert check.json() == []
+
+    def test_delete_instrument_not_found(self):
+        """Deleting a non-existent instrument returns 404."""
+        response = requests.delete(
+            self.get_url("/instruments/999999"),
+            headers={"api_token": self.admin_token},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_delete_instrument_without_auth(self):
+        """Deleting without authentication returns 401."""
+        response = requests.delete(self.get_url("/instruments/1"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_delete_instrument_forbidden_for_non_owner(self):
+        """A non-admin cannot delete another user's instrument."""
+        instrument_id = self._create_instrument(self.user_token, "User Owned Deletable")
+
+        response = requests.delete(
+            self.get_url(f"/instruments/{instrument_id}"),
+            headers={"api_token": self.scientist_token},
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_can_delete_others_instrument(self):
+        """An admin can delete an instrument submitted by another user."""
+        instrument_id = self._create_instrument(self.user_token, "Admin Removable")
+
+        response = requests.delete(
+            self.get_url(f"/instruments/{instrument_id}"),
+            headers={"api_token": self.admin_token},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["deleted_id"] == instrument_id
+
+    def test_delete_instrument_referenced_by_pointing(self):
+        """An instrument referenced by pointings cannot be deleted (409)."""
+        # Seeded instrument 1 is referenced by several pointings in test data.
+        response = requests.delete(
+            self.get_url("/instruments/1"),
+            headers={"api_token": self.admin_token},
+        )
+        assert response.status_code == status.HTTP_409_CONFLICT
+        assert "pointing" in response.json()["message"].lower()
+
+
 class TestInstrumentAPIValidation:
     """Test validation of instrument API endpoints."""
 

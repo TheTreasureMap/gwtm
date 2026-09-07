@@ -49,7 +49,7 @@ VALUES
 -- Insert test groups
 INSERT INTO public.groups (id, name, datecreated)
 VALUES
-    (1, 'admin', NOW()),
+    (1, 'ADMIN', NOW()),
     (2, 'researchers', NOW()),
     (3, 'observers', NOW());
 
