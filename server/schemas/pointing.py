@@ -222,16 +222,6 @@ class PointingCreate(PointingBase):
                 # The service layer will handle checking existing values
                 pass
 
-        # Validate position format if provided as string (for both new and updates)
-        if self.position and not (
-            self.position
-            and all(x in self.position for x in ["POINT", "(", ")", " "])
-            and "," not in self.position
-        ):
-            errors.append(
-                'Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type "POINT(RA DEC)"'
-            )
-
         # Convert ra/dec to position if provided (for both new and updates)
         if self.ra is not None and self.dec is not None:
             if not isinstance(self.ra, (int, float)) or not isinstance(

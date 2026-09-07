@@ -28,7 +28,12 @@ async def delete_pointings(
     try:
         admin = is_admin_user(user, db)
 
-        query = db.query(Pointing.id).filter(Pointing.id.in_(request.ids))
+        # A pointing that already has an external DOI must never be deleted,
+        # by anyone, since that would leave the DOI pointing at missing data.
+        query = db.query(Pointing.id).filter(
+            Pointing.id.in_(request.ids),
+            Pointing.doi_url.is_(None),
+        )
         if not admin:
             query = query.filter(Pointing.submitterid == user.id)
 
@@ -46,9 +51,10 @@ async def delete_pointings(
 
         db.commit()
 
-        failed_ids = sorted(set(request.ids) - set(deleted_ids))
+        requested_ids = set(request.ids)
+        failed_ids = sorted(requested_ids - set(deleted_ids))
         return {
-            "message": f"Deleted {len(deleted_ids)} of {len(request.ids)} pointing(s).",
+            "message": f"Deleted {len(deleted_ids)} of {len(requested_ids)} pointing(s).",
             "deleted_ids": deleted_ids,
             "failed_ids": failed_ids,
         }

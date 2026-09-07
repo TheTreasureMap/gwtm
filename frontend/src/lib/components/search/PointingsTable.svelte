@@ -30,7 +30,8 @@
 	];
 
 	function canSelectPointing(pointing: any): boolean {
-		return allowSelection;
+		// A pointing with an assigned DOI must not be deletable.
+		return allowSelection && !pointing.doi_url;
 	}
 
 	function togglePointingSelection(pointingId: number) {

@@ -32,13 +32,21 @@ export const pointingService = {
 		return response.data;
 	},
 
+	// Not yet called from the web UI - the PUT endpoint is currently exercised
+	// only at the API level, for external API consumers.
 	updatePointing: async (id: number, update: PointingUpdateBody): Promise<{ message: string }> => {
 		const response = await client.put<{ message: string }>(`/api/v1/pointings/${id}`, update);
 		return response.data;
 	},
 
-	deletePointings: async (request: PointingDeleteRequest): Promise<{ message: string }> => {
-		const response = await client.delete<{ message: string }>('/api/v1/pointings', {
+	deletePointings: async (
+		request: PointingDeleteRequest
+	): Promise<{ message: string; deleted_ids: number[]; failed_ids: number[] }> => {
+		const response = await client.delete<{
+			message: string;
+			deleted_ids: number[];
+			failed_ids: number[];
+		}>('/api/v1/pointings', {
 			data: request
 		});
 		return response.data;

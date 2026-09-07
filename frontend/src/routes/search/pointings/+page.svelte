@@ -139,10 +139,14 @@
 		deleteError = '';
 
 		try {
-			await api.pointings.deletePointings({ ids: [...selectedPointings] });
-			searchResults = searchResults.filter((p) => !selectedPointings.has(p.id));
+			const result = await api.pointings.deletePointings({ ids: [...selectedPointings] });
+			searchResults = searchResults.filter((p) => !result.deleted_ids.includes(p.id));
 			selectedPointings.clear();
 			selectedPointings = selectedPointings;
+			// Some selected pointings may not have been deleted (e.g. no longer
+			// owned by this user, or since assigned a DOI) - surface that instead
+			// of silently treating the request as fully successful.
+			deleteError = result.failed_ids.length > 0 ? result.message : '';
 		} catch (err) {
 			deleteError = err instanceof Error ? err.message : 'Delete failed. Please try again.';
 		} finally {
