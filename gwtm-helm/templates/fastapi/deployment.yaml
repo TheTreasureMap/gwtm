@@ -75,6 +75,8 @@ spec:
             secretKeyRef:
               name: {{ include "gwtm.secretName" . }}
               key: MAIL_PORT
+        - name: RESEND_FROM
+          value: {{ .Values.fastapi.env.RESEND_FROM | default "Gravitational-Wave Treasure Map <no-reply@send.treasuremap.space>" | quote }}
         {{- include "gwtm.storageEnv" . | nindent 8 }}
         - name: DEBUG
           value: "{{ .Values.global.environment | eq "development" | ternary "True" "False" }}"

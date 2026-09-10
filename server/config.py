@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     MAIL_PORT: int = Field(465, env="MAIL_PORT")
     MAIL_USE_TLS: bool = Field(False, env="MAIL_USE_TLS")
     MAIL_USE_SSL: bool = Field(True, env="MAIL_USE_SSL")
+    # Resend transactional email (preferred over SMTP when an API key is set)
+    RESEND_API_KEY: str = Field("", env="RESEND_API_KEY")
+    RESEND_FROM: str = Field(
+        "Gravitational-Wave Treasure Map <no-reply@send.treasuremap.space>",
+        env="RESEND_FROM",
+    )
 
     # Admin settings
     ADMINS: str = Field("gwtreasuremap@gmail.com", env="ADMINS")
