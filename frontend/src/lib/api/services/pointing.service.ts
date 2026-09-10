@@ -5,7 +5,9 @@ import type {
 	PointingResponse,
 	PointingUpdate,
 	CancelAllRequest,
-	PointingFilters
+	PointingFilters,
+	PointingDeleteRequest,
+	PointingUpdateBody
 } from '../types/pointing.types';
 import type { DOIRequest, DOIRequestResponse } from '../types/doi.types';
 
@@ -27,6 +29,26 @@ export const pointingService = {
 
 	cancelAllPointings: async (request: CancelAllRequest): Promise<{ message: string }> => {
 		const response = await client.post<{ message: string }>('/api/v1/cancel_all', request);
+		return response.data;
+	},
+
+	// Not yet called from the web UI - the PUT endpoint is currently exercised
+	// only at the API level, for external API consumers.
+	updatePointing: async (id: number, update: PointingUpdateBody): Promise<{ message: string }> => {
+		const response = await client.put<{ message: string }>(`/api/v1/pointings/${id}`, update);
+		return response.data;
+	},
+
+	deletePointings: async (
+		request: PointingDeleteRequest
+	): Promise<{ message: string; deleted_ids: number[]; failed_ids: number[] }> => {
+		const response = await client.delete<{
+			message: string;
+			deleted_ids: number[];
+			failed_ids: number[];
+		}>('/api/v1/pointings', {
+			data: request
+		});
 		return response.data;
 	},
 
