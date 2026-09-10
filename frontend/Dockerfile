@@ -1,5 +1,5 @@
 # Multi-stage build for production efficiency
-FROM node:20 AS builder
+FROM node:22 AS builder
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # Development stage (optional - for development with hot reload)
-FROM node:20 AS development
+FROM node:22 AS development
 
 WORKDIR /app
 
