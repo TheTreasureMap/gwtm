@@ -1,5 +1,6 @@
 # Multi-stage build for production efficiency
-FROM node:22 AS builder
+# Keep both node tags in step with frontend/.nvmrc.
+FROM node:22.23.2 AS builder
 
 WORKDIR /app
 
@@ -37,7 +38,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # Development stage (optional - for development with hot reload)
-FROM node:22 AS development
+FROM node:22.23.2 AS development
 
 WORKDIR /app
 
