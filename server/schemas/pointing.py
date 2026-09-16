@@ -74,8 +74,13 @@ class PointingBase(BaseModel):
             try:
                 return pointing_status_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [s.name for s in pointing_status_enum]
+                raise ValueError(f"Invalid status '{value}'. Valid values: {valid}")
+        elif isinstance(value, int):
+            try:
+                return pointing_status_enum(value)
+            except ValueError:
+                raise ValueError(f"Invalid status value: {value}")
         return value
 
     @field_validator("depth_unit", mode="before")
@@ -85,14 +90,13 @@ class PointingBase(BaseModel):
             try:
                 return depth_unit_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [d.name for d in depth_unit_enum]
+                raise ValueError(f"Invalid depth_unit '{value}'. Valid values: {valid}")
         elif isinstance(value, int):
             try:
                 return depth_unit_enum(value)
             except ValueError:
-                # Return the int value if it's not a valid enum
-                return value
+                raise ValueError(f"Invalid depth_unit value: {value}")
         return value
 
     @field_validator("band", mode="before")
@@ -102,14 +106,33 @@ class PointingBase(BaseModel):
             try:
                 return bandpass_enum[value]
             except KeyError:
-                # Return the string value if it's not a valid enum
-                return value
+                valid = [b.name for b in bandpass_enum]
+                raise ValueError(f"Invalid band '{value}'. Valid values: {valid}")
         elif isinstance(value, int):
             try:
                 return bandpass_enum(value)
             except ValueError:
-                # Return the int value if it's not a valid enum
-                return value
+                raise ValueError(f"Invalid band value: {value}")
+        return value
+
+    @field_validator("position", mode="before")
+    @classmethod
+    def validate_position(cls, value):
+        # Pass through None and DB-native geometry objects (e.g. WKBElement),
+        # which arrive here when building a response from an ORM instance.
+        if value is None or hasattr(value, "data"):
+            return value
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Invalid position type '{type(value).__name__}'. Must be a WKT string like 'POINT(ra dec)'."
+            )
+        if not (
+            all(token in value for token in ("POINT", "(", ")", " "))
+            and "," not in value
+        ):
+            raise ValueError(
+                f"Invalid position '{value}'. Must be WKT format like 'POINT(ra dec)'."
+            )
         return value
 
     model_config = ConfigDict(
@@ -204,16 +227,6 @@ class PointingCreate(PointingBase):
                 # The service layer will handle checking existing values
                 pass
 
-        # Validate position format if provided as string (for both new and updates)
-        if self.position and not (
-            self.position
-            and all(x in self.position for x in ["POINT", "(", ")", " "])
-            and "," not in self.position
-        ):
-            errors.append(
-                'Invalid position argument. Must be decimal format ra/RA, dec/DEC, or geometry type "POINT(RA DEC)"'
-            )
-
         # Convert ra/dec to position if provided (for both new and updates)
         if self.ra is not None and self.dec is not None:
             if not isinstance(self.ra, (int, float)) or not isinstance(
@@ -298,6 +311,11 @@ class PointingUpdate(BaseModel):
                 raise ValueError(
                     f"Invalid status: {value}. Valid values are: {[s.name for s in pointing_status_enum]}"
                 )
+        elif isinstance(value, int):
+            try:
+                return pointing_status_enum(value)
+            except ValueError:
+                raise ValueError(f"Invalid status value: {value}")
         return value
 
     @model_validator(mode="after")
@@ -318,6 +336,18 @@ class CancelAllRequest(BaseModel):
 
     graceid: str = Field(..., description="Grace ID of the GW event")
     instrumentid: int = Field(..., description="Instrument ID to cancel pointings for")
+
+
+class PointingDeleteRequest(BaseModel):
+    """Schema for deleting pointings by ID."""
+
+    ids: List[int] = Field(..., description="List of pointing IDs to delete")
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        if not self.ids:
+            raise ValueError("At least one pointing ID must be provided")
+        return self
 
 
 class DOIRequest(BaseModel):
