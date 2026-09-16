@@ -205,6 +205,31 @@ describe('Error Handling Utilities', () => {
 				expect(message).toContain('password: Password too short');
 			});
 
+			it('should fall back through the response body for other statuses', () => {
+				const cases = [
+					{
+						response: { status: 422, data: { detail: 'Unknown graceid' } },
+						expected: 'Unknown graceid'
+					},
+					{ response: { status: 422, data: {} }, expected: 'Invalid input data' },
+					{
+						response: { status: 409, data: { message: 'Pointing already exists' } },
+						expected: 'Pointing already exists'
+					},
+					{
+						response: { status: 409, data: { detail: 'Instrument name taken' } },
+						expected: 'Instrument name taken'
+					},
+					{ response: { status: 418 }, expected: 'Request failed with status 418' },
+					{ response: { status: 302 }, expected: 'An unexpected error occurred' }
+				];
+
+				cases.forEach(({ response, expected }) => {
+					globalErrors.set([]);
+					expect(errorHandler.handleApiError({ response })).toBe(expected);
+				});
+			});
+
 			it('should handle network errors', () => {
 				const networkError = { request: { status: 0 } };
 				const message = errorHandler.handleApiError(networkError);
