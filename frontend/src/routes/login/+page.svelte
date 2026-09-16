@@ -12,7 +12,8 @@
 	let rememberMe = false;
 	let error = '';
 	let loading = false;
-	let successMessage = '';
+	let infoMessage = '';
+	let infoTitle = 'Notice';
 
 	// Redirect if already authenticated and handle success messages
 	onMount(() => {
@@ -22,10 +23,11 @@
 			}
 		});
 
-		// Check for success message from registration
+		// Check for a message passed via redirect (e.g. from registration or email verification)
 		const message = $page.url.searchParams.get('message');
 		if (message) {
-			successMessage = message;
+			infoMessage = message;
+			infoTitle = $page.url.searchParams.get('type') === 'success' ? 'Success' : 'Notice';
 			// Clear the URL parameter for cleaner URLs
 			window.history.replaceState({}, '', '/login');
 		}
@@ -48,6 +50,7 @@
 			goto('/');
 		} else {
 			error = result.error || 'Login failed';
+			infoMessage = '';
 			loading = false;
 		}
 	}
@@ -112,8 +115,8 @@
 				</div>
 			</div>
 
-			{#if successMessage}
-				<ErrorMessage message={successMessage} type="info" title="Success" />
+			{#if infoMessage}
+				<ErrorMessage message={infoMessage} type="info" title={infoTitle} />
 			{/if}
 
 			{#if error}

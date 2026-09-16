@@ -38,7 +38,7 @@
 
 		if (result.success) {
 			goto(
-				`/login?message=${encodeURIComponent('Registration successful! Please check your email to verify your account before logging in.')}`
+				`/login?type=success&message=${encodeURIComponent('Registration successful! Please check your email to verify your account before logging in.')}`
 			);
 			return { success: true };
 		} else {

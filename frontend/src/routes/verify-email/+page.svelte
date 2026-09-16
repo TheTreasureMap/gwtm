@@ -39,7 +39,10 @@
 
 				// Redirect to login after a short delay
 				setTimeout(() => {
-					goto('/login?message=' + encodeURIComponent('Account verified! You can now log in.'));
+					goto(
+						'/login?type=success&message=' +
+							encodeURIComponent('Account verified! You can now log in.')
+					);
 				}, 3000);
 			} else {
 				error = data.detail || data.message || 'Email verification failed. Please try again.';
@@ -54,7 +57,7 @@
 	function handleResendVerification() {
 		// You could implement resend logic here if needed
 		goto(
-			'/login?message=' +
+			'/login?type=notice&message=' +
 				encodeURIComponent(
 					'Please try logging in or contact support if you continue to have issues.'
 				)
