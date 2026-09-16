@@ -13,12 +13,12 @@ export const miscService = {
 	},
 
 	fixData: async (): Promise<{ message: string }> => {
-		const response = await client.get<{ message: string }>('/fixdata');
+		const response = await client.get<{ message: string }>('/api/v1/admin/fixdata');
 		return response.data;
 	},
 
 	fixDataPost: async (): Promise<{ message: string }> => {
-		const response = await client.post<{ message: string }>('/fixdata', {});
+		const response = await client.post<{ message: string }>('/api/v1/admin/fixdata', {});
 		return response.data;
 	}
 };

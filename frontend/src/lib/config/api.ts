@@ -98,5 +98,5 @@ export const API_ENDPOINTS = {
 	pointingFromId: '/ajax_pointingfromid',
 
 	// Admin endpoints
-	adminUsers: '/admin/users'
+	adminUsers: '/api/v1/admin/users'
 } as const;

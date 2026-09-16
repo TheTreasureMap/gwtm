@@ -255,7 +255,7 @@ app.include_router(event, prefix=API_V1_PREFIX)
 app.include_router(celestial_router, prefix=API_V1_PREFIX)
 app.include_router(enums_router, prefix=API_V1_PREFIX)
 
-app.include_router(admin_router, prefix="/admin")
+app.include_router(admin_router, prefix=f"{API_V1_PREFIX}/admin")
 
 # Include UI-specific routes without the API prefix
 app.include_router(ui_router)
