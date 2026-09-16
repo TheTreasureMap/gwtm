@@ -7,8 +7,7 @@ from server.db.database import get_db
 from server.db.models.instrument import Instrument, FootprintCCD
 from server.db.models.pointing import Pointing
 from server.schemas.instrument import DeleteInstrumentResponse
-from server.auth.auth import get_current_user
-from server.routes.event.utils import is_admin
+from server.auth.auth import get_current_user, is_admin_user
 from server.utils.audit import log_admin_action
 from server.utils.error_handling import (
     not_found_exception,
@@ -36,7 +35,7 @@ async def delete_instrument(
         raise not_found_exception(f"No instrument found with 'id': {instrument_id}")
 
     is_owner = instrument.submitterid == user.id
-    if not is_owner and not is_admin(user, db):
+    if not is_owner and not is_admin_user(user, db):
         raise permission_exception(
             "Error: Unauthorized. Unable to alter other user's records"
         )
