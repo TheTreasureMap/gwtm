@@ -422,6 +422,60 @@ describe('Core Validators', () => {
 		});
 	});
 
+	describe('minDate validator', () => {
+		const min = new Date('2024-06-01T00:00:00Z');
+
+		it('should pass for dates on or after the minimum', () => {
+			const validator = validators.minDate(min);
+			expectValidationResult(validator('2024-06-01T00:00:00Z'), true);
+			expectValidationResult(validator(new Date('2024-07-15T00:00:00Z')), true);
+		});
+
+		it('should fail for earlier dates with the default message', () => {
+			const validator = validators.minDate(min);
+			expectValidationResult(validator('2024-05-31T00:00:00Z'), false, [
+				`Date must be after ${min.toDateString()}`
+			]);
+		});
+
+		it('should use a custom message when given', () => {
+			const validator = validators.minDate(min, 'Too early');
+			expectValidationResult(validator(new Date('2024-01-01T00:00:00Z')), false, ['Too early']);
+		});
+
+		it('should leave unparseable dates to the date validator', () => {
+			const validator = validators.minDate(min);
+			expectValidationResult(validator('not-a-date'), true);
+		});
+	});
+
+	describe('maxDate validator', () => {
+		const max = new Date('2024-06-01T00:00:00Z');
+
+		it('should pass for dates on or before the maximum', () => {
+			const validator = validators.maxDate(max);
+			expectValidationResult(validator('2024-06-01T00:00:00Z'), true);
+			expectValidationResult(validator(new Date('2024-01-15T00:00:00Z')), true);
+		});
+
+		it('should fail for later dates with the default message', () => {
+			const validator = validators.maxDate(max);
+			expectValidationResult(validator('2024-06-02T00:00:00Z'), false, [
+				`Date must be before ${max.toDateString()}`
+			]);
+		});
+
+		it('should use a custom message when given', () => {
+			const validator = validators.maxDate(max, 'Too late');
+			expectValidationResult(validator(new Date('2025-01-01T00:00:00Z')), false, ['Too late']);
+		});
+
+		it('should leave unparseable dates to the date validator', () => {
+			const validator = validators.maxDate(max);
+			expectValidationResult(validator('not-a-date'), true);
+		});
+	});
+
 	describe('custom validator', () => {
 		it('should use custom validation function returning boolean', () => {
 			const validator = validators.custom((value) => value === 'special');
@@ -456,6 +510,12 @@ describe('Field Validation', () => {
 		const result = validateField('', config, {}, 'testField');
 		expect(result.isValid).toBe(false);
 		expect(result.errors).toContain('testField is required');
+	});
+
+	it('should name a required field generically when no field name is given', () => {
+		const config: FieldValidator<string> = { required: true };
+		const result = validateField('', config);
+		expect(result.errors).toEqual(['Field is required']);
 	});
 
 	it('should run multiple validators', () => {

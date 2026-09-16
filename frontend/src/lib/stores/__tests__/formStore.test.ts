@@ -209,6 +209,16 @@ describe('createFormStore', () => {
 			const form = createFormStore<TestForm>({ initialValues: { name: '', age: 1 } });
 			expect(form.validateAll()).toBe(true);
 		});
+
+		it('creates field state for schema fields that had no initial value', () => {
+			const form = createFormStore<TestForm>({
+				initialValues: { age: 36 },
+				validationSchema: schema
+			});
+
+			expect(form.validateAll()).toBe(false);
+			expect(form.getFieldState('name').errors).toEqual(['name is required']);
+		});
 	});
 
 	describe('reset', () => {
@@ -394,6 +404,21 @@ describe('createFormStore', () => {
 
 		it('getFieldConfig is undefined without a schema', () => {
 			expect(createFormStore<TestForm>().getFieldConfig('name')).toBeUndefined();
+		});
+
+		it('validateField checks one field without recording the result', () => {
+			const form = makeForm({ initialValues: { name: '', age: 36 } });
+
+			expect(form.validateField('name')).toMatchObject({
+				isValid: false,
+				errors: ['name is required']
+			});
+			expect(form.getError('name')).toEqual([]);
+		});
+
+		it('validateField passes a field with no schema entry', () => {
+			const form = createFormStore<TestForm>({ initialValues: { name: '', age: 1 } });
+			expect(form.validateField('name')).toEqual({ isValid: true, errors: [] });
 		});
 	});
 });
