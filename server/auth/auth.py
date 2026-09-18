@@ -73,7 +73,12 @@ def decode_token(token: str) -> dict:
 
 def get_current_user(
     request: Request,
-    response: Response,
+    # FastAPI only special-cases this as the real Response for injection (and
+    # sets a fresh one per request) when the annotation is bare Response, not
+    # Optional[Response]/Response | None, wrapping it breaks route building
+    # entirely. The mismatched `= None` default only matters for tests that
+    # call this function directly, bypassing FastAPI's injection.
+    response: Response = None,
     api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -113,8 +118,9 @@ def get_current_user(
     # external script would actually POST data to already has a body schema.
     if not user:
         body = request_body_json(request)
-        if isinstance(body, dict) and body.get("api_token"):
-            user = db.query(Users).filter(Users.api_token == body["api_token"]).first()
+        body_token = body.get("api_token") if isinstance(body, dict) else None
+        if isinstance(body_token, str) and body_token:
+            user = db.query(Users).filter(Users.api_token == body_token).first()
             deprecated_body_token = user is not None
 
     # Neither token worked
@@ -131,10 +137,11 @@ def get_current_user(
             user.username,
             request.url.path,
         )
-        response.headers["X-Deprecation-Warning"] = (
-            "Passing api_token in the request body is deprecated and will be "
-            "removed. Send it in the api_token header instead."
-        )
+        if response is not None:
+            response.headers["X-Deprecation-Warning"] = (
+                "Passing api_token in the request body is deprecated and will be "
+                "removed. Send it in the api_token header instead."
+            )
 
     record_user_action(user, request)
     return user

@@ -68,6 +68,18 @@ def request_body_json(request):
     return value if isinstance(value, (dict, list)) else None
 
 
+def _redact_credentials(body):
+    """Mask api_token in a request body before it's persisted.
+
+    The deprecated api_token-in-body auth fallback means a real credential
+    can legitimately be part of an authenticated request's own body, don't
+    write it to the audit trail in plaintext.
+    """
+    if isinstance(body, dict) and "api_token" in body:
+        return {**body, "api_token": "[redacted]"}
+    return body
+
+
 def record_user_action(user, request):
     """Write a public.useractions row for an authenticated request.
 
@@ -83,7 +95,7 @@ def record_user_action(user, request):
                     ipaddress=client_ip(request),
                     url=str(request.url),
                     time=datetime.now(),
-                    jsonvals=request_body_json(request),
+                    jsonvals=_redact_credentials(request_body_json(request)),
                     method=request.method[:METHOD_MAX],
                 )
             )

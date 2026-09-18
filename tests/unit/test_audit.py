@@ -166,6 +166,18 @@ class TestRecordUserAction:
         assert row.jsonvals == {"graceid": "S190425z"}
         assert row.time is not None
 
+    def test_redacts_api_token_before_persisting(self, captured_session):
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=b'{"api_token": "secret-value", "name": "my group"}',
+        )
+
+        audit.record_user_action(FakeUser(), request)
+
+        (row,) = captured_session.added
+        assert row.jsonvals == {"api_token": "[redacted]", "name": "my group"}
+
     def test_records_query_string_in_url(self, captured_session):
         request = make_request(query=b"graceid=S190425z&status=completed")
         audit.record_user_action(FakeUser(), request)
