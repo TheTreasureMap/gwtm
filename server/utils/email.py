@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -232,10 +233,12 @@ async def send_registration_notification(new_user_email: str, new_user_username:
     text_content = (
         f"A new user registered on GWTM.\n\nUsername: {new_user_username}\nEmail: {new_user_email}"
     )
+    safe_username = html.escape(new_user_username)
+    safe_email = html.escape(new_user_email)
     html_content = (
         f"<p>A new user registered on GWTM.</p>"
-        f"<p><strong>Username:</strong> {new_user_username}<br>"
-        f"<strong>Email:</strong> {new_user_email}</p>"
+        f"<p><strong>Username:</strong> {safe_username}<br>"
+        f"<strong>Email:</strong> {safe_email}</p>"
     )
 
     for admin_email in admin_emails:

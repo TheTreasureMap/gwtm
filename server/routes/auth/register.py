@@ -3,7 +3,7 @@
 import logging
 import secrets
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
@@ -26,7 +26,11 @@ router = APIRouter(tags=["authentication"])
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(register_data: RegisterRequest, db: Session = Depends(get_db)):
+async def register(
+    register_data: RegisterRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Register a new user account.
 
@@ -83,7 +87,11 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
             email_sent = False
             logger.exception("Failed to send verification email to %s", new_user.email)
 
-        await send_registration_notification(new_user.email, new_user.username)
+        # Backgrounded: the registering user has no stake in whether the admin
+        # notification succeeds or how long it takes to send.
+        background_tasks.add_task(
+            send_registration_notification, new_user.email, new_user.username
+        )
 
         message = (
             "Registration successful! Please check your email to verify your account before logging in."

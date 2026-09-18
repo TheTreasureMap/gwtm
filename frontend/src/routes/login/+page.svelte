@@ -18,6 +18,7 @@
 	let unverifiedEmail = '';
 	let resendingVerification = false;
 	let resendSent = false;
+	let resendError = '';
 
 	// Redirect if already authenticated and handle success messages
 	onMount(() => {
@@ -49,6 +50,7 @@
 		error = '';
 		unverifiedEmail = '';
 		resendSent = false;
+		resendError = '';
 
 		const result = await auth.login(username, password, rememberMe);
 
@@ -65,11 +67,13 @@
 	async function handleResendVerification() {
 		if (!unverifiedEmail || resendingVerification) return;
 		resendingVerification = true;
+		resendError = '';
 		try {
 			await api.auth.resendVerification(unverifiedEmail);
 			resendSent = true;
 		} catch (err) {
 			console.error('Resend verification failed:', err);
+			resendError = 'Failed to resend verification email. Please try again.';
 		} finally {
 			resendingVerification = false;
 		}
@@ -149,6 +153,9 @@
 							message="If that account exists and is unverified, a new verification email is on its way."
 						/>
 					{:else}
+						{#if resendError}
+							<ErrorMessage message={resendError} />
+						{/if}
 						<Button
 							type="button"
 							variant="secondary"
