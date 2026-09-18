@@ -49,15 +49,21 @@ def client_ip(request):
     return None
 
 
-def request_body_json(request):
+def request_body_json(request, max_bytes=MAX_BODY_BYTES):
     """The request's JSON body as a dict or list, or None.
 
     Reads the body FastAPI has already buffered onto the request. A sync
     dependency cannot await the stream itself, and re-reading it would
     consume it before the endpoint sees it.
+
+    max_bytes defaults to the audit-retention cap (MAX_BODY_BYTES); callers
+    that need the body for something other than persisting it, such as
+    auth's api_token-in-body fallback, should pass max_bytes=None. The body
+    is already fully buffered in memory by this point regardless of size,
+    the cap only controls what's worth writing to the audit log.
     """
     body = getattr(request, "_body", None)
-    if not body or len(body) > MAX_BODY_BYTES:
+    if not body or (max_bytes is not None and len(body) > max_bytes):
         return None
     if "application/json" not in request.headers.get("content-type", ""):
         return None
@@ -66,6 +72,18 @@ def request_body_json(request):
     except ValueError:
         return None
     return value if isinstance(value, (dict, list)) else None
+
+
+def _redact_credentials(body):
+    """Mask api_token in a request body before it's persisted.
+
+    The deprecated api_token-in-body auth fallback means a real credential
+    can legitimately be part of an authenticated request's own body, don't
+    write it to the audit trail in plaintext.
+    """
+    if isinstance(body, dict) and "api_token" in body:
+        return {**body, "api_token": "[redacted]"}
+    return body
 
 
 def record_user_action(user, request):
@@ -83,7 +101,7 @@ def record_user_action(user, request):
                     ipaddress=client_ip(request),
                     url=str(request.url),
                     time=datetime.now(),
-                    jsonvals=request_body_json(request),
+                    jsonvals=_redact_credentials(request_body_json(request)),
                     method=request.method[:METHOD_MAX],
                 )
             )

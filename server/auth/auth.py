@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, Request, status
+import logging
+
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -10,7 +12,9 @@ from datetime import datetime, timedelta
 import jwt
 
 from server.config import settings
-from server.utils.audit import record_user_action
+from server.utils.audit import record_user_action, request_body_json
+
+logger = logging.getLogger("gwtm.auth")
 
 # Define the API key header
 api_key_header = APIKeyHeader(name="api_token", auto_error=False)
@@ -69,6 +73,12 @@ def decode_token(token: str) -> dict:
 
 def get_current_user(
     request: Request,
+    # FastAPI only special-cases this as the real Response for injection (and
+    # sets a fresh one per request) when the annotation is bare Response, not
+    # Optional[Response]/Response | None, wrapping it breaks route building
+    # entirely. The mismatched `= None` default only matters for tests that
+    # call this function directly, bypassing FastAPI's injection.
+    response: Response = None,
     api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -78,6 +88,7 @@ def get_current_user(
     JWT tokens take precedence over API tokens.
     """
     user = None
+    deprecated_body_token = False
 
     # Try JWT token first (from Authorization header)
     if jwt_token:
@@ -98,12 +109,42 @@ def get_current_user(
     if not user and jwt_token:
         user = db.query(Users).filter(Users.api_token == jwt_token).first()
 
+    # Deprecated: api_token in the JSON body, for scripts written against the
+    # old API. request_body_json only sees a body FastAPI has already parsed
+    # for the endpoint's own use (reading the stream again here would consume
+    # it before the endpoint gets to), so this only works on endpoints that
+    # declare a body of their own. A body-less endpoint (e.g. /admin/fixdata)
+    # can't authenticate this way, harmless in practice, everything an
+    # external script would actually POST data to already has a body schema.
+    # max_bytes=None: the audit-retention cap doesn't belong here, a large
+    # but otherwise valid body shouldn't fail auth just because it's too big
+    # to bother persisting in the audit log.
+    if not user:
+        body = request_body_json(request, max_bytes=None)
+        body_token = body.get("api_token") if isinstance(body, dict) else None
+        if isinstance(body_token, str) and body_token:
+            user = db.query(Users).filter(Users.api_token == body_token).first()
+            deprecated_body_token = user is not None
+
     # Neither token worked
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Please provide a valid JWT token or API token.",
         )
+
+    if deprecated_body_token:
+        logger.warning(
+            "Deprecated api_token-in-body auth used by userid=%s username=%r at %s",
+            user.id,
+            user.username,
+            request.url.path,
+        )
+        if response is not None:
+            response.headers["X-Deprecation-Warning"] = (
+                "Passing api_token in the request body is deprecated and will be "
+                "removed. Send it in the api_token header instead."
+            )
 
     record_user_action(user, request)
     return user

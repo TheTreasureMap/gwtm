@@ -1,9 +1,12 @@
 """Unit tests for token resolution in get_current_user."""
 
+import json
+
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 
 from server.auth import auth
+from server.utils.audit import MAX_BODY_BYTES
 from tests.unit.test_audit import FakeUser, make_request
 
 
@@ -85,3 +88,81 @@ class TestGetCurrentUser:
 
         assert excinfo.value.status_code == 401
         assert recorded == []
+
+    def test_body_token_resolves_user_and_warns(self, recorded):
+        user = FakeUser()
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=b'{"api_token": "valid"}',
+        )
+        response = Response()
+
+        result = auth.get_current_user(
+            request=request, response=response, api_token=None, jwt_token=None, db=FakeDB(user)
+        )
+
+        assert result is user
+        assert "X-Deprecation-Warning" in response.headers
+
+    def test_body_token_resolves_user_beyond_audit_size_cap(self, recorded):
+        """A body larger than audit.MAX_BODY_BYTES must still authenticate,
+        that cap is about what's worth persisting to the audit log, not a
+        limit on what a legitimate request body can be."""
+        user = FakeUser()
+        body = json.dumps({"api_token": "valid", "name": "x" * MAX_BODY_BYTES}).encode()
+        request = make_request(
+            method="POST", headers={"Content-Type": "application/json"}, body=body
+        )
+
+        result = auth.get_current_user(
+            request=request, api_token=None, jwt_token=None, db=FakeDB(user)
+        )
+
+        assert result is user
+
+    def test_header_token_sets_no_deprecation_warning(self, recorded):
+        response = Response()
+
+        auth.get_current_user(
+            request=make_request(),
+            response=response,
+            api_token="valid",
+            jwt_token=None,
+            db=FakeDB(FakeUser()),
+        )
+
+        assert "X-Deprecation-Warning" not in response.headers
+
+    def test_non_string_body_token_raises_401_not_a_db_error(self, recorded):
+        """A non-string api_token in the body must be rejected before it ever
+        reaches a query, not passed through to the DB driver (which chokes on
+        binding a list/dict as a scalar parameter)."""
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=b'{"api_token": [1, 2]}',
+        )
+        db = FakeDB(None)
+
+        with pytest.raises(HTTPException) as excinfo:
+            auth.get_current_user(request=request, api_token=None, jwt_token=None, db=db)
+
+        assert excinfo.value.status_code == 401
+        assert db.queries == 0
+
+    def test_missing_response_does_not_crash_body_token_path(self, recorded):
+        """get_current_user is called directly (no response) throughout this
+        file; the deprecated body-token path must tolerate that too."""
+        user = FakeUser()
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=b'{"api_token": "valid"}',
+        )
+
+        result = auth.get_current_user(
+            request=request, api_token=None, jwt_token=None, db=FakeDB(user)
+        )
+
+        assert result is user
