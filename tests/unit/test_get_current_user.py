@@ -1,9 +1,12 @@
 """Unit tests for token resolution in get_current_user."""
 
+import json
+
 import pytest
 from fastapi import HTTPException, Response
 
 from server.auth import auth
+from server.utils.audit import MAX_BODY_BYTES
 from tests.unit.test_audit import FakeUser, make_request
 
 
@@ -101,6 +104,22 @@ class TestGetCurrentUser:
 
         assert result is user
         assert "X-Deprecation-Warning" in response.headers
+
+    def test_body_token_resolves_user_beyond_audit_size_cap(self, recorded):
+        """A body larger than audit.MAX_BODY_BYTES must still authenticate,
+        that cap is about what's worth persisting to the audit log, not a
+        limit on what a legitimate request body can be."""
+        user = FakeUser()
+        body = json.dumps({"api_token": "valid", "name": "x" * MAX_BODY_BYTES}).encode()
+        request = make_request(
+            method="POST", headers={"Content-Type": "application/json"}, body=body
+        )
+
+        result = auth.get_current_user(
+            request=request, api_token=None, jwt_token=None, db=FakeDB(user)
+        )
+
+        assert result is user
 
     def test_header_token_sets_no_deprecation_warning(self, recorded):
         response = Response()

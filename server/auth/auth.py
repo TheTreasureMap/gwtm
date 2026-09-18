@@ -116,8 +116,11 @@ def get_current_user(
     # declare a body of their own. A body-less endpoint (e.g. /admin/fixdata)
     # can't authenticate this way, harmless in practice, everything an
     # external script would actually POST data to already has a body schema.
+    # max_bytes=None: the audit-retention cap doesn't belong here, a large
+    # but otherwise valid body shouldn't fail auth just because it's too big
+    # to bother persisting in the audit log.
     if not user:
-        body = request_body_json(request)
+        body = request_body_json(request, max_bytes=None)
         body_token = body.get("api_token") if isinstance(body, dict) else None
         if isinstance(body_token, str) and body_token:
             user = db.query(Users).filter(Users.api_token == body_token).first()

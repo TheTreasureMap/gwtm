@@ -91,6 +91,18 @@ class TestRequestBodyJSON:
         )
         assert audit.request_body_json(request) is None
 
+    def test_max_bytes_none_reads_oversized_body(self):
+        """Callers other than the audit writer (e.g. auth's api_token-in-body
+        fallback) can opt out of the audit-retention size cap."""
+        oversized = json.dumps({"blob": "x" * audit.MAX_BODY_BYTES}).encode()
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=oversized,
+        )
+        result = audit.request_body_json(request, max_bytes=None)
+        assert result["blob"] == "x" * audit.MAX_BODY_BYTES
+
     def test_none_for_malformed_json(self):
         request = make_request(
             method="POST",
