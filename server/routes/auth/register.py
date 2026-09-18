@@ -17,7 +17,7 @@ from server.schemas.auth import (
     EmailVerificationResponse,
     AuthErrorResponse,
 )
-from server.utils.email import send_verification_email
+from server.utils.email import send_verification_email, send_registration_notification
 from server.utils.tokens import generate_verification_token, decode_verification_token
 
 logger = logging.getLogger(__name__)
@@ -82,6 +82,8 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
         except Exception:
             email_sent = False
             logger.exception("Failed to send verification email to %s", new_user.email)
+
+        await send_registration_notification(new_user.email, new_user.username)
 
         message = (
             "Registration successful! Please check your email to verify your account before logging in."

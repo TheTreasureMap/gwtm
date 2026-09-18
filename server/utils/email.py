@@ -215,3 +215,47 @@ async def send_verification_email(
     else:
         logger.warning("Email not configured — skipping verification email to %s", email)
     return True
+
+
+async def send_registration_notification(new_user_email: str, new_user_username: str) -> None:
+    """
+    Notify the configured admin addresses that a new user registered.
+
+    Best-effort: failures are logged and swallowed per recipient so a
+    notification problem never blocks registration for the user.
+    """
+    admin_emails = [addr.strip() for addr in settings.ADMINS.split(",") if addr.strip()]
+    if not admin_emails:
+        return
+
+    subject = "New GWTM registration"
+    text_content = (
+        f"A new user registered on GWTM.\n\nUsername: {new_user_username}\nEmail: {new_user_email}"
+    )
+    html_content = (
+        f"<p>A new user registered on GWTM.</p>"
+        f"<p><strong>Username:</strong> {new_user_username}<br>"
+        f"<strong>Email:</strong> {new_user_email}</p>"
+    )
+
+    for admin_email in admin_emails:
+        try:
+            if RESEND_API_KEY:
+                await asyncio.to_thread(
+                    _send_resend, admin_email, subject, html_content, text_content
+                )
+            elif SMTP_SERVER:
+                message = MIMEMultipart("alternative")
+                message["Subject"] = subject
+                message["From"] = SENDER_EMAIL
+                message["To"] = admin_email
+                message.attach(MIMEText(text_content, "plain"))
+                message.attach(MIMEText(html_content, "html"))
+                await asyncio.to_thread(_send_smtp, admin_email, message.as_string())
+            else:
+                logger.info("Email not configured — skipping registration notification to admins")
+                return
+        except Exception:
+            logger.exception(
+                "Failed to send registration notification to admin %s", admin_email
+            )
