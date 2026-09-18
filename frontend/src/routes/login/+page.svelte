@@ -41,16 +41,17 @@
 	});
 
 	async function handleLogin() {
+		error = '';
+		unverifiedEmail = '';
+		resendSent = false;
+		resendError = '';
+
 		if (!username || !password) {
 			error = 'Please fill in all fields';
 			return;
 		}
 
 		loading = true;
-		error = '';
-		unverifiedEmail = '';
-		resendSent = false;
-		resendError = '';
 
 		const result = await auth.login(username, password, rememberMe);
 
