@@ -73,7 +73,7 @@ class TestRegister:
             LOGIN_URL,
             json={"username": new_user["username"], "password": new_user["password"]},
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_register_duplicate_email_rejected(self, new_user):
         dup = _fresh_credentials()
@@ -93,14 +93,16 @@ class TestRegister:
 
 
 class TestLoginVerification:
-    def test_login_unverified_user_returns_401(self, new_user):
+    def test_login_unverified_user_returns_403(self, new_user):
         response = requests.post(
             LOGIN_URL,
             json={"username": new_user["username"], "password": new_user["password"]},
         )
 
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "not verified" in response.json()["message"].lower()
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        body = response.json()
+        assert "not verified" in body["message"].lower()
+        assert body["email"] == new_user["email"]
 
     def test_login_verified_seeded_user_succeeds(self):
         response = requests.post(
