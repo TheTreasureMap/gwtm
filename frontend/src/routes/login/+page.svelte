@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { auth } from '$lib/stores/auth';
+	import { api } from '$lib/api';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -14,6 +15,9 @@
 	let loading = false;
 	let infoMessage = '';
 	let infoTitle = 'Notice';
+	let unverifiedEmail = '';
+	let resendingVerification = false;
+	let resendSent = false;
 
 	// Redirect if already authenticated and handle success messages
 	onMount(() => {
@@ -43,6 +47,8 @@
 
 		loading = true;
 		error = '';
+		unverifiedEmail = '';
+		resendSent = false;
 
 		const result = await auth.login(username, password, rememberMe);
 
@@ -51,7 +57,21 @@
 		} else {
 			error = result.error || 'Login failed';
 			infoMessage = '';
+			unverifiedEmail = result.unverifiedEmail || '';
 			loading = false;
+		}
+	}
+
+	async function handleResendVerification() {
+		if (!unverifiedEmail || resendingVerification) return;
+		resendingVerification = true;
+		try {
+			await api.auth.resendVerification(unverifiedEmail);
+			resendSent = true;
+		} catch (err) {
+			console.error('Resend verification failed:', err);
+		} finally {
+			resendingVerification = false;
 		}
 	}
 
@@ -121,6 +141,26 @@
 
 			{#if error}
 				<ErrorMessage message={error} />
+				{#if unverifiedEmail}
+					{#if resendSent}
+						<ErrorMessage
+							type="info"
+							title="Sent"
+							message="If that account exists and is unverified, a new verification email is on its way."
+						/>
+					{:else}
+						<Button
+							type="button"
+							variant="secondary"
+							fullWidth
+							disabled={resendingVerification}
+							loading={resendingVerification}
+							on:click={handleResendVerification}
+						>
+							{resendingVerification ? 'Sending...' : 'Resend verification email'}
+						</Button>
+					{/if}
+				{/if}
 			{/if}
 
 			<div>
