@@ -426,8 +426,8 @@ data:
   db-password: base64_encoded_value
   db-name: base64_encoded_value
   mail-password: base64_encoded_value
-  recaptcha-public-key: base64_encoded_value
-  recaptcha-private-key: base64_encoded_value
+  turnstile-site-key: base64_encoded_value
+  turnstile-secret-key: base64_encoded_value
   zenodo-access-key: base64_encoded_value
 
   # Storage credentials (choose based on STORAGE_BUCKET_SOURCE)

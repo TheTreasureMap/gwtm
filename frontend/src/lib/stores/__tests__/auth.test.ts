@@ -275,6 +275,15 @@ describe('auth store', () => {
 			expect((await auth.register(details)).error).toBe('username reserved');
 		});
 
+		it('uses the API message field when there is no detail', async () => {
+			authApi.register.mockRejectedValue(
+				httpError({ status: 400, data: { message: 'Captcha verification failed' } })
+			);
+			const auth = await loadAuth();
+
+			expect((await auth.register(details)).error).toBe('Captcha verification failed');
+		});
+
 		it('maps a 400 to a check-your-details message', async () => {
 			authApi.register.mockRejectedValue(httpError({ status: 400, data: {} }));
 			const auth = await loadAuth();
@@ -282,6 +291,24 @@ describe('auth store', () => {
 			expect((await auth.register(details)).error).toBe(
 				'Please check your information and try again.'
 			);
+		});
+
+		it('keeps the friendly 409 and 5xx messages when the API also sends a message', async () => {
+			authApi.register.mockRejectedValueOnce(
+				httpError({
+					status: 409,
+					data: { message: 'The request conflicts with database constraints' }
+				})
+			);
+			authApi.register.mockRejectedValueOnce(
+				httpError({ status: 500, data: { message: 'A database error occurred' } })
+			);
+			const auth = await loadAuth();
+
+			expect((await auth.register(details)).error).toBe(
+				'An account with this email or username already exists.'
+			);
+			expect((await auth.register(details)).error).toBe('Server error. Please try again later.');
 		});
 
 		it('maps a 409 to a duplicate-account message', async () => {

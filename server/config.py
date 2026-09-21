@@ -58,8 +58,11 @@ class Settings(BaseSettings):
     )
 
     # External services
-    RECAPTCHA_PUBLIC_KEY: str = Field("", env="RECAPTCHA_PUBLIC_KEY")
-    RECAPTCHA_PRIVATE_KEY: str = Field("", env="RECAPTCHA_PRIVATE_KEY")
+    # Cloudflare Turnstile. The secret enables server-side verification on
+    # register and resend-verification. The site key is public and is served to
+    # the register page by GET /auth/captcha-config.
+    TURNSTILE_SITE_KEY: str = Field("", env="TURNSTILE_SITE_KEY")
+    TURNSTILE_SECRET_KEY: str = Field("", env="TURNSTILE_SECRET_KEY")
     ZENODO_ACCESS_KEY: str = Field("", env="ZENODO_ACCESS_KEY")
 
     # AWS settings

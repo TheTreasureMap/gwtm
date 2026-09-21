@@ -134,9 +134,9 @@ secrets:
   azureAccountKey: ""
   storageBucketSource: "s3"
   
-  # reCAPTCHA keys
-  recaptchaPublicKey: ""
-  recaptchaPrivateKey: ""
+  # Cloudflare Turnstile keys. Captcha is enforced only when the secret key is set.
+  turnstileSiteKey: ""
+  turnstileSecretKey: ""
   
   # Zenodo access
   zenodoAccessKey: ""

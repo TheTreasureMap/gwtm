@@ -159,7 +159,7 @@ class TestPublicResend:
     """
 
     def _post(self, email: str) -> requests.Response:
-        return requests.post(PUBLIC_RESEND_URL, params={"email": email})
+        return requests.post(PUBLIC_RESEND_URL, json={"email": email})
 
     def test_same_response_across_account_states(self, new_user):
         # State A: never-registered email

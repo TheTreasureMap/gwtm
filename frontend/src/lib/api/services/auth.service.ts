@@ -1,6 +1,11 @@
 import client from '../client';
 import { browser } from '$app/environment';
-import type { LoginResponse, RegisterResponse, UserResponse } from '../types/api-responses';
+import type {
+	CaptchaConfigResponse,
+	LoginResponse,
+	RegisterResponse,
+	UserResponse
+} from '../types/api-responses';
 import type { AxiosResponse } from 'axios';
 
 export const authService = {
@@ -23,8 +28,14 @@ export const authService = {
 		username: string;
 		first_name?: string;
 		last_name?: string;
+		turnstile_token?: string;
 	}): Promise<AxiosResponse<RegisterResponse>> => {
 		const response = await client.post<RegisterResponse>('/api/v1/register', userData);
+		return response;
+	},
+
+	getCaptchaConfig: async (): Promise<AxiosResponse<CaptchaConfigResponse>> => {
+		const response = await client.get<CaptchaConfigResponse>('/api/v1/auth/captcha-config');
 		return response;
 	},
 
