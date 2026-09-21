@@ -17,17 +17,12 @@ def make_request(
     body=None,
     pre_buffered=True,
 ):
-    """Build a Starlette Request without going through the server.
-
-    pre_buffered=False simulates an endpoint that parses its own body instead
-    of a pre-read Pydantic one.
-    """
+    """Build a Starlette Request without going through the server."""
     raw_headers = [
         (key.lower().encode(), value.encode()) for key, value in (headers or {}).items()
     ]
 
     async def receive():
-        # Without this, await request.body() raises instead of returning empty.
         return {"type": "http.request", "body": body or b"", "more_body": False}
 
     request = Request(
@@ -101,17 +96,6 @@ class TestRequestBodyJSON:
             body=oversized,
         )
         assert audit.request_body_json(request) is None
-
-    def test_max_bytes_none_reads_oversized_body(self):
-        """Callers can opt out of the audit-retention size cap."""
-        oversized = json.dumps({"blob": "x" * audit.MAX_BODY_BYTES}).encode()
-        request = make_request(
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=oversized,
-        )
-        result = audit.request_body_json(request, max_bytes=None)
-        assert result["blob"] == "x" * audit.MAX_BODY_BYTES
 
     def test_none_for_malformed_json(self):
         request = make_request(

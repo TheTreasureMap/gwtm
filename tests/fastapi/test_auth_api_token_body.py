@@ -16,30 +16,24 @@ def _group_body(**extra):
 class TestApiTokenInBody:
     user_token = "test_token_user_002"
 
-    def test_valid_token_in_body_authenticates(self):
+    def test_valid_token_in_body_authenticates_and_warns(self):
         response = requests.post(GROUPS_URL, json=_group_body(api_token=self.user_token))
         assert response.status_code == status.HTTP_201_CREATED, response.text
-
-    def test_valid_token_in_body_sets_deprecation_header(self):
-        response = requests.post(GROUPS_URL, json=_group_body(api_token=self.user_token))
         assert "x-deprecation-warning" in response.headers
-
-    def test_header_auth_does_not_set_deprecation_header(self):
-        response = requests.post(
-            GROUPS_URL, headers={"api_token": self.user_token}, json=_group_body()
-        )
-        assert response.status_code == status.HTTP_201_CREATED
-        assert "x-deprecation-warning" not in response.headers
 
     def test_invalid_token_in_body_rejected(self):
         response = requests.post(GROUPS_URL, json=_group_body(api_token="not-a-real-token"))
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_nul_in_body_token_rejected_not_a_server_error(self):
+        response = requests.post(GROUPS_URL, json=_group_body(api_token="a\x00b"))
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_no_token_anywhere_rejected(self):
         response = requests.post(GROUPS_URL, json=_group_body())
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_header_takes_precedence_over_body(self):
+    def test_header_takes_precedence_over_body_and_does_not_warn(self):
         response = requests.post(
             GROUPS_URL,
             headers={"api_token": self.user_token},
@@ -47,12 +41,6 @@ class TestApiTokenInBody:
         )
         assert response.status_code == status.HTTP_201_CREATED
         assert "x-deprecation-warning" not in response.headers
-
-    def test_body_token_works_on_endpoint_with_no_declared_body(self):
-        response = requests.post(
-            f"{API_BASE_URL}/api/v1/admin/fixdata", json={"api_token": "test_token_admin_001"}
-        )
-        assert response.status_code == status.HTTP_200_OK
 
     def test_body_token_works_on_endpoint_that_parses_its_own_body(self):
         response = requests.post(

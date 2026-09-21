@@ -4,25 +4,22 @@ import asyncio
 import json
 
 import pytest
-from fastapi import HTTPException, Response
+from fastapi import HTTPException
 
 from server.auth import auth
 from server.utils.audit import MAX_BODY_BYTES
 from tests.unit.test_audit import FakeUser, make_request
 
 
-def call_get_current_user(**kwargs):
-    """Run the async get_current_user to completion for these sync tests."""
-    return asyncio.run(auth.get_current_user(**kwargs))
-
-
 class FakeQuery:
-    """Returns whatever the fake session was primed with."""
+    """Returns whatever the fake session was primed with, recording filters."""
 
-    def __init__(self, result):
+    def __init__(self, result, filters):
         self.result = result
+        self.filters = filters
 
     def filter(self, *args, **kwargs):
+        self.filters.extend(args)
         return self
 
     def first(self):
@@ -33,10 +30,11 @@ class FakeDB:
     def __init__(self, result):
         self.result = result
         self.queries = 0
+        self.filters = []
 
     def query(self, *args, **kwargs):
         self.queries += 1
-        return FakeQuery(self.result)
+        return FakeQuery(self.result, self.filters)
 
 
 @pytest.fixture
@@ -49,12 +47,19 @@ def recorded(monkeypatch):
     return calls
 
 
+def json_request(body, content_length=None, **kwargs):
+    headers = {"Content-Type": "application/json"}
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+    return make_request(method="POST", headers=headers, body=body, **kwargs)
+
+
 class TestGetCurrentUser:
     def test_api_token_header_resolves_user(self, recorded):
         user = FakeUser()
         request = make_request()
 
-        result = call_get_current_user(
+        result = auth.get_current_user(
             request=request, api_token="valid", jwt_token=None, db=FakeDB(user)
         )
 
@@ -64,7 +69,7 @@ class TestGetCurrentUser:
     def test_bearer_value_falls_back_to_api_token(self, recorded):
         user = FakeUser()
 
-        result = call_get_current_user(
+        result = auth.get_current_user(
             request=make_request(),
             api_token=None,
             jwt_token="an-opaque-api-token",
@@ -76,7 +81,7 @@ class TestGetCurrentUser:
 
     def test_no_token_raises_401(self, recorded):
         with pytest.raises(HTTPException) as excinfo:
-            call_get_current_user(
+            auth.get_current_user(
                 request=make_request(), api_token=None, jwt_token=None, db=FakeDB(None)
             )
 
@@ -85,7 +90,7 @@ class TestGetCurrentUser:
 
     def test_unknown_token_raises_401(self, recorded):
         with pytest.raises(HTTPException) as excinfo:
-            call_get_current_user(
+            auth.get_current_user(
                 request=make_request(),
                 api_token="nope",
                 jwt_token=None,
@@ -95,90 +100,92 @@ class TestGetCurrentUser:
         assert excinfo.value.status_code == 401
         assert recorded == []
 
-    def test_body_token_resolves_user_and_warns(self, recorded):
+    def test_body_token_resolves_user_and_flags_deprecation(self, recorded, caplog):
         user = FakeUser()
-        request = make_request(
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=b'{"api_token": "valid"}',
-        )
-        response = Response()
+        request = json_request(b'{"api_token": "valid"}')
+        db = FakeDB(user)
 
-        result = call_get_current_user(
-            request=request, response=response, api_token=None, jwt_token=None, db=FakeDB(user)
+        result = auth.get_current_user(
+            request=request, api_token=None, jwt_token=None, db=db
         )
 
         assert result is user
-        assert "X-Deprecation-Warning" in response.headers
+        assert db.filters[0].right.value == "valid"
+        assert request.state.deprecated_body_token is True
+        assert "Deprecated api_token-in-body" in caplog.text
 
-    def test_body_token_resolves_user_beyond_audit_size_cap(self, recorded):
-        """The audit-log size cap shouldn't fail auth."""
-        user = FakeUser()
-        body = json.dumps({"api_token": "valid", "name": "x" * MAX_BODY_BYTES}).encode()
-        request = make_request(
-            method="POST", headers={"Content-Type": "application/json"}, body=body
-        )
-
-        result = call_get_current_user(
-            request=request, api_token=None, jwt_token=None, db=FakeDB(user)
-        )
-
-        assert result is user
-
-    def test_body_token_resolves_when_endpoint_parses_body_itself(self, recorded):
-        """Must also work when nothing pre-parsed the body via Pydantic."""
-        user = FakeUser()
-        request = make_request(
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=b'{"api_token": "valid"}',
-            pre_buffered=False,
-        )
-
-        result = call_get_current_user(
-            request=request, api_token=None, jwt_token=None, db=FakeDB(user)
-        )
-
-        assert result is user
-
-    def test_header_token_sets_no_deprecation_warning(self, recorded):
-        response = Response()
-
-        call_get_current_user(
-            request=make_request(),
-            response=response,
-            api_token="valid",
-            jwt_token=None,
-            db=FakeDB(FakeUser()),
-        )
-
-        assert "X-Deprecation-Warning" not in response.headers
-
-    def test_non_string_body_token_raises_401_not_a_db_error(self, recorded):
-        """Must be rejected before it reaches a query, not passed to the DB driver."""
-        request = make_request(
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=b'{"api_token": [1, 2]}',
-        )
-        db = FakeDB(None)
+    def test_unknown_body_token_raises_401_without_flag(self, recorded):
+        request = json_request(b'{"api_token": "nope"}')
 
         with pytest.raises(HTTPException) as excinfo:
-            call_get_current_user(request=request, api_token=None, jwt_token=None, db=db)
+            auth.get_current_user(
+                request=request, api_token=None, jwt_token=None, db=FakeDB(None)
+            )
+
+        assert excinfo.value.status_code == 401
+        assert not hasattr(request.state, "deprecated_body_token")
+
+    def test_body_token_beyond_audit_size_cap_still_authenticates(self, recorded):
+        user = FakeUser()
+        body = json.dumps({"api_token": "valid", "pad": "x" * MAX_BODY_BYTES}).encode()
+
+        result = auth.get_current_user(
+            request=json_request(body), api_token=None, jwt_token=None, db=FakeDB(user)
+        )
+
+        assert result is user
+
+    def test_body_over_auth_cap_is_not_inspected(self, recorded):
+        body = json.dumps(
+            {"api_token": "valid", "pad": "x" * auth.MAX_BODY_TOKEN_BYTES}
+        ).encode()
+        db = FakeDB(FakeUser())
+
+        with pytest.raises(HTTPException) as excinfo:
+            auth.get_current_user(
+                request=json_request(body), api_token=None, jwt_token=None, db=db
+            )
 
         assert excinfo.value.status_code == 401
         assert db.queries == 0
 
-    def test_missing_response_does_not_crash_body_token_path(self, recorded):
-        user = FakeUser()
-        request = make_request(
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            body=b'{"api_token": "valid"}',
-        )
+    @pytest.mark.parametrize(
+        "token", [[1, 2], {"a": 1}, 12345, "", "\x00", "a\x00b", "\ud800", "tökén"]
+    )
+    def test_invalid_body_token_raises_401_before_reaching_the_db(self, recorded, token):
+        """The DB driver raises on these (a 500), so they must never be queried."""
+        body = json.dumps({"api_token": token}).encode()
+        db = FakeDB(FakeUser())
 
-        result = call_get_current_user(
+        with pytest.raises(HTTPException) as excinfo:
+            auth.get_current_user(
+                request=json_request(body), api_token=None, jwt_token=None, db=db
+            )
+
+        assert excinfo.value.status_code == 401
+        assert db.queries == 0
+
+
+class TestBufferBodyForTokenFallback:
+    def test_body_buffered_by_the_dependency_is_seen_by_get_current_user(self, recorded):
+        user = FakeUser()
+        body = b'{"api_token": "valid"}'
+        request = json_request(body, content_length=len(body), pre_buffered=False)
+
+        asyncio.run(auth.buffer_body_for_token_fallback(request))
+        result = auth.get_current_user(
             request=request, api_token=None, jwt_token=None, db=FakeDB(user)
         )
 
         assert result is user
+
+    def test_body_over_cap_is_not_read(self):
+        request = json_request(
+            b'{"api_token": "valid"}',
+            content_length=auth.MAX_BODY_TOKEN_BYTES + 1,
+            pre_buffered=False,
+        )
+
+        asyncio.run(auth.buffer_body_for_token_fallback(request))
+
+        assert not hasattr(request, "_body")

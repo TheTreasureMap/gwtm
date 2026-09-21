@@ -1,6 +1,7 @@
 import logging
+import re
 
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -19,6 +20,22 @@ logger = logging.getLogger("gwtm.auth")
 # Define the API key header
 api_key_header = APIKeyHeader(name="api_token", auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+
+# Largest body inspected for a deprecated api_token-in-body credential.
+MAX_BODY_TOKEN_BYTES = 4 * 1024 * 1024
+# What an HTTP header could carry; anything else (NUL, lone surrogates) breaks the DB driver.
+_TOKEN_CHARS = re.compile(r"[ -~]+")
+BODY_TOKEN_DEPRECATION_WARNING = (
+    "Passing api_token in the request body is deprecated and will be "
+    "removed. Send it in the api_token header instead."
+)
+
+
+async def buffer_body_for_token_fallback(request: Request) -> None:
+    """Read a bounded body onto the request; sync dependencies can't await it."""
+    length = request.headers.get("content-length", "")
+    if length.isdigit() and int(length) <= MAX_BODY_TOKEN_BYTES:
+        await request.body()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -71,22 +88,18 @@ def decode_token(token: str) -> dict:
         )
 
 
-async def get_current_user(
+def get_current_user(
     request: Request,
-    # Must stay bare Response, not Optional[Response], or FastAPI stops
-    # recognizing it and route building breaks. `= None` is only for tests
-    # that call this function directly instead of through FastAPI.
-    response: Response = None,
     api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    _buffered: None = Depends(buffer_body_for_token_fallback),
 ) -> Optional[Users]:
     """
     Validate JWT token or API token and return the associated user.
     JWT tokens take precedence over API tokens.
     """
     user = None
-    deprecated_body_token = False
 
     # Try JWT token first (from Authorization header)
     if jwt_token:
@@ -107,17 +120,20 @@ async def get_current_user(
     if not user and jwt_token:
         user = db.query(Users).filter(Users.api_token == jwt_token).first()
 
-    # Deprecated: api_token in the JSON body, for old-API scripts. Not every
-    # endpoint pre-parses its body via Pydantic, so read it here; caches on
-    # Request, so this can't break the endpoint's own parsing later.
-    # max_bytes=None: the audit size cap is unrelated to auth.
+    # Deprecated: api_token in the JSON body, for old-API scripts.
     if not user:
-        await request.body()
-        body = request_body_json(request, max_bytes=None)
+        body = request_body_json(request, max_bytes=MAX_BODY_TOKEN_BYTES)
         body_token = body.get("api_token") if isinstance(body, dict) else None
-        if isinstance(body_token, str) and body_token:
+        if isinstance(body_token, str) and _TOKEN_CHARS.fullmatch(body_token):
             user = db.query(Users).filter(Users.api_token == body_token).first()
-            deprecated_body_token = user is not None
+            if user:
+                logger.warning(
+                    "Deprecated api_token-in-body auth used by userid=%s username=%r at %s",
+                    user.id,
+                    user.username,
+                    request.url.path,
+                )
+                request.state.deprecated_body_token = True
 
     # Neither token worked
     if not user:
@@ -125,19 +141,6 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Please provide a valid JWT token or API token.",
         )
-
-    if deprecated_body_token:
-        logger.warning(
-            "Deprecated api_token-in-body auth used by userid=%s username=%r at %s",
-            user.id,
-            user.username,
-            request.url.path,
-        )
-        if response is not None:
-            response.headers["X-Deprecation-Warning"] = (
-                "Passing api_token in the request body is deprecated and will be "
-                "removed. Send it in the api_token header instead."
-            )
 
     record_user_action(user, request)
     return user
