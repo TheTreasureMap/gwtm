@@ -15,11 +15,16 @@ def make_request(
     headers=None,
     client=("10.0.0.9", 51234),
     body=None,
+    pre_buffered=True,
 ):
     """Build a Starlette Request without going through the server."""
     raw_headers = [
         (key.lower().encode(), value.encode()) for key, value in (headers or {}).items()
     ]
+
+    async def receive():
+        return {"type": "http.request", "body": body or b"", "more_body": False}
+
     request = Request(
         {
             "type": "http",
@@ -30,9 +35,10 @@ def make_request(
             "client": client,
             "scheme": "https",
             "server": ("treasuremap.space", 443),
-        }
+        },
+        receive,
     )
-    if body is not None:
+    if body is not None and pre_buffered:
         # FastAPI buffers the body onto the request before dependencies run.
         request._body = body
     return request
@@ -165,6 +171,18 @@ class TestRecordUserAction:
         assert row.method == "POST"
         assert row.jsonvals == {"graceid": "S190425z"}
         assert row.time is not None
+
+    def test_redacts_api_token_before_persisting(self, captured_session):
+        request = make_request(
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body=b'{"api_token": "secret-value", "name": "my group"}',
+        )
+
+        audit.record_user_action(FakeUser(), request)
+
+        (row,) = captured_session.added
+        assert row.jsonvals == {"api_token": "[redacted]", "name": "my group"}
 
     def test_records_query_string_in_url(self, captured_session):
         request = make_request(query=b"graceid=S190425z&status=completed")
