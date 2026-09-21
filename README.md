@@ -19,10 +19,13 @@ present:
 
     DB_PWD
     MAIL_PASSWORD
-    RECAPTCHA_PUBLIC_KEY
-    RECAPTCHA_PRIVATE_KEY
     ZENODO_ACCESS_KEY
     REDIS_URL
+
+    # Cloudflare Turnstile captcha on registration (optional). It is enforced only
+    # when TURNSTILE_SECRET_KEY is set. Set both keys together.
+    TURNSTILE_SITE_KEY
+    TURNSTILE_SECRET_KEY
 
     # Storage backend (choose one: s3, abfs, or swift)
     STORAGE_BUCKET_SOURCE      # "s3", "abfs", or "swift"
@@ -48,7 +51,7 @@ Env vars can be set by using export:
 
 ```bash
 export MAIL_PASSWORD=ASecretPassword
-export RECAPTCHA_PUBLIC_KEY=ASecretPassword2
+export TURNSTILE_SECRET_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).
 

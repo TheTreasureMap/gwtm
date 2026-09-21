@@ -39,9 +39,10 @@ secrets:
 
   storageBucketSource: "swift"
 
-  # reCAPTCHA keys
-  recaptchaPublicKey: "your-recaptcha-public-key"
-  recaptchaPrivateKey: "your-recaptcha-private-key"
+  # Cloudflare Turnstile keys. Leave empty to skip captcha in dev. A non-empty
+  # secret enforces it, so use real keys or Cloudflare's dummy test keys, not placeholders.
+  turnstileSiteKey: ""
+  turnstileSecretKey: ""
 
   # Zenodo access
   zenodoAccessKey: "your-zenodo-access-key"

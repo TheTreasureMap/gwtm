@@ -115,7 +115,7 @@
       key: OS_PROJECT_DOMAIN_NAME
 {{- end }}
 
-{{/* App secret env vars: mail, recaptcha, zenodo */}}
+{{/* App secret env vars: mail, turnstile, zenodo */}}
 {{- define "gwtm.appSecretEnv" -}}
 - name: JWT_SECRET_KEY
   valueFrom:
@@ -135,16 +135,20 @@
       # Optional: existing secrets may not have this key yet. When absent the
       # env var is simply unset and the app falls back to SMTP.
       optional: true
-- name: RECAPTCHA_PUBLIC_KEY
+- name: TURNSTILE_SITE_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "gwtm.secretName" . }}
-      key: recaptcha-public-key
-- name: RECAPTCHA_PRIVATE_KEY
+      key: turnstile-site-key
+      # Optional: existing secrets may not have these keys yet. When absent the
+      # env var is unset and captcha is skipped.
+      optional: true
+- name: TURNSTILE_SECRET_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "gwtm.secretName" . }}
-      key: recaptcha-private-key
+      key: turnstile-secret-key
+      optional: true
 - name: ZENODO_ACCESS_KEY
   valueFrom:
     secretKeyRef:

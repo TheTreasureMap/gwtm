@@ -134,6 +134,7 @@ function createAuthStore() {
 		username: string;
 		first_name?: string;
 		last_name?: string;
+		turnstile_token?: string;
 	}): Promise<AuthResult> => {
 		update((state) => ({ ...state, loading: true }));
 		try {
@@ -160,7 +161,7 @@ function createAuthStore() {
 			if (err && typeof err === 'object' && 'response' in err) {
 				const response = err.response as {
 					status?: number;
-					data?: { errors?: Array<{ message: string }>; detail?: unknown };
+					data?: { errors?: Array<{ message: string }>; detail?: unknown; message?: string };
 				};
 
 				// Handle validation errors from FastAPI
@@ -183,6 +184,9 @@ function createAuthStore() {
 					} else if (typeof response.data.detail === 'string') {
 						errorMessage = response.data.detail;
 					}
+				} else if (response?.status === 400 && typeof response?.data?.message === 'string') {
+					// The API's HTTPException handler returns errors as { message }
+					errorMessage = response.data.message;
 				} else if (response?.status === 400) {
 					errorMessage = 'Please check your information and try again.';
 				} else if (response?.status === 409) {

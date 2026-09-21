@@ -39,6 +39,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan_context(app: FastAPI):
     logger.info("Application is starting up...")
+    if bool(settings.TURNSTILE_SITE_KEY) != bool(settings.TURNSTILE_SECRET_KEY):
+        logger.warning(
+            "Only one of TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY is set. "
+            "Set both to enforce captcha, or neither to skip it."
+        )
     # Create database tables with proper "IF NOT EXISTS" behaviour
     try:
         logger.info("Initialising database schema...")
