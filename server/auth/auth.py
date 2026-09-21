@@ -71,13 +71,11 @@ def decode_token(token: str) -> dict:
         )
 
 
-def get_current_user(
+async def get_current_user(
     request: Request,
-    # FastAPI only special-cases this as the real Response for injection (and
-    # sets a fresh one per request) when the annotation is bare Response, not
-    # Optional[Response]/Response | None, wrapping it breaks route building
-    # entirely. The mismatched `= None` default only matters for tests that
-    # call this function directly, bypassing FastAPI's injection.
+    # Must stay bare Response, not Optional[Response], or FastAPI stops
+    # recognizing it and route building breaks. `= None` is only for tests
+    # that call this function directly instead of through FastAPI.
     response: Response = None,
     api_token: Optional[str] = Depends(api_key_header),
     jwt_token: Optional[str] = Depends(oauth2_scheme),
@@ -109,17 +107,12 @@ def get_current_user(
     if not user and jwt_token:
         user = db.query(Users).filter(Users.api_token == jwt_token).first()
 
-    # Deprecated: api_token in the JSON body, for scripts written against the
-    # old API. request_body_json only sees a body FastAPI has already parsed
-    # for the endpoint's own use (reading the stream again here would consume
-    # it before the endpoint gets to), so this only works on endpoints that
-    # declare a body of their own. A body-less endpoint (e.g. /admin/fixdata)
-    # can't authenticate this way, harmless in practice, everything an
-    # external script would actually POST data to already has a body schema.
-    # max_bytes=None: the audit-retention cap doesn't belong here, a large
-    # but otherwise valid body shouldn't fail auth just because it's too big
-    # to bother persisting in the audit log.
+    # Deprecated: api_token in the JSON body, for old-API scripts. Not every
+    # endpoint pre-parses its body via Pydantic, so read it here; caches on
+    # Request, so this can't break the endpoint's own parsing later.
+    # max_bytes=None: the audit size cap is unrelated to auth.
     if not user:
+        await request.body()
         body = request_body_json(request, max_bytes=None)
         body_token = body.get("api_token") if isinstance(body, dict) else None
         if isinstance(body_token, str) and body_token:

@@ -15,11 +15,21 @@ def make_request(
     headers=None,
     client=("10.0.0.9", 51234),
     body=None,
+    pre_buffered=True,
 ):
-    """Build a Starlette Request without going through the server."""
+    """Build a Starlette Request without going through the server.
+
+    pre_buffered=False simulates an endpoint that parses its own body instead
+    of a pre-read Pydantic one.
+    """
     raw_headers = [
         (key.lower().encode(), value.encode()) for key, value in (headers or {}).items()
     ]
+
+    async def receive():
+        # Without this, await request.body() raises instead of returning empty.
+        return {"type": "http.request", "body": body or b"", "more_body": False}
+
     request = Request(
         {
             "type": "http",
@@ -30,9 +40,10 @@ def make_request(
             "client": client,
             "scheme": "https",
             "server": ("treasuremap.space", 443),
-        }
+        },
+        receive,
     )
-    if body is not None:
+    if body is not None and pre_buffered:
         # FastAPI buffers the body onto the request before dependencies run.
         request._body = body
     return request
@@ -92,8 +103,7 @@ class TestRequestBodyJSON:
         assert audit.request_body_json(request) is None
 
     def test_max_bytes_none_reads_oversized_body(self):
-        """Callers other than the audit writer (e.g. auth's api_token-in-body
-        fallback) can opt out of the audit-retention size cap."""
+        """Callers can opt out of the audit-retention size cap."""
         oversized = json.dumps({"blob": "x" * audit.MAX_BODY_BYTES}).encode()
         request = make_request(
             method="POST",

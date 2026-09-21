@@ -1,12 +1,4 @@
-"""
-Tests for the deprecated api_token-in-JSON-body auth fallback.
-
-Uses POST /api/v1/doi_author_groups as the auth vehicle: it needs auth and
-already declares a JSON body, which is what makes the fallback reachable at
-all (see the comment in server/auth/auth.py, request_body_json only sees a
-body FastAPI has already parsed for the endpoint's own use, so a body-less
-endpoint like /admin/fixdata can never authenticate this way).
-"""
+"""Tests for the deprecated api_token-in-JSON-body auth fallback."""
 
 import os
 import uuid
@@ -56,11 +48,16 @@ class TestApiTokenInBody:
         assert response.status_code == status.HTTP_201_CREATED
         assert "x-deprecation-warning" not in response.headers
 
-    def test_body_token_ignored_on_endpoint_with_no_body_schema(self):
-        """/admin/fixdata declares no body, so FastAPI never buffers one for
-        get_current_user to read, api_token in the JSON body can't authenticate
-        there even though it works for body-bearing endpoints above."""
+    def test_body_token_works_on_endpoint_with_no_declared_body(self):
         response = requests.post(
             f"{API_BASE_URL}/api/v1/admin/fixdata", json={"api_token": "test_token_admin_001"}
         )
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_body_token_works_on_endpoint_that_parses_its_own_body(self):
+        response = requests.post(
+            f"{API_BASE_URL}/ajax_grade_calculator",
+            json={"api_token": self.user_token, "pointing_ids": [1]},
+        )
+        assert response.status_code == status.HTTP_200_OK, response.text
+        assert "x-deprecation-warning" in response.headers
