@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import type {
 	CaptchaConfigResponse,
 	LoginResponse,
+	MessageResponse,
 	RegisterResponse,
 	UserResponse
 } from '../types/api-responses';
@@ -36,6 +37,30 @@ export const authService = {
 
 	getCaptchaConfig: async (): Promise<AxiosResponse<CaptchaConfigResponse>> => {
 		const response = await client.get<CaptchaConfigResponse>('/api/v1/auth/captcha-config');
+		return response;
+	},
+
+	forgotPassword: async (
+		email: string,
+		turnstileToken?: string
+	): Promise<AxiosResponse<MessageResponse>> => {
+		const response = await client.post<MessageResponse>('/api/v1/auth/forgot-password', {
+			email,
+			turnstile_token: turnstileToken
+		});
+		return response;
+	},
+
+	resetPassword: async (
+		token: string,
+		password: string,
+		rotateApiToken = false
+	): Promise<AxiosResponse<MessageResponse>> => {
+		const response = await client.post<MessageResponse>('/api/v1/auth/reset-password', {
+			token,
+			password,
+			rotate_api_token: rotateApiToken
+		});
 		return response;
 	},
 

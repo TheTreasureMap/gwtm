@@ -318,6 +318,10 @@ export interface CaptchaConfigResponse {
 	turnstile_site_key: string;
 }
 
+export interface MessageResponse {
+	message: string;
+}
+
 export interface UserResponse {
 	user: UserProfile;
 }

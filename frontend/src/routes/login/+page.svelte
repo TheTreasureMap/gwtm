@@ -113,6 +113,9 @@
 					/>
 					<label for="remember-me" class="ml-2 block text-sm text-gray-900"> Remember me </label>
 				</div>
+				<a href="/forgot-password" class="text-sm text-blue-600 hover:text-blue-500">
+					Forgot password?
+				</a>
 			</div>
 
 			{#if infoMessage}
