@@ -33,10 +33,15 @@ def make_user(verified=True):
 
 
 class FakeQuery:
-    def __init__(self, user):
-        self.user = user
+    def __init__(self, db):
+        self.db = db
+        self.user = db.user
 
     def filter(self, *args, **kwargs):
+        return self
+
+    def with_for_update(self):
+        self.db.locked = True
         return self
 
     def first(self):
@@ -48,10 +53,11 @@ class FakeDB:
         self.user = user
         self.queries = 0
         self.commits = 0
+        self.locked = False
 
     def query(self, *args, **kwargs):
         self.queries += 1
-        return FakeQuery(self.user)
+        return FakeQuery(self)
 
     def commit(self):
         self.commits += 1
@@ -197,6 +203,7 @@ def test_reset_sets_new_password():
     assert user.check_password(NEW_PASSWORD)
     assert user.api_token == "existing-token"
     assert db.commits == 1
+    assert db.locked
 
 
 def test_reset_rotates_api_token_when_asked():

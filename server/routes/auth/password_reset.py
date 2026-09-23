@@ -94,7 +94,9 @@ async def reset_password(reset_data: ResetPasswordRequest, db: Session = Depends
     except InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK)
 
-    user = db.query(Users).filter(Users.id == user_id).first()
+    # Row lock: a concurrent use of the same link waits here, then sees the new
+    # hash and fails the fingerprint check, keeping the link single use.
+    user = db.query(Users).filter(Users.id == user_id).with_for_update().first()
     if not user or not reset_token_matches(fingerprint, user.password_hash):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK)
 
