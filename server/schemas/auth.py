@@ -1,5 +1,6 @@
 """Authentication schemas for login/logout endpoints."""
 
+import re
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
@@ -68,6 +69,23 @@ class TokenRefreshResponse(BaseModel):
     expires_in: int
 
 
+def validate_new_password(v: str) -> str:
+    """Strength rules shared by registration and password reset."""
+    if not v:
+        raise ValueError("Password is required")
+
+    if len(v) < 8:
+        raise ValueError("Password must be at least 8 characters long")
+    if not re.search(r"[A-Z]", v):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not re.search(r"[a-z]", v):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not re.search(r"\d", v):
+        raise ValueError("Password must contain at least one number")
+
+    return v
+
+
 class RegisterRequest(BaseModel):
     """Request schema for user registration."""
 
@@ -92,8 +110,6 @@ class RegisterRequest(BaseModel):
             raise ValueError("Username must be no more than 50 characters long")
 
         # Check allowed characters
-        import re
-
         if not re.match(r"^[a-zA-Z0-9_-]+$", username):
             raise ValueError(
                 "Username can only contain letters, numbers, underscores, and dashes"
@@ -104,23 +120,7 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v):
-        if not v:
-            raise ValueError("Password is required")
-
-        # Password strength requirements
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
-
-        import re
-
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("Password must contain at least one lowercase letter")
-        if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one number")
-
-        return v
+        return validate_new_password(v)
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -137,8 +137,31 @@ class ResendVerificationRequest(BaseModel):
     turnstile_token: Optional[str] = Field(None, max_length=2048)
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for the public forgot-password endpoint."""
+
+    email: str
+    turnstile_token: Optional[str] = Field(None, max_length=2048)
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for setting a new password from an emailed reset link."""
+
+    token: str = Field(..., max_length=1024)
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
+        return validate_new_password(v)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 class CaptchaConfigResponse(BaseModel):
-    """Public captcha settings the register page needs to render the widget."""
+    """Public captcha settings the public auth forms need to render the widget."""
 
     turnstile_site_key: str
 

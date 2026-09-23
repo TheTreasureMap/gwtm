@@ -32,7 +32,7 @@ router = APIRouter(tags=["authentication"])
 @router.get("/captcha-config", response_model=CaptchaConfigResponse)
 async def captcha_config():
     """
-    Public captcha settings for the register page.
+    Public captcha settings for the register, resend and forgot-password forms.
 
     The frontend is a static bundle, so it cannot read the site key from its
     own environment. An empty key means no widget should be shown.

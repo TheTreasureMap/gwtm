@@ -22,7 +22,7 @@ present:
     ZENODO_ACCESS_KEY
     REDIS_URL
 
-    # Cloudflare Turnstile captcha on registration (optional). It is enforced only
+    # Cloudflare Turnstile captcha on registration and password reset (optional). It is enforced only
     # when TURNSTILE_SECRET_KEY is set. Set both keys together.
     TURNSTILE_SITE_KEY
     TURNSTILE_SECRET_KEY

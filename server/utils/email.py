@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from server.config import settings
+from server.utils.tokens import RESET_TOKEN_EXPIRY_TEXT
 
 logger = logging.getLogger(__name__)
 
@@ -52,19 +53,25 @@ def _send_smtp(recipient: str, message_str: str) -> None:
             server.sendmail(SENDER_EMAIL, recipient, message_str)
 
 
-async def send_verification_email(
-    email: str, username: str, verification_token: str
+async def _send_email(
+    recipient: str,
+    subject: str,
+    title: str,
+    username: str,
+    paragraph: str,
+    button_text: str,
+    url: str,
+    notes: list[str],
 ) -> bool:
     """
-    Send a verification email to a newly registered user.
+    Render the shared GWTM email layout and send it.
 
-    Returns True on a successful send or when SMTP is not configured (dev fallback).
-    Propagates smtplib / socket exceptions on actual send failure so the caller
-    can decide how to surface the error.
+    Returns True on a successful send or when no transport is configured (dev
+    fallback). Propagates transport exceptions on actual send failure so the
+    caller can decide how to surface the error.
     """
-    verification_url = f"{BASE_URL}/verify-email?token={verification_token}"
-
-    subject = "Verify your GWTM account"
+    notes_html = "\n".join(f'<p class="info-text">{note}</p>' for note in notes)
+    notes_text = "\n\n    ".join(notes)
 
     html_content = f"""
     <html>
@@ -138,21 +145,19 @@ async def send_verification_email(
         <div class="container">
             <div class="email-card">
                 <div class="header">
-                    <h1 class="title">Welcome to GWTM!</h1>
+                    <h1 class="title">{title}</h1>
                     <p class="subtitle">Gravitational-Wave Treasure Map</p>
                 </div>
 
                 <p>Hi {username},</p>
 
-                <p>Thank you for registering with the Gravitational-Wave Treasure Map. To complete your registration and start coordinating telescope observations, please verify your email address.</p>
+                <p>{paragraph}</p>
 
                 <div style="text-align: center;">
-                    <a href="{verification_url}" class="button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
+                    <a href="{url}" class="button" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">{button_text}</a>
                 </div>
 
-                <p class="info-text">This verification link will expire in 24 hours for security reasons.</p>
-
-                <p class="info-text">If you didn't create a GWTM account, you can safely ignore this email.</p>
+                {notes_html}
 
                 <div class="footer">
                     <p>GWTM Team<br>
@@ -165,31 +170,29 @@ async def send_verification_email(
     """
 
     text_content = f"""
-    Welcome to GWTM!
+    {title}
 
     Hi {username},
 
-    Thank you for registering with the Gravitational-Wave Treasure Map. To complete your registration and start coordinating telescope observations, please verify your email address.
+    {paragraph}
 
-    Please click the link below to verify your account:
-    {verification_url}
+    {button_text}:
+    {url}
 
-    This verification link will expire in 24 hours for security reasons.
-
-    If you didn't create a GWTM account, you can safely ignore this email.
+    {notes_text}
 
     ---
     GWTM Team
     Gravitational-Wave Treasure Map Platform
     """
 
-    logger.info("Sending verification email to %s", email)
+    logger.info("Sending '%s' email to %s", subject, recipient)
 
     # Preferred transport: Resend. The SDK is blocking, so run it in a worker
     # thread to avoid stalling the event loop. Exceptions propagate to the caller.
     if RESEND_API_KEY:
         await asyncio.to_thread(
-            _send_resend, email, subject, html_content, text_content
+            _send_resend, recipient, subject, html_content, text_content
         )
         return True
 
@@ -197,21 +200,66 @@ async def send_verification_email(
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = SENDER_EMAIL
-        message["To"] = email
+        message["To"] = recipient
         message.attach(MIMEText(text_content, "plain"))
         message.attach(MIMEText(html_content, "html"))
 
         # smtplib is blocking; run the send in a worker thread so we don't stall
         # the event loop while we wait on the network.
-        await asyncio.to_thread(_send_smtp, email, message.as_string())
+        await asyncio.to_thread(_send_smtp, recipient, message.as_string())
         return True
 
     # No transport configured.
     if settings.DEVELOPMENT_MODE:
-        # Dev fallback only: log the full URL so developers can verify manually.
-        logger.warning(
-            "Email not configured — verification URL for %s: %s", email, verification_url
-        )
+        # Dev fallback only: log the full URL so developers can follow the link manually.
+        logger.warning("Email not configured, link for %s: %s", recipient, url)
     else:
-        logger.warning("Email not configured — skipping verification email to %s", email)
+        logger.warning(
+            "Email not configured, skipping '%s' email to %s", subject, recipient
+        )
     return True
+
+
+async def send_verification_email(
+    email: str, username: str, verification_token: str
+) -> bool:
+    """Send a verification email to a newly registered user."""
+    return await _send_email(
+        recipient=email,
+        subject="Verify your GWTM account",
+        title="Welcome to GWTM!",
+        username=username,
+        paragraph=(
+            "Thank you for registering with the Gravitational-Wave Treasure Map. "
+            "To complete your registration and start coordinating telescope "
+            "observations, please verify your email address."
+        ),
+        button_text="Verify Email Address",
+        url=f"{BASE_URL}/verify-email?token={verification_token}",
+        notes=[
+            "This verification link will expire in 24 hours for security reasons.",
+            "If you didn't create a GWTM account, you can safely ignore this email.",
+        ],
+    )
+
+
+async def send_password_reset_email(email: str, username: str, reset_token: str) -> bool:
+    """Send a password reset link to an existing user."""
+    return await _send_email(
+        recipient=email,
+        subject="Reset your GWTM password",
+        title="Reset your password",
+        username=username,
+        paragraph=(
+            "We received a request to reset the password for your "
+            "Gravitational-Wave Treasure Map account. Use the button below to "
+            "choose a new one."
+        ),
+        button_text="Reset Password",
+        url=f"{BASE_URL}/reset-password?token={reset_token}",
+        notes=[
+            f"This link will expire in {RESET_TOKEN_EXPIRY_TEXT} and can only be used once.",
+            "If you didn't ask to reset your password, you can safely ignore this "
+            "email. Your password will not change.",
+        ],
+    )
