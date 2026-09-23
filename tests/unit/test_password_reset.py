@@ -1,5 +1,6 @@
 """Password reset tokens and the forgot/reset endpoints. DB and email are faked."""
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -11,7 +12,7 @@ from server.db.database import get_db
 from server.db.models.users import Users
 from server.main import app
 from server.routes.auth import password_reset
-from server.utils import tokens
+from server.utils import email, tokens
 
 FORGOT_URL = "/api/v1/auth/forgot-password"
 RESET_URL = "/api/v1/auth/reset-password"
@@ -169,6 +170,16 @@ def test_forgot_requires_captcha_before_any_db_query(monkeypatch, sent):
     assert sent == []
 
 
+def test_forgot_rejects_malformed_email_before_any_db_query(sent):
+    db = FakeDB(make_user())
+
+    response = client_for(db).post(FORGOT_URL, json={"email": "not-an-email"})
+
+    assert response.status_code == 400
+    assert db.queries == 0
+    assert sent == []
+
+
 # Reset password
 
 
@@ -186,6 +197,18 @@ def test_reset_sets_new_password():
     assert user.check_password(NEW_PASSWORD)
     assert user.api_token == "existing-token"
     assert db.commits == 1
+
+
+def test_reset_rotates_api_token_when_asked():
+    user = make_user()
+    token = tokens.generate_reset_token(user.id, user.password_hash)
+
+    response = client_for(FakeDB(user)).post(
+        RESET_URL, json={"token": token, "password": NEW_PASSWORD, "rotate_api_token": True}
+    )
+
+    assert response.status_code == 200
+    assert user.api_token not in (None, "existing-token")
 
 
 def test_reset_link_works_only_once():
@@ -245,3 +268,17 @@ def test_reset_rejects_unknown_user():
     response = reset(FakeDB(None), tokens.generate_reset_token(99, "whatever"))
 
     assert response.status_code == 400
+
+
+# Email
+
+
+def test_reset_email_escapes_username(monkeypatch):
+    sent = {}
+    monkeypatch.setattr(email, "RESEND_API_KEY", "key")
+    monkeypatch.setattr(email, "_send_resend", lambda to, subject, html, text: sent.update(html=html))
+
+    asyncio.run(email.send_password_reset_email("a@example.com", "<b>bob</b>", "TOKEN"))
+
+    assert "Hi &lt;b&gt;bob&lt;/b&gt;," in sent["html"]
+    assert "<b>bob</b>" not in sent["html"]

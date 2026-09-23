@@ -9,13 +9,17 @@
 	import FormField from '$lib/components/forms/FormField.svelte';
 	import { validators } from '$lib/validation/validators';
 
-	const token = $page.url.searchParams.get('token') ?? '';
+	$: token = $page.url.searchParams.get('token') ?? '';
 
-	let formData: Record<string, unknown> = { password: '', confirmPassword: '' };
+	let formData: Record<string, unknown> = {
+		password: '',
+		confirmPassword: '',
+		rotateApiToken: false
+	};
 
 	async function handleSubmit(data: Record<string, unknown>) {
 		try {
-			await api.auth.resetPassword(token, data.password as string);
+			await api.auth.resetPassword(token, data.password as string, data.rotateApiToken as boolean);
 			goto(
 				`/login?type=success&message=${encodeURIComponent('Your password has been reset. You can now sign in.')}`
 			);
@@ -81,6 +85,14 @@
 						validators={[validators.confirmPassword('password')]}
 						validationContext={formData}
 						helpText="Must match the password above"
+					/>
+
+					<FormField
+						name="rotateApiToken"
+						label="Also replace my API token"
+						type="checkbox"
+						bind:value={formData.rotateApiToken}
+						helpText="Do this if you think your account was compromised. Scripts using the old token will stop working."
 					/>
 				</div>
 			</Form>

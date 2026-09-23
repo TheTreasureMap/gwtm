@@ -140,7 +140,7 @@ class ResendVerificationRequest(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     """Request schema for the public forgot-password endpoint."""
 
-    email: str
+    email: EmailStr
     turnstile_token: Optional[str] = Field(None, max_length=2048)
 
 
@@ -149,6 +149,7 @@ class ResetPasswordRequest(BaseModel):
 
     token: str = Field(..., max_length=1024)
     password: str
+    rotate_api_token: bool = False
 
     @field_validator("password")
     @classmethod

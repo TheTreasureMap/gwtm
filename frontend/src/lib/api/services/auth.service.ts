@@ -53,11 +53,13 @@ export const authService = {
 
 	resetPassword: async (
 		token: string,
-		password: string
+		password: string,
+		rotateApiToken = false
 	): Promise<AxiosResponse<MessageResponse>> => {
 		const response = await client.post<MessageResponse>('/api/v1/auth/reset-password', {
 			token,
-			password
+			password,
+			rotate_api_token: rotateApiToken
 		});
 		return response;
 	},

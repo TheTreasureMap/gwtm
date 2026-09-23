@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -70,6 +71,8 @@ async def _send_email(
     fallback). Propagates transport exceptions on actual send failure so the
     caller can decide how to surface the error.
     """
+    # Legacy accounts predate the username character rules, so escape it.
+    safe_username = html.escape(username)
     notes_html = "\n".join(f'<p class="info-text">{note}</p>' for note in notes)
     notes_text = "\n\n    ".join(notes)
 
@@ -149,7 +152,7 @@ async def _send_email(
                     <p class="subtitle">Gravitational-Wave Treasure Map</p>
                 </div>
 
-                <p>Hi {username},</p>
+                <p>Hi {safe_username},</p>
 
                 <p>{paragraph}</p>
 

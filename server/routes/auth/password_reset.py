@@ -77,8 +77,12 @@ async def reset_password(reset_data: ResetPasswordRequest, db: Session = Depends
     Set a new password from an emailed reset link.
 
     Completing a reset proves ownership of the email, so an unverified account
-    is verified here too. Existing login sessions and the API token are left as
-    they are.
+    is verified here too.
+
+    The API token is kept by default because users' scripts depend on it; pass
+    `rotate_api_token` to replace it when the account may be compromised. Login
+    sessions are not revoked, but access tokens expire within
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES.
     """
     try:
         user_id, fingerprint = decode_reset_token(reset_data.token)
@@ -98,9 +102,13 @@ async def reset_password(reset_data: ResetPasswordRequest, db: Session = Depends
     if not user.verified:
         user.verified = True
         user.verification_key = None
-    if not user.api_token:
+    if reset_data.rotate_api_token or not user.api_token:
         user.api_token = secrets.token_hex(32)
     db.commit()
 
-    logger.info("Password reset for user %s", user.id)
+    logger.info(
+        "Password reset for user %s (api token rotated: %s)",
+        user.id,
+        reset_data.rotate_api_token,
+    )
     return MessageResponse(message="Your password has been reset. You can now log in.")
