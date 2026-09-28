@@ -49,7 +49,7 @@ def client_ip(request):
     return None
 
 
-def request_body_json(request):
+def request_body_json(request, max_bytes=MAX_BODY_BYTES):
     """The request's JSON body as a dict or list, or None.
 
     Reads the body FastAPI has already buffered onto the request. A sync
@@ -57,7 +57,7 @@ def request_body_json(request):
     consume it before the endpoint sees it.
     """
     body = getattr(request, "_body", None)
-    if not body or len(body) > MAX_BODY_BYTES:
+    if not body or len(body) > max_bytes:
         return None
     if "application/json" not in request.headers.get("content-type", ""):
         return None
@@ -66,6 +66,13 @@ def request_body_json(request):
     except ValueError:
         return None
     return value if isinstance(value, (dict, list)) else None
+
+
+def _redact_credentials(body):
+    """Mask api_token before the body is persisted."""
+    if isinstance(body, dict) and "api_token" in body:
+        return {**body, "api_token": "[redacted]"}
+    return body
 
 
 def record_user_action(user, request):
@@ -83,7 +90,7 @@ def record_user_action(user, request):
                     ipaddress=client_ip(request),
                     url=str(request.url),
                     time=datetime.now(),
-                    jsonvals=request_body_json(request),
+                    jsonvals=_redact_credentials(request_body_json(request)),
                     method=request.method[:METHOD_MAX],
                 )
             )

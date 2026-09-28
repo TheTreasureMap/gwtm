@@ -31,6 +31,7 @@ from server.routes.enums.router import router as enums_router
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
+from server.auth.auth import BODY_TOKEN_DEPRECATION_WARNING
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,6 +91,15 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
+
+
+@app.middleware("http")
+async def deprecation_warning_header(request: Request, call_next):
+    # Middleware so the header also reaches routes that return their own Response.
+    response = await call_next(request)
+    if getattr(request.state, "deprecated_body_token", False):
+        response.headers["X-Deprecation-Warning"] = BODY_TOKEN_DEPRECATION_WARNING
+    return response
 
 
 async def lifespan_middleware(request: Request, call_next):
