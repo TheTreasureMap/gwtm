@@ -35,9 +35,6 @@ INVALID_LINK = (
 
 COOLDOWN_SECONDS = 60
 
-# ponytail: per-process, so a 2-replica deployment gives an attacker roughly
-# 2x this rate, and a restart clears it. Move to Redis (already a required
-# env var, REDIS_URL, unused today) if this needs to hold under real abuse.
 _last_reset_request: dict[str, float] = {}
 
 

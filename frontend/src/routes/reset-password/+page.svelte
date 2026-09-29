@@ -18,6 +18,11 @@
 	};
 
 	async function handleSubmit(data: Record<string, unknown>) {
+		// Form has no schema, so FormField's own validators are display-only and
+		// never block submission. See Form.svelte's validate(): `if (!schema) return true;`.
+		if (data.password !== data.confirmPassword) {
+			return { success: false, error: 'Passwords do not match' };
+		}
 		try {
 			await api.auth.resetPassword(token, data.password as string, data.rotateApiToken as boolean);
 			goto(
