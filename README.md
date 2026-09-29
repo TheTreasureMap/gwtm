@@ -51,6 +51,7 @@ Env vars can be set by using export:
 
 ```bash
 export MAIL_PASSWORD=ASecretPassword
+export TURNSTILE_SITE_KEY=ASitePublicKey
 export TURNSTILE_SECRET_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).

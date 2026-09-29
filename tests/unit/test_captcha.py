@@ -36,6 +36,7 @@ def make_client(response=None, error=None, posts=None):
 
 @pytest.fixture
 def secret(monkeypatch):
+    monkeypatch.setattr(captcha.settings, "TURNSTILE_SITE_KEY", "test-site-key")
     monkeypatch.setattr(captcha.settings, "TURNSTILE_SECRET_KEY", "test-secret")
 
 
@@ -44,7 +45,15 @@ def verify(token):
 
 
 def test_skips_when_secret_unset(monkeypatch):
+    monkeypatch.setattr(captcha.settings, "TURNSTILE_SITE_KEY", "test-site-key")
     monkeypatch.setattr(captcha.settings, "TURNSTILE_SECRET_KEY", "")
+    monkeypatch.setattr(captcha.httpx, "AsyncClient", make_client(error=AssertionError))
+    assert verify(None) is None
+
+
+def test_skips_when_only_secret_is_set(monkeypatch):
+    monkeypatch.setattr(captcha.settings, "TURNSTILE_SITE_KEY", "")
+    monkeypatch.setattr(captcha.settings, "TURNSTILE_SECRET_KEY", "test-secret")
     monkeypatch.setattr(captcha.httpx, "AsyncClient", make_client(error=AssertionError))
     assert verify(None) is None
 

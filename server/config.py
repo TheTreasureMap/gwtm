@@ -58,9 +58,7 @@ class Settings(BaseSettings):
     )
 
     # External services
-    # Cloudflare Turnstile. The secret enables server-side verification on
-    # register and resend-verification. The site key is public and is served to
-    # the register page by GET /auth/captcha-config.
+    # Site key is served to the frontend via GET /auth/captcha-config, not read directly.
     TURNSTILE_SITE_KEY: str = Field("", env="TURNSTILE_SITE_KEY")
     TURNSTILE_SECRET_KEY: str = Field("", env="TURNSTILE_SECRET_KEY")
     ZENODO_ACCESS_KEY: str = Field("", env="ZENODO_ACCESS_KEY")

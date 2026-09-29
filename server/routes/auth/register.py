@@ -31,12 +31,7 @@ router = APIRouter(tags=["authentication"])
 
 @router.get("/captcha-config", response_model=CaptchaConfigResponse)
 async def captcha_config():
-    """
-    Public captcha settings for the register page.
-
-    The frontend is a static bundle, so it cannot read the site key from its
-    own environment. An empty key means no widget should be shown.
-    """
+    """Site key for the register widget. Served here since the built frontend has no env at runtime."""
     return CaptchaConfigResponse(turnstile_site_key=settings.TURNSTILE_SITE_KEY)
 
 
@@ -51,7 +46,7 @@ async def register(
 
     Creates a new user account with email verification required.
     The user will receive a verification email to activate their account.
-    Requires `turnstile_token` when TURNSTILE_SECRET_KEY is configured.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
     await verify_captcha(register_data.turnstile_token)
 
@@ -197,7 +192,7 @@ async def resend_verification_email(
 
     Returns the same generic response regardless of whether the email exists
     or whether the account is already verified, to avoid leaking account state.
-    Requires `turnstile_token` when TURNSTILE_SECRET_KEY is configured.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
     await verify_captcha(resend_data.turnstile_token)
 
