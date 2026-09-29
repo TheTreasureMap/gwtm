@@ -43,9 +43,17 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     if not user.verified:
+        # 403, not 401: the password already matched, so the caller is who they
+        # say they are, they're just not allowed in yet. That distinction (and
+        # the email, safe to return since the password proved ownership) lets
+        # the frontend offer a "resend verification" action instead of just
+        # showing the same generic error as a bad password.
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account not verified. Please check your email for a verification link.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": "Account not verified. Please check your email for a verification link.",
+                "email": user.email,
+            },
         )
 
     # Create access token

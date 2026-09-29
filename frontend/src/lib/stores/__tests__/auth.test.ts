@@ -136,14 +136,40 @@ describe('auth store', () => {
 			expect(goto).not.toHaveBeenCalled();
 		});
 
-		it('surfaces the server detail when the request fails', async () => {
-			authApi.login.mockRejectedValue(httpError({ data: { detail: 'Account not verified' } }));
+		it('surfaces the server message when the request fails', async () => {
+			// Errors come back as {message: ...}, not {detail: ...}, see
+			// server/main.py's HTTPException handler.
+			authApi.login.mockRejectedValue(
+				httpError({ status: 401, data: { message: 'Invalid username or password' } })
+			);
 			const auth = await loadAuth();
 
 			const result = await auth.login('ada', 'secret');
 
-			expect(result).toEqual({ success: false, error: 'Account not verified' });
-			expect(showToast).toHaveBeenCalledWith('Account not verified', { type: 'error' });
+			expect(result).toEqual({
+				success: false,
+				error: 'Invalid username or password',
+				unverifiedEmail: undefined
+			});
+			expect(showToast).toHaveBeenCalledWith('Invalid username or password', { type: 'error' });
+		});
+
+		it('surfaces the account email for a resend prompt when unverified', async () => {
+			authApi.login.mockRejectedValue(
+				httpError({
+					status: 403,
+					data: { message: 'Account not verified', email: 'ada@example.com' }
+				})
+			);
+			const auth = await loadAuth();
+
+			const result = await auth.login('ada', 'secret');
+
+			expect(result).toEqual({
+				success: false,
+				error: 'Account not verified',
+				unverifiedEmail: 'ada@example.com'
+			});
 		});
 
 		it('falls back to a generic message when the server gives no detail', async () => {
