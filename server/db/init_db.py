@@ -17,7 +17,7 @@ def create_database_tables():
 
     # If environment variables are provided, create a custom engine
     if all([db_user, db_pwd, db_name, db_host, db_port]):
-        database_url = f"postgresql://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}"
+        database_url = f"postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}"
         engine = create_engine(database_url)
     else:
         # Use the default engine from FastAPI database configuration
@@ -35,7 +35,7 @@ def create_database_tables():
 
     # Determine the correct database URL
     if all([db_user, db_pwd, db_name, db_host, db_port]):
-        db_url = f"postgresql://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}"
+        db_url = f"postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}"
     else:
         from server.config import settings
 
