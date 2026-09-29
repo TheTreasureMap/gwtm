@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -215,3 +216,52 @@ async def send_verification_email(
     else:
         logger.warning("Email not configured — skipping verification email to %s", email)
     return True
+
+
+async def send_registration_notification(new_user_email: str, new_user_username: str) -> None:
+    """
+    Notify the configured admin addresses that a new user registered.
+
+    Best-effort: failures are logged and swallowed per recipient so a
+    notification problem never blocks registration for the user.
+    """
+    admin_emails = [addr for addr in settings.ADMIN_EMAILS if addr]
+    if not admin_emails:
+        return
+
+    if not RESEND_API_KEY and not SMTP_SERVER:
+        logger.info("Email not configured — skipping registration notification to admins")
+        return
+
+    subject = "New GWTM registration"
+    text_content = (
+        f"A new user registered on GWTM.\n\nUsername: {new_user_username}\nEmail: {new_user_email}"
+    )
+    safe_username = html.escape(new_user_username)
+    safe_email = html.escape(new_user_email)
+    html_content = (
+        f"<p>A new user registered on GWTM.</p>"
+        f"<p><strong>Username:</strong> {safe_username}<br>"
+        f"<strong>Email:</strong> {safe_email}</p>"
+    )
+
+    async def notify(admin_email: str) -> None:
+        try:
+            if RESEND_API_KEY:
+                await asyncio.to_thread(
+                    _send_resend, admin_email, subject, html_content, text_content
+                )
+            else:
+                message = MIMEMultipart("alternative")
+                message["Subject"] = subject
+                message["From"] = SENDER_EMAIL
+                message["To"] = admin_email
+                message.attach(MIMEText(text_content, "plain"))
+                message.attach(MIMEText(html_content, "html"))
+                await asyncio.to_thread(_send_smtp, admin_email, message.as_string())
+        except Exception:
+            logger.exception(
+                "Failed to send registration notification to admin %s", admin_email
+            )
+
+    await asyncio.gather(*(notify(addr) for addr in admin_emails))

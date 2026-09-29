@@ -18,6 +18,9 @@ interface AuthResult {
 	success: boolean;
 	error?: string;
 	user?: UserProfile;
+	// Set when login failed because the account isn't verified yet, carries the
+	// address to offer a "resend verification email" action for.
+	unverifiedEmail?: string;
 }
 
 function createAuthStore() {
@@ -92,9 +95,13 @@ function createAuthStore() {
 			}
 		} catch (err) {
 			console.error('Login failed:', err);
-			const errorMessage =
-				(err as { response?: { data?: { detail?: string } } }).response?.data?.detail ||
-				'Invalid credentials. Please try again.';
+			// Errors from the API come back as {message: ...}, not {detail: ...}
+			// (see server/main.py's HTTPException handler).
+			const response = (
+				err as { response?: { status?: number; data?: { message?: string; email?: string } } }
+			).response;
+			const errorMessage = response?.data?.message || 'Invalid credentials. Please try again.';
+			const unverifiedEmail = response?.status === 403 ? response?.data?.email : undefined;
 			errorHandler.showToast(errorMessage, { type: 'error' });
 			update((state) => ({
 				...state,
@@ -103,7 +110,7 @@ function createAuthStore() {
 				token: null,
 				loading: false
 			}));
-			return { success: false, error: errorMessage };
+			return { success: false, error: errorMessage, unverifiedEmail };
 		}
 	};
 
