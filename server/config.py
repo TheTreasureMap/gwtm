@@ -110,8 +110,8 @@ class Settings(BaseSettings):
     # Database URL
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        """Generate the database URI from component settings."""
-        return f"postgresql://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        """Database URI, with the driver named explicitly since SQLAlchemy's default DBAPI for a bare postgresql:// isn't stable across versions."""
+        return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # Admin emails
     @property
