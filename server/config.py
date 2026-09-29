@@ -58,9 +58,7 @@ class Settings(BaseSettings):
     )
 
     # External services
-    # Cloudflare Turnstile. The secret enables server-side verification on
-    # register, resend-verification and forgot-password. The site key is public
-    # and is served to those forms by GET /auth/captcha-config.
+    # Site key is served to the frontend via GET /auth/captcha-config, not read directly.
     TURNSTILE_SITE_KEY: str = Field("", env="TURNSTILE_SITE_KEY")
     TURNSTILE_SECRET_KEY: str = Field("", env="TURNSTILE_SECRET_KEY")
     ZENODO_ACCESS_KEY: str = Field("", env="ZENODO_ACCESS_KEY")
@@ -113,8 +111,8 @@ class Settings(BaseSettings):
     # Database URL
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        """Generate the database URI from component settings."""
-        return f"postgresql://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        """Database URI, with the driver named explicitly since SQLAlchemy's default DBAPI for a bare postgresql:// isn't stable across versions."""
+        return f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PWD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # Admin emails
     @property

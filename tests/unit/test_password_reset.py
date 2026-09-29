@@ -156,8 +156,12 @@ def test_forgot_sends_email_for_known_address(sent):
 
 
 def test_forgot_gives_same_response_for_unknown_address(sent):
-    known = client_for(FakeDB(make_user())).post(FORGOT_URL, json={"email": "alice@example.com"})
-    unknown = client_for(FakeDB(None)).post(FORGOT_URL, json={"email": "nobody@example.com"})
+    known = client_for(FakeDB(make_user())).post(
+        FORGOT_URL, json={"email": "alice@example.com"}
+    )
+    unknown = client_for(FakeDB(None)).post(
+        FORGOT_URL, json={"email": "nobody@example.com"}
+    )
 
     assert unknown.status_code == known.status_code == 200
     assert unknown.json() == known.json()
@@ -165,6 +169,7 @@ def test_forgot_gives_same_response_for_unknown_address(sent):
 
 
 def test_forgot_requires_captcha_before_any_db_query(monkeypatch, sent):
+    monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "test-site-key")
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
     db = FakeDB(make_user())
 
@@ -211,7 +216,8 @@ def test_reset_rotates_api_token_when_asked():
     token = tokens.generate_reset_token(user.id, user.password_hash)
 
     response = client_for(FakeDB(user)).post(
-        RESET_URL, json={"token": token, "password": NEW_PASSWORD, "rotate_api_token": True}
+        RESET_URL,
+        json={"token": token, "password": NEW_PASSWORD, "rotate_api_token": True},
     )
 
     assert response.status_code == 200
@@ -233,7 +239,9 @@ def test_reset_link_works_only_once():
 def test_reset_verifies_unverified_account():
     user = make_user(verified=False)
 
-    response = reset(FakeDB(user), tokens.generate_reset_token(user.id, user.password_hash))
+    response = reset(
+        FakeDB(user), tokens.generate_reset_token(user.id, user.password_hash)
+    )
 
     assert response.status_code == 200
     assert user.verified is True
@@ -245,7 +253,9 @@ def test_reset_rejects_weak_password():
     user = make_user()
     db = FakeDB(user)
 
-    response = reset(db, tokens.generate_reset_token(user.id, user.password_hash), "weak")
+    response = reset(
+        db, tokens.generate_reset_token(user.id, user.password_hash), "weak"
+    )
 
     assert response.status_code == 400
     assert user.check_password("OldPassw0rd")
@@ -283,7 +293,9 @@ def test_reset_rejects_unknown_user():
 def test_reset_email_escapes_username(monkeypatch):
     sent = {}
     monkeypatch.setattr(email, "RESEND_API_KEY", "key")
-    monkeypatch.setattr(email, "_send_resend", lambda to, subject, html, text: sent.update(html=html))
+    monkeypatch.setattr(
+        email, "_send_resend", lambda to, subject, html, text: sent.update(html=html)
+    )
 
     asyncio.run(email.send_password_reset_email("a@example.com", "<b>bob</b>", "TOKEN"))
 

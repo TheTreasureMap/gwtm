@@ -23,6 +23,19 @@ export const authService = {
 		return response;
 	},
 
+	// Public, unauthenticated resend. Used from the login page when a user
+	// with correct credentials hits the "not verified" error.
+	resendVerification: async (
+		email: string,
+		turnstileToken?: string
+	): Promise<AxiosResponse<RegisterResponse>> => {
+		const response = await client.post<RegisterResponse>('/api/v1/auth/resend-verification', {
+			email,
+			turnstile_token: turnstileToken
+		});
+		return response;
+	},
+
 	register: async (userData: {
 		email: string;
 		password: string;

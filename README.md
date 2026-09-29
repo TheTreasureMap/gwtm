@@ -22,8 +22,7 @@ present:
     ZENODO_ACCESS_KEY
     REDIS_URL
 
-    # Cloudflare Turnstile captcha on registration and password reset (optional). It is enforced only
-    # when TURNSTILE_SECRET_KEY is set. Set both keys together.
+    # Cloudflare Turnstile captcha (optional). Enforced only when both are set.
     TURNSTILE_SITE_KEY
     TURNSTILE_SECRET_KEY
 
@@ -51,6 +50,7 @@ Env vars can be set by using export:
 
 ```bash
 export MAIL_PASSWORD=ASecretPassword
+export TURNSTILE_SITE_KEY=ASitePublicKey
 export TURNSTILE_SECRET_KEY=ASecretPassword2
 ```
 Or by using a utility like [direnv](https://direnv.net).

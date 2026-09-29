@@ -3,7 +3,7 @@
 import logging
 import secrets
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
@@ -21,7 +21,7 @@ from server.schemas.auth import (
     AuthErrorResponse,
 )
 from server.utils.captcha import verify_captcha
-from server.utils.email import send_verification_email
+from server.utils.email import send_verification_email, send_registration_notification
 from server.utils.tokens import generate_verification_token, decode_verification_token
 
 logger = logging.getLogger(__name__)
@@ -31,23 +31,22 @@ router = APIRouter(tags=["authentication"])
 
 @router.get("/captcha-config", response_model=CaptchaConfigResponse)
 async def captcha_config():
-    """
-    Public captcha settings for the register, resend and forgot-password forms.
-
-    The frontend is a static bundle, so it cannot read the site key from its
-    own environment. An empty key means no widget should be shown.
-    """
+    """Turnstile site key. Served here since the built frontend has no env at runtime."""
     return CaptchaConfigResponse(turnstile_site_key=settings.TURNSTILE_SITE_KEY)
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(register_data: RegisterRequest, db: Session = Depends(get_db)):
+async def register(
+    register_data: RegisterRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Register a new user account.
 
     Creates a new user account with email verification required.
     The user will receive a verification email to activate their account.
-    Requires `turnstile_token` when TURNSTILE_SECRET_KEY is configured.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
     await verify_captcha(register_data.turnstile_token)
 
@@ -100,6 +99,12 @@ async def register(register_data: RegisterRequest, db: Session = Depends(get_db)
         except Exception:
             email_sent = False
             logger.exception("Failed to send verification email to %s", new_user.email)
+
+        # Backgrounded: the registering user has no stake in whether the admin
+        # notification succeeds or how long it takes to send.
+        background_tasks.add_task(
+            send_registration_notification, new_user.email, new_user.username
+        )
 
         message = (
             "Registration successful! Please check your email to verify your account before logging in."
@@ -187,7 +192,7 @@ async def resend_verification_email(
 
     Returns the same generic response regardless of whether the email exists
     or whether the account is already verified, to avoid leaking account state.
-    Requires `turnstile_token` when TURNSTILE_SECRET_KEY is configured.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
     await verify_captcha(resend_data.turnstile_token)
 

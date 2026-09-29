@@ -55,6 +55,7 @@ def client(db):
 
 @pytest.fixture
 def secret(monkeypatch):
+    monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "test-site-key")
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
 
 
@@ -103,6 +104,15 @@ def test_resend_with_accepted_token_proceeds(secret, client, monkeypatch):
 
 def test_resend_skips_captcha_when_secret_unset(monkeypatch, client):
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "")
+
+    response = client.post("/api/v1/auth/resend-verification", json=RESEND_BODY)
+
+    assert response.status_code == 200
+
+
+def test_resend_skips_captcha_when_only_secret_is_configured(monkeypatch, client):
+    monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "")
+    monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
 
     response = client.post("/api/v1/auth/resend-verification", json=RESEND_BODY)
 

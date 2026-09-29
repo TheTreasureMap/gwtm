@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 TIMEOUT_SECONDS = 3
 
-# Error codes that point at our configuration or Cloudflare rather than the
-# visitor. They fail closed like any other outage, but are logged at error level
-# so a bad secret is noticed instead of looking like every user failing.
+# Our/Cloudflare's fault, not the visitor's, so treated as an outage (503) not a rejection.
 UNAVAILABLE_CODES = ("missing-input-secret", "invalid-input-secret", "internal-error")
 
 
@@ -28,13 +26,11 @@ def _unavailable() -> HTTPException:
 
 async def verify_captcha(token: Optional[str]) -> None:
     """
-    Raise 400 if the Turnstile token is missing or rejected, 503 if Cloudflare
-    cannot be reached or the secret is unusable (fail closed, so an induced
-    outage does not open signup).
-
-    No-op when TURNSTILE_SECRET_KEY is unset, so dev and CI run without keys.
+    No-op unless both Turnstile keys are set: a lone secret would enforce with
+    no widget ever rendered, blocking every submission.
+    Fails closed on a provider error, not open, so an induced outage can't bypass it.
     """
-    if not settings.TURNSTILE_SECRET_KEY:
+    if not (settings.TURNSTILE_SITE_KEY and settings.TURNSTILE_SECRET_KEY):
         return
 
     if not token:

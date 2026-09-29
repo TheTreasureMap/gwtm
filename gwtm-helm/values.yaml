@@ -134,7 +134,7 @@ secrets:
   azureAccountKey: ""
   storageBucketSource: "s3"
   
-  # Cloudflare Turnstile keys. Captcha is enforced only when the secret key is set.
+  # Cloudflare Turnstile keys. Captcha is enforced only when both are set.
   turnstileSiteKey: ""
   turnstileSecretKey: ""
   
