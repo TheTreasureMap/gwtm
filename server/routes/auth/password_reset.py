@@ -2,6 +2,7 @@
 
 import logging
 import secrets
+import time
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
@@ -28,12 +29,23 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["authentication"])
 
-INVALID_LINK = "This reset link is invalid or has already been used. Please request a new one."
+INVALID_LINK = (
+    "This reset link is invalid or has already been used. Please request a new one."
+)
+
+COOLDOWN_SECONDS = 60
+
+# ponytail: per-process, so a 2-replica deployment gives an attacker roughly
+# 2x this rate, and a restart clears it. Move to Redis (already a required
+# env var, REDIS_URL, unused today) if this needs to hold under real abuse.
+_last_reset_request: dict[str, float] = {}
 
 
 async def _send_reset_email(email: str, username: str, token: str) -> None:
     try:
-        await send_password_reset_email(email=email, username=username, reset_token=token)
+        await send_password_reset_email(
+            email=email, username=username, reset_token=token
+        )
     except Exception:
         logger.exception("Failed to send password reset email to %s", email)
 
@@ -47,21 +59,24 @@ async def forgot_password(
     """
     Email a password reset link.
 
-    Returns the same response whether or not the email is registered, and sends
-    the email after the response so timing does not reveal it either.
-    Requires `turnstile_token` when TURNSTILE_SECRET_KEY is configured.
+    Returns the same response whether or not the email is registered or on
+    cooldown, and sends the email after the response so timing does not
+    reveal it either. Requires `turnstile_token` when both Turnstile keys
+    are configured.
     """
     await verify_captcha(request_data.turnstile_token)
 
+    email = request_data.email.strip().lower()
     # Emails are stored as typed at registration, so match case-insensitively.
-    user = (
-        db.query(Users)
-        .filter(func.lower(Users.email) == request_data.email.strip().lower())
-        .first()
-    )
+    user = db.query(Users).filter(func.lower(Users.email) == email).first()
     if user:
-        token = generate_reset_token(user.id, user.password_hash)
-        background_tasks.add_task(_send_reset_email, user.email, user.username, token)
+        now = time.monotonic()
+        if now - _last_reset_request.get(email, 0) >= COOLDOWN_SECONDS:
+            _last_reset_request[email] = now
+            token = generate_reset_token(user.id, user.password_hash)
+            background_tasks.add_task(
+                _send_reset_email, user.email, user.username, token
+            )
 
     return MessageResponse(
         message=(
@@ -72,7 +87,9 @@ async def forgot_password(
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-async def reset_password(reset_data: ResetPasswordRequest, db: Session = Depends(get_db)):
+async def reset_password(
+    reset_data: ResetPasswordRequest, db: Session = Depends(get_db)
+):
     """
     Set a new password from an emailed reset link.
 
@@ -92,13 +109,17 @@ async def reset_password(reset_data: ResetPasswordRequest, db: Session = Depends
             detail="This reset link has expired. Please request a new one.",
         )
     except InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK
+        )
 
     # Row lock: a concurrent use of the same link waits here, then sees the new
     # hash and fails the fingerprint check, keeping the link single use.
     user = db.query(Users).filter(Users.id == user_id).with_for_update().first()
     if not user or not reset_token_matches(fingerprint, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=INVALID_LINK
+        )
 
     user.set_password(reset_data.password)
     if not user.verified:

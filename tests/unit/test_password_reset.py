@@ -71,6 +71,11 @@ def no_captcha(monkeypatch):
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "")
 
 
+@pytest.fixture(autouse=True)
+def clear_cooldown():
+    password_reset._last_reset_request.clear()
+
+
 @pytest.fixture
 def sent(monkeypatch):
     calls = []
@@ -166,6 +171,31 @@ def test_forgot_gives_same_response_for_unknown_address(sent):
     assert unknown.status_code == known.status_code == 200
     assert unknown.json() == known.json()
     assert len(sent) == 1
+
+
+def test_forgot_cooldown_blocks_a_repeat_request(sent):
+    db = FakeDB(make_user())
+    client = client_for(db)
+
+    first = client.post(FORGOT_URL, json={"email": "alice@example.com"})
+    second = client.post(FORGOT_URL, json={"email": "alice@example.com"})
+
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    assert len(sent) == 1
+
+
+def test_forgot_cooldown_expires(monkeypatch, sent):
+    db = FakeDB(make_user())
+    client = client_for(db)
+    clock = [1000.0]
+    monkeypatch.setattr(password_reset.time, "monotonic", lambda: clock[0])
+
+    client.post(FORGOT_URL, json={"email": "alice@example.com"})
+    clock[0] += password_reset.COOLDOWN_SECONDS
+    client.post(FORGOT_URL, json={"email": "alice@example.com"})
+
+    assert len(sent) == 2
 
 
 def test_forgot_requires_captcha_before_any_db_query(monkeypatch, sent):
