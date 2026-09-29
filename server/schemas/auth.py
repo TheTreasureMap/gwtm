@@ -1,6 +1,6 @@
 """Authentication schemas for login/logout endpoints."""
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -76,6 +76,7 @@ class RegisterRequest(BaseModel):
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    turnstile_token: Optional[str] = Field(None, max_length=2048)
 
     @field_validator("username")
     @classmethod
@@ -127,6 +128,19 @@ class RegisterRequest(BaseModel):
         if v and len(v.strip()) > 100:
             raise ValueError("Name must be no more than 100 characters long")
         return v.strip() if v else None
+
+
+class ResendVerificationRequest(BaseModel):
+    """Request schema for the public resend-verification endpoint."""
+
+    email: str
+    turnstile_token: Optional[str] = Field(None, max_length=2048)
+
+
+class CaptchaConfigResponse(BaseModel):
+    """Public captcha settings the register page needs to render the widget."""
+
+    turnstile_site_key: str
 
 
 class RegisterResponse(BaseModel):

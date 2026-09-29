@@ -58,8 +58,9 @@ class Settings(BaseSettings):
     )
 
     # External services
-    RECAPTCHA_PUBLIC_KEY: str = Field("", env="RECAPTCHA_PUBLIC_KEY")
-    RECAPTCHA_PRIVATE_KEY: str = Field("", env="RECAPTCHA_PRIVATE_KEY")
+    # Site key is served to the frontend via GET /auth/captcha-config, not read directly.
+    TURNSTILE_SITE_KEY: str = Field("", env="TURNSTILE_SITE_KEY")
+    TURNSTILE_SECRET_KEY: str = Field("", env="TURNSTILE_SECRET_KEY")
     ZENODO_ACCESS_KEY: str = Field("", env="ZENODO_ACCESS_KEY")
 
     # AWS settings
