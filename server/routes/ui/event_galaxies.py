@@ -25,14 +25,19 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
 
     # Resolve alternate IDs to canonical graceid
     from server.db.models.gw_alert import GWAlert
+
     graceid = GWAlert.graceidfromalternate(alertid, db)
     if graceid != alertid:
-        logger.info("[Galaxy debug] resolved alternateid %s -> graceid %s", alertid, graceid)
+        logger.info(
+            "[Galaxy debug] resolved alternateid %s -> graceid %s", alertid, graceid
+        )
 
     # Get galaxy lists for this alert
     gal_lists = db.query(GWGalaxyList).filter(GWGalaxyList.graceid == graceid).all()
 
-    logger.info("[Galaxy debug] found %d galaxy lists for graceid=%s", len(gal_lists), graceid)
+    logger.info(
+        "[Galaxy debug] found %d galaxy lists for graceid=%s", len(gal_lists), graceid
+    )
 
     if not gal_lists:
         return event_galaxies
@@ -64,29 +69,33 @@ async def ajax_event_galaxies(alertid: str, db: Session = Depends(get_db)):
         rank_list = []
         info_list = []
 
-
         for e in entries:
             ra, dec = sanatize_pointing(e.position)
-            
+
             name_list.append(e.name)
             ra_list.append(ra)
             dec_list.append(dec)
             rank_list.append(e.rank)
             info_list.append(sanatize_gal_info(e, glist, ra, dec))
 
-        df = pd.DataFrame({'name': name_list, 
-                            'ra':ra_list, 'dec':dec_list, 'rank':rank_list, 'info':info_list})
-        
-        df.sort_values(by=['rank'], inplace=True, ignore_index=True)
-        
-        df.drop(columns = 'rank', inplace = True)
+        df = pd.DataFrame(
+            {
+                "name": name_list,
+                "ra": ra_list,
+                "dec": dec_list,
+                "rank": rank_list,
+                "info": info_list,
+            }
+        )
 
-        markers = df.to_dict('records')
+        df.sort_values(by=["rank"], inplace=True, ignore_index=True)
+
+        df.drop(columns="rank", inplace=True)
+
+        markers = df.to_dict("records")
 
         event_galaxies.append(
-            {"name": glist.groupname, 
-             "color": "", 
-             "markers": markers}
+            {"name": glist.groupname, "color": "", "markers": markers}
         )
 
     logger.info(

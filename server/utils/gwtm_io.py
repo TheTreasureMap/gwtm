@@ -123,6 +123,7 @@ def download_gwtm_file(filename, source="s3", config=None, decode=True):
     # download it directly rather than routing through the storage backend.
     if filename and filename.startswith(("http://", "https://")):
         import requests
+
         response = requests.get(filename, timeout=60)
         response.raise_for_status()
         content = response.content
