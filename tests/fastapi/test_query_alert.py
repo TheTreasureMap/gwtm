@@ -91,6 +91,54 @@ class TestEventEndpoints:
             assert alert["graceid"] == "S190425z"
             assert alert["alert_type"] == "Initial"
 
+    def test_query_alerts_by_timesent(self):
+        """Test querying alerts filtered on timesent (before, after, and exact)"""
+        # Exact timesent of S190425z in test data
+        timesent = datetime.fromisoformat("2019-04-25T08:18:26")
+        response = requests.get(
+            self.get_url("/query_alerts"),
+            params={"timesent": timesent},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+        # All returned alerts should have the specified timesent
+        for alert in data:
+            assert datetime.fromisoformat(alert["timesent"]) == timesent
+
+        timesent_after = datetime.fromisoformat("2020-01-01T00:00:00")
+        response = requests.get(
+            self.get_url("/query_alerts"),
+            params={"timesent_after": timesent_after},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+        # All returned alerts should have been sent on or after timesent_after
+        for alert in data:
+            assert datetime.fromisoformat(alert["timesent"]) >= timesent_after
+
+        timesent_before = datetime.fromisoformat("2020-01-01T00:00:00")
+        response = requests.get(
+            self.get_url("/query_alerts"),
+            params={"timesent_before": timesent_before},
+            headers={"api_token": self.admin_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) > 0
+        # All returned alerts should have been sent on or before timesent_before
+        for alert in data:
+            assert datetime.fromisoformat(alert["timesent"]) <= timesent_before
+
     def test_post_alert(self):
         """Test posting a new alert (admin only)."""
         alert_data = {
