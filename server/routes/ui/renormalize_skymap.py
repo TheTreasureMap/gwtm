@@ -89,6 +89,7 @@ async def renormalize_skymap(
     # Depth filter
     if depth_unit and depth_unit not in ("None", ""):
         from server.core.enums.depthunit import DepthUnit as depth_unit_enum
+
         try:
             unit_enum = depth_unit_enum[depth_unit]
             pointing_filter.append(Pointing.depth_unit == unit_enum)
@@ -104,24 +105,28 @@ async def renormalize_skymap(
     # Spectral range filter
     if spec_range_low and spec_range_high and spec_range_type:
         from server.utils.spectral import SpectralRangeHandler
+
         try:
             if isFloat(spec_range_low) and isFloat(spec_range_high):
                 slow = float(spec_range_low)
                 shigh = float(spec_range_high)
                 if spec_range_type == "wavelength":
                     from server.core.enums.wavelengthunits import WavelengthUnits as wu
+
                     unit = [x for x in wu if spec_range_unit == x.name][0]
                     slow *= wu.get_scale(unit)
                     shigh *= wu.get_scale(unit)
                     stype = SpectralRangeHandler.spectralrangetype.wavelength
                 elif spec_range_type == "energy":
                     from server.core.enums.energyunits import EnergyUnits as eu
+
                     unit = [x for x in eu if spec_range_unit == x.name][0]
                     slow *= eu.get_scale(unit)
                     shigh *= eu.get_scale(unit)
                     stype = SpectralRangeHandler.spectralrangetype.energy
                 elif spec_range_type == "frequency":
                     from server.core.enums.frequencyunits import FrequencyUnits as fu
+
                     unit = [x for x in fu if spec_range_unit == x.name][0]
                     slow *= fu.get_scale(unit)
                     shigh *= fu.get_scale(unit)
@@ -154,11 +159,15 @@ async def renormalize_skymap(
     # Get skymap URL from the specific alert version (fall back to most-recent if not provided)
     if alert_id is not None:
         specific_alert = db.query(GWAlert).filter(GWAlert.id == alert_id).first()
-        mappathinfo = specific_alert.skymap_fits_url if specific_alert else alert.skymap_fits_url
+        mappathinfo = (
+            specific_alert.skymap_fits_url if specific_alert else alert.skymap_fits_url
+        )
     else:
         mappathinfo = alert.skymap_fits_url
     if not mappathinfo:
-        raise HTTPException(status_code=400, detail="No skymap URL found for this alert")
+        raise HTTPException(
+            status_code=400, detail="No skymap URL found for this alert"
+        )
 
     # Cache key based on pointing IDs + params
     pointing_ids = sorted([p.id for p in pointings_sorted])
@@ -205,9 +214,15 @@ async def renormalize_skymap(
     for p in pointings_sorted:
         ra, dec = sanatize_pointing(p.position)
         if approx_cov == 1 and p.instrumentid in approx_dict:
-            fp_ccds = [x.footprint for x in footprintinfo if x.instrumentid == approx_dict[p.instrumentid]]
+            fp_ccds = [
+                x.footprint
+                for x in footprintinfo
+                if x.instrumentid == approx_dict[p.instrumentid]
+            ]
         else:
-            fp_ccds = [x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid]
+            fp_ccds = [
+                x.footprint for x in footprintinfo if x.instrumentid == p.instrumentid
+            ]
         for ccd in sanatize_footprint_ccds(fp_ccds):
             footprint = project_footprint(ccd, ra, dec, p.pos_angle)
             ras_poly = [x[0] for x in footprint][:-1]
@@ -326,9 +341,11 @@ def _calculate_contours(prob_map: "np.ndarray", nside: int) -> list:
             theta, phi = hp.vec2ang(corners.T)
             ra = np.degrees(phi)
             dec = 90.0 - np.degrees(theta)
-            contours.append({
-                "polygon": [[float(r), float(d)] for r, d in zip(ra, dec)],
-                "time": 0,
-            })
+            contours.append(
+                {
+                    "polygon": [[float(r), float(d)] for r, d in zip(ra, dec)],
+                    "time": 0,
+                }
+            )
 
     return contours

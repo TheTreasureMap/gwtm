@@ -23,7 +23,9 @@ async def delete_doi_author_group(
         .first()
     )
     if not group:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Author group not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Author group not found"
+        )
 
     db.query(DOIAuthor).filter(DOIAuthor.author_groupid == group_id).delete()
     db.delete(group)
