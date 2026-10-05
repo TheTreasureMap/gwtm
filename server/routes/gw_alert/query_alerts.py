@@ -24,8 +24,8 @@ async def query_alerts(
     graceid: Optional[str] = None,
     alert_type: Optional[str] = None,
     role: Optional[str] = None,
-    start_time: Optional[datetime] = Query(None, description= "Filter by events with timesent greater than start_time"),
-    end_time: Optional[datetime] = Query(None, description= "Filter by events with timesent less than end_time"),
+    timesent_after: Optional[datetime] = Query(None, description= "Filter by events with timesent after or equal to timesent_after"),
+    timesent_before: Optional[datetime] = Query(None, description= "Filter by events with timesent before or equal to timesent_before"),
     timesent: Optional[datetime] = None,
     observing_run: Optional[str] = None,
     far: Optional[str] = Query(
@@ -100,11 +100,11 @@ async def query_alerts(
     if timesent:
         filter_conditions.append(GWAlert.timesent == timesent)
 
-    if start_time:
-        filter_conditions.append(GWAlert.timesent >= start_time)
+    if timesent_after:
+        filter_conditions.append(GWAlert.timesent >= timesent_after)
     
-    if end_time:
-        filter_conditions.append(GWAlert.timesent <= end_time)
+    if timesent_before:
+        filter_conditions.append(GWAlert.timesent <= timesent_before)
 
     if observing_run and observing_run != "all":
         filter_conditions.append(GWAlert.observing_run == observing_run)
