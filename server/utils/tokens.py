@@ -22,7 +22,9 @@ def generate_verification_token(user_id: int) -> str:
         "uid": user_id,
         "exp": datetime.now(timezone.utc) + timedelta(hours=EMAIL_TOKEN_EXPIRE_HOURS),
     }
-    token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
     if len(token) > _VERIFICATION_KEY_MAX_LEN:
         raise RuntimeError(
             f"Generated verification JWT ({len(token)} chars) exceeds the "

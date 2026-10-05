@@ -40,12 +40,16 @@ def _send_resend(recipient: str, subject: str, html: str, text: str) -> None:
 def _send_smtp(recipient: str, message_str: str) -> None:
     """Blocking SMTP send. Caller is responsible for offloading to a worker thread."""
     if settings.MAIL_USE_SSL:
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS) as server:
+        with smtplib.SMTP_SSL(
+            SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS
+        ) as server:
             if SMTP_USERNAME and SMTP_PASSWORD:
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient, message_str)
     else:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS) as server:
+        with smtplib.SMTP(
+            SMTP_SERVER, SMTP_PORT, timeout=SMTP_TIMEOUT_SECONDS
+        ) as server:
             if settings.MAIL_USE_TLS:
                 server.starttls()
             if SMTP_USERNAME and SMTP_PASSWORD:
@@ -211,14 +215,20 @@ async def send_verification_email(
     if settings.DEVELOPMENT_MODE:
         # Dev fallback only: log the full URL so developers can verify manually.
         logger.warning(
-            "Email not configured — verification URL for %s: %s", email, verification_url
+            "Email not configured — verification URL for %s: %s",
+            email,
+            verification_url,
         )
     else:
-        logger.warning("Email not configured — skipping verification email to %s", email)
+        logger.warning(
+            "Email not configured — skipping verification email to %s", email
+        )
     return True
 
 
-async def send_registration_notification(new_user_email: str, new_user_username: str) -> None:
+async def send_registration_notification(
+    new_user_email: str, new_user_username: str
+) -> None:
     """
     Notify the configured admin addresses that a new user registered.
 
@@ -230,13 +240,13 @@ async def send_registration_notification(new_user_email: str, new_user_username:
         return
 
     if not RESEND_API_KEY and not SMTP_SERVER:
-        logger.info("Email not configured — skipping registration notification to admins")
+        logger.info(
+            "Email not configured — skipping registration notification to admins"
+        )
         return
 
     subject = "New GWTM registration"
-    text_content = (
-        f"A new user registered on GWTM.\n\nUsername: {new_user_username}\nEmail: {new_user_email}"
-    )
+    text_content = f"A new user registered on GWTM.\n\nUsername: {new_user_username}\nEmail: {new_user_email}"
     safe_username = html.escape(new_user_username)
     safe_email = html.escape(new_user_email)
     html_content = (
