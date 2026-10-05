@@ -45,9 +45,9 @@ async def delete_pointings(
             PointingEvent.pointingid.in_(deleted_ids)
         ).delete(synchronize_session=False)
 
-        db.query(Pointing).filter(
-            Pointing.id.in_(deleted_ids)
-        ).delete(synchronize_session=False)
+        db.query(Pointing).filter(Pointing.id.in_(deleted_ids)).delete(
+            synchronize_session=False
+        )
 
         db.commit()
 

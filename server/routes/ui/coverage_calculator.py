@@ -53,6 +53,7 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
     # If mappathinfo not supplied by the frontend, look it up from the DB
     if not mappathinfo:
         from server.db.models.gw_alert import GWAlert
+
         alert = db.query(GWAlert).filter(GWAlert.graceid == graceid).first()
         if not alert:
             alert = db.query(GWAlert).filter(GWAlert.alternateid == graceid).first()
@@ -69,10 +70,17 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
         )
         if alert_row:
             mappathinfo = alert_row.skymap_fits_url
-            logger.info("coverage_calculator: resolved mappathinfo from DB: %s", mappathinfo)
+            logger.info(
+                "coverage_calculator: resolved mappathinfo from DB: %s", mappathinfo
+            )
         else:
-            logger.warning("coverage_calculator: no skymap_fits_url found in DB for graceid=%s", graceid)
-            raise HTTPException(status_code=400, detail="No skymap URL found for this alert")
+            logger.warning(
+                "coverage_calculator: no skymap_fits_url found in DB for graceid=%s",
+                graceid,
+            )
+            raise HTTPException(
+                status_code=400, detail="No skymap URL found for this alert"
+            )
 
     inst_cov = data.get("inst_cov", "")
     band_cov = data.get("band_cov", "")
@@ -93,7 +101,11 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
     # Try to get from cache first
     cached_result = get_cached_file(cache_key, settings)
     if cached_result:
-        result_data = json.loads(cached_result) if isinstance(cached_result, str) else cached_result
+        result_data = (
+            json.loads(cached_result)
+            if isinstance(cached_result, str)
+            else cached_result
+        )
         times, probs, areas = (
             result_data["times"],
             result_data["probs"],
@@ -195,7 +207,11 @@ async def calculate_healpix_coverage(
             GWmap = hp.read_map(f.name)
             nside = hp.npix2nside(len(GWmap))
     except Exception as e:
-        logger.error("coverage_calculator: failed to download skymap mappathinfo=%s: %s", mappathinfo, e)
+        logger.error(
+            "coverage_calculator: failed to download skymap mappathinfo=%s: %s",
+            mappathinfo,
+            e,
+        )
         raise HTTPException(
             status_code=400, detail=f"Calculator ERROR: Map not found. {str(e)}"
         )
@@ -327,9 +343,12 @@ async def calculate_healpix_coverage(
     )
 
     if not time_of_signal or not time_of_signal[0]:
-        logger.error("coverage_calculator: no time_of_signal found for graceid=%s", graceid)
+        logger.error(
+            "coverage_calculator: no time_of_signal found for graceid=%s", graceid
+        )
         raise HTTPException(
-            status_code=400, detail="ERROR: No time_of_signal for this alert — please contact administrator"
+            status_code=400,
+            detail="ERROR: No time_of_signal for this alert — please contact administrator",
         )
 
     time_of_signal = time_of_signal[0]
