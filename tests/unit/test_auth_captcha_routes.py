@@ -119,7 +119,7 @@ def test_resend_skips_captcha_when_only_secret_is_configured(monkeypatch, client
     assert response.status_code == 200
 
 
-def test_resend_no_longer_accepts_email_as_a_query_param(monkeypatch, client):
+def test_resend_rejects_email_as_a_query_param(monkeypatch, client):
     monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "")
 
     response = client.post(
@@ -131,6 +131,7 @@ def test_resend_no_longer_accepts_email_as_a_query_param(monkeypatch, client):
 
 def test_captcha_config_returns_the_site_key(monkeypatch, client):
     monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "site-key")
+    monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "test-secret")
 
     response = client.get("/api/v1/auth/captcha-config")
 
@@ -140,6 +141,15 @@ def test_captcha_config_returns_the_site_key(monkeypatch, client):
 
 def test_captcha_config_is_empty_when_unconfigured(monkeypatch, client):
     monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "")
+
+    response = client.get("/api/v1/auth/captcha-config")
+
+    assert response.json() == {"turnstile_site_key": ""}
+
+
+def test_captcha_config_hides_the_site_key_without_a_secret(monkeypatch, client):
+    monkeypatch.setattr(settings, "TURNSTILE_SITE_KEY", "site-key")
+    monkeypatch.setattr(settings, "TURNSTILE_SECRET_KEY", "")
 
     response = client.get("/api/v1/auth/captcha-config")
 
