@@ -7,6 +7,7 @@
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ErrorMessage from '$lib/components/ui/ErrorMessage.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Turnstile from '$lib/components/forms/Turnstile.svelte';
 
 	let username = '';
 	let password = '';
@@ -19,9 +20,24 @@
 	let resendingVerification = false;
 	let resendSent = false;
 	let resendError = '';
+	let turnstileSiteKey = '';
+	let captchaConfigStatus: 'loading' | 'loaded' | 'failed' = 'loading';
+	let resendTurnstile: Turnstile;
+	let resendToken = '';
 
 	// Redirect if already authenticated and handle success messages
 	onMount(() => {
+		api.auth
+			.getCaptchaConfig()
+			.then((response) => {
+				turnstileSiteKey = response.data.turnstile_site_key;
+				captchaConfigStatus = 'loaded';
+			})
+			.catch((err) => {
+				console.error('Failed to load captcha config:', err);
+				captchaConfigStatus = 'failed';
+			});
+
 		const unsubscribe = auth.subscribe((state) => {
 			if (state.isAuthenticated) {
 				goto('/');
@@ -65,16 +81,27 @@
 		}
 	}
 
+	function captchaError(token: string): string {
+		if (captchaConfigStatus === 'loading') return 'The captcha is still loading. Please try again.';
+		if (captchaConfigStatus === 'failed')
+			return 'The captcha failed to load. Refresh the page to try again.';
+		if (turnstileSiteKey && !token) return 'Please complete the captcha challenge.';
+		return '';
+	}
+
 	async function handleResendVerification() {
 		if (!unverifiedEmail || resendingVerification) return;
+		resendError = captchaError(resendToken);
+		if (resendError) return;
 		resendingVerification = true;
 		resendError = '';
 		try {
-			await api.auth.resendVerification(unverifiedEmail);
+			await api.auth.resendVerification(unverifiedEmail, resendToken || undefined);
 			resendSent = true;
 		} catch (err) {
 			console.error('Resend verification failed:', err);
 			resendError = 'Failed to resend verification email. Please try again.';
+			resendTurnstile?.reset();
 		} finally {
 			resendingVerification = false;
 		}
@@ -156,6 +183,13 @@
 					{:else}
 						{#if resendError}
 							<ErrorMessage message={resendError} />
+						{/if}
+						{#if turnstileSiteKey}
+							<Turnstile
+								bind:this={resendTurnstile}
+								bind:token={resendToken}
+								siteKey={turnstileSiteKey}
+							/>
 						{/if}
 						<Button
 							type="button"

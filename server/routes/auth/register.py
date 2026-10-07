@@ -10,19 +10,31 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from server.db.database import get_db
 from server.db.models.users import Users
+from server.config import settings
 from server.schemas.auth import (
+    CaptchaConfigResponse,
     RegisterRequest,
     RegisterResponse,
+    ResendVerificationRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
     AuthErrorResponse,
 )
+from server.utils.captcha import captcha_enabled, verify_captcha
 from server.utils.email import send_verification_email, send_registration_notification
 from server.utils.tokens import generate_verification_token, decode_verification_token
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["authentication"])
+
+
+@router.get("/captcha-config", response_model=CaptchaConfigResponse)
+async def captcha_config():
+    """Site key for the register widget. Served here since the built frontend has no env at runtime."""
+    return CaptchaConfigResponse(
+        turnstile_site_key=settings.TURNSTILE_SITE_KEY if captcha_enabled() else ""
+    )
 
 
 @router.post("/register", response_model=RegisterResponse)
@@ -36,7 +48,10 @@ async def register(
 
     Creates a new user account with email verification required.
     The user will receive a verification email to activate their account.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
+    await verify_captcha(register_data.turnstile_token)
+
     try:
         existing_user = (
             db.query(Users)
@@ -171,13 +186,19 @@ async def verify_email(
 
 
 @router.post("/resend-verification", response_model=RegisterResponse)
-async def resend_verification_email(email: str, db: Session = Depends(get_db)):
+async def resend_verification_email(
+    resend_data: ResendVerificationRequest, db: Session = Depends(get_db)
+):
     """
     Public, unauthenticated resend endpoint.
 
     Returns the same generic response regardless of whether the email exists
     or whether the account is already verified, to avoid leaking account state.
+    Requires `turnstile_token` when both Turnstile keys are configured.
     """
+    await verify_captcha(resend_data.turnstile_token)
+
+    email = resend_data.email
     generic_response = RegisterResponse(
         message="If an account with this email exists and is unverified, a verification email has been sent.",
         email=email,

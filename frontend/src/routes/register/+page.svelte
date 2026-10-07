@@ -5,7 +5,17 @@
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import Form from '$lib/components/forms/Form.svelte';
 	import FormField from '$lib/components/forms/FormField.svelte';
+	import Turnstile from '$lib/components/forms/Turnstile.svelte';
 	import { validators } from '$lib/validation/validators';
+	import { api } from '$lib/api';
+
+	// The site key comes from the backend because the frontend is a static bundle.
+	// With no site key the widget is omitted and no token is sent, which the
+	// backend accepts only when captcha is not enforced.
+	let turnstileSiteKey = '';
+	let captchaConfigStatus: 'loading' | 'loaded' | 'failed' = 'loading';
+	let turnstile: Turnstile;
+	let turnstileToken = '';
 
 	let formData: Record<string, unknown> = {
 		email: '',
@@ -18,6 +28,17 @@
 
 	// Redirect if already authenticated
 	onMount(() => {
+		api.auth
+			.getCaptchaConfig()
+			.then((response) => {
+				turnstileSiteKey = response.data.turnstile_site_key;
+				captchaConfigStatus = 'loaded';
+			})
+			.catch((err) => {
+				console.error('Failed to load captcha config:', err);
+				captchaConfigStatus = 'failed';
+			});
+
 		const unsubscribe = auth.subscribe((state) => {
 			if (state.isAuthenticated) {
 				goto('/');
@@ -27,13 +48,25 @@
 		return unsubscribe;
 	});
 
+	function captchaError(token: string): string {
+		if (captchaConfigStatus === 'loading') return 'The captcha is still loading. Please try again.';
+		if (captchaConfigStatus === 'failed')
+			return 'The captcha failed to load. Refresh the page to try again.';
+		if (turnstileSiteKey && !token) return 'Please complete the captcha challenge.';
+		return '';
+	}
+
 	async function handleRegister(data: Record<string, unknown>) {
+		const captchaMessage = captchaError(turnstileToken);
+		if (captchaMessage) return { success: false, error: captchaMessage };
+
 		const result = await auth.register({
 			email: data.email as string,
 			password: data.password as string,
 			username: data.username as string,
 			first_name: data.firstName as string,
-			last_name: data.lastName as string
+			last_name: data.lastName as string,
+			turnstile_token: turnstileToken || undefined
 		});
 
 		if (result.success) {
@@ -42,6 +75,7 @@
 			);
 			return { success: true };
 		} else {
+			turnstile?.reset();
 			return { success: false, error: result.error || 'Registration failed' };
 		}
 	}
@@ -161,6 +195,10 @@
 						]}
 					/>
 				</div>
+
+				{#if turnstileSiteKey}
+					<Turnstile bind:this={turnstile} bind:token={turnstileToken} siteKey={turnstileSiteKey} />
+				{/if}
 			</div>
 		</Form>
 

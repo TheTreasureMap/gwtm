@@ -1,6 +1,11 @@
 import client from '../client';
 import { browser } from '$app/environment';
-import type { LoginResponse, RegisterResponse, UserResponse } from '../types/api-responses';
+import type {
+	CaptchaConfigResponse,
+	LoginResponse,
+	RegisterResponse,
+	UserResponse
+} from '../types/api-responses';
 import type { AxiosResponse } from 'axios';
 
 export const authService = {
@@ -19,9 +24,13 @@ export const authService = {
 
 	// Public, unauthenticated resend. Used from the login page when a user
 	// with correct credentials hits the "not verified" error.
-	resendVerification: async (email: string): Promise<AxiosResponse<RegisterResponse>> => {
-		const response = await client.post<RegisterResponse>('/api/v1/auth/resend-verification', null, {
-			params: { email }
+	resendVerification: async (
+		email: string,
+		turnstileToken?: string
+	): Promise<AxiosResponse<RegisterResponse>> => {
+		const response = await client.post<RegisterResponse>('/api/v1/auth/resend-verification', {
+			email,
+			turnstile_token: turnstileToken
 		});
 		return response;
 	},
@@ -32,8 +41,14 @@ export const authService = {
 		username: string;
 		first_name?: string;
 		last_name?: string;
+		turnstile_token?: string;
 	}): Promise<AxiosResponse<RegisterResponse>> => {
 		const response = await client.post<RegisterResponse>('/api/v1/register', userData);
+		return response;
+	},
+
+	getCaptchaConfig: async (): Promise<AxiosResponse<CaptchaConfigResponse>> => {
+		const response = await client.get<CaptchaConfigResponse>('/api/v1/auth/captcha-config');
 		return response;
 	},
 
