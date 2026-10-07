@@ -58,6 +58,8 @@
 	}
 
 	onMount(() => {
+		// A bound token can outlive an earlier mount, and Cloudflare rejects reuse.
+		token = '';
 		if (!siteKey) return;
 
 		let cancelled = false;

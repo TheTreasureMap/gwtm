@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from datetime import datetime
 from server.db.database import get_db
 from server.db.models.gw_alert import GWAlert
 from server.db.models.pointing import Pointing
@@ -24,6 +24,9 @@ async def query_alerts(
     graceid: Optional[str] = None,
     alert_type: Optional[str] = None,
     role: Optional[str] = None,
+    timesent_after: Optional[datetime] = Query(None, description= "Filter by events with timesent after or equal to timesent_after"),
+    timesent_before: Optional[datetime] = Query(None, description= "Filter by events with timesent before or equal to timesent_before"),
+    timesent: Optional[datetime] = None,
     observing_run: Optional[str] = None,
     far: Optional[str] = Query(
         None, description="Filter by FAR: 'all', 'significant', or 'subthreshold'"
@@ -52,6 +55,7 @@ async def query_alerts(
         le=100,
         description="Items per page (max 100, only used with format=paginated)",
     ),
+    
     db: Session = Depends(get_db),
 ) -> Union[List[GWAlertSchema], GWAlertQueryResponse]:
     """
@@ -92,6 +96,15 @@ async def query_alerts(
 
     if role and role != "all":
         filter_conditions.append(GWAlert.role == role)
+
+    if timesent:
+        filter_conditions.append(GWAlert.timesent == timesent)
+
+    if timesent_after:
+        filter_conditions.append(GWAlert.timesent >= timesent_after)
+    
+    if timesent_before:
+        filter_conditions.append(GWAlert.timesent <= timesent_before)
 
     if observing_run and observing_run != "all":
         filter_conditions.append(GWAlert.observing_run == observing_run)

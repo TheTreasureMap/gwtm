@@ -11,7 +11,11 @@ from server.schemas.doi import DOIAuthorGroupSave, DOIAuthorGroupSchema
 router = APIRouter(tags=["DOI"])
 
 
-@router.post("/doi_author_groups", response_model=DOIAuthorGroupSchema, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/doi_author_groups",
+    response_model=DOIAuthorGroupSchema,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_doi_author_group(
     body: DOIAuthorGroupSave,
     db: Session = Depends(get_db),
@@ -23,13 +27,15 @@ async def create_doi_author_group(
     db.flush()
 
     for author in body.authors:
-        db.add(DOIAuthor(
-            name=author.name,
-            affiliation=author.affiliation,
-            orcid=author.orcid,
-            gnd=author.gnd,
-            author_groupid=group.id,
-        ))
+        db.add(
+            DOIAuthor(
+                name=author.name,
+                affiliation=author.affiliation,
+                orcid=author.orcid,
+                gnd=author.gnd,
+                author_groupid=group.id,
+            )
+        )
 
     db.commit()
     db.refresh(group)
@@ -50,14 +56,18 @@ async def update_doi_author_group(
         .first()
     )
     if not group:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Author group not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Author group not found"
+        )
 
     group.name = body.name
 
     submitted_ids = {a.id for a in body.authors if a.id is not None}
 
     # Delete authors removed from the list
-    for existing in db.query(DOIAuthor).filter(DOIAuthor.author_groupid == group_id).all():
+    for existing in (
+        db.query(DOIAuthor).filter(DOIAuthor.author_groupid == group_id).all()
+    ):
         if existing.id not in submitted_ids:
             db.delete(existing)
 
@@ -71,13 +81,15 @@ async def update_doi_author_group(
                 existing.orcid = author.orcid
                 existing.gnd = author.gnd
         else:
-            db.add(DOIAuthor(
-                name=author.name,
-                affiliation=author.affiliation,
-                orcid=author.orcid,
-                gnd=author.gnd,
-                author_groupid=group_id,
-            ))
+            db.add(
+                DOIAuthor(
+                    name=author.name,
+                    affiliation=author.affiliation,
+                    orcid=author.orcid,
+                    gnd=author.gnd,
+                    author_groupid=group_id,
+                )
+            )
 
     db.commit()
     db.refresh(group)

@@ -20,7 +20,7 @@ from server.schemas.auth import (
     EmailVerificationResponse,
     AuthErrorResponse,
 )
-from server.utils.captcha import verify_captcha
+from server.utils.captcha import captcha_enabled, verify_captcha
 from server.utils.email import send_verification_email, send_registration_notification
 from server.utils.tokens import generate_verification_token, decode_verification_token
 
@@ -32,7 +32,9 @@ router = APIRouter(tags=["authentication"])
 @router.get("/captcha-config", response_model=CaptchaConfigResponse)
 async def captcha_config():
     """Turnstile site key. Served here since the built frontend has no env at runtime."""
-    return CaptchaConfigResponse(turnstile_site_key=settings.TURNSTILE_SITE_KEY)
+    return CaptchaConfigResponse(
+        turnstile_site_key=settings.TURNSTILE_SITE_KEY if captcha_enabled() else ""
+    )
 
 
 @router.post("/register", response_model=RegisterResponse)

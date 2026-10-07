@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 TIMEOUT_SECONDS = 3
 
-# Our/Cloudflare's fault, not the visitor's, so treated as an outage (503) not a rejection.
+# Secret or provider faults return 503 so the visitor can retry.
 UNAVAILABLE_CODES = ("missing-input-secret", "invalid-input-secret", "internal-error")
 
 
@@ -24,13 +24,20 @@ def _unavailable() -> HTTPException:
     )
 
 
+def captcha_enabled() -> bool:
+    """
+    Both keys are required. A lone site key would show a widget nothing checks,
+    and a lone secret would enforce with no widget, blocking every submission.
+    """
+    return bool(settings.TURNSTILE_SITE_KEY and settings.TURNSTILE_SECRET_KEY)
+
+
 async def verify_captcha(token: Optional[str]) -> None:
     """
-    No-op unless both Turnstile keys are set: a lone secret would enforce with
-    no widget ever rendered, blocking every submission.
-    Fails closed on a provider error, not open, so an induced outage can't bypass it.
+    No-op unless captcha_enabled(). Provider errors fail closed so an induced
+    outage cannot bypass the check.
     """
-    if not (settings.TURNSTILE_SITE_KEY and settings.TURNSTILE_SECRET_KEY):
+    if not captcha_enabled():
         return
 
     if not token:

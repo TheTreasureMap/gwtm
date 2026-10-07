@@ -21,6 +21,7 @@
 	let resendSent = false;
 	let resendError = '';
 	let turnstileSiteKey = '';
+	let captchaConfigStatus: 'loading' | 'loaded' | 'failed' = 'loading';
 	let resendTurnstile: Turnstile;
 	let resendToken = '';
 
@@ -28,8 +29,14 @@
 	onMount(() => {
 		api.auth
 			.getCaptchaConfig()
-			.then((response) => (turnstileSiteKey = response.data.turnstile_site_key))
-			.catch((err) => console.error('Failed to load captcha config:', err));
+			.then((response) => {
+				turnstileSiteKey = response.data.turnstile_site_key;
+				captchaConfigStatus = 'loaded';
+			})
+			.catch((err) => {
+				console.error('Failed to load captcha config:', err);
+				captchaConfigStatus = 'failed';
+			});
 
 		const unsubscribe = auth.subscribe((state) => {
 			if (state.isAuthenticated) {
@@ -74,12 +81,18 @@
 		}
 	}
 
+	function captchaError(token: string): string {
+		if (captchaConfigStatus === 'loading') return 'The captcha is still loading. Please try again.';
+		if (captchaConfigStatus === 'failed')
+			return 'The captcha failed to load. Refresh the page to try again.';
+		if (turnstileSiteKey && !token) return 'Please complete the captcha challenge.';
+		return '';
+	}
+
 	async function handleResendVerification() {
 		if (!unverifiedEmail || resendingVerification) return;
-		if (turnstileSiteKey && !resendToken) {
-			resendError = 'Please complete the captcha challenge.';
-			return;
-		}
+		resendError = captchaError(resendToken);
+		if (resendError) return;
 		resendingVerification = true;
 		resendError = '';
 		try {

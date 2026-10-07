@@ -13,6 +13,7 @@
 	// With no site key the widget is omitted and no token is sent, which the
 	// backend accepts only when captcha is not enforced.
 	let turnstileSiteKey = '';
+	let captchaConfigStatus: 'loading' | 'loaded' | 'failed' = 'loading';
 	let turnstile: Turnstile;
 	let turnstileToken = '';
 
@@ -29,8 +30,14 @@
 	onMount(() => {
 		api.auth
 			.getCaptchaConfig()
-			.then((response) => (turnstileSiteKey = response.data.turnstile_site_key))
-			.catch((err) => console.error('Failed to load captcha config:', err));
+			.then((response) => {
+				turnstileSiteKey = response.data.turnstile_site_key;
+				captchaConfigStatus = 'loaded';
+			})
+			.catch((err) => {
+				console.error('Failed to load captcha config:', err);
+				captchaConfigStatus = 'failed';
+			});
 
 		const unsubscribe = auth.subscribe((state) => {
 			if (state.isAuthenticated) {
@@ -41,10 +48,17 @@
 		return unsubscribe;
 	});
 
+	function captchaError(token: string): string {
+		if (captchaConfigStatus === 'loading') return 'The captcha is still loading. Please try again.';
+		if (captchaConfigStatus === 'failed')
+			return 'The captcha failed to load. Refresh the page to try again.';
+		if (turnstileSiteKey && !token) return 'Please complete the captcha challenge.';
+		return '';
+	}
+
 	async function handleRegister(data: Record<string, unknown>) {
-		if (turnstileSiteKey && !turnstileToken) {
-			return { success: false, error: 'Please complete the captcha challenge.' };
-		}
+		const captchaMessage = captchaError(turnstileToken);
+		if (captchaMessage) return { success: false, error: captchaMessage };
 
 		const result = await auth.register({
 			email: data.email as string,

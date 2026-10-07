@@ -38,10 +38,15 @@ async def resend_verification_email(
         admin_group = (
             db.query(Groups).filter(func.lower(Groups.name) == "admin").first()
         )
-        is_admin = admin_group and db.query(UserGroups).filter(
-            UserGroups.userid == current_user.id,
-            UserGroups.groupid == admin_group.id,
-        ).first()
+        is_admin = (
+            admin_group
+            and db.query(UserGroups)
+            .filter(
+                UserGroups.userid == current_user.id,
+                UserGroups.groupid == admin_group.id,
+            )
+            .first()
+        )
         if not is_admin:
             raise HTTPException(status_code=403, detail="Not authorized")
 
