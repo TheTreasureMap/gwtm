@@ -31,7 +31,7 @@ router = APIRouter(tags=["authentication"])
 
 @router.get("/captcha-config", response_model=CaptchaConfigResponse)
 async def captcha_config():
-    """Site key for the register widget. Served here since the built frontend has no env at runtime."""
+    """Turnstile site key. Served here since the built frontend has no env at runtime."""
     return CaptchaConfigResponse(
         turnstile_site_key=settings.TURNSTILE_SITE_KEY if captcha_enabled() else ""
     )
