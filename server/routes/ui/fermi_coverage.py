@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from server.db.database import get_db
@@ -116,7 +117,7 @@ async def get_fermi_coverage(
     )
 
     # Check cache first
-    cached_coverage = get_cached_file(cache_key, settings)
+    cached_coverage = await run_in_threadpool(get_cached_file, cache_key, settings)
     if cached_coverage:
         return json.loads(cached_coverage)
 
@@ -127,7 +128,7 @@ async def get_fermi_coverage(
         )
 
         # Cache the result
-        set_cached_file(cache_key, coverage_data, settings)
+        await run_in_threadpool(set_cached_file, cache_key, coverage_data, settings)
 
         return coverage_data
 
@@ -329,8 +330,11 @@ async def load_precomputed_coverage(graceid: str, instrument: str) -> Dict[str, 
 
     try:
         # Try to download pre-computed coverage
-        coverage_data = download_gwtm_file(
-            coverage_path, source=settings.STORAGE_BUCKET_SOURCE, config=settings
+        coverage_data = await run_in_threadpool(
+            download_gwtm_file,
+            coverage_path,
+            source=settings.STORAGE_BUCKET_SOURCE,
+            config=settings,
         )
 
         moc_json = json.loads(coverage_data)

@@ -20,7 +20,7 @@ router = APIRouter(tags=["gw_alerts"])
 
 
 @router.post("/del_test_alerts")
-async def del_test_alerts(
+def del_test_alerts(
     db: Session = Depends(get_db),
     user=Depends(verify_admin),  # Only admin can delete test alerts
 ):

@@ -15,7 +15,7 @@ router = APIRouter(tags=["gw_alerts"])
 
 
 @router.get("/grb_moc_file")
-async def get_grbmoc(
+def get_grbmoc(
     graceid: str = Query(..., description="Grace ID of the GW event"),
     instrument: str = Query(..., description="Instrument name (gbm, lat, or bat)"),
     db: Session = Depends(get_db),

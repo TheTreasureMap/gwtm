@@ -29,7 +29,7 @@ router = APIRouter(tags=["gw_alerts"])
         404: {"description": "Skymap not found for the specified event"},
     },
 )
-async def get_gw_skymap(
+def get_gw_skymap(
     graceid: str = Query(..., description="Grace ID of the GW event"),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),

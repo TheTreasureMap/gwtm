@@ -15,7 +15,7 @@ router = APIRouter(tags=["gw_alerts"])
 
 
 @router.get("/gw_contour")
-async def get_gw_contour(
+def get_gw_contour(
     graceid: str = Query(..., description="Grace ID of the GW event"),
     db: Session = Depends(get_db),
 ):

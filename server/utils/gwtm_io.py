@@ -1,3 +1,4 @@
+import functools
 import fsspec
 import json
 import os
@@ -5,62 +6,65 @@ import re
 import tempfile
 
 
+@functools.lru_cache(maxsize=None)
+def _get_keystone_session(
+    auth_url, username, password, user_domain, project_domain, project_name
+):
+    """
+    One keystoneauth session per credential set, shared for the process lifetime.
+
+    The session caches its token and re-authenticates only on expiry, so storage
+    reads do not each wait on a Keystone login.
+    """
+    from keystoneauth1.identity import v3
+    from keystoneauth1 import session
+
+    # Application credential IDs are 32-character hex strings
+    if re.match(r"^[a-f0-9]{32}$", username or ""):
+        auth = v3.ApplicationCredential(
+            auth_url=auth_url,
+            application_credential_id=username,
+            application_credential_secret=password,
+        )
+    else:
+        auth = v3.Password(
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            user_domain_name=user_domain,
+            project_domain_name=project_domain,
+            project_name=project_name,
+        )
+    return session.Session(auth=auth)
+
+
 def _get_swift_conn(config):
     """
-    Get Swift connection with appropriate authentication method.
+    Get a Swift connection backed by the shared Keystone session.
 
-    Supports both application credentials and username/password authentication.
-    Application credential IDs are detected as 32-character hex strings.
-
-    Args:
-        config: Configuration object with Swift credentials
-
-    Returns:
-        Swift Connection object
+    swiftclient Connections are not thread-safe, so each call gets its own;
+    they are cheap because authentication lives in the session.
     """
     try:
-        from keystoneauth1.identity import v3
-        from keystoneauth1 import session
         from swiftclient import Connection as SwiftConnection
+        import keystoneauth1  # noqa: F401
     except ImportError:
         raise Exception(
             "Swift dependencies not installed. Install python-swiftclient, "
             "python-keystoneclient, and keystoneauth1"
         )
 
-    # Detect if using application credentials (32-character hex string)
-    is_app_cred = bool(re.match(r"^[a-f0-9]{32}$", config.OS_USERNAME or ""))
-
-    if is_app_cred:
-        # Use application credential authentication
-        auth = v3.ApplicationCredential(
-            auth_url=config.OS_AUTH_URL,
-            application_credential_id=config.OS_USERNAME,
-            application_credential_secret=config.OS_PASSWORD,
-        )
-
-        # Create authenticated session
-        sess = session.Session(auth=auth)
-
-        # Create Swift connection with session
-        conn = SwiftConnection(
-            session=sess, os_options={"object_storage_url": config.OS_STORAGE_URL}
-        )
-    else:
-        # Use username/password authentication
-        conn = SwiftConnection(
-            authurl=config.OS_AUTH_URL,
-            user=config.OS_USERNAME,
-            key=config.OS_PASSWORD,
-            os_options={
-                "user_domain_name": config.OS_USER_DOMAIN_NAME,
-                "project_domain_name": config.OS_PROJECT_DOMAIN_NAME,
-                "project_name": config.OS_PROJECT_NAME,
-            },
-            auth_version="3",
-        )
-
-    return conn
+    sess = _get_keystone_session(
+        config.OS_AUTH_URL,
+        config.OS_USERNAME,
+        config.OS_PASSWORD,
+        config.OS_USER_DOMAIN_NAME,
+        config.OS_PROJECT_DOMAIN_NAME,
+        config.OS_PROJECT_NAME,
+    )
+    return SwiftConnection(
+        session=sess, os_options={"object_storage_url": config.OS_STORAGE_URL}
+    )
 
 
 def _get_fs(source, config):

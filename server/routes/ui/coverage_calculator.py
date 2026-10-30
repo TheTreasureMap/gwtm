@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -99,7 +100,7 @@ async def coverage_calculator(request: Request, db: Session = Depends(get_db)):
     cache_key = f"coverage_calc_{hashlib.sha1(cache_params.encode()).hexdigest()}"
 
     # Try to get from cache first
-    cached_result = get_cached_file(cache_key, settings)
+    cached_result = await run_in_threadpool(get_cached_file, cache_key, settings)
     if cached_result:
         result_data = (
             json.loads(cached_result)
@@ -197,7 +198,8 @@ async def calculate_healpix_coverage(
     # Download and read the HEALPix map
     try:
         with tempfile.NamedTemporaryFile() as f:
-            tmpdata = download_gwtm_file(
+            tmpdata = await run_in_threadpool(
+                download_gwtm_file,
                 mappathinfo,
                 source=settings.STORAGE_BUCKET_SOURCE,
                 config=settings,
@@ -424,6 +426,6 @@ async def calculate_healpix_coverage(
         "probs": probs,
         "areas": areas,
     }
-    set_cached_file(cache_key, cache_file, settings)
+    await run_in_threadpool(set_cached_file, cache_key, cache_file, settings)
 
     return times, probs, areas

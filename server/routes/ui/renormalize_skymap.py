@@ -13,7 +13,7 @@ router = APIRouter(tags=["UI"])
 
 
 @router.get("/ajax_renormalize_skymap")
-async def renormalize_skymap(
+def renormalize_skymap(
     graceid: str = Query(...),
     alert_id: Optional[int] = Query(default=None),
     approx_cov: int = Query(default=1),

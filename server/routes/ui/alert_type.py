@@ -10,7 +10,7 @@ router = APIRouter(tags=["UI"])
 
 
 @router.get("/ajax_alerttype")
-async def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
+def ajax_get_eventcontour(urlid: str, db: Session = Depends(get_db)):
     """Get event contour and alert information."""
     import json
     from server.core.enums.alertrole import AlertRole

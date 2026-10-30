@@ -13,7 +13,7 @@ router = APIRouter(tags=["UI"])
 
 
 @router.get("/ajax_alertinstruments_footprints")
-async def get_alert_instruments_footprints(
+def get_alert_instruments_footprints(
     graceid: str = None,
     pointing_status: str = None,
     tos_mjd: float = None,
