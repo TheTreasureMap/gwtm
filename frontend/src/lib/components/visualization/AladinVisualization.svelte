@@ -10,6 +10,16 @@
 		};
 	}
 
+	// DSS2 colour HiPS mirrors at two organisations. Each viewer uses whichever answers
+	// first, so the sky background survives an outage at either one. Full URLs rather than
+	// the 'P/DSS2/color' ID, because resolving an ID needs CDS's MocServer.
+	const BASE_SURVEY_MIRRORS = [
+		'https://skies.esac.esa.int/DSSColor/',
+		'https://alasky.cds.unistra.fr/DSS/DSSColor/',
+		'https://alaskybis.cds.unistra.fr/DSS/DSSColor/'
+	];
+	let baseSurvey = BASE_SURVEY_MIRRORS[0];
+
 	export let graceid: string;
 	export let selectedAlert: ProcessedGWAlert | null = null;
 	export const loading: boolean = false;
@@ -117,6 +127,32 @@
 		});
 	}
 
+	// With every mirror down, the first is kept so overlays still draw on a blank sky.
+	async function pickBaseSurvey(timeoutMs = 5000): Promise<string> {
+		try {
+			return await Promise.any(
+				BASE_SURVEY_MIRRORS.map(async (url) => {
+					const res = await fetch(`${url}properties`, { signal: AbortSignal.timeout(timeoutMs) });
+					if (!res.ok) throw new Error(`${url} returned ${res.status}`);
+					return url;
+				})
+			);
+		} catch {
+			console.warn('No DSS mirror responded; sky background will be missing');
+			return BASE_SURVEY_MIRRORS[0];
+		}
+	}
+
+	// Aladin is bundled rather than loaded from CDS so the viewer does not depend on CDS
+	// being up. Pinned to 3.7.0-beta: 3.6.x drops large GW contours that are partially
+	// off-screen. When updating, check outer contours stay visible while rotating the view.
+	// Exposed as window.A because OverlayManager and SkyVisualization read it there.
+	async function loadAladin() {
+		const [{ default: A }, survey] = await Promise.all([import('aladin-lite'), pickBaseSurvey()]);
+		(window as any).A = A;
+		baseSurvey = survey;
+	}
+
 	async function initializeAladin() {
 		console.log('initializeAladin called with:', { graceid, alert: !!selectedAlert });
 
@@ -126,12 +162,7 @@
 		}
 
 		try {
-			// Check if scripts are available
-			console.log('Checking for Aladin availability...');
-			if (typeof window !== 'undefined' && !(window as any).A) {
-				throw new Error('Aladin script not available. Please check your internet connection.');
-			}
-			console.log('Aladin is available:', typeof (window as any).A);
+			await loadAladin();
 
 			// Container should be available by now since awaitContainer() called us
 			console.log('Container check:', aladinContainer);
@@ -147,7 +178,7 @@
 			// Ensure Aladin is visible by setting a survey (v3 uses setBaseImageLayer)
 			if (aladin) {
 				try {
-					aladin.setBaseImageLayer('P/DSS2/color');
+					aladin.setBaseImageLayer(baseSurvey);
 					console.log('Set default survey for visibility');
 				} catch (err: any) {
 					console.warn('Failed to set survey:', err);
@@ -199,7 +230,7 @@
 				realFullscreen: false,
 				cooFrame: 'ICRSd',
 				showReticle: false, // Match Flask setting (false initially)
-				survey: 'P/DSS2/color' // Set default survey
+				survey: baseSurvey
 			};
 			console.log('Aladin options:', aladinOptions);
 
