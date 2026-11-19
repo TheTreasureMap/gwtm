@@ -3,7 +3,6 @@
 
 	interface TestWindow extends Window {
 		$?: { fn: { jquery: string } };
-		A?: { aladin: (selector: string, config: unknown) => unknown };
 		Plotly?: { version: string };
 	}
 
@@ -11,7 +10,7 @@
 	let plotlyStatus = 'Checking...';
 	let jqueryStatus = 'Checking...';
 
-	onMount(() => {
+	onMount(async () => {
 		console.log('Testing external scripts...');
 		const win = window as TestWindow;
 
@@ -23,14 +22,6 @@
 			jqueryStatus = 'Missing';
 		}
 
-		// Check Aladin
-		if (win.A !== undefined) {
-			aladinStatus = 'Available';
-			console.log('Aladin object:', win.A);
-		} else {
-			aladinStatus = 'Missing';
-		}
-
 		// Check Plotly
 		if (win.Plotly !== undefined) {
 			plotlyStatus = 'Available';
@@ -39,21 +30,19 @@
 			plotlyStatus = 'Missing';
 		}
 
-		// Try to create a simple Aladin instance if available
-		if (win.A !== undefined) {
-			try {
-				const container = document.getElementById('test-aladin');
-				if (container) {
-					const aladin = win.A.aladin('#test-aladin', {
-						fov: 60,
-						target: '0 0',
-						showReticle: false
-					});
-					console.log('Test Aladin instance created successfully:', !!aladin);
-				}
-			} catch (err) {
-				console.error('Failed to create test Aladin instance:', err);
-			}
+		try {
+			const { default: A } = await import('aladin-lite');
+			await A.init;
+			aladinStatus = 'Available';
+			const aladin = A.aladin('#test-aladin', {
+				fov: 60,
+				target: '0 0',
+				showReticle: false
+			});
+			console.log('Test Aladin instance created successfully:', !!aladin);
+		} catch (err) {
+			aladinStatus = 'Missing';
+			console.error('Failed to load Aladin:', err);
 		}
 	});
 </script>
