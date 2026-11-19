@@ -47,6 +47,7 @@
 		"vitest": "^5.0.0"
 	},
 	"dependencies": {
+		"aladin-lite": "3.7.0-beta",
 		"axios": "^1.18.1",
 		"plotly.js-dist-min": "^2.33.0"
 	}

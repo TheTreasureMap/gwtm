@@ -194,16 +194,11 @@ The frontend detects the API endpoint automatically:
 
 ### Aladin Lite (Sky Visualization)
 
-The sky map visualization uses [Aladin Lite v3](https://aladin.cds.unistra.fr/AladinLite/doc/), loaded from CDN in `src/app.html`.
+The sky map visualization uses [Aladin Lite v3](https://aladin.cds.unistra.fr/AladinLite/doc/), installed from npm as `aladin-lite` and pinned to an exact version. It is bundled so the viewer still loads when CDS is down. See the comment on `loadAladin` in `src/lib/components/visualization/AladinVisualization.svelte` for why the version is pinned and what to test when changing it.
 
-**Current Version**: v3.7.0-beta
-
-**Important**: We use v3.7.0-beta specifically because v3.6.x has a polygon visibility culling bug where large GW contours disappear when partially scrolled off-screen. When updating the Aladin version:
-
-1. Test that outer probability contours remain visible when rotating/panning the sky view
+The DSS background is fetched from whichever of several mirrors answers first. Simbad pointer and Goto (object name lookup) still call CDS services and will not work during a CDS outage.
 
 **Dependencies loaded via CDN** (`src/app.html`):
 
-- jQuery 3.7.1 (required by Aladin Lite)
-- Aladin Lite v3.7.0-beta
+- jQuery 3.7.1
 - Plotly 2.35.2 (for coverage plots)
