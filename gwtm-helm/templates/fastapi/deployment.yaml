@@ -39,6 +39,12 @@ spec:
                  echo "Database is ready!"']
         env:
         {{- include "gwtm.dbInitEnv" . | nindent 8 }}
+      - name: migrate
+        image: "{{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}"
+        imagePullPolicy: {{ .Values.fastapi.image.pullPolicy }}
+        command: ["python", "-m", "server.db.migrate"]
+        env:
+        {{- include "gwtm.dbEnv" . | nindent 8 }}
       containers:
       - name: fastapi-app
         image: "{{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}"
