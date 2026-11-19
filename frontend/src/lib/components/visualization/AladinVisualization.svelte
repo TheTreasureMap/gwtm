@@ -1,3 +1,8 @@
+<script lang="ts" module>
+	// One mirror probe per page load, shared by every viewer instance and re-initialisation.
+	let baseSurveyPromise: Promise<string> | undefined;
+</script>
+
 <script lang="ts">
 	import { onMount, onDestroy, createEventDispatcher, tick } from 'svelte';
 	import type { GWAlertSchema } from '$lib/api';
@@ -148,7 +153,10 @@
 	// off-screen. When updating, check outer contours stay visible while rotating the view.
 	// Exposed as window.A because OverlayManager and SkyVisualization read it there.
 	async function loadAladin() {
-		const [{ default: A }, survey] = await Promise.all([import('aladin-lite'), pickBaseSurvey()]);
+		const [{ default: A }, survey] = await Promise.all([
+			import('aladin-lite'),
+			(baseSurveyPromise ??= pickBaseSurvey())
+		]);
 		(window as any).A = A;
 		baseSurvey = survey;
 	}
@@ -230,7 +238,9 @@
 				realFullscreen: false,
 				cooFrame: 'ICRSd',
 				showReticle: false, // Match Flask setting (false initially)
-				survey: baseSurvey
+				survey: baseSurvey,
+				// Usage logging posts to a CDS host on every viewer creation.
+				log: false
 			};
 			console.log('Aladin options:', aladinOptions);
 
