@@ -55,7 +55,7 @@ jobs:
       run: |
         docker compose -f server/docker-compose.yml -p gwtm exec -T db psql -U $DB_USER -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
-    - name: Initialize database schema with FastAPI models
+    - name: Apply database migrations
       run: |
         docker run --rm --network gwtm_default \
           -e DB_USER \
@@ -64,7 +64,7 @@ jobs:
           -e DB_HOST \
           -e DB_PORT \
           gwtm_fastapi:latest \
-          python -c "from server.db.init_db import create_database_tables; create_database_tables()"
+          python -m server.db.migrate
 
     - name: Start FastAPI server
       run: |
