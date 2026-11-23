@@ -274,3 +274,38 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/* Environment shared by the Teglon API and the ingest CronJob */}}
+{{- define "gwtm.teglonEnv" -}}
+- name: DATABASE_HOST
+  value: teglon-mysql
+- name: DATABASE_PORT
+  value: "3306"
+- name: DATABASE_NAME
+  value: teglon
+- name: DATABASE_USER
+  value: teglon
+- name: DATABASE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.teglon.existingSecret }}
+      key: db-password
+- name: TM_API_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.teglon.existingSecret }}
+      key: tm-api-token
+{{- end }}
+
+{{/* Teglon's persistent files, mounted into the API and the ingest CronJob */}}
+{{- define "gwtm.teglonDataMounts" -}}
+- name: teglon-data
+  mountPath: /app/web/events
+  subPath: events
+- name: teglon-data
+  mountPath: /app/web/src/utilities/pickles
+  subPath: pickles
+- name: teglon-data
+  mountPath: /dustmaps
+  subPath: dustmaps
+{{- end }}

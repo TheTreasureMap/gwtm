@@ -236,3 +236,39 @@ listeners:
 
   # Tolerations (optional)
   tolerations: []
+
+# Teglon: suggested pointings and coverage-adjusted contours for gwtm. Upstream https://github.com/gw-commons/teglon;
+# images are built from the TheTreasureMap/teglon fork.
+# Runs on its own cluster; see values-teglon.yaml.
+teglon:
+  enabled: false
+  # Keys: mysql-root-password, db-password, tm-api-token (Treasure Map API token Teglon uses), api-token (the bearer
+  # token gwtm sends to the Teglon API).
+  existingSecret: teglon-secrets
+  image:
+    repository: ghcr.io/thetreasuremap/teglon/teglon-api
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  host: ""
+  api:
+    resources:
+      requests: {cpu: 250m, memory: 1Gi}
+      limits: {memory: 4Gi}
+  ingest:
+    schedule: "*/10 * * * *"
+    suspend: false
+    lookbackDays: 3
+    # load_map spreads across every CPU on the node; a CPU limit would only throttle it.
+    resources:
+      requests: {cpu: "1", memory: 2Gi}
+      limits: {memory: 12Gi}
+  mysql:
+    image: mysql:8.0.25
+    storage: 20Gi
+    resources:
+      requests: {cpu: 500m, memory: 3Gi}
+      limits: {memory: 6Gi}
+  data:
+    # events/, pickles/ and dustmaps/ subdirectories, shared by the API and the ingest CronJob
+    storage: 10Gi
