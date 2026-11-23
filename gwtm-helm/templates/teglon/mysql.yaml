@@ -1,0 +1,125 @@
+{{- if .Values.teglon.enabled }}
+# Teglon's MySQL 8 database. The schema and data come from a restore of an existing Teglon database (see
+# values-teglon.yaml); on an empty volume the image only creates the `teglon` database and user.
+# Retain + Prune=false: the volume holds the only copy of the database, so neither deleting the PVC nor pruning
+# the app removes the data.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: teglon-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: teglon-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: teglon-retain
+  resources:
+    requests:
+      storage: {{ .Values.teglon.mysql.storage }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: teglon-mysql-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+data:
+  teglon.cnf: |
+    [mysqld]
+    # load_map bulk-loads with LOAD DATA LOCAL INFILE
+    local_infile=1
+    # Teglon's existing installs authenticate this way; keeps the image-created user the same
+    default_authentication_plugin=mysql_native_password
+    innodb_buffer_pool_size=2G
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teglon-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: teglon-mysql
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: teglon-mysql
+  template:
+    metadata:
+      labels:
+        app: teglon-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: {{ .Values.teglon.mysql.image }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.teglon.existingSecret }}
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              value: teglon
+            - name: MYSQL_USER
+              value: teglon
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.teglon.existingSecret }}
+                  key: db-password
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: config
+              mountPath: /etc/mysql/conf.d
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -uroot -p\"$MYSQL_ROOT_PASSWORD\" --silent"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.teglon.mysql.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: teglon-mysql
+        - name: config
+          configMap:
+            name: teglon-mysql-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: teglon-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: teglon-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+{{- end }}

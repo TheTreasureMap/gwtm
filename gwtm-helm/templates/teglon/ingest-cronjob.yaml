@@ -1,0 +1,49 @@
+{{- if .Values.teglon.enabled }}
+# Loads new events' maps and their Treasure Map pointings, then rewrites the suggested-pointings tables, so most
+# API requests only read a table that already exists.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: teglon-ingest
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.teglon.ingest.schedule | quote }}
+  suspend: {{ .Values.teglon.ingest.suspend }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: teglon-ingest
+        spec:
+          restartPolicy: Never
+          {{- with .Values.teglon.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+            - name: ingest
+              image: "{{ .Values.teglon.image.repository }}:{{ .Values.teglon.image.tag }}"
+              imagePullPolicy: {{ .Values.teglon.image.pullPolicy }}
+              command: ["python", "-m", "web.src.services.teglon_cli", "tm-ingest",
+                        "--lookback-days", {{ .Values.teglon.ingest.lookbackDays | quote }}]
+              env:
+                {{- include "gwtm.teglonEnv" . | nindent 16 }}
+              volumeMounts:
+                {{- include "gwtm.teglonDataMounts" . | nindent 16 }}
+              resources:
+                {{- toYaml .Values.teglon.ingest.resources | nindent 16 }}
+          volumes:
+            - name: teglon-data
+              persistentVolumeClaim:
+                claimName: teglon-data
+{{- end }}

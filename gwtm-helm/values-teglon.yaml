@@ -1,0 +1,28 @@
+# Teglon-only deployment, on its own cluster (gwtm-deploy/teglon, ArgoCD app gwtm-teglon).
+# Secrets come from the SealedSecret `teglon-secrets` in the teglon namespace (keys listed in values.yaml).
+#
+# On first install the database and data volume are empty: they are seeded once from an existing Teglon
+# (runbook in gwtm-deploy). Until then the API has no data and the ingest CronJob errors.
+
+global:
+  namespace: teglon
+
+frontend:
+  enabled: false
+fastapi:
+  enabled: false
+database:
+  enabled: false
+listeners:
+  enabled: false
+ingress:
+  enabled: false
+
+teglon:
+  enabled: true
+  host: teglon.treasuremap.space
+  image:
+    tag: "2.1.0"
+  ingest:
+    # Set to false once the database and data volume have been seeded.
+    suspend: true
