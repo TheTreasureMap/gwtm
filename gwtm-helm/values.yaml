@@ -258,7 +258,8 @@ teglon:
   ingest:
     schedule: "*/10 * * * *"
     suspend: false
-    lookbackDays: 3
+    # Also bounds which events get completed-pointing syncs and re-planning, so it covers the follow-up window.
+    lookbackDays: 30
     # load_map spreads across every CPU on the node; a CPU limit would only throttle it.
     resources:
       requests: {cpu: "1", memory: 2Gi}
