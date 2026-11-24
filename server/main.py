@@ -12,8 +12,7 @@ import uvicorn
 import logging
 
 from server.config import settings
-from server.db.database import get_db, engine, Base
-from server.db.models import Users, UserGroups, Groups, UserActions  # Import all models
+from server.db.database import get_db
 
 from server.routes.pointing.router import router as pointing_router
 from server.routes.instrument.router import router as instrument_router
@@ -45,33 +44,7 @@ async def lifespan_context(app: FastAPI):
             "Only one of TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY is set. "
             "Set both to enforce captcha, or neither to skip it."
         )
-    # Create database tables with proper "IF NOT EXISTS" behaviour
-    try:
-        logger.info("Initialising database schema...")
-
-        # Use checkfirst=True to avoid errors if tables already exist (production-safe)
-        Base.metadata.create_all(bind=engine, checkfirst=True)
-        logger.info("Database tables created/verified successfully!")
-
-        # Create indexes if they don't exist (production-safe)
-        with engine.connect() as conn:
-            try:
-                # Create performance index for pointing queries (matches Flask version)
-                conn.execute(
-                    """
-                    CREATE INDEX IF NOT EXISTS idx_pointing_status_id 
-                    ON public.pointing(status, id);
-                """
-                )
-                conn.commit()
-                logger.info("Database indexes created/verified successfully!")
-            except Exception as e:
-                logger.warning(f"Index creation warning (may already exist): {e}")
-
-    except Exception as e:
-        logger.error(f"Failed to initialise database: {e}")
-        # Don't raise - allow app to start even if DB setup fails (for debugging)
-
+    # The schema is managed by Alembic and applied by server.db.migrate before startup.
     yield
 
     logger.info("Application is shutting down...")

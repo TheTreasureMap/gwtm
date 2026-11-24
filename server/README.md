@@ -150,7 +150,6 @@ If you prefer to run only the FastAPI server locally:
 1. **Set up the database:**
    - Ensure PostgreSQL is running with PostGIS extension
    - Create a database named `treasuremap_dev`
-   - Load test data: `psql -U treasuremap -d treasuremap_dev -f tests/test-data.sql`
 
 2. **Create a virtual environment:**
    ```bash
@@ -174,11 +173,33 @@ If you prefer to run only the FastAPI server locally:
    DEBUG=True
    ```
 
-5. **Run the development server:**
+5. **Create the schema and load test data:**
+   ```bash
+   python -m server.db.migrate
+   psql -U treasuremap -d treasuremap_dev -f tests/test-data.sql
+   ```
+
+6. **Run the development server:**
    ```bash
    cd server
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
+
+## Database Migrations
+
+The schema is managed by Alembic (`server/alembic.ini`, `server/migrations/`). The API does not create tables itself.
+
+`python -m server.db.migrate` brings a database up to date. In Kubernetes it runs as the `migrate` init container on every FastAPI pod. A Postgres advisory lock makes concurrent replicas apply each migration once. A database that predates Alembic (has tables but no `alembic_version`) is stamped at the baseline rather than rebuilt.
+
+To change the schema, edit the models in `server/db/models/`, then generate a revision against a database that is at head:
+
+```bash
+alembic -c server/alembic.ini revision --autogenerate -m "add observatory table"
+```
+
+Always read the generated file before committing. Autogenerate misses some changes (renames, enum value changes) and can emit drops you did not intend. `alembic -c server/alembic.ini check` exits non-zero if the models and the database disagree.
+
+Keep migrations safe to run while the previous release is still serving: add nullable columns or columns with defaults, and remove columns in a later release once nothing reads them. Index builds on large tables (`pointing`, `glade_2p3`, `pointing_event`) lock writes for the duration; create them with `postgresql_concurrently=True` inside `op.get_context().autocommit_block()`.
 
 ## Testing
 

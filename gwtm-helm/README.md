@@ -207,6 +207,24 @@ pg_dump -h treasuremap.host.org -U treasuremap -d treasuremap \
   -a -f ./dump_latest.sql
 ```
 
+### Schema Migrations
+
+The schema is managed by Alembic (see `server/README.md` for writing migrations). Every FastAPI pod runs a `migrate` init container that applies pending migrations before the API starts. A database with tables but no `alembic_version` table is stamped at the baseline instead of rebuilt.
+
+Inspect or run migrations from the API pod. Against prod or dev, set `KUBECONFIG` to the cluster's kubeconfig first.
+
+```bash
+kubectl exec -n gwtm deploy/fastapi-backend -c fastapi-app -- alembic -c server/alembic.ini current
+kubectl exec -n gwtm deploy/fastapi-backend -c fastapi-app -- alembic -c server/alembic.ini history
+kubectl logs -n gwtm deploy/fastapi-backend -c migrate     # what the last pod start applied
+```
+
+Restoring dumps:
+
+- A `--clean` dump drops and recreates its tables, so it restores into a migrated database. If it predates Alembic it has no `alembic_version`, and the next pod start stamps it. Dumps taken since include `alembic_version`, so the restored database is at the source's revision. If your checkout lacks that revision, `migrate` fails with "Can't locate revision" and the pod stays in `Init`. Pull the code the source was running first.
+- A data-only dump needs the tables to exist first, which `migrate` handles. Its `alembic_version` row clashes with the local one and that table errors on restore. The error is harmless if both are at the same revision.
+- `tests/test-data.sql` only inserts data and is unaffected.
+
 ## Monitoring and Debugging
 
 ### Checking Deployment Status
@@ -602,6 +620,9 @@ kubectl get service postgres -n gwtm
 ```bash
 # Check FastAPI logs for startup errors
 kubectl logs -n gwtm deployment/fastapi-backend --tail=100
+
+# A pod stuck in Init has usually failed its schema migration
+kubectl logs -n gwtm deployment/fastapi-backend -c migrate
 
 # Verify environment variables
 kubectl exec -n gwtm deployment/fastapi-backend -- env | grep -E 'DB_'
