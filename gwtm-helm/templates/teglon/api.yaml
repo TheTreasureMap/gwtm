@@ -1,0 +1,126 @@
+{{- if .Values.teglon.enabled }}
+# Teglon API (gwtm calls it for suggested pointings and coverage-adjusted contours) and the volume of event files,
+# pickles and dust maps it shares with the ingest CronJob.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: teglon-data
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteOnce]   # one node: the API and CronJob pods share it
+  storageClassName: teglon-retain
+  resources:
+    requests:
+      storage: {{ .Values.teglon.data.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teglon-api
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+    app: teglon-api
+spec:
+  # One replica: run records live in the API process (web/project/__init__.py in the teglon repo).
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: teglon-api
+  template:
+    metadata:
+      labels:
+        app: teglon-api
+    spec:
+      {{- with .Values.teglon.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api
+          image: "{{ .Values.teglon.image.repository }}:{{ .Values.teglon.image.tag }}"
+          imagePullPolicy: {{ .Values.teglon.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            {{- include "gwtm.teglonEnv" . | nindent 12 }}
+            - name: TEGLON_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.teglon.existingSecret }}
+                  key: api-token
+          volumeMounts:
+            {{- include "gwtm.teglonDataMounts" . | nindent 12 }}
+          # /health fails while MySQL is unreachable, taking the pod out of the Service so gwtm sees "unavailable"
+          # rather than "event not processed". Liveness is TCP only, so a DB outage doesn't restart-loop the API.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.teglon.api.resources | nindent 12 }}
+      volumes:
+        - name: teglon-data
+          persistentVolumeClaim:
+            claimName: teglon-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: teglon-api
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: teglon-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: teglon-api
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "gwtm.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # HTTPS only, so the bearer token never crosses the network in clear. cert-manager's HTTP-01 solver uses its
+    # own Ingress on port 80.
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - {{ required "teglon.host is required" .Values.teglon.host | quote }}
+      secretName: teglon-tls
+  rules:
+    - host: {{ .Values.teglon.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: teglon-api
+                port:
+                  number: 8000
+{{- end }}
