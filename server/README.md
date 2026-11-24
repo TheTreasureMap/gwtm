@@ -199,7 +199,7 @@ alembic -c server/alembic.ini revision --autogenerate -m "add observatory table"
 
 Always read the generated file before committing. Autogenerate misses some changes (renames, enum value changes) and can emit drops you did not intend. `alembic -c server/alembic.ini check` exits non-zero if the models and the database disagree.
 
-Keep migrations safe to run while the previous release is still serving: add nullable columns or columns with defaults, and remove columns in a later release once nothing reads them. Index builds on large tables (`pointing`, `glade_2p3`, `pointing_event`) lock writes for the duration; create them with `postgresql_concurrently=True` inside `op.get_context().autocommit_block()`.
+Keep migrations safe to run while the previous release is still serving: add nullable columns or columns with defaults, and remove columns in a later release once nothing reads them. Index builds lock writes to the table for the duration. That is negligible for most tables but not for the large ones (`gw_galaxy_entry`, `useractions`); create indexes there with `postgresql_concurrently=True` inside `op.get_context().autocommit_block()`.
 
 ## Testing
 

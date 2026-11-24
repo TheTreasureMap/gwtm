@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float, DateTime, Enum, String, and_
+from sqlalchemy import Column, Integer, Float, DateTime, Enum, String, Index, and_
 from sqlalchemy.ext.hybrid import hybrid_method
 from geoalchemy2 import Geography
 from ..database import Base
@@ -10,7 +10,10 @@ from server.utils.spectral import SpectralRangeHandler
 
 class Pointing(Base):
     __tablename__ = "pointing"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = (
+        Index("idx_pointing_status_id", "status", "id"),
+        {"schema": "public"},
+    )
 
     id = Column(Integer, primary_key=True)
     status = Column(Enum(pointing_status_enum, name="pointing_status"))
