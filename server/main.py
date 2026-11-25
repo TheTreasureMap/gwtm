@@ -27,6 +27,11 @@ from server.routes.ui.router import router as ui_router
 from server.routes.celestial.router import router as celestial_router
 from server.routes.auth.router import router as auth_router
 from server.routes.enums.router import router as enums_router
+from server.routes.teglon.router import (
+    router as teglon_router,
+    status_router as teglon_status_router,
+    teglon_enabled,
+)
 
 from contextlib import asynccontextmanager
 from server.utils.error_handling import ErrorDetail
@@ -242,6 +247,9 @@ app.include_router(doi_router, prefix=API_V1_PREFIX)
 app.include_router(event, prefix=API_V1_PREFIX)
 app.include_router(celestial_router, prefix=API_V1_PREFIX)
 app.include_router(enums_router, prefix=API_V1_PREFIX)
+app.include_router(teglon_status_router, prefix=API_V1_PREFIX)
+if teglon_enabled():
+    app.include_router(teglon_router, prefix=API_V1_PREFIX)
 
 app.include_router(admin_router, prefix=f"{API_V1_PREFIX}/admin")
 

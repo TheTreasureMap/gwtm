@@ -24,6 +24,8 @@ fastapi:
     targetPort: 8000
   env:
     BASE_URL: ""  # Will be set per environment
+    # Teglon API base URL. Empty turns the Teglon feature off; the token is the teglon-api-token secret key.
+    TEGLON_API_URL: ""
   readinessProbe:
     enabled: false
     path: /docs
