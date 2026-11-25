@@ -90,9 +90,9 @@ def test_off_by_default_hides_the_feature():
     assert settings.TEGLON_API_URL == ""
     client = TestClient(app)
     assert client.get("/api/v1/teglon/status").json() == {"enabled": False}
-    paths = {route.path for route in app.routes}
-    assert "/api/v1/teglon/suggested_pointings" not in paths
-    assert "/api/v1/teglon/contours" not in paths
+    # Registered proxy routes would answer a logged-out request with 401; absent ones with 404.
+    for path in ("/api/v1/teglon/suggested_pointings", "/api/v1/teglon/contours"):
+        assert client.get(path, params={"graceid": "S190425z"}).status_code == 404
 
 
 # --- switched on -----------------------------------------------------------------------------
