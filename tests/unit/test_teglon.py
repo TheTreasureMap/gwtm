@@ -166,6 +166,16 @@ def test_requires_login(fake_teglon):
     assert fake_teglon.calls == []
 
 
+@pytest.mark.parametrize("upstream", [401, 403])
+def test_teglon_auth_failure_is_not_a_401(fake_teglon, upstream):
+    fake_teglon.response = httpx.Response(upstream, json={"message": "Unauthorized"})
+    resp = app_with_teglon().get(
+        "/api/v1/teglon/contours", params={"graceid": "S190425z"}
+    )
+    assert resp.status_code == 502
+    assert resp.json() == {"message": "Teglon rejected gwtm's service token"}
+
+
 @pytest.mark.parametrize(
     "failure, status",
     [

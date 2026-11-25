@@ -9,6 +9,7 @@ Teglon's status codes and JSON bodies are passed through unchanged, since the fr
 Teglon's own messages and run fields (for example a 404 carrying a setup run's task_id).
 """
 
+import logging
 import re
 
 import httpx
@@ -27,6 +28,8 @@ status_router = APIRouter(prefix="/teglon", tags=["teglon"])
 router = APIRouter(
     prefix="/teglon", tags=["teglon"], dependencies=[Depends(get_current_user)]
 )
+
+logger = logging.getLogger(__name__)
 
 TASK_ID = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 
@@ -80,6 +83,16 @@ def forward(method: str, path: str, params: dict) -> JSONResponse:
         )
     except httpx.HTTPError:
         return JSONResponse({"message": "Teglon is unavailable"}, status_code=502)
+    # Teglon rejecting gwtm's service token is a server misconfiguration, not an expired user
+    # session. Passing it on as 401 would make the browser client drop the user's login.
+    if resp.status_code in (401, 403):
+        logger.error(
+            "Teglon rejected gwtm's service token (HTTP %s); check TEGLON_API_TOKEN",
+            resp.status_code,
+        )
+        return JSONResponse(
+            {"message": "Teglon rejected gwtm's service token"}, status_code=502
+        )
     try:
         body = resp.json()
     except ValueError:
