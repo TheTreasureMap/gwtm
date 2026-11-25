@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     TURNSTILE_SITE_KEY: str = Field("", env="TURNSTILE_SITE_KEY")
     TURNSTILE_SECRET_KEY: str = Field("", env="TURNSTILE_SECRET_KEY")
     ZENODO_ACCESS_KEY: str = Field("", env="ZENODO_ACCESS_KEY")
+    # Empty TEGLON_API_URL switches the Teglon feature off: no proxy routes, no frontend controls.
+    TEGLON_API_URL: str = Field("", env="TEGLON_API_URL")
+    TEGLON_API_TOKEN: str = Field("", env="TEGLON_API_TOKEN")
 
     # AWS settings
     AWS_ACCESS_KEY_ID: str = Field("", env="AWS_ACCESS_KEY_ID")
