@@ -10,9 +10,9 @@
 	let origin = 'https://treasuremap.space';
 
 	onMount(async () => {
-		// Use the API address the app itself calls; a relative one (e.g. "/") means the same host.
-		const base = getApiBaseUrl();
-		origin = /^https?:\/\//.test(base) ? base.replace(/\/+$/, '') : window.location.origin;
+		// The API address the app itself calls, resolved against this page so a relative base keeps its
+		// path ("/gateway/" -> https://host/gateway). An empty base is the same-origin proxy.
+		origin = new URL(getApiBaseUrl() || '/', window.location.href).href.replace(/\/+$/, '');
 		try {
 			enabled = await teglon.enabled();
 		} catch {

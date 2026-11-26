@@ -48,4 +48,15 @@ describe('TeglonApiDocs', () => {
 			await screen.findByText(new RegExp(`BASE = "${window.location.origin}/api/v1/teglon"`))
 		).toBeTruthy();
 	});
+
+	it('keeps the path of a relative API base', async () => {
+		enabled.mockResolvedValue(true);
+		apiBase.value = '/gateway/';
+		render(TeglonApiDocs);
+		expect(
+			await screen.findByText(
+				new RegExp(`BASE = "${window.location.origin}/gateway/api/v1/teglon"`)
+			)
+		).toBeTruthy();
+	});
 });
