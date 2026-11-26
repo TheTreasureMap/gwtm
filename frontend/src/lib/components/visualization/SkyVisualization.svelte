@@ -1114,7 +1114,7 @@
 					on:setGalaxyLimit={handleSetGalaxyLimit}
 					{limitedGalaxyData}
 				/>
-				<TeglonPanel {graceid} />
+				<TeglonPanel {graceid} {aladin} />
 			</div>
 		</div>
 

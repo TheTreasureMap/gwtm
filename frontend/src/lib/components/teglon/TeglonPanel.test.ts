@@ -25,7 +25,13 @@ vi.mock('./teglon', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('./teglon')>();
 	return {
 		...actual,
-		teglon: { enabled: vi.fn(), table: vi.fn(), startPlannedRun: vi.fn(), run: vi.fn() }
+		teglon: {
+			enabled: vi.fn(),
+			table: vi.fn(),
+			startPlannedRun: vi.fn(),
+			run: vi.fn(),
+			contours: vi.fn()
+		}
 	};
 });
 
@@ -70,6 +76,7 @@ describe('TeglonPanel', () => {
 		expect(container.textContent?.trim()).toBe('');
 		expect(api.instruments.getInstruments).not.toHaveBeenCalled();
 		expect(mocked.table).not.toHaveBeenCalled();
+		expect(mocked.contours).not.toHaveBeenCalled();
 	});
 
 	it('asks logged-out users to log in without calling Teglon', async () => {
@@ -78,6 +85,7 @@ describe('TeglonPanel', () => {
 		expect(await screen.findByText('Log in to see suggested pointings.')).toBeTruthy();
 		expect(api.instruments.getInstruments).not.toHaveBeenCalled();
 		expect(mocked.table).not.toHaveBeenCalled();
+		expect(mocked.contours).not.toHaveBeenCalled();
 	});
 
 	it("shows Teglon's table for the chosen instrument", async () => {
@@ -114,7 +122,9 @@ describe('TeglonPanel', () => {
 		});
 		mocked.table.mockResolvedValue({ status: 200, data: TABLE });
 		render(TeglonPanel, { graceid: 'S1' });
-		await fireEvent.click(await screen.findByRole('checkbox'));
+		await fireEvent.click(
+			await screen.findByRole('checkbox', { name: 'Avoid fields others have planned' })
+		);
 		await chooseInstrumentAndRequest();
 		expect(await screen.findByText('F1')).toBeTruthy();
 		expect(mocked.startPlannedRun).toHaveBeenCalledWith('S1', 9);
@@ -172,5 +182,165 @@ describe('TeglonPanel', () => {
 		expect(mocked.run).not.toHaveBeenCalled();
 		expect(mocked.table).toHaveBeenCalledTimes(1);
 		expect(screen.queryByText(/Teglon is setting up\./)).toBeNull();
+	});
+
+	describe('contours', () => {
+		const contoursOf = (ra: number) => ({
+			detection_overlays: [
+				{
+					color: '#e6194B',
+					contours: [
+						{
+							polygon: [
+								[ra, 2],
+								[ra + 1, 4],
+								[ra + 2, 6]
+							]
+						}
+					]
+				}
+			]
+		});
+
+		// Behaves like Aladin: removing layers fires 'AL:GraphicOverlayLayer.removed' on its container,
+		// one per layer, before the layer list is emptied.
+		function fakeMap() {
+			const aladinDiv = document.createElement('div');
+			let live: unknown[] = [];
+			const fire = (layer: unknown) =>
+				aladinDiv.dispatchEvent(
+					new CustomEvent('AL:GraphicOverlayLayer.removed', { detail: { layer } })
+				);
+			const aladin = {
+				aladinDiv,
+				addOverlay: vi.fn((layer: unknown) => live.push(layer)),
+				removeOverlay: vi.fn((layer: unknown) => {
+					if (!live.includes(layer)) return;
+					fire(layer);
+					live = live.filter((l) => l !== layer);
+				}),
+				removeOverlays: () => {
+					live.forEach(fire);
+					live = [];
+				}
+			};
+			(window as unknown as { A: unknown }).A = {
+				graphicOverlay: vi.fn((options: object) => ({
+					options,
+					polygons: [] as unknown[],
+					addFootprints(p: unknown[]) {
+						this.polygons.push(...p);
+					}
+				})),
+				polygon: vi.fn((p: unknown) => p)
+			};
+			return { aladin, live: () => live };
+		}
+
+		const contoursBox = () =>
+			screen.findByRole('checkbox', { name: "Show Teglon's contours on the map" });
+
+		afterEach(() => {
+			delete (window as unknown as { A?: unknown }).A;
+		});
+
+		it('draws in its own colour and keeps one layer when the sky map wipes its overlays', async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const map = fakeMap();
+			render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+			expect(mocked.contours).toHaveBeenCalledWith('S1', false);
+			expect((map.live()[0] as { options: object }).options).toMatchObject({ color: '#00e5ff' });
+
+			// e.g. the time slider moving: every overlay is removed directly.
+			map.aladin.removeOverlays();
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+			expect(map.aladin.addOverlay).toHaveBeenCalledTimes(2);
+			expect(mocked.contours).toHaveBeenCalledTimes(1);
+		});
+
+		it('removes only its layer, and does not put it back, when unticked', async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const map = fakeMap();
+			render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+			const box = await contoursBox();
+			await fireEvent.click(box);
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			await fireEvent.click(box);
+			await waitFor(() => expect(map.live()).toHaveLength(0));
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			expect(map.live()).toHaveLength(0);
+			expect(map.aladin.addOverlay).toHaveBeenCalledTimes(1);
+		});
+
+		it('removes its layer when the panel goes and refetches for a new event', async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const map = fakeMap();
+			const { rerender, unmount } = render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			await rerender({ graceid: 'S2', aladin: map.aladin });
+			await waitFor(() => expect(mocked.contours).toHaveBeenCalledWith('S2', false));
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			unmount();
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			expect(map.live()).toHaveLength(0); // and not quietly put back after the panel has gone
+		});
+
+		it('takes out planned sky, drawing only the newest reply', async () => {
+			let first: (reply: unknown) => void = () => {};
+			mocked.contours
+				.mockReturnValueOnce(new Promise((resolve) => (first = resolve)))
+				.mockResolvedValueOnce({ status: 200, data: contoursOf(50) });
+			const map = fakeMap();
+			render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+			await fireEvent.click(await contoursBox());
+			await fireEvent.click(
+				screen.getByRole('checkbox', { name: 'Avoid fields others have planned' })
+			);
+			await waitFor(() => expect(mocked.contours).toHaveBeenCalledWith('S1', true));
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			first({ status: 200, data: contoursOf(1) }); // the stale, completed-only reply arrives late
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			map.aladin.removeOverlays(); // a redraw must bring back the newest contours, not the stale ones
+			await waitFor(() => expect(map.aladin.addOverlay).toHaveBeenCalledTimes(2));
+			expect(map.live()).toHaveLength(1);
+			expect((map.live()[0] as { polygons: number[][][] }).polygons[0][0][0]).toBe(50);
+		});
+
+		it("does not draw on the map's dead viewer while the page is torn down", async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const map = fakeMap();
+			const { unmount } = render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			// AladinVisualization removes every overlay as it is destroyed, then the panel goes.
+			map.aladin.removeOverlays();
+			unmount();
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			expect(map.live()).toHaveLength(0);
+			expect(map.aladin.addOverlay).toHaveBeenCalledTimes(1);
+		});
+
+		it('moves the layer to a new viewer', async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const oldMap = fakeMap();
+			const { rerender } = render(TeglonPanel, { graceid: 'S1', aladin: oldMap.aladin });
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(oldMap.live()).toHaveLength(1));
+
+			const newMap = fakeMap();
+			await rerender({ graceid: 'S1', aladin: newMap.aladin });
+			await waitFor(() => expect(newMap.live()).toHaveLength(1));
+			expect(oldMap.live()).toHaveLength(0);
+			expect(mocked.contours).toHaveBeenCalledTimes(1);
+		});
 	});
 });

@@ -2,6 +2,7 @@
 	import PageContainer from '$lib/components/ui/PageContainer.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import TeglonApiDocs from '$lib/components/teglon/TeglonApiDocs.svelte';
 </script>
 
 <svelte:head>
@@ -198,6 +199,8 @@
 			</div>
 		</div>
 	</Card>
+
+	<TeglonApiDocs />
 
 	<!-- Getting Started -->
 	<Card>
