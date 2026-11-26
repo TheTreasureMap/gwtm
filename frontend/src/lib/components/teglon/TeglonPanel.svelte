@@ -11,11 +11,20 @@
 		formatNumber,
 		formatProbability,
 		formatUtc,
+		messageOf,
+		contourPolygons,
+		drawContours,
+		CONTOUR_STYLE,
+		LAYER_REMOVED_EVENT,
+		type AladinLib,
+		type AladinLike,
+		type Polygon,
 		type Step,
 		type SuggestedTable
 	} from './teglon';
 
 	export let graceid: string;
+	export let aladin: AladinLike | null = null;
 
 	const POLL_MS = 10000;
 	// About five minutes. Teglon reports a hung run as still STARTED, so polling needs its own limit.
@@ -33,6 +42,13 @@
 	let failed = false;
 	let table: SuggestedTable | null = null;
 
+	let showContours = false;
+	let polygons: Polygon[] | null = null;
+	let contourLayer: unknown = null;
+	let contourMessage = '';
+	let contoursLoading = false;
+	let contourGeneration = 0;
+
 	// Bumped on every new request or event, so replies and polls from an older one are dropped.
 	let generation = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,7 +62,39 @@
 	});
 
 	// reset() also bumps generation, so a reply still in flight can't schedule a poll after unmount.
-	onDestroy(reset);
+	onDestroy(() => {
+		reset();
+		contourGeneration += 1;
+		removeContours();
+		listenTo(null);
+	});
+
+	// Contours depend on the event and on whether planned sky is taken out, not on the instrument.
+	$: contourKey =
+		showContours && enabled && $auth.isAuthenticated ? `${graceid}|${excludePlanned}` : '';
+	$: loadContours(contourKey);
+
+	$: if (aladin && polygons?.length && !contourLayer) showLayer();
+
+	// The sky map removes every overlay when it redraws or the time range moves. Aladin announces each
+	// removal, so put the layer back once the removal has finished (a synchronous re-add is wiped).
+	let listeningOn: EventTarget | null = null;
+	$: listenTo(aladin?.aladinDiv ?? null);
+
+	function listenTo(target: EventTarget | null) {
+		if (target === listeningOn) return;
+		listeningOn?.removeEventListener(LAYER_REMOVED_EVENT, onLayerRemoved);
+		target?.addEventListener(LAYER_REMOVED_EVENT, onLayerRemoved);
+		listeningOn = target;
+	}
+
+	function onLayerRemoved(event: Event) {
+		if (!contourLayer || (event as CustomEvent).detail?.layer !== contourLayer) return;
+		contourLayer = null;
+		queueMicrotask(() => {
+			if (!contourLayer) showLayer();
+		});
+	}
 
 	$: if (enabled && $auth.isAuthenticated && !instrumentsRequested) loadInstruments();
 
@@ -74,6 +122,45 @@
 			message = 'Could not load the instrument list. Reload the page to try again.';
 			failed = true;
 		}
+	}
+
+	async function loadContours(key: string) {
+		contourGeneration += 1;
+		const gen = contourGeneration;
+		removeContours();
+		polygons = null;
+		contourMessage = '';
+		contoursLoading = false;
+		if (!key) return;
+		contoursLoading = true;
+		try {
+			const reply = await teglon.contours(graceid, excludePlanned);
+			if (gen !== contourGeneration) return;
+			contoursLoading = false;
+			if (reply.status !== 200) {
+				contourMessage = messageOf(reply);
+				return;
+			}
+			polygons = contourPolygons(reply.data);
+			if (polygons.length === 0) contourMessage = 'Teglon has no contours for this event.';
+		} catch {
+			if (gen !== contourGeneration) return;
+			contoursLoading = false;
+			contourMessage = 'Could not reach Treasure Map.';
+		}
+	}
+
+	function showLayer() {
+		const A = (window as unknown as { A?: AladinLib }).A;
+		if (!aladin || !A || !polygons?.length) return;
+		contourLayer = drawContours(aladin, A, polygons);
+	}
+
+	function removeContours() {
+		// Forget the layer first, so its removal event isn't taken as the sky map wiping it.
+		const layer = contourLayer;
+		contourLayer = null;
+		if (layer && aladin) aladin.removeOverlay(layer);
 	}
 
 	function reset() {
@@ -177,6 +264,33 @@
 					<input type="checkbox" bind:checked={excludePlanned} disabled={busy && !waiting} />
 					Avoid fields others have planned
 				</label>
+				<label class="flex items-center gap-2 text-sm text-gray-700">
+					<input type="checkbox" bind:checked={showContours} />
+					Show Teglon's contours on the map
+				</label>
+				{#if showContours}
+					<p class="flex items-center gap-2 text-xs text-gray-600">
+						<svg width="24" height="6" aria-hidden="true">
+							<line
+								x1="0"
+								y1="3"
+								x2="24"
+								y2="3"
+								stroke={CONTOUR_STYLE.color}
+								stroke-width="2"
+								stroke-dasharray={CONTOUR_STYLE.lineDash.join(' ')}
+							/>
+						</svg>
+						Teglon's contours, with sky already observed{excludePlanned ? ' or planned' : ''} removed
+					</p>
+				{/if}
+				<div class="text-xs text-gray-600" role="status">
+					{#if contoursLoading}
+						Loading contours…
+					{:else if contourMessage}
+						{contourMessage}
+					{/if}
+				</div>
 				<button
 					class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
 					on:click={request}

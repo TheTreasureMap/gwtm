@@ -28,6 +28,7 @@ interface ReplyBody {
 	pointings?: unknown;
 	enabled?: boolean;
 	reused?: boolean;
+	detection_overlays?: unknown;
 	// FastAPI's own errors, such as a 404 for a route that is no longer registered.
 	detail?: unknown;
 }
@@ -47,7 +48,12 @@ export type Step =
 const ACTIVE = new Set(['PENDING', 'STARTED']);
 const WORKING = 'Teglon is working out suggested pointings for this instrument.';
 
-function messageOf(reply: Reply): string {
+// gwtm's login check is the only source of a 401 here: the backend turns Teglon's own 401s into 502s.
+// Logins last 30 minutes while the page still looks logged in, so say what to do rather than echo it.
+const SESSION_EXPIRED = 'Your session has expired. Please log out and log in again.';
+
+export function messageOf(reply: Reply): string {
+	if (reply.status === 401) return SESSION_EXPIRED;
 	const detail = reply.data?.detail;
 	return (
 		reply.data?.message ||
@@ -108,8 +114,48 @@ export const teglon = {
 		}),
 	startPlannedRun: (graceid: string, instrumentId: number) =>
 		call('post', '/planned_runs', { graceid, instrument_id: instrumentId }),
-	run: (taskId: string) => call('get', `/planned_runs/${encodeURIComponent(taskId)}`)
+	run: (taskId: string) => call('get', `/planned_runs/${encodeURIComponent(taskId)}`),
+	contours: (graceid: string, includePlanned: boolean) =>
+		call('get', '/contours', { graceid, include_planned: includePlanned })
 };
+
+// Teglon's own contour colours include the red gwtm uses for the GW contour, so they are ignored
+// and its contours are drawn in this style instead.
+export const CONTOUR_STYLE = { color: '#00e5ff', lineWidth: 2, lineDash: [6, 4] };
+const CONTOUR_LAYER_NAME = 'Teglon contours';
+// Aladin dispatches this on its container for each layer it removes, by whatever code path.
+export const LAYER_REMOVED_EVENT = 'AL:GraphicOverlayLayer.removed';
+
+export type Polygon = [number, number][];
+
+/** The [RA, Dec] polygons in a /contours reply, from every overlay Teglon returned. */
+export function contourPolygons(data: unknown): Polygon[] {
+	const overlays = (data as { detection_overlays?: { contours?: { polygon?: Polygon }[] }[] })
+		?.detection_overlays;
+	if (!Array.isArray(overlays)) return [];
+	return overlays.flatMap((overlay) =>
+		(overlay.contours ?? []).map((c) => c.polygon).filter((p): p is Polygon => Array.isArray(p))
+	);
+}
+
+/** Draw polygons on an Aladin view as one Teglon layer; returns the layer so it can be removed. */
+export function drawContours(aladin: AladinLike, A: AladinLib, polygons: Polygon[]): unknown {
+	const layer = A.graphicOverlay({ ...CONTOUR_STYLE, name: CONTOUR_LAYER_NAME });
+	aladin.addOverlay(layer);
+	layer.addFootprints(polygons.map((p) => A.polygon(p)));
+	return layer;
+}
+
+export interface AladinLike {
+	addOverlay(layer: unknown): void;
+	removeOverlay(layer: unknown): void;
+	aladinDiv?: EventTarget;
+}
+
+export interface AladinLib {
+	graphicOverlay(options: object): { addFootprints(footprints: unknown[]): void };
+	polygon(vertices: Polygon): unknown;
+}
 
 export function formatNumber(value: number | null, digits: number): string {
 	return value === null || value === undefined ? '—' : value.toFixed(digits);
