@@ -59,6 +59,14 @@ describe('afterTable', () => {
 		expect(step.kind).toBe('stop');
 	});
 
+	it("uses FastAPI's detail when there is no message", () => {
+		expect(afterTable({ status: 404, data: { detail: 'Not Found' } })).toEqual({
+			kind: 'stop',
+			message: 'Not Found',
+			failed: false
+		});
+	});
+
 	it('falls back to a generic message', () => {
 		expect(afterTable({ status: 502, data: null })).toEqual({
 			kind: 'stop',

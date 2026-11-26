@@ -28,6 +28,8 @@ interface ReplyBody {
 	pointings?: unknown;
 	enabled?: boolean;
 	reused?: boolean;
+	// FastAPI's own errors, such as a 404 for a route that is no longer registered.
+	detail?: unknown;
 }
 
 export interface Reply {
@@ -46,7 +48,12 @@ const ACTIVE = new Set(['PENDING', 'STARTED']);
 const WORKING = 'Teglon is working out suggested pointings for this instrument.';
 
 function messageOf(reply: Reply): string {
-	return reply.data?.message || `Teglon request failed (HTTP ${reply.status})`;
+	const detail = reply.data?.detail;
+	return (
+		reply.data?.message ||
+		(typeof detail === 'string' && detail) ||
+		`Teglon request failed (HTTP ${reply.status})`
+	);
 }
 
 /** A reply from GET /suggested_pointings. */

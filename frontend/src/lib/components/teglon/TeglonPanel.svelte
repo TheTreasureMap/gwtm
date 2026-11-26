@@ -50,9 +50,12 @@
 
 	$: if (enabled && $auth.isAuthenticated && !instrumentsRequested) loadInstruments();
 
-	let shownFor = graceid;
-	$: if (graceid !== shownFor) {
-		shownFor = graceid;
+	// A new event, instrument or avoid-planned choice makes any pending job and shown table stale.
+	const settingsKey = (event: string, id: number | null, avoidPlanned: boolean) =>
+		`${event}|${id}|${avoidPlanned}`;
+	let shownFor = settingsKey(graceid, instrumentId, excludePlanned);
+	$: if (settingsKey(graceid, instrumentId, excludePlanned) !== shownFor) {
+		shownFor = settingsKey(graceid, instrumentId, excludePlanned);
 		reset();
 	}
 

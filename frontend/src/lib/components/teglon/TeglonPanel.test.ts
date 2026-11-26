@@ -155,4 +155,22 @@ describe('TeglonPanel', () => {
 		}) as HTMLButtonElement;
 		expect(button.disabled).toBe(false);
 	});
+
+	it('drops a pending job when the instrument changes', async () => {
+		vi.useFakeTimers({ shouldAdvanceTime: true });
+		mocked.table.mockResolvedValue({
+			status: 404,
+			data: { message: 'Teglon is setting up.', task_id: 'run-1', state: 'STARTED' }
+		});
+		mocked.run.mockResolvedValue({ status: 200, data: { task_id: 'run-1', state: 'SUCCESS' } });
+		render(TeglonPanel, { graceid: 'S1' });
+		await chooseInstrumentAndRequest();
+		await screen.findByText(/Teglon is setting up\./);
+
+		await fireEvent.change(screen.getByRole('combobox'), { target: { value: '47' } });
+		await vi.advanceTimersByTimeAsync(30000);
+		expect(mocked.run).not.toHaveBeenCalled();
+		expect(mocked.table).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText(/Teglon is setting up\./)).toBeNull();
+	});
 });
