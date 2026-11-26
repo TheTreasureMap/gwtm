@@ -3,13 +3,16 @@
 	// feature enabled, so the docs disappear with the routes when Teglon is switched off.
 	import { onMount } from 'svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import { getApiBaseUrl } from '$lib/api/client';
 	import { teglon } from './teglon';
 
 	let enabled = false;
 	let origin = 'https://treasuremap.space';
 
 	onMount(async () => {
-		origin = window.location.origin;
+		// Use the API address the app itself calls; a relative one (e.g. "/") means the same host.
+		const base = getApiBaseUrl();
+		origin = /^https?:\/\//.test(base) ? base.replace(/\/+$/, '') : window.location.origin;
 		try {
 			enabled = await teglon.enabled();
 		} catch {
@@ -64,7 +67,7 @@ for p in suggested_pointings("S251115a", 80):
             break
         time.sleep(10)
         run = body(requests.get(f"{BASE}/planned_runs/{run['task_id']}", headers=HEADERS, timeout=30))
-    else:
+    if run.get("state") in ("PENDING", "STARTED"):
         raise TimeoutError("Teglon is still working; try again later")
     if run.get("state") != "SUCCESS":  # failed, or the request itself was refused
         raise RuntimeError(run.get("error") or explain(run))

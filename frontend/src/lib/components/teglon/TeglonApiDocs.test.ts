@@ -6,6 +6,9 @@ vi.mock('./teglon', async (importOriginal) => {
 	return { ...actual, teglon: { enabled: vi.fn() } };
 });
 
+const { apiBase } = vi.hoisted(() => ({ apiBase: { value: '' } }));
+vi.mock('$lib/api/client', () => ({ getApiBaseUrl: () => apiBase.value }));
+
 import { teglon } from './teglon';
 import TeglonApiDocs from './TeglonApiDocs.svelte';
 
@@ -22,8 +25,27 @@ describe('TeglonApiDocs', () => {
 
 	it('documents the routes for this site when Teglon is on', async () => {
 		enabled.mockResolvedValue(true);
+		apiBase.value = '';
 		render(TeglonApiDocs);
 		expect(await screen.findByText('Suggested Pointings (Teglon)')).toBeTruthy();
 		expect(screen.getByText(/BASE = "http:\/\/localhost(:\d+)?\/api\/v1\/teglon"/)).toBeTruthy();
+	});
+
+	it('shows a separately configured API address', async () => {
+		enabled.mockResolvedValue(true);
+		apiBase.value = 'https://api.example.org/';
+		render(TeglonApiDocs);
+		expect(
+			await screen.findByText(/BASE = "https:\/\/api\.example\.org\/api\/v1\/teglon"/)
+		).toBeTruthy();
+	});
+
+	it("uses the page's own address for a relative API base", async () => {
+		enabled.mockResolvedValue(true);
+		apiBase.value = '/';
+		render(TeglonApiDocs);
+		expect(
+			await screen.findByText(new RegExp(`BASE = "${window.location.origin}/api/v1/teglon"`))
+		).toBeTruthy();
 	});
 });

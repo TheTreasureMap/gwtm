@@ -45,6 +45,9 @@
 	let showContours = false;
 	let polygons: Polygon[] | null = null;
 	let contourLayer: unknown = null;
+	// The viewer the layer was drawn on: the sky map builds a new one when the event changes.
+	let layerOwner: AladinLike | null = null;
+	let destroyed = false;
 	let contourMessage = '';
 	let contoursLoading = false;
 	let contourGeneration = 0;
@@ -63,6 +66,9 @@
 
 	// reset() also bumps generation, so a reply still in flight can't schedule a poll after unmount.
 	onDestroy(() => {
+		// Clear polygons first so a re-add queued by the map's own teardown can't draw on a dead viewer.
+		destroyed = true;
+		polygons = null;
 		reset();
 		contourGeneration += 1;
 		removeContours();
@@ -74,6 +80,8 @@
 		showContours && enabled && $auth.isAuthenticated ? `${graceid}|${excludePlanned}` : '';
 	$: loadContours(contourKey);
 
+	// A new viewer: take the layer off the old one; the next statement draws it on the new one.
+	$: if (contourLayer && aladin !== layerOwner) removeContours();
 	$: if (aladin && polygons?.length && !contourLayer) showLayer();
 
 	// The sky map removes every overlay when it redraws or the time range moves. Aladin announces each
@@ -89,10 +97,15 @@
 	}
 
 	function onLayerRemoved(event: Event) {
-		if (!contourLayer || (event as CustomEvent).detail?.layer !== contourLayer) return;
-		contourLayer = null;
+		const layer = (event as CustomEvent).detail?.layer;
+		if (!layer || layer !== contourLayer) return;
+		// Nothing changes synchronously: setting contourLayer here would let the redraw statement run
+		// during the map's teardown, before this panel is destroyed.
 		queueMicrotask(() => {
-			if (!contourLayer) showLayer();
+			if (destroyed || layer !== contourLayer) return;
+			contourLayer = null;
+			layerOwner = null;
+			showLayer();
 		});
 	}
 
@@ -152,15 +165,18 @@
 
 	function showLayer() {
 		const A = (window as unknown as { A?: AladinLib }).A;
-		if (!aladin || !A || !polygons?.length) return;
+		if (destroyed || !aladin || !A || !polygons?.length) return;
 		contourLayer = drawContours(aladin, A, polygons);
+		layerOwner = aladin;
 	}
 
 	function removeContours() {
 		// Forget the layer first, so its removal event isn't taken as the sky map wiping it.
 		const layer = contourLayer;
+		const owner = layerOwner;
 		contourLayer = null;
-		if (layer && aladin) aladin.removeOverlay(layer);
+		layerOwner = null;
+		if (layer && owner) owner.removeOverlay(layer);
 	}
 
 	function reset() {

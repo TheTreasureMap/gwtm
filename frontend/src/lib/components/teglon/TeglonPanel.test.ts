@@ -313,5 +313,34 @@ describe('TeglonPanel', () => {
 			expect(map.live()).toHaveLength(1);
 			expect((map.live()[0] as { polygons: number[][][] }).polygons[0][0][0]).toBe(50);
 		});
+
+		it("does not draw on the map's dead viewer while the page is torn down", async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const map = fakeMap();
+			const { unmount } = render(TeglonPanel, { graceid: 'S1', aladin: map.aladin });
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(map.live()).toHaveLength(1));
+
+			// AladinVisualization removes every overlay as it is destroyed, then the panel goes.
+			map.aladin.removeOverlays();
+			unmount();
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			expect(map.live()).toHaveLength(0);
+			expect(map.aladin.addOverlay).toHaveBeenCalledTimes(1);
+		});
+
+		it('moves the layer to a new viewer', async () => {
+			mocked.contours.mockResolvedValue({ status: 200, data: contoursOf(1) });
+			const oldMap = fakeMap();
+			const { rerender } = render(TeglonPanel, { graceid: 'S1', aladin: oldMap.aladin });
+			await fireEvent.click(await contoursBox());
+			await waitFor(() => expect(oldMap.live()).toHaveLength(1));
+
+			const newMap = fakeMap();
+			await rerender({ graceid: 'S1', aladin: newMap.aladin });
+			await waitFor(() => expect(newMap.live()).toHaveLength(1));
+			expect(oldMap.live()).toHaveLength(0);
+			expect(mocked.contours).toHaveBeenCalledTimes(1);
+		});
 	});
 });
