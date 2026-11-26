@@ -17,6 +17,7 @@
 	import TimeControls from './TimeControls.svelte';
 	import EventExplorer from './EventExplorer.svelte';
 	import OverlayManager from './OverlayManager.svelte';
+	import TeglonPanel from '../teglon/TeglonPanel.svelte';
 
 	// Import service components
 	import DataLoaderService from './services/DataLoaderService.svelte';
@@ -1090,28 +1091,31 @@
 			/>
 
 			<!-- Right column: Follow-up controls (30% width) -->
-			<FollowUpControls
-				{footprintData}
-				{galaxyData}
-				{galaxiesLoading}
-				{candidateData}
-				{icecubeData}
-				{hasIceCubeData}
-				{hasCandidateData}
-				{showFootprints}
-				{showGrbCoverage}
-				{showGalaxies}
-				{showCandidates}
-				{showIceCube}
-				overlayLists={overlayManager?.getOverlayLists() || {}}
-				on:toggleInstrument={handleToggleInstrument}
-				on:toggleAllInstruments={handleToggleAllInstruments}
-				on:toggleMarkerGroup={handleToggleMarkerGroup}
-				on:animateToMarker={handleAnimateToMarker}
-				on:loadData={handleLoadData}
-				on:setGalaxyLimit={handleSetGalaxyLimit}
-				{limitedGalaxyData}
-			/>
+			<div class="w-full max-w-sm space-y-6">
+				<FollowUpControls
+					{footprintData}
+					{galaxyData}
+					{galaxiesLoading}
+					{candidateData}
+					{icecubeData}
+					{hasIceCubeData}
+					{hasCandidateData}
+					{showFootprints}
+					{showGrbCoverage}
+					{showGalaxies}
+					{showCandidates}
+					{showIceCube}
+					overlayLists={overlayManager?.getOverlayLists() || {}}
+					on:toggleInstrument={handleToggleInstrument}
+					on:toggleAllInstruments={handleToggleAllInstruments}
+					on:toggleMarkerGroup={handleToggleMarkerGroup}
+					on:animateToMarker={handleAnimateToMarker}
+					on:loadData={handleLoadData}
+					on:setGalaxyLimit={handleSetGalaxyLimit}
+					{limitedGalaxyData}
+				/>
+				<TeglonPanel {graceid} />
+			</div>
 		</div>
 
 		<!-- Time Controls Section -->
